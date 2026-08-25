@@ -1,5 +1,15 @@
 (function () {
   "use strict";
+  const staffLinks = {
+    "vet-schools-hub": "https://apps.powerapps.com/play/e/default-05a0e69a-418a-47c1-9c25-9387261bf991/a/7cc796b6-8091-4876-81e0-3e1382980246?tenantId=05a0e69a-418a-47c1-9c25-9387261bf991",
+    "document-library": "https://apps.powerapps.com/play/e/default-05a0e69a-418a-47c1-9c25-9387261bf991/a/5c9be746-db94-402d-9a74-420b4c109498?tenantId=05a0e69a-418a-47c1-9c25-9387261bf991",
+    "toolbox": "https://schoolsnsw.sharepoint.com/sites/VETforsecondarystudentsToolbox/SitePages/Home.aspx",
+    "schools-online": "https://bosho.boardofstudies.nsw.edu.au/links/schoolsonline.html",
+    "go2workplacement": "https://teacher.go2workplacement.com/auth/login",
+    "lln-robot": "https://waggawaggarto90333.lln.training/login",
+    "wwhs-drive": "https://drive.google.com/drive/folders/1Db9AujgkQA71Z8yrXFtyNkKxKKiUQ0oO",
+    "sentral": "https://waggawagga-h.sentral.com.au/dashboard/"
+  };
   window.VET_WORKBOARD = {
     config: {
       buildId: "wwhs-vet-compliance-workboard-2026-08-26-gated-v3",
@@ -11,13 +21,14 @@
       storageKey: "wwhs-vet-compliance-workboard:v3",
       releaseState: "PUBLIC TRAINING PREVIEW — OFFICIAL SYSTEMS REMAIN THE RECORD"
     },
+    staffLinks,
     systems: [
-      { id: "vet-schools-hub", label: "VET Schools Hub", kind: "private", url: "" },
-      { id: "document-library", label: "RTO Document Library", kind: "private", url: "" },
+      { id: "vet-schools-hub", label: "VET Schools Hub", kind: "private", url: staffLinks["vet-schools-hub"] },
+      { id: "document-library", label: "RTO Document Library", kind: "private", url: staffLinks["document-library"] },
       { id: "evidence-central", label: "Evidence Central", kind: "controlled", url: "https://evidencecentral.info/" },
-      { id: "schools-online", label: "Schools Online", kind: "private", url: "" },
+      { id: "schools-online", label: "Schools Online", kind: "private", url: staffLinks["schools-online"] },
       { id: "nesa-toa", label: "NESA live dates", kind: "public", url: "https://www.nsw.gov.au/education-and-training/nesa/key-dates/timetable-of-actions" },
-      { id: "wwhs-drive", label: "WWHS VET Drive", kind: "private", url: "" }
+      { id: "wwhs-drive", label: "WWHS VET Drive", kind: "private", url: staffLinks["wwhs-drive"] }
     ],
     previewTasks: [
       {
