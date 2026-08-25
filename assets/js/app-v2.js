@@ -15,6 +15,8 @@
   const boardTodayIso = "2026-08-26";
   let lastTaskTrigger = null;
   let lastSettingsTrigger = null;
+  let titleOpen = ["", "#today"].includes(location.hash);
+  let startOpen = false;
 
   const phaseMeta = {
     annual_setup: { short: "Set up", title: "Set up the operating year", description: "Confirm authority, roles, access, the live calendar and delivery intentions before the year gathers speed." },
@@ -201,6 +203,10 @@
     return `<article class="task-card priority-${esc(task.priority)}${compact}"><div class="priority-rail" aria-hidden="true"></div><div class="task-main"><div class="task-meta"><span class="badge">${esc(applicabilityLabel(task))}</span>${dueBadge(task)}${statusPill(task)}</div><h3>${esc(task.title)}</h3>${options.compact ? "" : `<p class="summary">${esc(task.timing)}</p>`}<p class="task-owner">${esc(assignedRole(task))}</p></div><button class="task-action" type="button" data-action="open-task" data-task-id="${esc(task.id)}">${getStatus(task) === "not-started" ? "Start task" : "Open task"}</button></article>`;
   }
 
+  function renderTitle() {
+    route.innerHTML = `<section class="title-page"><div class="title-panel"><div class="title-brand-zone"><img class="title-brand-image" src="assets/img/wwhs-vet-title-brand.png" width="209" height="63" alt="WWHS VET Compliance Workboard"></div><div class="title-copy"><p class="eyebrow">2026 coordinator platform</p><h1>VET compliance, one clear step at a time.</h1><p>A calm, guided annual workboard for new and experienced VET coordinators and assistants.</p><div class="title-actions"><button class="button title-start" type="button" data-action="enter-workboard">Start</button><button class="button quiet title-help" type="button" data-action="open-workflow" data-workflow-id="safety-incident">Urgent help</button></div><small>Official systems remain the record.</small></div></div></section>`;
+  }
+
   function renderWelcome() {
     route.innerHTML = `<section class="page welcome-page"><div class="welcome-card"><div class="welcome-copy"><p class="eyebrow">Welcome to the 2026 workboard</p><h1>Start with one thing.</h1><p class="welcome-lead">VET is complex. Your first screen does not need to be. Choose the pace that suits you today—the same mapped annual process sits underneath both views.</p><div class="welcome-choices"><button class="choice-card is-recommended" type="button" data-action="choose-experience" data-experience="guided"><span class="choice-kicker">New or returning to the role</span><strong>Guide me one step at a time</strong><small>See one next action, a short explanation and what comes after it.</small></button><button class="choice-card" type="button" data-action="choose-experience" data-experience="full"><span class="choice-kicker">Experienced coordinator or assistant</span><strong>Open the fast workboard</strong><small>See due work, recurring controls and blockers without training clutter.</small></button></div><p class="welcome-note">Change pace at any time. The official system remains the record; this workboard tells you what to do next.</p></div><aside class="toe-dip" aria-label="How the guided start works"><p class="eyebrow">A gentle first run</p><ol><li><span>1</span><div><strong>See the next action</strong><small>Plain language, owner and timing.</small></div></li><li><span>2</span><div><strong>Follow short steps</strong><small>Open the correct authorised system.</small></div></li><li><span>3</span><div><strong>Record a safe reference</strong><small>Then the next action appears.</small></div></li></ol></aside></div></section>`;
   }
@@ -238,7 +244,7 @@
     return url ? `<a class="system-link" href="${esc(url)}" target="_blank" rel="noopener"><span>${esc(system.label)}</span><span aria-hidden="true">↗</span></a>` : `<button class="system-link is-unset" type="button" data-action="open-settings"><span>${esc(system.label)}</span><span>Set link</span></button>`;
   }
   function changePanel() { return `<section class="change-panel"><div><p class="eyebrow">Source watch</p><h2>The workboard caught a changed date</h2><p>The current NESA workbook moved the 2026 school-delivered VET USI due date to <strong>2 April</strong>. The older WWHS copy still shows 27 February and should not control future action.</p></div><a href="#issues" class="button secondary">See changes and gaps</a></section>`; }
-  function renderToday() { if (!state.experience) return renderWelcome(); if (state.experience === "guided") return renderGuidedToday(); renderFullToday(); }
+  function renderToday() { if (titleOpen) return renderTitle(); if (startOpen || !state.experience) return renderWelcome(); if (state.experience === "guided") return renderGuidedToday(); renderFullToday(); }
 
   function renderYear() {
     const selected = state.selectedPhase in phaseMeta ? state.selectedPhase : "term_3";
@@ -406,8 +412,11 @@
   }
   function render(focusMain = false) {
     const view = currentView();
-    document.body.classList.toggle("is-welcome", view === "today" && !state.experience);
-    document.body.classList.toggle("is-guided", state.experience === "guided");
+    const showingTitle = view === "today" && titleOpen;
+    const showingWelcome = view === "today" && !titleOpen && (startOpen || !state.experience);
+    document.body.classList.toggle("is-title", showingTitle);
+    document.body.classList.toggle("is-welcome", showingWelcome);
+    document.body.classList.toggle("is-guided", view === "today" && !titleOpen && !startOpen && state.experience === "guided");
     document.querySelectorAll(".nav-link").forEach(link => link.classList.toggle("is-active", link.dataset.view === view));
     if (view === "today") renderToday(); if (view === "year") renderYear(); if (view === "workflows") renderWorkflows(); if (view === "systems") renderSystems(); if (view === "issues") renderIssues();
     closeNavigation();
@@ -421,7 +430,8 @@
     if (action === "toggle-nav") { const open = document.body.classList.toggle("nav-open"); target.setAttribute("aria-expanded", String(open)); document.querySelector(".nav-scrim").hidden = !open; }
     if (action === "close-nav") closeNavigation();
     if (action === "toggle-guidance") { state.guidance = !state.guidance; saveState(); updateGuidanceToggle(); toast(state.guidance ? "Plain-English guidance is available inside tasks" : "Guidance hidden for a faster work view"); }
-    if (action === "choose-experience") { state.experience = target.dataset.experience; state.guidance = state.experience === "guided"; saveState(); updateGuidanceToggle(); render(); }
+    if (action === "enter-workboard") { titleOpen = false; startOpen = true; render(true); }
+    if (action === "choose-experience") { startOpen = false; state.experience = target.dataset.experience; state.guidance = state.experience === "guided"; saveState(); updateGuidanceToggle(); render(); }
     if (action === "open-task") { lastTaskTrigger = target; openTask(target.dataset.taskId); }
     if (action === "open-workflow") { lastTaskTrigger = target; openWorkflow(target.dataset.workflowId); }
     if (action === "close-dialog") taskDialog.close();
@@ -444,6 +454,6 @@
   });
   taskDialog.addEventListener("close", () => { const previous = lastTaskTrigger; lastTaskTrigger = null; returnDialogFocus(previous); });
   settingsDialog.addEventListener("close", () => { const previous = lastSettingsTrigger; lastSettingsTrigger = null; returnDialogFocus(previous); });
-  window.addEventListener("hashchange", () => render(true));
+  window.addEventListener("hashchange", () => { if (currentView() !== "today") { titleOpen = false; startOpen = false; } render(true); });
   roleFilter.innerHTML = roleOptions(state.role); roleFilter.value = state.role; updateGuidanceToggle(); render();
 })();
