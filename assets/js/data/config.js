@@ -3,13 +3,13 @@
   window.VET_WORKBOARD = {
     config: {
       buildId: "wwhs-vet-compliance-workboard-2026-08-26-gated-v3",
-      version: "3.0.0-local-preview",
+      version: "3.0.0-public-preview",
       operatingYear: 2026,
       operationalStart: "2026-08-26",
       currentTerm: "Term 3",
       currentWeek: "Week 6",
       storageKey: "wwhs-vet-compliance-workboard:v3",
-      releaseState: "LOCAL REBUILD — NOT SHARED OR PUBLISHED"
+      releaseState: "PUBLIC TRAINING PREVIEW — OFFICIAL SYSTEMS REMAIN THE RECORD"
     },
     systems: [
       { id: "vet-schools-hub", label: "VET Schools Hub", kind: "private", url: "" },
