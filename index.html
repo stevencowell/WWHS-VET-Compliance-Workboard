@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="description" content="Local WWHS annual VET compliance workboard and coordinator guidance.">
+  <title>WWHS VET Compliance Workboard</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="assets/css/site.css?v=20260826j">
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Skip to workboard</a>
+  <div class="app-shell">
+    <header class="topbar">
+      <button class="mobile-menu" type="button" data-action="toggle-nav" aria-label="Open navigation" aria-expanded="false">Menu</button>
+      <a class="brand" href="#today" aria-label="WWHS VET Compliance Workboard home">
+        <span class="brand-mark" aria-hidden="true">V</span>
+        <span><strong>WWHS VET</strong><small>Compliance Workboard</small></span>
+      </a>
+      <button class="urgent-access" type="button" data-action="open-workflow" data-workflow-id="safety-incident" aria-label="Open urgent safety, privacy or records response">Urgent help</button>
+      <div class="topbar-actions">
+        <label class="role-control"><span>View as</span><select id="role-filter" aria-label="Filter tasks by role"><option value="all">All work</option><option value="coordinator">Coordinator</option><option value="assistant">Assistant</option><option value="trainer">Trainer</option><option value="principal">Principal / delegate</option><option value="workplace">Workplace learning</option></select></label>
+        <button class="guidance-toggle" type="button" data-action="toggle-guidance" aria-pressed="false"><span class="toggle-dot" aria-hidden="true"></span><span>Guidance off</span></button>
+      </div>
+    </header>
+
+    <aside class="sidebar" aria-label="Primary navigation">
+      <nav>
+        <a class="nav-link is-active" href="#today" data-view="today"><span class="nav-symbol" aria-hidden="true">01</span><span>Today</span></a>
+        <a class="nav-link" href="#year" data-view="year"><span class="nav-symbol" aria-hidden="true">02</span><span>Year plan</span></a>
+        <a class="nav-link" href="#workflows" data-view="workflows"><span class="nav-symbol" aria-hidden="true">03</span><span>Workflows</span></a>
+        <a class="nav-link" href="#systems" data-view="systems"><span class="nav-symbol" aria-hidden="true">04</span><span>Systems</span></a>
+        <a class="nav-link" href="#issues" data-view="issues"><span class="nav-symbol" aria-hidden="true">05</span><span>Issues &amp; handover</span></a>
+      </nav>
+      <div class="sidebar-foot">
+        <p class="eyebrow">2026 local candidate</p>
+        <p>This browser only</p>
+        <button class="text-button" type="button" data-action="open-settings">Workspace setup</button>
+      </div>
+    </aside>
+
+    <main id="main-content" tabindex="-1">
+      <div id="route-content"></div>
+    </main>
+  </div>
+
+  <div class="nav-scrim" data-action="close-nav" hidden></div>
+  <dialog id="task-dialog" class="task-dialog" aria-labelledby="task-dialog-title">
+    <div id="task-dialog-content"></div>
+  </dialog>
+  <dialog id="settings-dialog" class="settings-dialog" aria-labelledby="settings-title">
+    <div id="settings-content"></div>
+  </dialog>
+  <div id="toast-region" class="toast-region" aria-live="polite" aria-atomic="true"></div>
+
+  <script src="assets/js/data/config.js"></script>
+  <script src="assets/js/data/tasks.js"></script>
+  <script src="assets/js/data/reference.js"></script>
+  <script src="assets/js/app-v2.js?v=20260826j"></script>
+</body>
+</html>
