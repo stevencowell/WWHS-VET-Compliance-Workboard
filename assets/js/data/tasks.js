@@ -317,7 +317,7 @@
       "doneWhen": "Each applicable cohort has an approved schedule, preparation pathway, risk controls and official record destination.",
       "evidencePointerType": "placement-plan-and-controlled-record-location",
       "systems": ["Go2workplacement", "Approved workplace-learning system", "Official student files"],
-      "sourceIds": ["RTO-TERM1-GUIDE-2026", "DOE-WPL-POLICY", "DOE-WPL-PROCEDURE", "DOE-WPL-FORMS", "DOE-GO2WORKPLACEMENT"],
+      "sourceIds": ["RTO-TERM1-GUIDE-2026", "DOE-WPL-POLICY", "DOE-WPL-PROCEDURE", "DOE-WPL-FORMS", "DOE-GO2WORKPLACEMENT", "COMPACT-WPL"],
       "liveVerification": { "required": true, "check": "Check course-specific hours and current forms; never teach one universal hours figure." },
       "guidance": { "why": "Workplace learning is both a curriculum and safety-critical process.", "commonTrap": "Focusing on dates while leaving preparation, risk controls or original record storage vague." },
       "applicability": { "cohorts": ["courses requiring workplace learning"], "conditions": "Course and cohort specific" }
@@ -552,7 +552,7 @@
       "doneWhen": "The scheduled block is safely completed, exceptions are followed up and authorised placement records are current.",
       "evidencePointerType": "aggregate-placement-status-and-official-record-location",
       "systems": ["Approved workplace-learning system", "Official student files", "NESA Schools Online"],
-      "sourceIds": ["WWHS-CALENDAR-2026", "RTO-TERM3-GUIDE-2026", "DOE-WPL-POLICY", "DOE-WPL-PROCEDURE"],
+      "sourceIds": ["WWHS-CALENDAR-2026", "RTO-TERM3-GUIDE-2026", "DOE-WPL-POLICY", "DOE-WPL-PROCEDURE", "COMPACT-WPL"],
       "liveVerification": { "required": true, "check": "Confirm the active cohort schedule, course requirements and current forms." },
       "guidance": { "why": "This is a live safety and completion control, not just a calendar event.", "commonTrap": "Closing the task when students return without reconciling hours, records and unresolved incidents." },
       "applicability": { "cohorts": ["Year 11 courses scheduled for the block"], "conditions": "2026 local schedule; course specific" },
@@ -1024,7 +1024,7 @@
       "doneWhen": "Each placement has current preparation, monitoring, follow-up and official record status, with incidents resolved through the authorised process.",
       "evidencePointerType": "aggregate-placement-control-status-and-official-record-location",
       "systems": ["Approved workplace-learning system", "Official student files", "School incident system"],
-      "sourceIds": ["DOE-WPL-POLICY", "DOE-WPL-PROCEDURE", "DOE-WPL-FORMS", "RTO-TERM3-GUIDE-2026"],
+      "sourceIds": ["DOE-WPL-POLICY", "DOE-WPL-PROCEDURE", "DOE-WPL-FORMS", "RTO-TERM3-GUIDE-2026", "COMPACT-WPL"],
       "liveVerification": { "required": true, "check": "Use current policy/forms and course-specific requirements." },
       "guidance": { "why": "Workplace learning combines curriculum, wellbeing, safety and record obligations.", "commonTrap": "Keeping the monitoring trail in informal messages or a personal spreadsheet." },
       "applicability": { "cohorts": ["learners undertaking workplace learning"], "conditions": "Each placement" }
