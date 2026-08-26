@@ -8,9 +8,9 @@
     "go2workplacement": "https://teacher.go2workplacement.com/auth/login",
     "placement-provider-portal": "https://teacher.pathways.cloud/Login",
     "lln-robot": "https://waggawaggarto90333.lln.training/login",
-    "wwhs-drive": "https://drive.google.com/drive/folders/1Db9AujgkQA71Z8yrXFtyNkKxKKiUQ0oO",
+    "wwhs-drive": "https://drive.google.com/drive/folders/0B40F5Y8uF0rvfkl1S2FEbjRhVmJYRWYyY2dlOFVHMDdQeFNyQlRBUzBudmtHRGJKdE83VVk?resourcekey=0-fXD-BgXggkE5EyIeJJdt5g",
     "sentral": "https://waggawagga-h.sentral.com.au/dashboard/",
-    "head-teacher-guide": "https://accounts.google.com/AccountChooser?continue=https%3A%2F%2Fdrive.google.com%2Fdrive%2Fsearch%3Fq%3DHead%2520Teacher%2520Information%2520For%2520TAS%2520Faculty%2520Wagga%2520Wagga%2520High%2520School&service=wise"
+    "head-teacher-guide": "https://docs.google.com/document/d/1iGNJzqizAqWO0PuSRDXh0QPc0L8y_wdiyEk88O7f680/edit?tab=t.0#heading=h.ktfx3hr9fygx"
   };
   window.VET_WORKBOARD = {
     config: {
