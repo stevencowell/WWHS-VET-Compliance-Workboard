@@ -6,9 +6,11 @@
     "toolbox": "https://schoolsnsw.sharepoint.com/sites/VETforsecondarystudentsToolbox/SitePages/Home.aspx",
     "schools-online": "https://bosho.boardofstudies.nsw.edu.au/links/schoolsonline.html",
     "go2workplacement": "https://teacher.go2workplacement.com/auth/login",
+    "placement-provider-portal": "",
     "lln-robot": "https://waggawaggarto90333.lln.training/login",
     "wwhs-drive": "https://drive.google.com/drive/folders/1Db9AujgkQA71Z8yrXFtyNkKxKKiUQ0oO",
-    "sentral": "https://waggawagga-h.sentral.com.au/dashboard/"
+    "sentral": "https://waggawagga-h.sentral.com.au/dashboard/",
+    "head-teacher-guide": ""
   };
   window.VET_WORKBOARD = {
     config: {
