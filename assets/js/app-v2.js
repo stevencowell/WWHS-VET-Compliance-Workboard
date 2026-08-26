@@ -418,14 +418,18 @@
     document.body.classList.toggle("is-title", showingTitle);
     document.body.classList.toggle("is-welcome", showingWelcome);
     document.body.classList.toggle("is-guided", view === "today" && !titleOpen && !startOpen && state.experience === "guided");
-    document.querySelectorAll(".nav-link").forEach(link => link.classList.toggle("is-active", link.dataset.view === view));
+    document.querySelectorAll(".nav-link, .route-link[data-view]").forEach(link => {
+      const active = link.dataset.view === view;
+      link.classList.toggle("is-active", active);
+      if (active) link.setAttribute("aria-current", "page"); else link.removeAttribute("aria-current");
+    });
     if (view === "today") renderToday(); if (view === "year") renderYear(); if (view === "workflows") renderWorkflows(); if (view === "systems") renderSystems(); if (view === "issues") renderIssues();
     closeNavigation();
     if (focusMain) queueMicrotask(() => document.getElementById("main-content")?.focus({ preventScroll: true }));
   }
 
   document.addEventListener("click", event => {
-    const navLink = event.target.closest(".nav-link");
+    const navLink = event.target.closest(".nav-link, .route-link[data-view]");
     if (navLink) { closeNavigation(); if (navLink.hash === location.hash) queueMicrotask(() => document.getElementById("main-content")?.focus({ preventScroll: true })); }
     const target = event.target.closest("[data-action]"); if (!target) return; const action = target.dataset.action;
     if (action === "toggle-nav") { const open = document.body.classList.toggle("nav-open"); target.setAttribute("aria-expanded", String(open)); document.querySelector(".nav-scrim").hidden = !open; }
