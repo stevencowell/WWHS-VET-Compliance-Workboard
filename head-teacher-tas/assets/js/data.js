@@ -130,7 +130,7 @@
       group: "Work-account sources",
       kind: "local",
       status: "front-door",
-      url: "https://drive.google.com/drive/shared-drives",
+      url: workDriveSearch('type:folder "HEAD TEACHER TAS"'),
       purpose: "Current faculty plans, programs, schedules, meeting records and evidence pointers.",
       note: "Work-account folder search. The broad folder ID is not embedded while its sharing boundary is under review."
     },
@@ -180,7 +180,7 @@
       group: "Work-account sources",
       kind: "local",
       status: "front-door",
-      url: workDriveSearch('type:folder "HEAD TEACHER TAS"'),
+      url: "https://drive.google.com/drive/shared-drives",
       purpose: "Current school WHS inspections, risk records and annual control folders.",
       note: "Open Shared drives, choose WWHS Staff, then Work Health and Safety. Protected incident and injury details stay in the authorised owner system."
     },
