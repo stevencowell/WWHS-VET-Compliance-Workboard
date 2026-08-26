@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="description" content="WWHS Head Teacher TAS annual operations workboard and guided handover.">
+  <title>WWHS Head Teacher TAS Operations Workboard</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="assets/css/site.css?v=20260826a">
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Skip to workboard</a>
+
+  <header class="topbar">
+    <button class="menu-button" type="button" data-action="toggle-nav" aria-label="Open navigation" aria-expanded="false">Menu</button>
+    <a class="brand" href="#home" aria-label="WWHS operations home">
+      <span class="brand-mark" aria-hidden="true">T</span>
+      <span><strong>WWHS TAS</strong><small>Head Teacher Operations</small></span>
+    </a>
+    <button class="urgent-button" type="button" data-action="open-workflow" data-workflow="urgent-response">Urgent help</button>
+    <div class="header-tools">
+      <button class="mode-button" type="button" data-action="toggle-guidance" aria-pressed="true">Guidance on</button>
+      <button class="setup-button" type="button" data-action="open-settings">Workspace setup</button>
+    </div>
+  </header>
+
+  <div class="route-bar">
+    <nav class="route-nav" aria-label="Site navigation">
+      <a href="#home" data-route="home">Home</a>
+      <button type="button" data-action="launch-system" data-system-id="head-teacher-guide">HT Reference Guide <span aria-hidden="true">↗</span></button>
+      <a href="#today" data-route="today">Today</a>
+      <a href="#calendar" data-route="calendar">Calendar</a>
+      <a href="#teaching" data-route="teaching">Teaching &amp; reporting</a>
+      <a href="#faculty" data-route="faculty">Faculty operations</a>
+      <a href="#people" data-route="people">People &amp; safety</a>
+      <a href="#reference" data-route="reference">Reference library</a>
+      <a class="companion-link" href="../">Operations home <span aria-hidden="true">↗</span></a>
+    </nav>
+  </div>
+
+  <div class="mobile-scrim" data-action="close-nav" hidden></div>
+
+  <main id="main-content" tabindex="-1">
+    <div id="route-content"></div>
+  </main>
+
+  <dialog id="task-dialog" class="dialog task-dialog" aria-labelledby="task-dialog-title">
+    <div id="task-dialog-content"></div>
+  </dialog>
+
+  <dialog id="settings-dialog" class="dialog settings-dialog" aria-labelledby="settings-title">
+    <div id="settings-content"></div>
+  </dialog>
+
+  <div id="toast-region" class="toast-region" aria-live="polite" aria-atomic="true"></div>
+
+  <script src="assets/js/data.js?v=20260826d"></script>
+  <script src="assets/js/app.js?v=20260826d"></script>
+</body>
+</html>

@@ -1,5 +1,6 @@
 (function () {
   "use strict";
+  const workDriveSearch = query => `https://drive.google.com/drive/search?q=${encodeURIComponent(query)}`;
   const staffLinks = {
     "vet-schools-hub": "https://apps.powerapps.com/play/e/default-05a0e69a-418a-47c1-9c25-9387261bf991/a/7cc796b6-8091-4876-81e0-3e1382980246?tenantId=05a0e69a-418a-47c1-9c25-9387261bf991",
     "document-library": "https://apps.powerapps.com/play/e/default-05a0e69a-418a-47c1-9c25-9387261bf991/a/5c9be746-db94-402d-9a74-420b4c109498?tenantId=05a0e69a-418a-47c1-9c25-9387261bf991",
@@ -8,9 +9,10 @@
     "go2workplacement": "https://teacher.go2workplacement.com/auth/login",
     "placement-provider-portal": "https://teacher.pathways.cloud/Login",
     "lln-robot": "https://waggawaggarto90333.lln.training/login",
-    "wwhs-drive": "https://drive.google.com/drive/folders/0B40F5Y8uF0rvfkl1S2FEbjRhVmJYRWYyY2dlOFVHMDdQeFNyQlRBUzBudmtHRGJKdE83VVk?resourcekey=0-fXD-BgXggkE5EyIeJJdt5g",
+    "wwhs-drive": workDriveSearch('type:folder "HEAD TEACHER TAS"'),
     "sentral": "https://waggawagga-h.sentral.com.au/dashboard/",
-    "head-teacher-guide": "https://docs.google.com/document/d/1iGNJzqizAqWO0PuSRDXh0QPc0L8y_wdiyEk88O7f680/edit?tab=t.0#heading=h.ktfx3hr9fygx"
+    "finance-system": "https://selfservice.det.nsw.edu.au/irj/portal",
+    "head-teacher-guide": workDriveSearch('"Head Teacher Information For TAS Faculty Wagga Wagga High School"')
   };
   window.VET_WORKBOARD = {
     config: {

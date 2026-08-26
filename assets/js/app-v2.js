@@ -15,8 +15,9 @@
   const boardTodayIso = "2026-08-26";
   let lastTaskTrigger = null;
   let lastSettingsTrigger = null;
-  let titleOpen = ["", "#today"].includes(location.hash);
-  let startOpen = false;
+  const directVetEntry = new URLSearchParams(location.search).get("workboard") === "vet";
+  let titleOpen = !directVetEntry && ["", "#today"].includes(location.hash);
+  let startOpen = directVetEntry;
 
   const phaseMeta = {
     annual_setup: { short: "Set up", title: "Set up the operating year", description: "Confirm authority, roles, access, the live calendar and delivery intentions before the year gathers speed." },
@@ -47,7 +48,13 @@
     "nesa timetable of actions": "nesa-toa", "training.gov.au": "tga", "school class/pxp system": "sentral", "approved markbook": "sentral",
     "school reporting system": "sentral", "school timetable system": "sentral", "approved school timetable/records": "sentral",
     "approved school calendar": "wwhs-drive", "approved school document repository": "wwhs-drive", "approved team action record": "wwhs-drive",
-    "approved team record": "wwhs-drive", "approved school records": "wwhs-drive", "approved staff handover record": "wwhs-drive"
+    "approved team record": "wwhs-drive", "approved school records": "wwhs-drive", "approved staff handover record": "wwhs-drive",
+    "approved school finance system": "finance-system", "sbar": "finance-system"
+  };
+
+  const taskSystemFallbacks = {
+    "t3-07-exit-survey": ["vet-schools-hub", "wwhs-drive"],
+    "e-06-discrepancy-corrective-action": ["document-library", "wwhs-drive"]
   };
 
   const statusMeta = {
@@ -60,7 +67,7 @@
 
   const defaultState = {
     schemaVersion: 3, role: "all", guidance: false, experience: "", selectedPhase: "term_3", yearSearch: "",
-    linkDefaultsVersion: 1, links: {}, records: {}, statuses: {}, assignments: {}, weekly: {}, gaps: {}, resetArmed: false, lastBackup: ""
+    linkDefaultsVersion: 2, links: {}, records: {}, statuses: {}, assignments: {}, weekly: {}, gaps: {}, resetArmed: false, lastBackup: ""
   };
   let state = loadState();
 
@@ -105,9 +112,9 @@
   }
   function normaliseState(saved, deviceLinks) {
     const input = safeObject(saved), allowedRoles = new Set(["all", "coordinator", "assistant", "trainer", "principal", "workplace", "nesa"]);
-    const savedLinks = input.linkDefaultsVersion === 1 ? input.links : {};
+    const savedLinks = input.linkDefaultsVersion === 2 ? input.links : {};
     return {
-      ...freshState(), ...input, schemaVersion: 3, linkDefaultsVersion: 1,
+      ...freshState(), ...input, schemaVersion: 3, linkDefaultsVersion: 2,
       role: allowedRoles.has(input.role) ? input.role : "all",
       experience: ["", "guided", "full"].includes(input.experience) ? input.experience : "",
       links: { ...safeObject(deviceLinks === undefined ? savedLinks : deviceLinks) },
@@ -157,6 +164,7 @@
       const id = exactSystemIds[String(label).trim().toLowerCase()];
       if (id && !ids.includes(id)) ids.push(id);
     });
+    (taskSystemFallbacks[task.id] || []).forEach(id => { if (!ids.includes(id)) ids.push(id); });
     return ids.map(id => data.systems.find(system => system.id === id)).filter(Boolean);
   }
   function effectiveLink(system) { return safeUrl(state.links[system.id]) || safeUrl(system.url); }
@@ -215,7 +223,7 @@
   }
 
   function renderTitle() {
-    route.innerHTML = `<section class="title-page"><div class="title-panel"><div class="title-brand-zone"><img class="title-brand-image" src="assets/img/wwhs-vet-title-brand.png" width="209" height="63" alt="WWHS VET Compliance Workboard"></div><div class="title-copy"><p class="eyebrow">2026 coordinator platform</p><h1>VET compliance, one clear step at a time.</h1><p>A calm, guided annual workboard for new and experienced VET coordinators and assistants.</p><div class="title-actions"><button class="button title-start" type="button" data-action="enter-workboard">Start</button><button class="button quiet title-help" type="button" data-action="open-workflow" data-workflow-id="safety-incident">Urgent help</button></div><small>Official systems remain the record.</small></div></div></section>`;
+    route.innerHTML = `<section class="title-page operations-gateway"><div class="gateway-panel"><header class="gateway-head"><div class="gateway-emblem" aria-hidden="true">W</div><div><p class="eyebrow">WAGGA WAGGA HIGH SCHOOL</p><h1>Operations workboards</h1><p>One formal front door to two connected areas of responsibility.</p></div></header><div class="gateway-grid" aria-label="Choose a workboard"><article class="gateway-wing gateway-vet"><div class="gateway-wing-top"><span class="gateway-symbol" aria-hidden="true">V</span><p class="eyebrow">VET COMPLIANCE</p></div><h2>VET Compliance Workboard</h2><p>Annual compliance, RTO delivery, evidence, workplace learning and NESA/RTO actions.</p><button class="button gateway-action" type="button" data-action="enter-workboard">Open VET workboard</button></article><article class="gateway-wing gateway-tas"><div class="gateway-wing-top"><span class="gateway-symbol" aria-hidden="true">T</span><p class="eyebrow">HEAD TEACHER TAS</p></div><h2>Head Teacher TAS Workboard</h2><p>Faculty calendar, teaching and reporting, operations, people and safety.</p><a class="button gateway-action" href="head-teacher-tas/">Open Head Teacher TAS</a></article></div><footer class="gateway-foot"><strong>Choose the role you are working in.</strong><span>Each workboard leads to the authorised school systems; neither replaces the official record.</span></footer></div></section>`;
   }
 
   function renderWelcome() {
@@ -375,7 +383,7 @@
   }
 
   function openSettings() {
-    settingsContent.innerHTML = `<header class="dialog-head"><div><p class="eyebrow">Local workspace setup</p><h2 id="settings-title">Pace, role and approved links</h2></div><button class="dialog-close" type="button" data-action="close-settings" aria-label="Close settings">×</button></header><div class="dialog-body"><form id="settings-form"><section class="settings-section"><h3>How this browser should open</h3><div class="form-grid"><label><span>Default pace</span><select name="experience"><option value="guided" ${state.experience === "guided" ? "selected" : ""}>One step at a time</option><option value="full" ${state.experience === "full" ? "selected" : ""}>Fast workboard</option></select></label><label><span>Default role view</span><select name="role">${roleOptions(state.role)}</select></label><label class="check-line span-two"><input name="guidance" type="checkbox" ${state.guidance ? "checked" : ""}><span>Keep plain-English guidance available inside tasks.</span></label></div></section><section class="settings-section"><h3>Current staff launch links</h3><p>Verified front doors are built into this workboard. Local-only or unconfirmed routes stay blank until approved. Any replacement is saved only in this browser and is excluded from exports.</p><div class="link-form-list">${data.systems.filter(system => system.kind === "private").map(system => `<label><span>${esc(system.label)}</span><input name="link:${esc(system.id)}" type="url" value="${esc(state.links[system.id] || system.url || "")}" placeholder="https://…"><small>${esc(system.purpose)}</small></label>`).join("")}</div></section><aside class="settings-warning"><strong>Role assignments remain provisional</strong><p>Formal Principal delegation and the Coordinator/Assistant split have not yet been verified. Individual tasks can be assigned to roles, but this browser does not create authority.</p></aside><div class="dialog-actions"><button class="button" type="submit">Save workspace setup</button><button class="button quiet" type="button" data-action="close-settings">Cancel</button></div></form></div>`;
+    settingsContent.innerHTML = `<header class="dialog-head"><div><p class="eyebrow">Local workspace setup</p><h2 id="settings-title">Pace, role and approved links</h2></div><button class="dialog-close" type="button" data-action="close-settings" aria-label="Close settings">×</button></header><div class="dialog-body"><form id="settings-form"><section class="settings-section"><h3>How this browser should open</h3><div class="form-grid"><label><span>Default pace</span><select name="experience"><option value="guided" ${state.experience === "guided" ? "selected" : ""}>One step at a time</option><option value="full" ${state.experience === "full" ? "selected" : ""}>Fast workboard</option></select></label><label><span>Default role view</span><select name="role">${roleOptions(state.role)}</select></label><label class="check-line span-two"><input name="guidance" type="checkbox" ${state.guidance ? "checked" : ""}><span>Keep plain-English guidance available inside tasks.</span></label></div></section><section class="settings-section"><h3>Current staff launch links</h3><p>Verified front doors are built into this workboard. Any approved replacement is saved only in this browser and is excluded from exports.</p><div class="link-form-list">${data.systems.filter(system => system.kind === "private").map(system => `<label><span>${esc(system.label)}</span><input name="link:${esc(system.id)}" type="url" value="${esc(state.links[system.id] || system.url || "")}"><small>${esc(system.purpose)}</small></label>`).join("")}</div></section><aside class="settings-warning"><strong>Role assignments remain provisional</strong><p>Formal Principal delegation and the Coordinator/Assistant split have not yet been verified. Individual tasks can be assigned to roles, but this browser does not create authority.</p></aside><div class="dialog-actions"><button class="button" type="submit">Save workspace setup</button><button class="button quiet" type="button" data-action="close-settings">Cancel</button></div></form></div>`;
     settingsDialog.showModal();
   }
   function roleOptions(selected) {
@@ -432,6 +440,7 @@
     const view = currentView();
     const showingTitle = view === "today" && titleOpen;
     const showingWelcome = view === "today" && !titleOpen && (startOpen || !state.experience);
+    document.title = showingTitle ? "WWHS Operations Workboards" : "WWHS VET Compliance Workboard";
     document.body.classList.toggle("is-title", showingTitle);
     document.body.classList.toggle("is-welcome", showingWelcome);
     document.body.classList.toggle("is-guided", view === "today" && !titleOpen && !startOpen && state.experience === "guided");
