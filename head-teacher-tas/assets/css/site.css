@@ -1996,6 +1996,7 @@ input[type="checkbox"] {
 }
 
 @media print {
+  .skip-link,
   .topbar,
   .route-bar,
   .page-actions,

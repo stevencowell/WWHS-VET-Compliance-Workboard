@@ -785,6 +785,13 @@
   }
 
   document.addEventListener("click", event => {
+    const skipLink = event.target.closest(".skip-link");
+    if (skipLink) {
+      event.preventDefault();
+      closeNavigation();
+      document.getElementById("main-content")?.focus();
+      return;
+    }
     const actionTarget = event.target.closest("[data-action]");
     if (!actionTarget) return;
     const action = actionTarget.dataset.action;
@@ -937,6 +944,12 @@
   [taskDialog, settingsDialog].forEach(dialog => dialog.addEventListener("click", event => {
     if (event.target === dialog) dialog.close();
   }));
+  document.addEventListener("keydown", event => {
+    if (event.key !== "Escape" || !document.querySelector(".route-bar")?.classList.contains("is-open")) return;
+    const toggle = document.querySelector("[data-action='toggle-nav']");
+    closeNavigation();
+    toggle?.focus();
+  });
 
   window.addEventListener("hashchange", () => {
     state.search = "";

@@ -7,7 +7,7 @@
   <meta name="description" content="WWHS operations gateway for the VET Compliance and Head Teacher TAS workboards.">
   <title>WWHS Operations Workboards</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="assets/css/site.css?v=20260826w">
+  <link rel="stylesheet" href="assets/css/site.css?v=20260830fy1">
 </head>
 <body>
   <a class="skip-link" href="#main-content">Skip to workboard</a>
@@ -20,7 +20,7 @@
       </a>
       <button class="urgent-access" type="button" data-action="open-workflow" data-workflow-id="safety-incident" aria-label="Open urgent safety, privacy or records response">Urgent help</button>
       <div class="topbar-actions">
-        <label class="role-control"><span>View as</span><select id="role-filter" aria-label="Filter tasks by role"><option value="all">All work</option><option value="coordinator">Coordinator</option><option value="assistant">Assistant</option><option value="trainer">Trainer</option><option value="principal">Principal / delegate</option><option value="workplace">Workplace learning</option></select></label>
+        <label class="role-control"><span>View as</span><select id="role-filter" aria-label="Filter tasks by role"><option value="all">All work</option><option value="htvet">Head Teacher VET</option><option value="coordinator">Coordinator</option><option value="assistant">Assistant</option><option value="trainer">Trainer</option><option value="principal">Principal / delegate</option><option value="workplace">Workplace learning</option></select></label>
         <button class="guidance-toggle" type="button" data-action="toggle-guidance" aria-pressed="false"><span class="toggle-dot" aria-hidden="true"></span><span>Guidance off</span></button>
       </div>
     </header>
@@ -28,6 +28,7 @@
     <div class="route-bar">
       <nav class="route-nav" aria-label="Workboard navigation">
         <a class="route-link route-home" href="./">Home</a>
+        <a class="route-link route-start-2027" href="#cycle-2027" data-view="cycle-2027" data-cycle-link="2027">Run 2027</a>
         <a class="route-link route-companion" href="head-teacher-tas/">Head Teacher TAS <span aria-hidden="true">↗</span></a>
         <button class="route-link route-reference" type="button" data-action="open-system" data-system-id="head-teacher-guide">VET Reference Guide <span aria-hidden="true">↗</span></button>
         <a class="route-link" href="#today" data-view="today">Today</a>
@@ -40,15 +41,21 @@
 
     <aside class="sidebar" aria-label="Primary navigation">
       <nav>
+        <a class="nav-link nav-home" href="./"><span class="nav-symbol" aria-hidden="true">⌂</span><span>Operations home</span></a>
+        <a class="nav-link nav-start-2027" href="#cycle-2027" data-view="cycle-2027" data-cycle-link="2027"><span class="nav-symbol" aria-hidden="true">27</span><span>Run 2027</span></a>
         <a class="nav-link is-active" href="#today" data-view="today"><span class="nav-symbol" aria-hidden="true">01</span><span>Today</span></a>
         <a class="nav-link" href="#year" data-view="year"><span class="nav-symbol" aria-hidden="true">02</span><span>Year plan</span></a>
         <a class="nav-link" href="#workflows" data-view="workflows"><span class="nav-symbol" aria-hidden="true">03</span><span>Workflows</span></a>
         <a class="nav-link" href="#systems" data-view="systems"><span class="nav-symbol" aria-hidden="true">04</span><span>Systems</span></a>
         <a class="nav-link" href="#issues" data-view="issues"><span class="nav-symbol" aria-hidden="true">05</span><span>Issues &amp; handover</span></a>
+        <a class="nav-link nav-companion" href="head-teacher-tas/"><span class="nav-symbol" aria-hidden="true">T</span><span>Head Teacher TAS</span></a>
+        <button class="nav-link nav-reference" type="button" data-action="open-system" data-system-id="head-teacher-guide"><span class="nav-symbol" aria-hidden="true">↗</span><span>VET Reference Guide</span></button>
       </nav>
+      <label class="sidebar-role-control"><span>View work as</span><select id="mobile-role-filter" aria-label="Filter tasks by role in mobile navigation"><option value="all">All work</option></select></label>
       <div class="sidebar-foot">
-        <p class="eyebrow">2026 local candidate</p>
-        <p>This browser only</p>
+        <p class="eyebrow">2027 full-year cycle</p>
+        <p>2026 reference retained</p>
+        <p>Device-local until an approved shared register is connected</p>
         <button class="text-button" type="button" data-action="open-settings">Workspace setup</button>
       </div>
     </aside>
@@ -67,9 +74,10 @@
   </dialog>
   <div id="toast-region" class="toast-region" aria-live="polite" aria-atomic="true"></div>
 
-  <script src="assets/js/data/config.js?v=20260826w"></script>
-  <script src="assets/js/data/tasks.js?v=20260826w"></script>
-  <script src="assets/js/data/reference.js?v=20260826w"></script>
-  <script src="assets/js/app-v2.js?v=20260826w"></script>
+  <script src="assets/js/data/config.js?v=20260830fy1"></script>
+  <script src="assets/js/data/tasks.js?v=20260830fy1"></script>
+  <script src="assets/js/data/term1-2027.js?v=20260830fy1"></script>
+  <script src="assets/js/data/reference.js?v=20260830fy1"></script>
+  <script src="assets/js/app-v2.js?v=20260830fy1"></script>
 </body>
 </html>

@@ -9,19 +9,22 @@
     "go2workplacement": "https://teacher.go2workplacement.com/auth/login",
     "placement-provider-portal": "https://teacher.pathways.cloud/Login",
     "lln-robot": "https://waggawaggarto90333.lln.training/login",
-    "wwhs-drive": workDriveSearch('type:folder "HEAD TEACHER TAS"'),
+    "wwhs-drive": workDriveSearch('type:folder "WWHS VET"'),
     "sentral": "https://waggawagga-h.sentral.com.au/dashboard/",
     "finance-system": "https://selfservice.det.nsw.edu.au/irj/portal",
     "head-teacher-guide": workDriveSearch('"Head Teacher Information For TAS Faculty Wagga Wagga High School"')
   };
   window.VET_WORKBOARD = {
     config: {
-      buildId: "wwhs-vet-compliance-workboard-2026-08-26-gated-v3",
-      version: "3.0.0-public-preview",
-      operatingYear: 2026,
+      productId: "wwhs-vet-compliance-workboard",
+      buildId: "wwhs-vet-compliance-workboard-2027-full-year-v1",
+      compatibleBuildIds: ["wwhs-vet-compliance-workboard-2027-term1-prototype-v1", "wwhs-vet-compliance-workboard-2026-08-26-gated-v3"],
+      version: "4.0.0-2027-full-year-candidate",
+      operatingYear: 2027,
+      referenceYear: 2026,
       operationalStart: "2026-08-26",
-      currentTerm: "Term 3",
-      currentWeek: "Week 6",
+      currentTerm: "2026 reference",
+      currentWeek: "Frozen 26 August snapshot",
       storageKey: "wwhs-vet-compliance-workboard:v3",
       releaseState: "PUBLIC TRAINING PREVIEW — OFFICIAL SYSTEMS REMAIN THE RECORD"
     },
