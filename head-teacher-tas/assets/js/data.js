@@ -140,9 +140,9 @@
       group: "Work-account sources",
       kind: "local",
       status: "front-door",
-      url: "https://docs.google.com/document/d/1g5MMPHgj1Yk1vO7-obIyAaavUj5_w16dDq6ueQ_kyYg/edit?tab=t.0",
-      purpose: "Current 2025–27 faculty plan and school-plan alignment.",
-      note: "Direct Faculty Management Plan supplied by the Head Teacher. Opens in Google Docs."
+      url: "https://docs.google.com/document/d/1g5MMPHgj1Yk1vO7-obIyAaavUj5_w16dDq6ueQ_kyYg/edit?tab=t.4mldvnych0mj",
+      purpose: "2026–2030 faculty priorities, annual milestones and school-plan alignment.",
+      note: "Working Faculty Management Plan, with local endorsement pending. Opens the overview in Google Docs."
     },
     {
       id: "assessment-schedules",
@@ -791,10 +791,10 @@
     {
       id: "annual-plan-alignment",
       title: "Review the Faculty Management Plan and school-plan alignment",
-      summary: "Keep the 2025–27 faculty plan current and turn strategic directions into owned evidence-producing work.",
+      summary: "Review the 2026–2030 faculty plan and turn agreed priorities into clear actions and evidence.",
       area: "faculty", phase: "annual", priority: "high", timing: "Annual setup, term review and material change",
       owner: "Head Teacher TAS", verifier: "Principal or school-improvement delegate", systemIds: ["faculty-plan", "tas-drive"],
-      source: "Current 2025–27 Faculty Management Plan + 2024–27 School Plan", sourceState: "current-local",
+      source: "2026–2030 Faculty Management Plan (working plan) + 2024–27 School Plan", sourceState: "current-local",
       steps: [
         "Confirm the current approved Faculty Management Plan and School Plan versions.",
         "Check that faculty priorities, staff development and evidence align to current school directions.",
