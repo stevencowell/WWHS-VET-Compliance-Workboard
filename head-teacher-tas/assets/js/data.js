@@ -140,9 +140,9 @@
       group: "Work-account sources",
       kind: "local",
       status: "front-door",
-      url: workDriveSearch('type:folder "A2. Faculty Management Plan"'),
+      url: "https://docs.google.com/document/d/1g5MMPHgj1Yk1vO7-obIyAaavUj5_w16dDq6ueQ_kyYg/edit?tab=t.0",
       purpose: "Current 2025–27 faculty plan and school-plan alignment.",
-      note: "Work-account search for the current A2 plan material. Confirm the current approved version after opening it."
+      note: "Direct Faculty Management Plan supplied by the Head Teacher. Opens in Google Docs."
     },
     {
       id: "assessment-schedules",
