@@ -3,6 +3,7 @@
   const workDriveSearch = query => `https://drive.google.com/drive/search?q=${encodeURIComponent(query)}`;
   const staffLinks = {
     "vet-schools-hub": "https://apps.powerapps.com/play/e/default-05a0e69a-418a-47c1-9c25-9387261bf991/a/7cc796b6-8091-4876-81e0-3e1382980246?tenantId=05a0e69a-418a-47c1-9c25-9387261bf991",
+    "course-library": "https://apps.powerapps.com/play/e/default-05a0e69a-418a-47c1-9c25-9387261bf991/a/5a20f480-9b58-422b-b013-303698367f68?tenantId=05a0e69a-418a-47c1-9c25-9387261bf991",
     "document-library": "https://apps.powerapps.com/play/e/default-05a0e69a-418a-47c1-9c25-9387261bf991/a/5c9be746-db94-402d-9a74-420b4c109498?tenantId=05a0e69a-418a-47c1-9c25-9387261bf991",
     "toolbox": "https://schoolsnsw.sharepoint.com/sites/VETforsecondarystudentsToolbox/SitePages/Home.aspx",
     "schools-online": "https://bosho.boardofstudies.nsw.edu.au/links/schoolsonline.html",

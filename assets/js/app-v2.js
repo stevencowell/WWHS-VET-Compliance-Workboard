@@ -22,7 +22,7 @@
   let lastTaskTrigger = null;
   let lastSettingsTrigger = null;
   const directVetEntry = new URLSearchParams(location.search).get("workboard") === "vet";
-  let titleOpen = !directVetEntry && ["", "#today"].includes(location.hash);
+  let titleOpen = !directVetEntry && !location.hash;
   let startOpen = directVetEntry;
 
   const phaseMeta = {
@@ -251,6 +251,7 @@
   function displayToday() { return new Intl.DateTimeFormat("en-AU", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(boardToday); }
   function daysUntil(value) { return value ? Math.round((new Date(`${value}T12:00:00`) - boardToday) / 86400000) : null; }
   function getRecord(id) { return state.records[id] || { status: "not-started", stepChecks: {}, history: [] }; }
+  function hasRecord(task) { return Object.prototype.hasOwnProperty.call(state.records, task.id); }
   function getStatus(task) { return getRecord(task.id).status || "not-started"; }
   function isClosed(task) { return ["verified", "not-applicable"].includes(getStatus(task)); }
   function rolesFor(task) { return Object.values(task.roles || {}).flat().join(" ").toLowerCase(); }
@@ -350,10 +351,12 @@
     const seen = new Set();
     return ranked.filter(task => task && !seen.has(task.id) && seen.add(task.id));
   }
-  function historicalUnconfirmed(task) { return Boolean(task.dueDate && task.dueDate < data.config.operationalStart && getStatus(task) === "not-started"); }
+  function reminderDate(task) { return task.dueDate || task.windowEnd || ""; }
+  function historicalUnconfirmed(task) { return Boolean(reminderDate(task) && reminderDate(task) < boardTodayIso && !hasRecord(task)); }
   function priorityRank(value) { return ({ critical: 0, high: 1, medium: 2, low: 3 })[value] ?? 4; }
 
   function dueBadge(task) {
+    if (!hasRecord(task) && (task.dueDate || task.windowEnd || "9999") < boardTodayIso) return `<span class="badge local">Date passed · status not confirmed</span>`;
     if (isEscalationDue(task)) return `<span class="badge overdue">Escalation due</span>`;
     if (isChaseDue(task)) return `<span class="badge overdue">Chase / review due</span>`;
     if (is2027Task(task)) {
@@ -378,18 +381,18 @@
     if (/where|if |applicable|course specific|scheduled|proposed/i.test(condition)) return "if applicable";
     return "required";
   }
-  function statusPill(task) { const meta = statusMeta[getStatus(task)] || statusMeta["not-started"]; return `<span class="status-pill ${meta.className}">${esc(meta.label)}</span>`; }
+  function statusPill(task) { if (!hasRecord(task)) return `<span class="status-pill status-neutral">Not reviewed here</span>`; const meta = statusMeta[getStatus(task)] || statusMeta["not-started"]; return `<span class="status-pill ${meta.className}">${esc(meta.label)}</span>`; }
 
   function taskCard(task, options = {}) {
     const compact = options.compact ? " is-compact" : "";
     const depState = dependencyState(task), dependencies = [...depState.hardOpen, ...depState.open], future = cycleDateState(task) === "future", earlierGate = is2027Task(task) && !earlier2027GatesComplete(task);
     const blocked = dependencies.length > 0 || future || earlierGate;
     const blockedLabel = depState.missing.length ? "Blocked · prerequisite configuration error" : dependencies.length ? `Blocked · ${dependencies.length} open` : earlierGate ? "Earlier gate open" : future ? `Opens ${shortDate(task.windowStart)}` : "";
-    return `<article class="task-card priority-${esc(task.priority)}${compact}${blocked ? " is-blocked" : ""}"><div class="priority-rail" aria-hidden="true"></div><div class="task-main"><div class="task-meta"><span class="badge">${esc(applicabilityLabel(task))}</span>${dueBadge(task)}${blocked ? `<span class="badge blocked">${esc(blockedLabel)}</span>` : ""}${statusPill(task)}</div><h3>${esc(task.title)}</h3>${options.compact ? "" : `<p class="summary">${esc(task.timing)}</p>`}<p class="task-owner">${esc(assignedRole(task))}</p></div><button class="task-action" type="button" data-action="open-task" data-task-id="${esc(task.id)}">${blocked ? future ? "View timing" : "View blockers" : getStatus(task) === "not-started" ? "Start task" : "Open task"}</button></article>`;
+    return `<article class="task-card priority-${esc(task.priority)}${compact}${blocked ? " is-blocked" : ""}"><div class="priority-rail" aria-hidden="true"></div><div class="task-main"><div class="task-meta"><span class="badge">${esc(applicabilityLabel(task))}</span>${dueBadge(task)}${blocked ? `<span class="badge blocked">${esc(blockedLabel)}</span>` : ""}${statusPill(task)}</div><h3>${esc(task.title)}</h3>${options.compact ? "" : `<p class="summary">${esc(task.timing)}</p>`}<p class="task-owner">${esc(assignedRole(task))}</p></div><button class="task-action" type="button" data-action="open-task" data-task-id="${esc(task.id)}">${blocked ? future ? "View timing" : "View blockers" : !hasRecord(task) ? "Review task" : getStatus(task) === "not-started" ? "Start task" : "Open task"}</button></article>`;
   }
 
   function renderTitle() {
-    route.innerHTML = `<section class="title-page operations-gateway"><div class="gateway-panel"><header class="gateway-head"><div class="gateway-emblem" aria-hidden="true">W</div><div><p class="eyebrow">WAGGA WAGGA HIGH SCHOOL</p><h1>Operations workboards</h1><p>One formal front door to two connected areas of responsibility.</p></div></header><div class="gateway-grid" aria-label="Choose a workboard"><article class="gateway-wing gateway-vet"><div class="gateway-wing-top"><span class="gateway-symbol" aria-hidden="true">V</span><p class="eyebrow">VET COMPLIANCE</p></div><h2>VET Compliance Workboard</h2><p>Annual compliance, RTO delivery, evidence, workplace learning and NESA/RTO actions.</p><div class="gateway-actions"><a class="button gateway-action" href="#cycle-2027">Run the full 2027 cycle</a><button class="button secondary gateway-action" type="button" data-action="enter-workboard">Open 2026 reference</button></div></article><article class="gateway-wing gateway-tas"><div class="gateway-wing-top"><span class="gateway-symbol" aria-hidden="true">T</span><p class="eyebrow">HEAD TEACHER TAS</p></div><h2>Head Teacher TAS Workboard</h2><p>Faculty calendar, teaching and reporting, operations, people and safety.</p><a class="button gateway-action" href="head-teacher-tas/">Open Head Teacher TAS</a></article></div><footer class="gateway-foot"><strong>Choose the role you are working in.</strong><span>Each workboard leads to the authorised school systems; neither replaces the official record.</span></footer></div></section>`;
+    route.innerHTML = `<section class="page dash-home"><header class="page-heading"><div><p class="eyebrow">YOUR WORK AREAS</p><h1>VET &amp; Head Teacher dashboard</h1><p>Open an everyday link above, or choose the work you need below.</p></div></header><nav class="dash-workareas" aria-label="Work areas"><a class="dash-workarea" href="#today"><strong>VET Today →</strong><span>Saved follow-ups and dates to check.</span></a><a class="dash-workarea" href="head-teacher-tas/#today"><strong>Head Teacher Today →</strong><span>Faculty reminders and current follow-ups.</span></a><a class="dash-workarea" href="#ai-admin"><strong>AI Admin →</strong><span>Prepare a job for Codex or ChatGPT.</span></a><a class="dash-workarea" href="head-teacher-tas/#calendar"><strong>Calendar &amp; reporting →</strong><span>School dates, reports and teaching milestones.</span></a><a class="dash-workarea" href="#cycle-2027"><strong>2027 annual cycle →</strong><span>Plan and work through the four terms.</span></a><a class="dash-workarea" href="#systems"><strong>All systems &amp; sources →</strong><span>Browse the full link library and mapped references.</span></a></nav><p class="dash-note">Task progress is saved in this browser. Use the linked school systems for the current records and documents.</p></section>`;
   }
 
   function renderWelcome() {
@@ -429,7 +432,14 @@
     return url ? `<a class="system-link" href="${esc(url)}" target="_blank" rel="noopener"><span>${esc(system.label)}</span><span aria-hidden="true">↗</span></a>` : `<button class="system-link is-unset" type="button" data-action="open-settings"><span>${esc(system.label)}</span><span>Set link</span></button>`;
   }
   function changePanel() { return `<section class="change-panel"><div><p class="eyebrow">Source watch</p><h2>The workboard caught a changed date</h2><p>The current NESA workbook moved the 2026 school-delivered VET USI due date to <strong>2 April</strong>. The older WWHS copy still shows 27 February and should not control future action.</p></div><a href="#issues" class="button secondary">See changes and gaps</a></section>`; }
-  function renderToday() { if (titleOpen) return renderTitle(); if (state.activeCycle === "2027") return renderCycle2027(); if (startOpen || !state.experience) return renderWelcome(); if (state.experience === "guided") return renderGuidedToday(); renderFullToday(); }
+  function renderToday() {
+    const saved = allTasks.filter(task => roleMatches(task) && hasRecord(task) && !isClosed(task));
+    saved.sort((a,b) => Number(isEscalationDue(b)) - Number(isEscalationDue(a)) || Number(isChaseDue(b)) - Number(isChaseDue(a)) || String(getRecord(a.id).reviewDate || a.dueDate || "9999").localeCompare(String(getRecord(b.id).reviewDate || b.dueDate || "9999")));
+    const currentYearTasks = boardToday.getFullYear() === 2027 ? cycleTasks : boardToday.getFullYear() === 2026 ? tasks : [];
+    const dated = currentYearTasks.filter(task => roleMatches(task) && !isClosed(task) && reminderDate(task) && daysUntil(reminderDate(task)) >= 0 && daysUntil(reminderDate(task)) <= 21).sort((a,b) => reminderDate(a).localeCompare(reminderDate(b)));
+    const unreviewed = currentYearTasks.filter(task => roleMatches(task) && historicalUnconfirmed(task));
+    route.innerHTML = `<section class="page"><header class="page-heading"><div><p class="eyebrow">${esc(displayToday())}</p><h1>VET Today</h1><p>Follow up the work you have recorded and check upcoming dates in the live source.</p></div><a class="button secondary" href="#cycle-2027">Open 2027 annual cycle</a></header><div class="section-heading"><div><h2>Recorded follow-ups</h2><p>Only tasks with a saved status in this browser appear here.</p></div></div><div class="task-list">${saved.length ? saved.slice(0,6).map(task => taskCard(task,{compact:true})).join("") : '<p class="dash-note">No open follow-ups recorded here. Your everyday links are ready to use.</p>'}</div>${saved.length > 6 ? '<details class="dash-review"><summary>Show all '+saved.length+' recorded follow-ups</summary><div class="task-list">'+saved.slice(6).map(task => taskCard(task,{compact:true})).join('')+'</div></details>' : ''}<section class="dash-review"><h2>Dates to check · next 21 days</h2><p>These reminders use the workboard’s dated source material. Check the current school calendar and NESA/RTO source before acting.</p><div class="task-list">${dated.length ? dated.map(task=>taskCard(task,{compact:true})).join("") : '<p>No dated reminders in this window. Check the live calendar for additions or changes.</p>'}</div><a href="https://www.nsw.gov.au/education-and-training/nesa/key-dates/timetable-of-actions" target="_blank" rel="noopener noreferrer">Open NESA live dates ↗</a></section>${unreviewed.length ? '<details class="dash-review"><summary>Review earlier dates · '+unreviewed.length+' statuses not confirmed</summary><p>These dates have passed, but no status has been recorded here. Check the official record and save the applicable status; the dashboard does not assume the work was missed.</p><div class="task-list">'+unreviewed.map(task=>taskCard(task,{compact:true})).join('')+'</div></details>' : ''}<div class="dash-workareas"><a class="dash-workarea" href="#workflows"><strong>Recurring &amp; event-driven work →</strong><span>Open a workflow when it is needed.</span></a><a class="dash-workarea" href="#reference"><strong>2026 reference snapshot →</strong><span>The saved August reference and guided introduction.</span></a><a class="dash-workarea" href="head-teacher-tas/#today"><strong>Head Teacher Today →</strong><span>Faculty dates and recorded follow-ups.</span></a></div></section>`;
+  }
 
   function cycleReadyQueue() {
     return [...eventOccurrenceTasks, ...cycleTasks]
@@ -581,7 +591,7 @@
   function renderSystems() {
     const groups = [...new Set(data.systems.map(system => system.group))];
     const sources = sourceLibraryItems();
-    route.innerHTML = `<section class="page"><header class="page-heading"><div><p class="eyebrow">Open the right place first · ${state.activeCycle === "2027" ? "2027 cycle" : "2026 reference"}</p><h1>Systems &amp; sources</h1><p>Plain-language launch points for the authorised systems that own the work. Verified front doors are built in; local-only routes stay on this browser and sign-in still applies.</p></div><button class="button" type="button" data-action="open-settings">Review staff links</button></header><aside class="notice compact-notice"><span class="notice-icon" aria-hidden="true">i</span><div><strong>Signed-in work account required</strong><p>Before acting, confirm the authorised education account and the current source version. A familiar saved link can still be stale.</p></div></aside>${headTeacherGuidePanel()}${groups.map(group => { const items = data.systems.filter(system => system.group === group && !system.hideCard && (!system.showWhenReady || effectiveLink(system))); return items.length ? `<section class="system-group"><div class="section-heading"><div><h2>${esc(group)}</h2></div></div><div class="system-cards">${items.map(systemCard).join("")}</div></section>` : ""; }).join("")}<details class="source-library"><summary>Open the ${state.activeCycle === "2027" ? "current-cycle" : "reference"} authority and source register <span>${sources.length} mapped sources</span></summary><div class="source-list">${sources.map(sourceCard).join("")}</div></details></section>`;
+    route.innerHTML = `<section class="page"><header class="page-heading"><div><p class="eyebrow">Open the right place first · ${state.activeCycle === "2027" ? "2027 cycle" : "2026 reference"}</p><h1>Systems &amp; sources</h1><p>Plain-language launch points for the authorised systems that own the work. System links and Drive searches are labelled by destination. Links you add stay in this browser; sign-in still applies.</p></div><button class="button" type="button" data-action="open-settings">Review staff links</button></header><aside class="notice compact-notice"><span class="notice-icon" aria-hidden="true">i</span><div><strong>Signed-in work account required</strong><p>Before acting, confirm the authorised education account and the current source version. A familiar saved link can still be stale.</p></div></aside>${headTeacherGuidePanel()}${groups.map(group => { const items = data.systems.filter(system => system.group === group && !system.hideCard && (!system.showWhenReady || effectiveLink(system))); return items.length ? `<section class="system-group"><div class="section-heading"><div><h2>${esc(group)}</h2></div></div><div class="system-cards">${items.map(systemCard).join("")}</div></section>` : ""; }).join("")}<details class="source-library"><summary>Open the ${state.activeCycle === "2027" ? "current-cycle" : "reference"} authority and source register <span>${sources.length} mapped sources</span></summary><div class="source-list">${sources.map(sourceCard).join("")}</div></details></section>`;
   }
   function sourceLibraryItems() {
     if (state.activeCycle !== "2027") return data.sources;
@@ -601,11 +611,12 @@
     if (!guide?.sections?.length) return "";
     const system = data.systems.find(item => item.id === "head-teacher-guide");
     const ready = system && Boolean(effectiveLink(system));
-    return `<details class="reference-map"><summary><span>${esc(guide.title)}</span><small>${guide.sections.length} sections mapped · opens only when needed</small></summary><div class="reference-map-body"><div class="reference-map-intro"><div><p>${esc(guide.description)}</p><small><strong>Direct staff reference:</strong> opens the guide at the requested heading. Access follows the current Google sharing settings; the sharing review remains open.</small></div><button class="button ${ready ? "secondary" : "quiet"}" type="button" data-action="open-system" data-system-id="head-teacher-guide">${ready ? "Open reference guide ↗" : "Set private staff link"}</button></div><div class="reference-section-list">${guide.sections.map(section => `<article class="reference-section-row"><span class="reference-section-code">${esc(section.code)}</span><div><h3>${esc(section.title)}</h3><p>${esc(section.covered)}</p><small><strong>Keep in the reference guide:</strong> ${esc(section.keep)}</small><nav aria-label="${esc(section.title)} workboard destinations">${section.links.map(([label, href]) => `<a href="${esc(href)}">${esc(label)}</a>`).join("")}</nav></div></article>`).join("")}</div></div></details>`;
+    return `<details class="reference-map"><summary><span>${esc(guide.title)}</span><small>${guide.sections.length} sections mapped · opens only when needed</small></summary><div class="reference-map-body"><div class="reference-map-intro"><div><p>${esc(guide.description)}</p><small><strong>Direct staff reference:</strong> opens the saved staff destination, or searches Drive for the guide when no direct link is set.</small></div><button class="button ${ready ? "secondary" : "quiet"}" type="button" data-action="open-system" data-system-id="head-teacher-guide">${ready ? "Open reference guide ↗" : "Set private staff link"}</button></div><div class="reference-section-list">${guide.sections.map(section => `<article class="reference-section-row"><span class="reference-section-code">${esc(section.code)}</span><div><h3>${esc(section.title)}</h3><p>${esc(section.covered)}</p><small><strong>Keep in the reference guide:</strong> ${esc(section.keep)}</small><nav aria-label="${esc(section.title)} workboard destinations">${section.links.map(([label, href]) => `<a href="${esc(href)}">${esc(label)}</a>`).join("")}</nav></div></article>`).join("")}</div></div></details>`;
   }
   function systemCard(system) {
     const url = effectiveLink(system);
-    return `<article class="system-card"><div class="system-card-head"><span class="system-kind">${esc(system.kind)}</span><span class="link-state ${url ? "is-ready" : ""}">${url ? "Link ready" : "Needs local link"}</span></div><h3>${esc(system.label)}</h3><p>${esc(system.purpose)}</p><small>${esc(system.boundary)}</small>${url ? `<a class="button secondary" href="${esc(url)}" target="_blank" rel="noopener">Open system</a>` : `<button class="button quiet" type="button" data-action="open-settings">Set link</button>`}</article>`;
+    const destination = window.WWHS_DASHBOARD.destinationLabel(url);
+    return `<article class="system-card"><div class="system-card-head"><span class="system-kind">${esc(system.kind)}</span><span class="link-state ${url ? "is-ready" : ""}">${url ? destination === "Find in Drive" ? "Search link" : "Link available" : "Needs local link"}</span></div><h3>${esc(system.label)}</h3><p>${esc(system.purpose)}</p><small>${esc(system.boundary)}</small>${url ? `<a class="button secondary" href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(destination)}</a>` : `<button class="button quiet" type="button" data-action="open-settings">Set link</button>`}</article>`;
   }
   function sourceCard(source) { return `<article class="source-card"><div><span class="source-access">${esc(source.access)}</span><h3>${esc(source.title)}</h3><p>${esc(source.owner)} · checked ${esc(source.verified)}</p><small>${esc(source.note)}</small></div>${source.url ? `<a href="${esc(source.url)}" target="_blank" rel="noopener">Open approved location ↗</a>` : `<span class="controlled-label">Open through approved staff system</span>`}</article>`; }
 
@@ -787,10 +798,13 @@
   }
 
   function currentView() {
-    const view = (location.hash || "#today").slice(1), allowed = ["today", "cycle-2027", "term1-2027", "term2-2027", "term3-2027", "term4-2027", "year", "workflows", "systems", "issues"];
-    if (!allowed.includes(view)) { history.replaceState(null, "", "#today"); return "today"; }
+    const view = (location.hash || (directVetEntry ? "#today" : "#home")).slice(1);
+    if (view.startsWith("task/")) return "task";
+    const allowed = ["home", "today", "reference", "ai-admin", "cycle-2027", "term1-2027", "term2-2027", "term3-2027", "term4-2027", "year", "workflows", "systems", "issues"];
+    if (!allowed.includes(view)) { history.replaceState(null, "", "#home"); return "home"; }
     return view;
   }
+
   function isCycleView(view) { return ["cycle-2027", "term1-2027", "term2-2027", "term3-2027", "term4-2027"].includes(view); }
   function syncCycleRoute(view) {
     if (!isCycleView(view)) return;
@@ -817,13 +831,13 @@
   function render(focusMain = false) {
     const view = currentView();
     syncCycleRoute(view);
-    const showingTitle = view === "today" && titleOpen;
-    const showingWelcome = view === "today" && !titleOpen && state.activeCycle !== "2027" && (startOpen || !state.experience);
-    const showingCycle = isCycleView(view) || (view === "today" && state.activeCycle === "2027" && !showingTitle) || (view === "year" && state.activeCycle === "2027");
+    const showingTitle = view === "home";
+    const showingWelcome = view === "reference" && !state.experience;
+    const showingCycle = isCycleView(view) || (view === "year" && state.activeCycle === "2027");
     document.title = showingTitle ? "WWHS Operations Workboards" : showingCycle ? "Run 2027 · WWHS VET Compliance Workboard" : "WWHS VET Compliance Workboard";
     document.body.classList.toggle("is-title", showingTitle);
     document.body.classList.toggle("is-welcome", showingWelcome);
-    document.body.classList.toggle("is-guided", view === "today" && !titleOpen && !startOpen && state.experience === "guided");
+    document.body.classList.toggle("is-guided", view === "reference" && state.experience === "guided");
     document.body.classList.toggle("is-cycle-2027", showingCycle);
     document.body.classList.toggle("is-term1", showingCycle);
     document.body.classList.toggle("is-term1-guided", showingCycle && state.cycle2027Mode === "guided");
@@ -832,6 +846,16 @@
       link.classList.toggle("is-active", active);
       if (active) link.setAttribute("aria-current", "page"); else link.removeAttribute("aria-current");
     });
+    if (view === "home") renderTitle();
+    if (view === "reference") { if (!state.experience) renderWelcome(); else if (state.experience === "guided") renderGuidedToday(); else renderFullToday(); }
+    if (view === "ai-admin") { route.innerHTML = window.WWHS_AI_ADMIN.render(); window.WWHS_AI_ADMIN.bind(route); }
+    if (view === "task") {
+      let id = ""; try { id = decodeURIComponent(location.hash.slice(6)); } catch (_) {}
+      const targetTask = taskById(id);
+      history.replaceState(null, "", targetTask && is2027Task(targetTask) ? "#cycle-2027" : "#today");
+      render();
+      if (targetTask) queueMicrotask(() => openTask(id)); else toast("That task was not found. Use search to find the current task.", "error");
+    }
     if (view === "today") renderToday(); if (isCycleView(view)) renderCycle2027(); if (view === "year") renderYear(); if (view === "workflows") renderWorkflows(); if (view === "systems") renderSystems(); if (view === "issues") renderIssues();
     closeNavigation();
     if (focusMain) queueMicrotask(() => document.getElementById("main-content")?.focus({ preventScroll: true }));
@@ -851,7 +875,7 @@
     if (action === "toggle-nav") { const open = document.body.classList.toggle("nav-open"); target.setAttribute("aria-expanded", String(open)); document.querySelector(".nav-scrim").hidden = !open; }
     if (action === "close-nav") closeNavigation();
     if (action === "toggle-guidance") { state.guidance = !state.guidance; saveState(); updateGuidanceToggle(); toast(state.guidance ? "Plain-English guidance is available inside tasks" : "Guidance hidden for a faster work view"); }
-    if (action === "enter-workboard") { titleOpen = false; startOpen = true; state.activeCycle = "2026"; saveState(); render(true); }
+    if (action === "enter-workboard") { titleOpen = false; startOpen = true; state.activeCycle = "2026"; saveState(); location.hash = "#reference"; render(true); }
     if (action === "choose-experience") { startOpen = false; state.experience = target.dataset.experience; state.guidance = state.experience === "guided"; saveState(); updateGuidanceToggle(); render(); }
     if (action === "set-cycle-mode") { state.cycle2027Mode = target.dataset.mode === "full" ? "full" : "guided"; state.guidance = state.cycle2027Mode === "guided"; saveState(); updateGuidanceToggle(); if (state.cycle2027Mode === "guided" && ["year", "term2-2027", "term3-2027", "term4-2027"].includes(currentView())) location.hash = "#cycle-2027"; else render(true); }
     if (action === "select-cycle-term") { const term = Math.max(1, Math.min(4, Number(target.dataset.term) || 1)); state.selected2027Term = term; state.selected2027Week = term === 1 ? 0 : 1; state.cycle2027Mode = "full"; state.activeCycle = "2027"; saveState(); location.hash = `#term${term}-2027`; }

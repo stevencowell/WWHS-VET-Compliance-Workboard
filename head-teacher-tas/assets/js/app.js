@@ -8,9 +8,9 @@
   const settingsDialog = document.getElementById("settings-dialog");
   const settingsContent = document.getElementById("settings-content");
   const toastRegion = document.getElementById("toast-region");
-  const currentDate = startOfDay(new Date());
-  const currentIso = isoDate(currentDate);
-  const operatingYearIsCurrent = currentDate.getFullYear() === data.config.operatingYear;
+  let currentDate = startOfDay(new Date());
+  let currentIso = isoDate(currentDate);
+  let operatingYearIsCurrent = currentDate.getFullYear() === data.config.operatingYear;
   let lastTaskTrigger = null;
   let lastSettingsTrigger = null;
   let taskStateDirty = false;
@@ -149,6 +149,12 @@
     return result;
   }
 
+  function refreshDate() {
+    currentDate = startOfDay(new Date());
+    currentIso = isoDate(currentDate);
+    operatingYearIsCurrent = currentDate.getFullYear() === data.config.operatingYear;
+  }
+
   function isoDate(date) {
     const offset = date.getTimezoneOffset();
     return new Date(date.getTime() - offset * 60000).toISOString().slice(0, 10);
@@ -194,7 +200,9 @@
     const dueDate = activeDueDate(task);
     if (!dueDate) return "Milestones complete · verify closure";
     if (!operatingYearIsCurrent) return `${shortDate(dueDate)} · 2026 baseline`;
+    if (isClosed(task)) return `${shortDate(dueDate)} · closed here`;
     const days = daysUntil(dueDate);
+    if (days < 0 && !hasReviewedRecord(task)) return "Date passed · status not confirmed";
     if (days < 0) return `${Math.abs(days)} day${Math.abs(days) === 1 ? "" : "s"} overdue`;
     if (days === 0) return "Due today";
     if (days === 1) return "Due tomorrow";
@@ -255,6 +263,10 @@
     return state.records[recordKey(task)] || { status: "not-started", steps: {}, milestones: {} };
   }
 
+  function hasReviewedRecord(task) {
+    return Object.prototype.hasOwnProperty.call(state.records, recordKey(task));
+  }
+
   function statusFor(task) {
     return recordFor(task).status || "not-started";
   }
@@ -280,6 +292,7 @@
   function statusPill(task) {
     if (task.historyOnly) return `<span class="pill status muted">2026 baseline</span>`;
     if (task.procedureOnly) return `<span class="pill status muted">Procedure only</span>`;
+    if (!hasReviewedRecord(task)) return `<span class="pill status muted">Not reviewed here</span>`;
     const status = statusFor(task);
     const meta = statusMeta[status];
     return `<span class="pill status ${meta.className}">${esc(meta.label)}</span>`;
@@ -292,12 +305,34 @@
   }
 
   function currentRoute() {
+    const task = taskFromRoute();
+    if (task) return areaMeta[task.area]?.route || "today";
     const value = (location.hash || "#home").slice(1).split("?")[0];
-    const allowed = ["home", "today", "calendar", "teaching", "faculty", "people", "reference"];
+    const allowed = ["home", "today", "calendar", "teaching", "faculty", "people", "reference", "ai-admin"];
     return allowed.includes(value) ? value : "home";
   }
 
+  function taskFromRoute() {
+    if (!location.hash.startsWith("#task/")) return null;
+    try {
+      const id = decodeURIComponent(location.hash.slice(6));
+      return data.tasks.find(task => task.id === id) || null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function renderRoute() {
+    const task = taskFromRoute();
+    if (taskDialog.open) taskDialog.close();
+    if (task) history.replaceState(null, "", `#${areaMeta[task.area]?.route || "today"}`);
+    render();
+    if (task) openTask(task.id);
+    else document.getElementById("main-content")?.focus({ preventScroll: true });
+  }
+
   function render() {
+    refreshDate();
     const route = currentRoute();
     document.body.dataset.route = route;
     document.querySelectorAll(".route-nav [data-route]").forEach(link => {
@@ -313,6 +348,10 @@
     else if (route === "today") renderToday();
     else if (route === "calendar") renderCalendar();
     else if (["teaching", "faculty", "people"].includes(route)) renderArea(route);
+    else if (route === "ai-admin") {
+      routeContent.innerHTML = window.WWHS_AI_ADMIN?.render() || `<div class="page-wrap"><h1>AI Admin</h1><p>This section is unavailable. Reload the page to try again.</p></div>`;
+      window.WWHS_AI_ADMIN?.bind(routeContent);
+    }
     else renderReference();
 
     closeNavigation();
@@ -330,96 +369,64 @@
   function privacyBanner() {
     const task = data.tasks.find(item => item.id === "source-sharing-review");
     if (!task || isClosed(task)) return "";
-    return `<aside class="alert-banner danger"><strong>Drive sharing still needs attention.</strong><span>Approved staff hubs are connected, but sign-in and restrictive permissions remain essential. Never add case-specific or sensitive descendant links.</span><button type="button" data-action="open-task" data-task-id="source-sharing-review">Show the safe fix</button></aside>`;
+    return `<details class="standing-panel"><summary>Staff-source access and sharing</summary><p>Some saved routes open a Drive search or portal. Use the school account and check the current document and its access settings before relying on it.</p><button class="button quiet compact" type="button" data-action="open-task" data-task-id="source-sharing-review">Review source access</button></details>`;
   }
 
   function renderHome() {
-    routeContent.innerHTML = `
-      <section class="landing">
-        <div class="landing-inner">
-          <p class="eyebrow">WWHS OPERATIONS WORKBOARDS</p>
-          <h1>Head Teacher TAS</h1>
-          <p class="landing-lead">Start with the next real action. Open the broader controls only when you need them.</p>
-          <div class="landing-actions">
-            <button class="button primary large" type="button" data-action="start-guided">Show me the next action</button>
-            <button class="button secondary large" type="button" data-action="start-fast">Open calendar &amp; work areas</button>
-          </div>
-          <p class="landing-note">No student, staff, health, incident, report or finance details belong in this workboard.</p>
-        </div>
-      </section>
-
-      <section class="wing-grid" aria-label="WWHS workboard wings">
-        <article class="wing-card active-wing">
-          <div class="wing-icon" aria-hidden="true">T</div>
-          <div><p class="eyebrow">THIS WING</p><h2>Head Teacher TAS</h2><p>Calendar, teaching and reporting, faculty operations, people and safety.</p></div>
-          <button class="text-link" type="button" data-action="start-guided">Start Head Teacher work →</button>
-        </article>
-        <article class="wing-card companion-wing">
-          <div class="wing-icon vet" aria-hidden="true">V</div>
-          <div><p class="eyebrow">COMPANION WING</p><h2>VET Compliance</h2><p>Delivery authority, RTO evidence, placement, NESA/VET data and annual VET controls.</p></div>
-          <a class="text-link" href="../?workboard=vet#today">Open VET workboard ↗</a>
-        </article>
-      </section>
-
-      <section class="calm-start">
-        <div><p class="eyebrow">HOW THIS WORKS</p><h2>One operational spine</h2><p>Today → Calendar → Teaching &amp; reporting → Faculty operations → People &amp; safety → Reference library.</p></div>
-        <ol class="start-steps">
-          <li><span>1</span><strong>Do the action</strong><small>Work in the authorised school system.</small></li>
-          <li><span>2</span><strong>Check the result</strong><small>Use the stated “Done when” test.</small></li>
-          <li><span>3</span><strong>Record a safe pointer</strong><small>Never copy the actual evidence here.</small></li>
-        </ol>
-      </section>
-      ${privacyBanner()}
-      ${yearBanner()}`;
+    const areas = [
+      ["today", "Today", "Upcoming dates and follow-ups you have recorded here."],
+      ["calendar", "Calendar", "School dates, reporting milestones and annual planning."],
+      ["teaching", "Teaching & reporting", "Programs, assessment, reporting and course quality."],
+      ["faculty", "Faculty operations", "Meetings, budget, equipment and workshop resources."],
+      ["people", "People & safety", "Staff support, safety and event-driven procedures."],
+      ["reference", "Systems & documents", "School portals, staff sources and reference material."]
+    ];
+    routeContent.innerHTML = `<div class="page-wrap">
+      ${pageHeader("YOUR WORK AREAS", "Head Teacher TAS", "Open the section you need. Your regular systems are in the quick links above.")}
+      <nav class="card-grid" aria-label="Head Teacher work areas">${areas.map(([href, label, description]) => `<article class="task-card"><h3>${esc(label)}</h3><p>${esc(description)}</p><div class="task-card-foot"><a class="button quiet compact" href="#${href}">Open ${esc(label)} →</a></div></article>`).join("")}</nav>
+      ${yearBanner()}
+      <details class="standing-panel"><summary>Using this workboard</summary><p>Use Today for date reminders and local follow-ups. Detailed guidance is available when you open a task. “Not reviewed here” means no progress has been recorded in this browser; it does not mean the work was missed.</p><p>Official records stay in the school systems. This browser saves only your local workboard progress.</p><a class="text-link" href="../?workboard=vet#today">Open VET workboard →</a></details>
+    </div>`;
   }
 
   function activeDueTasks() {
     return data.tasks
-      .filter(task => task.dueDate && !task.historyOnly && !isClosed(task))
+      .filter(task => task.dueDate && !task.historyOnly && !task.procedureOnly && !isClosed(task))
       .sort((a, b) => queueDueDate(a).localeCompare(queueDueDate(b)));
   }
 
-  function nextTaskList() {
-    const dated = activeDueTasks();
-    if (!operatingYearIsCurrent) {
-      const annual = data.tasks.find(task => task.id === "annual-calendar-control");
-      return [annual, ...dated].filter(Boolean);
+  function reminderDate(task) {
+    if (!hasReviewedRecord(task) && task.milestones?.length) {
+      return task.milestones.find(item => item.date >= currentIso)?.date || queueDueDate(task);
     }
-    const actionable = dated.filter(task => daysUntil(queueDueDate(task)) >= -21);
-    return actionable.length ? actionable : dated;
+    return queueDueDate(task);
+  }
+
+  function recordedFollowUps() {
+    const rank = { exception: 0, waiting: 1, "in-progress": 2, "not-started": 3 };
+    return data.tasks.filter(task => !task.historyOnly && !task.procedureOnly && hasReviewedRecord(task) && !isClosed(task))
+      .sort((a, b) => (rank[statusFor(a)] ?? 4) - (rank[statusFor(b)] ?? 4) || (queueDueDate(a) || "9999").localeCompare(queueDueDate(b) || "9999"));
   }
 
   function renderToday() {
-    const queue = nextTaskList();
-    const fallback = data.tasks
-      .filter(task => !task.historyOnly && !task.procedureOnly && task.phase !== "triggered" && !isClosed(task))
-      .sort((a, b) => ({ critical: 0, high: 1, routine: 2 }[a.priority] ?? 3) - ({ critical: 0, high: 1, routine: 2 }[b.priority] ?? 3))[0];
-    const next = queue[0] || fallback;
-    const coming = queue.slice(1, 5);
-    const olderOverdue = activeDueTasks().filter(task => daysUntil(queueDueDate(task)) < -21);
+    const followUps = recordedFollowUps();
+    const upcoming = operatingYearIsCurrent ? activeDueTasks().filter(task => reminderDate(task) >= currentIso)
+      .sort((a, b) => reminderDate(a).localeCompare(reminderDate(b))).slice(0, 6) : [];
+    const unreviewedPast = activeDueTasks().filter(task => !hasReviewedRecord(task) && queueDueDate(task) < currentIso);
     const week = weekKey();
     const checks = safeObject(state.weekly[week]);
     const completedChecks = data.weeklyChecks.filter((_, index) => checks[index] === true).length;
-    const openExceptions = data.tasks.filter(task => statusFor(task) === "exception").length;
-    const standing = data.tasks
-      .filter(task => !task.dueDate && task.phase !== "triggered" && !isClosed(task) && ["critical", "high"].includes(task.priority))
-      .sort((a, b) => (a.priority === "critical" ? -1 : 0) - (b.priority === "critical" ? -1 : 0));
     const actions = `<a class="button secondary compact" href="#calendar">Open full calendar</a>`;
 
     routeContent.innerHTML = `<div class="page-wrap">
-      ${pageHeader(currentTermLabel(), "Your next step", "Do the nearest action first. The rest of the workboard will wait.", actions)}
+      ${pageHeader(currentTermLabel(), "Today", "Upcoming dates and the follow-ups you have recorded in this browser.", actions)}
       ${yearBanner()}
-      ${privacyBanner()}
-      <aside class="privacy-strip"><strong>Keep personal information out of this workboard.</strong><span>Complete the real action and retain its evidence in the authorised system.</span></aside>
-      ${next ? nextActionCard(next) : `<section class="empty-state"><h2>No open dated action</h2><p>Check the weekly rhythm and calendar for the next scheduled control.</p></section>`}
-      ${coming.length ? `<section class="coming-section"><div class="section-heading"><div><h2>Coming next</h2><p>A preview only—nothing else to action yet.</p></div></div><div class="coming-list">${coming.map((task, index) => comingRow(task, index + 2)).join("")}</div></section>` : ""}
-      ${olderOverdue.length ? `<details class="standing-panel overdue-panel"><summary>${olderOverdue.length} older open control${olderOverdue.length === 1 ? "" : "s"} need reconciliation</summary><p>These are not allowed to block Today, but each needs verification, a not-applicable decision or an owned exception.</p><div class="coming-list">${olderOverdue.map((task, index) => comingRow(task, index + 1)).join("")}</div></details>` : ""}
-      <section class="weekly-panel">
-        <div class="section-heading"><div><p class="eyebrow">WEEKLY CONTROL</p><h2>Five-minute scan</h2><p>${completedChecks} of ${data.weeklyChecks.length} checks recorded for the week beginning ${shortDate(week)}.</p></div><span class="progress-number">${completedChecks}/${data.weeklyChecks.length}</span></div>
+      <section class="coming-section"><div class="section-heading"><div><h2>Recorded follow-ups</h2><p>${followUps.length ? `${followUps.length} open item${followUps.length === 1 ? "" : "s"} you have recorded here.` : "No follow-ups recorded in this browser. Your school systems remain the record."}</p></div></div>${followUps.length ? `<div class="coming-list">${followUps.map((task, index) => comingRow(task, index + 1)).join("")}</div>` : ""}</section>
+      <section class="coming-section"><div class="section-heading"><div><h2>Upcoming dates to check</h2><p>Next listed dates from the calendar checked on 26 August 2026. Confirm them in the live staff calendar.</p></div></div>${upcoming.length ? `<div class="coming-list">${upcoming.map((task, index) => comingRow(task, index + 1, `Listed ${shortDate(reminderDate(task))} · check live calendar`)).join("")}</div>` : `<p class="empty-line">${operatingYearIsCurrent ? "No later dates are listed in this calendar snapshot." : "Refresh the school calendar before using dates for this year."}</p>`}</section>
+      ${unreviewedPast.length ? `<details class="standing-panel"><summary>Review past dates (${unreviewedPast.length} not reviewed here)</summary><p>These dates have passed, but this browser has no recorded status. They are not assumed to be missed work. Check the school record before adding a status.</p><div class="coming-list">${unreviewedPast.map((task, index) => comingRow(task, index + 1)).join("")}</div></details>` : ""}
+      <details class="standing-panel"><summary>Five-minute weekly scan · ${completedChecks} checks recorded</summary><p>Week beginning ${shortDate(week)}. These ticks are local reminders.</p>
         <div class="weekly-checks">${data.weeklyChecks.map((label, index) => `<label><input type="checkbox" data-weekly-check="${index}" ${checks[index] ? "checked" : ""}><span>${esc(label)}</span></label>`).join("")}</div>
-      </section>
-      ${standing.length ? `<details class="standing-panel"><summary>${standing.length} standing assurance control${standing.length === 1 ? "" : "s"}</summary><p>These matter, but they do not replace the dated action above.</p><div class="coming-list">${standing.slice(0, 6).map((task, index) => comingRow(task, index + 1)).join("")}</div><a class="text-link" href="#${esc(areaMeta[standing[0].area]?.route || "calendar")}">Open the full work areas →</a></details>` : ""}
-      ${openExceptions ? `<aside class="alert-banner warning"><strong>${openExceptions} owned exception${openExceptions === 1 ? "" : "s"} remain open.</strong><span>Review these in the relevant work area.</span></aside>` : ""}
+      </details>
     </div>`;
   }
 
@@ -435,8 +442,8 @@
     </article>`;
   }
 
-  function comingRow(task, number) {
-    return `<button class="coming-row" type="button" data-action="open-task" data-task-id="${esc(task.id)}"><span class="row-number">${String(number).padStart(2, "0")}</span><span><strong>${esc(task.title)}</strong><small>${esc(dueLabel(task))}</small></span>${statusPill(task)}</button>`;
+  function comingRow(task, number, timing = dueLabel(task)) {
+    return `<button class="coming-row" type="button" data-action="open-task" data-task-id="${esc(task.id)}"><span class="row-number">${String(number).padStart(2, "0")}</span><span><strong>${esc(task.title)}</strong><small>${esc(timing)}</small></span>${statusPill(task)}</button>`;
   }
 
   function renderCalendar() {
@@ -449,7 +456,7 @@
       ${pageHeader("2026 CONTROL CALENDAR", "Dates, milestones and lead time", "Exact 2026 dates come from the live Staff School Calendar. Future years require a fresh calendar audit.", `<button class="button secondary compact" type="button" data-action="launch-system" data-system-id="staff-calendar">Open live calendar ↗</button>`)}
       ${yearBanner()}
       <section class="calendar-callout"><div><span>Calendar checked</span><strong>26 August 2026</strong></div><p>The school year pattern is useful for planning, but the dates below must not be rolled into another year without verification.</p><button type="button" data-action="open-task" data-task-id="annual-calendar-control">Annual refresh process</button></section>
-      <section class="timeline-section"><div class="section-heading"><div><h2>${operatingYearIsCurrent ? "Current and coming" : "2026 dated baseline"}</h2><p>${upcoming.length} dated control${upcoming.length === 1 ? "" : "s"}, including recent overdue work.</p></div></div><div class="timeline">${upcoming.map(calendarItem).join("") || `<p class="empty-line">No later 2026 dates remain.</p>`}</div></section>
+      <section class="timeline-section"><div class="section-heading"><div><h2>${operatingYearIsCurrent ? "Current and coming" : "2026 dated baseline"}</h2><p>${upcoming.length} listed date${upcoming.length === 1 ? "" : "s"}. Dates alone do not confirm whether work is complete.</p></div></div><div class="timeline">${upcoming.map(calendarItem).join("") || `<p class="empty-line">No later 2026 dates remain.</p>`}</div></section>
       ${elapsed.length ? `<details class="elapsed"><summary>Earlier 2026 dates (${elapsed.length})</summary><div class="timeline compact-timeline">${elapsed.map(calendarItem).join("")}</div></details>` : ""}
       <section class="timeline-section"><div class="section-heading"><div><h2>Calendar controls</h2><p>These keep the dates current rather than adding more dates.</p></div></div><div class="card-grid">${controls.map(taskCard).join("")}</div></section>
     </div>`;
@@ -485,7 +492,7 @@
     routeContent.innerHTML = `<div class="page-wrap">
       ${pageHeader(meta.label.toUpperCase(), meta.label, meta.intro, `<label class="search-box"><span class="sr-only">Search ${esc(meta.label)}</span><input type="search" value="${esc(state.search)}" placeholder="Search this area" data-area-search></label>`)}
       ${area === "people" ? privacyBanner() : ""}
-      <div class="area-summary"><span><strong>${completed}</strong> of ${trackableTasks.length} trackable controls closed</span><span><strong>${trackableTasks.filter(task => task.priority === "critical" && !isClosed(task)).length}</strong> open critical controls</span><span><strong>${triggered.length}</strong> event-driven workflows</span></div>
+      <div class="area-summary"><span><strong>${completed}</strong> recorded closed</span><span><strong>${trackableTasks.filter(task => hasReviewedRecord(task) && task.priority === "critical" && !isClosed(task)).length}</strong> recorded critical follow-ups</span><span><strong>${trackableTasks.filter(task => !hasReviewedRecord(task)).length}</strong> not reviewed here</span><span><strong>${triggered.length}</strong> event-driven workflows</span></div>
       <section class="task-section"><div class="section-heading"><div><h2>${area === "teaching" ? "Core teaching controls" : area === "faculty" ? "Operating controls" : "Planned people controls"}</h2><p>${state.mode === "guided" ? "Open one task and follow it step by step." : "Fast view—open only the detail you need."}</p></div></div><div class="card-grid">${core.map(taskCard).join("") || emptySearch()}</div></section>
       ${earlier.length ? `<details class="elapsed"><summary>Earlier 2026 controls (${earlier.length})</summary><div class="card-grid compact-card-grid">${earlier.map(taskCard).join("")}</div></details>` : ""}
       ${historyFiltered.length ? `<details class="elapsed history-panel"><summary>Term 1–2 2026 baseline and annual pattern (${historyFiltered.length})</summary><p>Read-only history for handover and future-year planning. It is not retrospective non-compliance.</p><div class="card-grid compact-card-grid">${historyFiltered.map(taskCard).join("")}</div></details>` : ""}
@@ -509,12 +516,12 @@
 
   function renderReference() {
     const groups = [...new Set(data.systems.map(system => system.group))];
-    const currentCount = data.systems.filter(system => system.url).length;
-    const localCount = data.systems.filter(system => system.kind === "local" && !currentSystemUrl(system)).length;
+    const currentCount = data.systems.filter(currentSystemUrl).length;
+    const localCount = data.systems.filter(system => !currentSystemUrl(system)).length;
     routeContent.innerHTML = `<div class="page-wrap">
-      ${pageHeader("REFERENCE LIBRARY", "Current systems and reference points", "Public and approved staff launchers are built in. Sign-in and owner-system permissions still apply.", `<button class="button primary compact" type="button" data-action="open-settings">Review staff links</button>`)}
+      ${pageHeader("REFERENCE LIBRARY", "Systems and documents", "Open a system, find a staff source or review your saved links.", `<button class="button primary compact" type="button" data-action="open-settings">Review staff links</button>`)}
       ${privacyBanner()}
-      <section class="source-boundary"><div><strong>${currentCount}</strong><span>built-in front doors</span></div><div><strong>${localCount}</strong><span>unconnected staff links</span></div><p>“Updated 2025” in the old guide does not prove that a procedure or link is current. Use the source status shown in each task.</p></section>
+      <section class="source-boundary"><div><strong>${currentCount}</strong><span>links available</span></div><div><strong>${localCount}</strong><span>need a link</span></div><p>A saved link may open a search or portal. It does not verify the destination, access or current document version.</p></section>
       ${groups.map(group => systemGroup(group)).join("")}
       <section class="source-audit"><div class="section-heading"><div><h2>What controls this workboard</h2><p>Four source layers, with a clear authority boundary.</p></div></div><div class="source-grid">${data.sourceGroups.map(sourceCard).join("")}</div></section>
       <details class="retired-panel"><summary>Retired or reference-only items</summary><ul>${data.retiredItems.map(item => `<li>${esc(item)}</li>`).join("")}</ul></details>
@@ -524,16 +531,24 @@
 
   function systemGroup(group) {
     const systems = data.systems.filter(system => system.group === group);
-    return `<section class="systems-section"><div class="section-heading"><div><h2>${esc(group)}</h2><p>${group === "Controlled staff sources" ? "Approved staff locations are built in. Sign-in and existing permissions still apply." : "Open the owner system and complete the action there."}</p></div></div><div class="system-grid">${systems.map(systemCard).join("")}</div></section>`;
+    return `<section class="systems-section"><div class="section-heading"><div><h2>${esc(group)}</h2><p>Use the saved route and confirm the destination after opening it.</p></div></div><div class="system-grid">${systems.map(systemCard).join("")}</div></section>`;
+  }
+
+  function destinationLabel(url) {
+    if (window.WWHS_DASHBOARD?.destinationLabel) return window.WWHS_DASHBOARD.destinationLabel(url);
+    if (/drive\.google\.com\/drive\/search/i.test(url)) return "Find in Drive";
+    if (/drive\.google\.com\/drive\/(shared-drives|folders)/i.test(url)) return "Open Drive";
+    if (/docs\.google\.com\/document|drive\.google\.com\/file/i.test(url)) return "Open document";
+    return "Open system";
   }
 
   function systemCard(system) {
     const url = currentSystemUrl(system);
-    const status = system.kind === "local" ? (url ? "Approved front door" : "Setup required") : system.status === "verified" ? "Verified front door" : "Staff front door";
+    const status = url ? "Link available" : "Setup required";
     return `<article class="system-card ${url ? "has-link" : "needs-link"}">
       <div class="system-top"><span class="system-kind">${esc(system.kind === "public" ? "PUBLIC" : system.kind === "local" ? "CONTROLLED" : "STAFF")}</span><span class="pill source ${url ? "good" : "warn"}">${esc(status)}</span></div>
       <h3>${esc(system.label)}</h3><p>${esc(system.purpose)}</p><small>${esc(system.note)}</small>
-      ${url ? `<button class="button quiet compact" type="button" data-action="launch-system" data-system-id="${esc(system.id)}">Open ${system.kind === "local" ? "approved location" : "system"} ↗</button>` : `<button class="button quiet compact" type="button" data-action="open-settings">Add approved link</button>`}
+      ${url ? `<button class="button quiet compact" type="button" data-action="launch-system" data-system-id="${esc(system.id)}">${esc(destinationLabel(url))} ↗</button>` : `<button class="button quiet compact" type="button" data-action="open-settings">Add approved link</button>`}
     </article>`;
   }
 
@@ -563,7 +578,7 @@
       if (!system) return "";
       const url = currentSystemUrl(system);
       return url
-        ? `<button class="button secondary compact" type="button" data-action="launch-system" data-system-id="${esc(id)}">${esc(system.label)} ↗</button>`
+        ? `<button class="button secondary compact" type="button" data-action="launch-system" data-system-id="${esc(id)}">${esc(system.label)} · ${esc(destinationLabel(url))} ↗</button>`
         : `<button class="button quiet compact" type="button" data-action="open-settings">Set ${esc(system.label)} link</button>`;
     }).join("");
   }
@@ -602,7 +617,7 @@
     }
     return `<section class="completion-panel"><div><h3>Record progress safely</h3><p>Use a record number, location or dated sign-off—not the evidence itself.</p></div><form id="task-record-form" data-task-id="${esc(task.id)}">
       <div class="form-grid">
-        <label><span>Status</span><select name="status">${Object.entries(statusMeta).map(([value, meta]) => `<option value="${value}" ${record.status === value ? "selected" : ""}>${esc(meta.label)}</option>`).join("")}</select></label>
+        <label><span>Status</span><select name="status">${Object.entries(statusMeta).map(([value, meta]) => `<option value="${value}" ${record.status === value ? "selected" : ""}>${esc(value === "not-started" && !hasReviewedRecord(task) ? "Not reviewed here" : meta.label)}</option>`).join("")}</select></label>
         <label><span>Verifier role or initials</span><input type="text" name="verifier" maxlength="100" value="${esc(record.verifier || "")}" placeholder="Expected: ${esc(task.verifier)}"></label>
         <label class="span-two"><span>Privacy-safe owner-system reference</span><input type="text" name="evidenceRef" maxlength="240" value="${esc(record.evidenceRef || "")}" placeholder="e.g. Sentral reporting check signed off 28 Aug"><small>Never paste a name, mark, report, incident, health, leave, credential or financial detail.</small></label>
         <label class="check-line span-two"><input type="checkbox" name="sourceChecked" ${record.sourceChecked ? "checked" : ""}><span>I checked the current live source or owner-system state.</span></label>
@@ -896,7 +911,10 @@
       state.weekly[week] = { ...safeObject(state.weekly[week]), [index]: event.target.checked };
       saveState();
       renderToday();
-      document.querySelector(`[data-weekly-check="${CSS.escape(index)}"]`)?.focus();
+      const replacement = document.querySelector(`[data-weekly-check="${CSS.escape(index)}"]`);
+      const scan = replacement?.closest("details");
+      if (scan) scan.open = true;
+      replacement?.focus();
     }
 
     if (event.target.id === "backup-file") restoreWorkspace(event.target.files?.[0]);
@@ -954,8 +972,8 @@
   window.addEventListener("hashchange", () => {
     state.search = "";
     window.scrollTo({ top: 0, left: 0, behavior: "instant" });
-    render();
-    document.getElementById("main-content")?.focus({ preventScroll: true });
+    renderRoute();
   });
-  render();
+  window.addEventListener("focus", () => { if (currentIso !== isoDate(startOfDay(new Date())) && !taskDialog.open && !settingsDialog.open) render(); });
+  renderRoute();
 })();

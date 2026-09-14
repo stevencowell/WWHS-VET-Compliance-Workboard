@@ -55,6 +55,7 @@
 
   board.systems = [
     { id: "vet-schools-hub", label: "VET Schools Hub", group: "Run the program", kind: "private", url: staffLinks["vet-schools-hub"], purpose: "School Profile, Authority to Deliver, Confirmation of Delivery, Application to Run, To Do and current communications.", boundary: "The live Hub state is the record; this workboard is only the prompt and reference." },
+    { id: "course-library", label: "Document Library — Courses", group: "Run the program", kind: "private", url: staffLinks["course-library"], purpose: "Stage 5/6 course resources, qualifications, training and assessment materials.", boundary: "Select the stage and course in the current library. Staff sign-in applies." },
     { id: "document-library", label: "RTO Document Library", group: "Run the program", kind: "private", url: staffLinks["document-library"], purpose: "Current controlled SOPs, forms and RTO implementation instructions.", boundary: "Never republish controlled procedures or assessment packages here." },
     { id: "toolbox", label: "VET Toolbox", group: "Run the program", kind: "private", url: staffLinks["toolbox"], purpose: "Authenticated launch point for Department VET systems.", boundary: "Confirm the signed-in work account before acting." },
     { id: "evidence-central", label: "Evidence Central", group: "Learners and evidence", kind: "controlled", url: "https://evidencecentral.info/", purpose: "Learner induction, assessment evidence, feedback and competency evidence.", boundary: "Protected learner content stays in Evidence Central." },
