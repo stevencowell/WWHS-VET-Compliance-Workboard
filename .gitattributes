@@ -7,4 +7,5 @@
 *.sha256 text eol=lf
 *.json text eol=lf
 *.png binary
+*.webp binary
 *.pdf binary

@@ -22,6 +22,28 @@
     if (/drive\.google\.com\/(drive\/folders|open)/.test(url)) return 'Open Drive location';
     return 'Open system';
   }
+  function icon(name) {
+    const paths = {
+      'evidence-central':'<path d="M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6l-8-3Z"/><path d="m8 12 3 3 5-6"/>',
+      'schools-online':'<path d="m3 9 9-6 9 6M4 10h16M6 10v8m6-8v8m6-8v8M3 21h18M4 18h16"/>',
+      'vet-schools-hub':'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 17h7m-3.5-3.5v7"/>',
+      'course-library':'<path d="M12 5v16M12 5C8 2 3 4 3 4v15s5-2 9 2c4-4 9-2 9-2V4s-5-2-9 1Z"/>',
+      'document-library':'<rect x="5" y="5" width="14" height="16" rx="2"/><rect x="9" y="2" width="6" height="6" rx="1"/><path d="m8 14 2 2 5-5M13 18h3"/>',
+      sentral:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
+      calendar:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 2v6m10-6v6M3 11h18m-13 5h3m3 0h2"/>',
+      folder:'<path d="M3 7V5a2 2 0 0 1 2-2h5l3 4h6a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/><path d="M3 9h18"/>',
+      plan:'<path d="M5 4h4v4H5zM15 16h4v4h-4zM15 4h4v4h-4zM9 6h6M7 8v10h8"/>',
+      today:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+      workflows:'<path d="M4 6h14l-3-3m3 3-3 3M20 18H6l3 3m-3-3 3-3M4 6v7m16-2v7"/>',
+      issues:'<path d="M5 21V3m0 1h14l-3 4 3 4H5"/>',
+      people:'<circle cx="9" cy="7" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3M16 4a3 3 0 0 1 0 6m3 11v-3a6 6 0 0 0-3-5"/>',
+      ai:'<rect x="4" y="6" width="16" height="14" rx="3"/><path d="M12 3v3M8 11h.01M16 11h.01M8 16h8M1 11v4m22-4v4"/>',
+      search:'<circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/>',
+      arrow:'<path d="M5 12h14m-6-6 6 6-6 6"/>'
+    };
+    const aliases = {'staff-calendar':'calendar','tas-drive':'folder','head-teacher-guide':'course-library','faculty-plan':'plan','cycle-2027':'calendar','systems':'folder','reference':'folder','teaching':'course-library','faculty':'plan','ai-admin':'ai'};
+    return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${paths[aliases[name] || name] || paths.folder}</svg>`;
+  }
   const favourites = wing === 'vet' ? [
     {id:'evidence-central', title:'Evidence Central', detail:'Evidence and assessment', mark:'EC'},
     {id:'schools-online', title:'Schools Online', detail:'NESA entries and outcomes', mark:'SO'},
@@ -43,7 +65,9 @@
     let detail = favourite.detail;
     if (wing === 'tas' && destinationLabel(url) === 'Find in Drive') detail = `Find in Drive · ${favourite.id === 'tas-drive' ? 'faculty folder' : favourite.id === 'faculty-plan' ? 'current plan' : 'reference guide'}`;
     if (favourite.id === 'staff-calendar' && url !== safe(system.url)) detail = 'Live school dates and events';
-    return `<a class="dash-shortcut" data-dash-system="${escape(system.id)}" href="${escape(url)}" target="_blank" rel="noopener noreferrer"><span class="dash-mark" aria-hidden="true">${favourite.mark}</span><span><strong>${escape(favourite.title)}</strong><small>${escape(detail)}</small></span><span class="dash-arrow" aria-hidden="true">↗</span></a>`;
+    const categories = {'evidence-central':'Assessment','schools-online':'NESA','vet-schools-hub':'VET operations','course-library':'Document library','document-library':'Document library',sentral:'School operations','staff-calendar':'Dates & events','tas-drive':'Faculty resources','head-teacher-guide':'Reference','faculty-plan':'Planning'};
+    const displayTitle = system.id === 'course-library' ? 'Courses' : system.id === 'document-library' ? 'VET Coordinator' : favourite.title;
+    return `<a class="dash-shortcut" data-dash-system="${escape(system.id)}" aria-label="${escape(favourite.title)} (opens in a new tab)" href="${escape(url)}" target="_blank" rel="noopener noreferrer"><span class="dash-shortcut-top"><span class="dash-mark">${icon(system.id)}</span><span class="dash-category">${escape(categories[system.id])}</span></span><span class="dash-shortcut-copy"><strong>${escape(displayTitle)}</strong><small>${escape(detail)}</small></span><span class="dash-shortcut-foot">${destinationLabel(url)}<span aria-hidden="true">↗</span></span></a>`;
   }
   function index() {
     const output = [];
@@ -105,6 +129,6 @@
     });
     window.addEventListener('hashchange', () => { input.value=''; update(); });
   }
-  window.WWHS_DASHBOARD = {destinationLabel, search, root:root.href};
+  window.WWHS_DASHBOARD = {destinationLabel, search, icon, root:root.href};
   if (host) mount();
 })();

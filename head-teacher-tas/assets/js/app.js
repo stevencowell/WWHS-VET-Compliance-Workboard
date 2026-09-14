@@ -381,9 +381,9 @@
       ["people", "People & safety", "Staff support, safety and event-driven procedures."],
       ["reference", "Systems & documents", "School portals, staff sources and reference material."]
     ];
-    routeContent.innerHTML = `<div class="page-wrap">
-      ${pageHeader("TAS WING", "Head Teacher TAS", "Open the section you need. Your regular systems are in the quick links above.")}
-      <nav class="card-grid" aria-label="Head Teacher work areas">${areas.map(([href, label, description]) => `<article class="task-card"><h3>${esc(label)}</h3><p>${esc(description)}</p><div class="task-card-foot"><a class="button quiet compact" href="#${href}">Open ${esc(label)} →</a></div></article>`).join("")}</nav>
+    routeContent.innerHTML = `<div class="page-wrap dash-tas-home">
+      ${pageHeader("YOUR WORK PATHWAYS", "Head Teacher TAS", "Move straight into the part of the job you need.")}
+      <nav class="dash-workareas" aria-label="Head Teacher work areas">${areas.map(([href, label, description]) => `<a class="dash-workarea" data-area="${esc(href)}" href="#${href}"><span class="dash-workarea-icon">${window.WWHS_DASHBOARD?.icon?.(href) || ""}</span><span class="dash-workarea-copy"><strong>${esc(label)}</strong><span>${esc(description)}</span></span><span class="dash-workarea-arrow" aria-hidden="true">→</span></a>`).join("")}</nav>
       ${yearBanner()}
       <details class="standing-panel"><summary>Using this workboard</summary><p>Use Today for date reminders and local follow-ups. Detailed guidance is available when you open a task. “Not reviewed here” means no progress has been recorded in this browser; it does not mean the work was missed.</p><p>Official records stay in the school systems. This browser saves only your local workboard progress.</p><a class="text-link" href="../#home">Choose another wing →</a></details>
     </div>`;

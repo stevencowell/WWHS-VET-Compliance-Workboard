@@ -393,12 +393,29 @@
 
   function renderTitle() {
     route.innerHTML = `<section class="page dash-home dash-gateway">
-      <header class="page-heading"><div><p class="eyebrow">WWHS OPERATIONS</p><h1>Choose your wing</h1><p>Start with the role you are working in today.</p></div></header>
+      <header class="page-heading gateway-heading">
+        <div><p class="eyebrow"><span aria-hidden="true"></span> YOUR WORK, WITH DIRECTION</p><h1>Two wings.<br><span>One place to begin.</span></h1></div>
+        <p class="gateway-intro">A clear starting point for VET and faculty leadership. Choose your wing and get straight to the work that matters.</p>
+      </header>
       <nav class="dash-boards" aria-label="Choose a workboard">
-        <a class="dash-board-card" href="#vet-home"><span class="dash-board-mark" aria-hidden="true">V</span><div><h2>VET</h2><p>Compliance, delivery, evidence, placement and the annual VET cycle.</p><p class="dash-board-path">VET systems · Today · Annual cycle · VET AI Admin</p><span class="dash-board-open">Enter the VET wing →</span></div></a>
-        <a class="dash-board-card dash-board-tas" href="head-teacher-tas/#home"><span class="dash-board-mark" aria-hidden="true">T</span><div><h2>Head Teacher TAS</h2><p>Faculty operations, teaching, reporting, school dates and people.</p><p class="dash-board-path">TAS systems · Calendar · Faculty work · TAS AI Admin</p><span class="dash-board-open">Enter the TAS wing →</span></div></a>
+        <a class="dash-board-card" href="#vet-home" aria-label="Enter the VET wing" aria-describedby="gateway-vet-description">
+          <div class="gateway-art"><img src="assets/images/landing-vet-v1.webp" width="1536" height="1024" alt="" fetchpriority="high" decoding="async"><span class="gateway-wing-label"><span aria-hidden="true"></span> VET WING</span><span class="gateway-number" aria-hidden="true">01</span></div>
+          <div class="gateway-card-body">
+            <h2><span class="gateway-role">Vocational education &amp; training</span><span class="gateway-name">VET</span></h2>
+            <p id="gateway-vet-description">Delivery, evidence, placement and compliance.</p>
+            <div class="gateway-card-footer"><span class="dash-board-open">Enter the VET wing</span><span class="gateway-arrow" aria-hidden="true">↗</span></div>
+          </div>
+        </a>
+        <a class="dash-board-card dash-board-tas" href="head-teacher-tas/#home" aria-label="Enter the Head Teacher TAS wing" aria-describedby="gateway-tas-description">
+          <div class="gateway-art"><img src="assets/images/landing-tas-v1.webp" width="1536" height="1024" alt="" decoding="async"><span class="gateway-wing-label"><span aria-hidden="true"></span> TAS WING</span><span class="gateway-number" aria-hidden="true">02</span></div>
+          <div class="gateway-card-body">
+            <h2><span class="gateway-role">Head Teacher</span><span class="gateway-name">TAS</span></h2>
+            <p id="gateway-tas-description">Teaching, people and faculty operations.</p>
+            <div class="gateway-card-footer"><span class="dash-board-open">Enter the TAS wing</span><span class="gateway-arrow" aria-hidden="true">↗</span></div>
+          </div>
+        </a>
       </nav>
-      <p class="dash-gateway-note">Each wing has its own dashboard, search and work pathways. Shared school tools and AI Admin are available within each wing.</p>
+      <footer class="gateway-foot"><p><span class="gateway-connection" aria-hidden="true"><i></i><i></i></span>Separate workboards. A connected approach.</p><p>Everyday systems <span aria-hidden="true">/</span> Work priorities <span aria-hidden="true">/</span> AI Admin</p></footer>
     </section>`;
   }
 
@@ -411,7 +428,7 @@
       ["issues", "Issues & handover", "Source gaps, exceptions and work to carry forward."],
       ["ai-admin", "VET AI Admin", "Prepare a brief for routine VET administration."]
     ];
-    route.innerHTML = `<section class="page dash-vet-home"><header class="page-heading"><div><p class="eyebrow">VET WING</p><h1>VET dashboard</h1><p>Your VET systems are above. Choose the part of the job you need below.</p></div></header><nav class="dash-workareas" aria-label="VET work areas">${areas.map(([href,title,description])=>`<a class="dash-workarea" href="#${href}"><strong>${title} →</strong><span>${description}</span></a>`).join("")}</nav><p class="dash-note">VET progress is saved in this browser. Official records remain in the linked school and RTO systems.</p></section>`;
+    route.innerHTML = `<section class="page dash-vet-home"><header class="page-heading"><div><p class="eyebrow">YOUR WORK PATHWAYS</p><h1>VET dashboard</h1><p>Move straight into the part of the job you need.</p></div></header><nav class="dash-workareas" aria-label="VET work areas">${areas.map(([href,title,description])=>`<a class="dash-workarea" data-area="${href}" href="#${href}"><span class="dash-workarea-icon">${window.WWHS_DASHBOARD?.icon?.(href) || ""}</span><span class="dash-workarea-copy"><strong>${title}</strong><span>${description}</span></span><span class="dash-workarea-arrow" aria-hidden="true">→</span></a>`).join("")}</nav><p class="dash-note">VET progress is saved in this browser. Official records remain in the linked school and RTO systems.</p></section>`;
   }
 
   function renderWelcome() {
