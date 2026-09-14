@@ -28,6 +28,17 @@
 .dash-workarea { display:block; padding:19px; background:#fff; border:1px solid #d0dce5; border-radius:12px; text-decoration:none; color:#123b5c; }
 .dash-workarea strong { display:block; font-size:1rem; }
 .dash-workarea span { display:block; margin-top:8px; color:#567083; font-size:.85rem; line-height:1.5; }
+.dash-boards { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; margin:20px 0; }
+.dash-board-card { display:flex; gap:18px; align-items:flex-start; padding:25px; border:1px solid #c8d9e6; border-top:5px solid #123b5c; border-radius:14px; background:#fff; color:#123b5c; text-decoration:none; box-shadow:0 4px 12px #123b5c08; }
+.dash-board-card:hover { background:#f6fafc; border-color:#123b5c; }
+.dash-board-card:focus-visible { outline:3px solid #218b83; outline-offset:4px; }
+.dash-board-mark { display:grid; place-items:center; width:48px; height:48px; flex-shrink:0; border-radius:12px; background:#e8f1f8; font-size:1.4rem; font-weight:800; }
+.dash-board-card h2 { margin:0; font-size:1.5rem; line-height:1.25; }
+.dash-board-card p { margin:10px 0 18px; color:#506c80; line-height:1.55; font-size:.92rem; }
+.dash-board-open { display:block; font-size:.9rem; font-weight:750; }
+.dash-board-tas { border-top-color:#08766f; }
+.dash-board-tas .dash-board-mark { background:#e4f3f0; color:#08766f; }
+.dash-home-tools { grid-template-columns:repeat(4,minmax(0,1fr)); }
 .dash-note { padding:14px 17px; background:#edf3f7; color:#4b6475; border-radius:10px; font-size:.85rem; line-height:1.6; }
 .dash-review { margin-top:20px; padding:18px; border:1px solid #d4dfe8; border-radius:12px; background:#fff; }
 .dash-review summary { cursor:pointer; color:#31546e; font-weight:750; }
@@ -39,5 +50,5 @@ body.is-title main { padding:28px clamp(22px,4vw,58px) 65px; }
 .dash-home .page-heading p { max-width:70ch; }
 @media(min-width:1100px) { .dash-shortcut { flex-direction:column; } }
 @media(max-width:1099px) { .dash-shortcuts { grid-template-columns:repeat(3,minmax(0,1fr)); } .dash-shortcut { min-height:104px; } }
-@media(max-width:650px) { .dash-top { gap:12px; align-items:flex-start; } .dash-shortcuts { grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; } .dash-shortcut { padding:13px 10px 20px; min-height:113px; gap:7px; } .dash-shortcut:last-child { grid-column:1/-1; min-height:75px; } .dash-shortcut strong { font-size:.83rem; } .dash-mark { width:25px; height:25px; font-size:.58rem; } .dash-workareas { grid-template-columns:1fr; } .dash-access { margin-bottom:24px; } body.is-title main { padding:22px 15px 50px; } .dash-ai-link { padding:9px 11px; gap:8px; font-size:.8rem; } }
+@media(max-width:650px) { .dash-top { gap:12px; align-items:flex-start; } .dash-shortcuts { grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; } .dash-shortcut { padding:13px 10px 20px; min-height:113px; gap:7px; } .dash-shortcut:last-child { grid-column:1/-1; min-height:75px; } .dash-shortcut strong { font-size:.83rem; } .dash-mark { width:25px; height:25px; font-size:.58rem; } .dash-workareas,.dash-boards { grid-template-columns:1fr; } .dash-board-card { padding:20px; gap:14px; } .dash-board-mark { width:38px; height:38px; } .dash-board-card h2 { font-size:1.3rem; } .dash-access { margin-bottom:24px; } body.is-title main { padding:22px 15px 50px; } .dash-ai-link { padding:9px 11px; gap:8px; font-size:.8rem; } }
 @media print { .dash-access { display:none; } }

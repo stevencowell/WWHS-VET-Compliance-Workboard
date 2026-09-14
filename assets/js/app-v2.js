@@ -392,7 +392,15 @@
   }
 
   function renderTitle() {
-    route.innerHTML = `<section class="page dash-home"><header class="page-heading"><div><p class="eyebrow">YOUR WORK AREAS</p><h1>VET &amp; Head Teacher dashboard</h1><p>Open an everyday link above, or choose the work you need below.</p></div></header><nav class="dash-workareas" aria-label="Work areas"><a class="dash-workarea" href="#today"><strong>VET Today →</strong><span>Saved follow-ups and dates to check.</span></a><a class="dash-workarea" href="head-teacher-tas/#today"><strong>Head Teacher Today →</strong><span>Faculty reminders and current follow-ups.</span></a><a class="dash-workarea" href="#ai-admin"><strong>AI Admin →</strong><span>Prepare a job for Codex or ChatGPT.</span></a><a class="dash-workarea" href="head-teacher-tas/#calendar"><strong>Calendar &amp; reporting →</strong><span>School dates, reports and teaching milestones.</span></a><a class="dash-workarea" href="#cycle-2027"><strong>2027 annual cycle →</strong><span>Plan and work through the four terms.</span></a><a class="dash-workarea" href="#systems"><strong>All systems &amp; sources →</strong><span>Browse the full link library and mapped references.</span></a></nav><p class="dash-note">Task progress is saved in this browser. Use the linked school systems for the current records and documents.</p></section>`;
+    route.innerHTML = `<section class="page dash-home">
+      <header class="page-heading"><div><p class="eyebrow">YOUR TWO WORKBOARDS</p><h1>Choose your workboard</h1><p>Open VET or Head Teacher TAS for the work you need.</p></div></header>
+      <nav class="dash-boards" aria-label="Choose a workboard">
+        <a class="dash-board-card" href="#today"><span class="dash-board-mark" aria-hidden="true">V</span><div><h2>VET</h2><p>Compliance, delivery, evidence, placement and the annual VET cycle.</p><span class="dash-board-open">Open VET workboard →</span></div></a>
+        <a class="dash-board-card dash-board-tas" href="head-teacher-tas/#home"><span class="dash-board-mark" aria-hidden="true">T</span><div><h2>Head Teacher TAS</h2><p>Faculty operations, teaching, reporting, school dates and people.</p><span class="dash-board-open">Open TAS workboard →</span></div></a>
+      </nav>
+      <nav class="dash-workareas dash-home-tools" aria-label="More quick access"><a class="dash-workarea" href="#ai-admin"><strong>AI Admin →</strong><span>Prepare a job for Codex or ChatGPT.</span></a><a class="dash-workarea" href="head-teacher-tas/#calendar"><strong>Calendar &amp; reporting →</strong><span>School dates, reports and teaching milestones.</span></a><a class="dash-workarea" href="#cycle-2027"><strong>2027 annual cycle →</strong><span>Plan and work through the four terms.</span></a><a class="dash-workarea" href="#systems"><strong>All systems &amp; sources →</strong><span>Browse the full link library and mapped references.</span></a></nav>
+      <p class="dash-note">Task progress is saved in this browser. Use the linked school systems for the current records and documents.</p>
+    </section>`;
   }
 
   function renderWelcome() {

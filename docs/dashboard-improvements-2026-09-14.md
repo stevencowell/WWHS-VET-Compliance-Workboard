@@ -7,7 +7,7 @@ Prepared on 14 September 2026 from upstream commit `d5a3cb6b26c6c8923d1af6e25b81
 - Both workboards show the five everyday links first: Evidence Central, Schools Online, VET Hub, Document Library — Courses and Document Library — VET Coordinator.
 - The Courses shortcut uses the distinct course-training-assets PowerApp confirmed through the Head Teacher source document and authenticated library. The Coordinator shortcut retains the RTO procedures PowerApp.
 - Shared search finds systems, mapped guide sections, work areas and task dialogs across both workboards.
-- Home offers direct work-area links. VET Today is a stable daily view independent of the saved 2027 planning view. The August 2026 guided snapshot remains available as a labelled reference.
+- Home retains two prominent workboard cards for VET and Head Teacher TAS beneath the everyday links, with smaller links to AI Admin, calendar/reporting, the annual cycle and all systems. VET Today is a stable daily view independent of the saved 2027 planning view. The August 2026 guided snapshot remains available as a labelled reference.
 - Today distinguishes recorded follow-ups, dated reminders and past dates without a recorded status. Missing browser progress does not imply missed work. Dates remain source-dated reminders, not a live school or RTO feed.
 - Six AI Admin jobs provide source-based starter prompts: meetings, notices, message drafts, document currency, handovers and evidence-review preparation. Prepare job shows the required inputs and full prompt. Copy prompt includes a manual-copy fallback.
 
