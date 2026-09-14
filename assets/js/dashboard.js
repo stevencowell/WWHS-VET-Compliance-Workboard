@@ -19,7 +19,8 @@
   function destinationLabel(url) {
     if (/drive\.google\.com\/drive\/(search|shared-drives)/.test(url)) return /\/search/.test(url) ? 'Find in Drive' : 'Open Shared drives';
     if (/docs\.google\.com\/(document|spreadsheets|presentation)\//.test(url) || /drive\.google\.com\/file\//.test(url)) return 'Open document';
-    if (/drive\.google\.com\/(drive\/folders|open)/.test(url)) return 'Open Drive location';
+    if (/drive\.google\.com\/drive\/folders\//.test(url)) return 'Open folder';
+    if (/drive\.google\.com\/open/.test(url)) return 'Open Drive location';
     return 'Open system';
   }
   function icon(name) {

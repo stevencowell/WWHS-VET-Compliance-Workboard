@@ -130,9 +130,9 @@
       group: "Work-account sources",
       kind: "local",
       status: "front-door",
-      url: workDriveSearch('type:folder "HEAD TEACHER TAS"'),
+      url: "https://drive.google.com/drive/folders/0B40F5Y8uF0rvfkl1S2FEbjRhVmJYRWYyY2dlOFVHMDdQeFNyQlRBUzBudmtHRGJKdE83VVk?resourcekey=0-fXD-BgXggkE5EyIeJJdt5g&usp=drive_link",
       purpose: "Current faculty plans, programs, schedules, meeting records and evidence pointers.",
-      note: "Work-account folder search. The broad folder ID is not embedded while its sharing boundary is under review."
+      note: "Direct TAS faculty folder supplied by the Head Teacher. Opens in Google Drive."
     },
     {
       id: "faculty-plan",
