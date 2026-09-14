@@ -120,9 +120,9 @@
       group: "Work-account sources",
       kind: "local",
       status: "front-door",
-      url: workDriveSearch('"Head Teacher Information For TAS Faculty Wagga Wagga High School"'),
+      url: "https://docs.google.com/document/d/1iGNJzqizAqWO0PuSRDXh0QPc0L8y_wdiyEk88O7f680/edit?usp=drive_link",
       purpose: "The historical A–D index, local context and storage locations.",
-      note: "Work-account search front door. The direct document ID is withheld from the public site until its sharing and confidential-content boundaries are corrected."
+      note: "Direct reference guide supplied by the Head Teacher. Opens in Google Docs."
     },
     {
       id: "tas-drive",
