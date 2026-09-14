@@ -7,11 +7,11 @@
   <meta name="description" content="WWHS operations gateway for the VET Compliance and Head Teacher TAS workboards.">
   <title>WWHS Operations Workboards</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="assets/css/site.css?v=20260914a">
-<link rel="stylesheet" href="assets/css/dashboard.css?v=20260914b">
-  <link rel="stylesheet" href="assets/css/ai-admin.css?v=20260914a">
+  <link rel="stylesheet" href="assets/css/site.css?v=20260914c">
+<link rel="stylesheet" href="assets/css/dashboard.css?v=20260914c">
+  <link rel="stylesheet" href="assets/css/ai-admin.css?v=20260914c">
 </head>
-<body>
+<body data-workboard="vet">
   <a class="skip-link" href="#main-content">Skip to workboard</a>
   <div class="app-shell">
     <header class="topbar">
@@ -29,9 +29,9 @@
 
     <div class="route-bar">
       <nav class="route-nav" aria-label="Workboard navigation">
-        <a class="route-link route-home" href="#home" data-view="home">Home</a>
+        <a class="route-link route-home" href="#vet-home" data-view="vet-home">VET home</a>
         <a class="route-link route-start-2027" href="#cycle-2027" data-view="cycle-2027" data-cycle-link="2027">Run 2027</a>
-        <a class="route-link route-companion" href="head-teacher-tas/">Head Teacher TAS <span aria-hidden="true">↗</span></a>
+        <a class="route-link route-companion" href="#home">Choose wing <span aria-hidden="true">↗</span></a>
         <button class="route-link route-reference" type="button" data-action="open-system" data-system-id="head-teacher-guide">VET Reference Guide <span aria-hidden="true">↗</span></button>
         <a class="route-link" href="#today" data-view="today">Today</a>
         <a class="route-link" href="#year" data-view="year">Year plan</a>
@@ -43,14 +43,14 @@
 
     <aside class="sidebar" aria-label="Primary navigation">
       <nav>
-        <a class="nav-link nav-home" href="./"><span class="nav-symbol" aria-hidden="true">⌂</span><span>Operations home</span></a>
+        <a class="nav-link nav-home" href="#vet-home" data-view="vet-home"><span class="nav-symbol" aria-hidden="true">⌂</span><span>VET home</span></a>
         <a class="nav-link nav-start-2027" href="#cycle-2027" data-view="cycle-2027" data-cycle-link="2027"><span class="nav-symbol" aria-hidden="true">27</span><span>Run 2027</span></a>
         <a class="nav-link is-active" href="#today" data-view="today"><span class="nav-symbol" aria-hidden="true">01</span><span>Today</span></a>
         <a class="nav-link" href="#year" data-view="year"><span class="nav-symbol" aria-hidden="true">02</span><span>Year plan</span></a>
         <a class="nav-link" href="#workflows" data-view="workflows"><span class="nav-symbol" aria-hidden="true">03</span><span>Workflows</span></a>
         <a class="nav-link" href="#systems" data-view="systems"><span class="nav-symbol" aria-hidden="true">04</span><span>Systems</span></a>
         <a class="nav-link" href="#issues" data-view="issues"><span class="nav-symbol" aria-hidden="true">05</span><span>Issues &amp; handover</span></a>
-        <a class="nav-link nav-companion" href="head-teacher-tas/"><span class="nav-symbol" aria-hidden="true">T</span><span>Head Teacher TAS</span></a>
+        <a class="nav-link nav-companion" href="#home"><span class="nav-symbol" aria-hidden="true">↗</span><span>Choose wing</span></a>
         <button class="nav-link nav-reference" type="button" data-action="open-system" data-system-id="head-teacher-guide"><span class="nav-symbol" aria-hidden="true">↗</span><span>VET Reference Guide</span></button>
       </nav>
       <label class="sidebar-role-control"><span>View work as</span><select id="mobile-role-filter" aria-label="Filter tasks by role in mobile navigation"><option value="all">All work</option></select></label>
@@ -77,13 +77,12 @@
   </dialog>
   <div id="toast-region" class="toast-region" aria-live="polite" aria-atomic="true"></div>
 
-  <script src="assets/js/data/config.js?v=20260914a"></script>
-  <script src="assets/js/data/tasks.js?v=20260914a"></script>
-  <script src="assets/js/data/term1-2027.js?v=20260914a"></script>
-  <script src="assets/js/data/reference.js?v=20260914a"></script>
-  <script src="head-teacher-tas/assets/js/data.js?v=20260914a"></script>
-  <script src="assets/js/ai-admin.js?v=20260914a"></script>
-  <script src="assets/js/dashboard.js?v=20260914a"></script>
-  <script src="assets/js/app-v2.js?v=20260914b"></script>
+  <script src="assets/js/data/config.js?v=20260914c"></script>
+  <script src="assets/js/data/tasks.js?v=20260914c"></script>
+  <script src="assets/js/data/term1-2027.js?v=20260914c"></script>
+  <script src="assets/js/data/reference.js?v=20260914c"></script>
+  <script src="assets/js/ai-admin.js?v=20260914c"></script>
+  <script src="assets/js/dashboard.js?v=20260914c"></script>
+  <script src="assets/js/app-v2.js?v=20260914c"></script>
 </body>
 </html>

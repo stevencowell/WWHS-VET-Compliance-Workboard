@@ -392,15 +392,26 @@
   }
 
   function renderTitle() {
-    route.innerHTML = `<section class="page dash-home">
-      <header class="page-heading"><div><p class="eyebrow">YOUR TWO WORKBOARDS</p><h1>Choose your workboard</h1><p>Open VET or Head Teacher TAS for the work you need.</p></div></header>
+    route.innerHTML = `<section class="page dash-home dash-gateway">
+      <header class="page-heading"><div><p class="eyebrow">WWHS OPERATIONS</p><h1>Choose your wing</h1><p>Start with the role you are working in today.</p></div></header>
       <nav class="dash-boards" aria-label="Choose a workboard">
-        <a class="dash-board-card" href="#today"><span class="dash-board-mark" aria-hidden="true">V</span><div><h2>VET</h2><p>Compliance, delivery, evidence, placement and the annual VET cycle.</p><span class="dash-board-open">Open VET workboard →</span></div></a>
-        <a class="dash-board-card dash-board-tas" href="head-teacher-tas/#home"><span class="dash-board-mark" aria-hidden="true">T</span><div><h2>Head Teacher TAS</h2><p>Faculty operations, teaching, reporting, school dates and people.</p><span class="dash-board-open">Open TAS workboard →</span></div></a>
+        <a class="dash-board-card" href="#vet-home"><span class="dash-board-mark" aria-hidden="true">V</span><div><h2>VET</h2><p>Compliance, delivery, evidence, placement and the annual VET cycle.</p><p class="dash-board-path">VET systems · Today · Annual cycle · VET AI Admin</p><span class="dash-board-open">Enter the VET wing →</span></div></a>
+        <a class="dash-board-card dash-board-tas" href="head-teacher-tas/#home"><span class="dash-board-mark" aria-hidden="true">T</span><div><h2>Head Teacher TAS</h2><p>Faculty operations, teaching, reporting, school dates and people.</p><p class="dash-board-path">TAS systems · Calendar · Faculty work · TAS AI Admin</p><span class="dash-board-open">Enter the TAS wing →</span></div></a>
       </nav>
-      <nav class="dash-workareas dash-home-tools" aria-label="More quick access"><a class="dash-workarea" href="#ai-admin"><strong>AI Admin →</strong><span>Prepare a job for Codex or ChatGPT.</span></a><a class="dash-workarea" href="head-teacher-tas/#calendar"><strong>Calendar &amp; reporting →</strong><span>School dates, reports and teaching milestones.</span></a><a class="dash-workarea" href="#cycle-2027"><strong>2027 annual cycle →</strong><span>Plan and work through the four terms.</span></a><a class="dash-workarea" href="#systems"><strong>All systems &amp; sources →</strong><span>Browse the full link library and mapped references.</span></a></nav>
-      <p class="dash-note">Task progress is saved in this browser. Use the linked school systems for the current records and documents.</p>
+      <p class="dash-gateway-note">Each wing has its own dashboard, search and work pathways. Shared school tools and AI Admin are available within each wing.</p>
     </section>`;
+  }
+
+  function renderVetHome() {
+    const areas = [
+      ["today", "VET Today", "Saved follow-ups and upcoming dates to check."],
+      ["cycle-2027", "Annual VET cycle", "Plan and work through the four terms and annual gates."],
+      ["workflows", "VET workflows", "Recurring work, placement and event-driven responses."],
+      ["systems", "VET systems & documents", "RTO sources, evidence systems and mapped guidance."],
+      ["issues", "Issues & handover", "Source gaps, exceptions and work to carry forward."],
+      ["ai-admin", "VET AI Admin", "Prepare a brief for routine VET administration."]
+    ];
+    route.innerHTML = `<section class="page dash-vet-home"><header class="page-heading"><div><p class="eyebrow">VET WING</p><h1>VET dashboard</h1><p>Your VET systems are above. Choose the part of the job you need below.</p></div></header><nav class="dash-workareas" aria-label="VET work areas">${areas.map(([href,title,description])=>`<a class="dash-workarea" href="#${href}"><strong>${title} →</strong><span>${description}</span></a>`).join("")}</nav><p class="dash-note">VET progress is saved in this browser. Official records remain in the linked school and RTO systems.</p></section>`;
   }
 
   function renderWelcome() {
@@ -446,7 +457,7 @@
     const currentYearTasks = boardToday.getFullYear() === 2027 ? cycleTasks : boardToday.getFullYear() === 2026 ? tasks : [];
     const dated = currentYearTasks.filter(task => roleMatches(task) && !isClosed(task) && reminderDate(task) && daysUntil(reminderDate(task)) >= 0 && daysUntil(reminderDate(task)) <= 21).sort((a,b) => reminderDate(a).localeCompare(reminderDate(b)));
     const unreviewed = currentYearTasks.filter(task => roleMatches(task) && historicalUnconfirmed(task));
-    route.innerHTML = `<section class="page"><header class="page-heading"><div><p class="eyebrow">${esc(displayToday())}</p><h1>VET Today</h1><p>Follow up the work you have recorded and check upcoming dates in the live source.</p></div><a class="button secondary" href="#cycle-2027">Open 2027 annual cycle</a></header><div class="section-heading"><div><h2>Recorded follow-ups</h2><p>Only tasks with a saved status in this browser appear here.</p></div></div><div class="task-list">${saved.length ? saved.slice(0,6).map(task => taskCard(task,{compact:true})).join("") : '<p class="dash-note">No open follow-ups recorded here. Your everyday links are ready to use.</p>'}</div>${saved.length > 6 ? '<details class="dash-review"><summary>Show all '+saved.length+' recorded follow-ups</summary><div class="task-list">'+saved.slice(6).map(task => taskCard(task,{compact:true})).join('')+'</div></details>' : ''}<section class="dash-review"><h2>Dates to check · next 21 days</h2><p>These reminders use the workboard’s dated source material. Check the current school calendar and NESA/RTO source before acting.</p><div class="task-list">${dated.length ? dated.map(task=>taskCard(task,{compact:true})).join("") : '<p>No dated reminders in this window. Check the live calendar for additions or changes.</p>'}</div><a href="https://www.nsw.gov.au/education-and-training/nesa/key-dates/timetable-of-actions" target="_blank" rel="noopener noreferrer">Open NESA live dates ↗</a></section>${unreviewed.length ? '<details class="dash-review"><summary>Review earlier dates · '+unreviewed.length+' statuses not confirmed</summary><p>These dates have passed, but no status has been recorded here. Check the official record and save the applicable status; the dashboard does not assume the work was missed.</p><div class="task-list">'+unreviewed.map(task=>taskCard(task,{compact:true})).join('')+'</div></details>' : ''}<div class="dash-workareas"><a class="dash-workarea" href="#workflows"><strong>Recurring &amp; event-driven work →</strong><span>Open a workflow when it is needed.</span></a><a class="dash-workarea" href="#reference"><strong>2026 reference snapshot →</strong><span>The saved August reference and guided introduction.</span></a><a class="dash-workarea" href="head-teacher-tas/#today"><strong>Head Teacher Today →</strong><span>Faculty dates and recorded follow-ups.</span></a></div></section>`;
+    route.innerHTML = `<section class="page"><header class="page-heading"><div><p class="eyebrow">${esc(displayToday())}</p><h1>VET Today</h1><p>Follow up the work you have recorded and check upcoming dates in the live source.</p></div><a class="button secondary" href="#cycle-2027">Open 2027 annual cycle</a></header><div class="section-heading"><div><h2>Recorded follow-ups</h2><p>Only tasks with a saved status in this browser appear here.</p></div></div><div class="task-list">${saved.length ? saved.slice(0,6).map(task => taskCard(task,{compact:true})).join("") : '<p class="dash-note">No open follow-ups recorded here. Your everyday links are ready to use.</p>'}</div>${saved.length > 6 ? '<details class="dash-review"><summary>Show all '+saved.length+' recorded follow-ups</summary><div class="task-list">'+saved.slice(6).map(task => taskCard(task,{compact:true})).join('')+'</div></details>' : ''}<section class="dash-review"><h2>Dates to check · next 21 days</h2><p>These reminders use the workboard’s dated source material. Check the current school calendar and NESA/RTO source before acting.</p><div class="task-list">${dated.length ? dated.map(task=>taskCard(task,{compact:true})).join("") : '<p>No dated reminders in this window. Check the live calendar for additions or changes.</p>'}</div><a href="https://www.nsw.gov.au/education-and-training/nesa/key-dates/timetable-of-actions" target="_blank" rel="noopener noreferrer">Open NESA live dates ↗</a></section>${unreviewed.length ? '<details class="dash-review"><summary>Review earlier dates · '+unreviewed.length+' statuses not confirmed</summary><p>These dates have passed, but no status has been recorded here. Check the official record and save the applicable status; the dashboard does not assume the work was missed.</p><div class="task-list">'+unreviewed.map(task=>taskCard(task,{compact:true})).join('')+'</div></details>' : ''}<div class="dash-workareas"><a class="dash-workarea" href="#workflows"><strong>Recurring &amp; event-driven work →</strong><span>Open a workflow when it is needed.</span></a><a class="dash-workarea" href="#reference"><strong>2026 reference snapshot →</strong><span>The saved August reference and guided introduction.</span></a><a class="dash-workarea" href="#vet-home"><strong>VET dashboard →</strong><span>Return to your VET systems and work areas.</span></a></div></section>`;
   }
 
   function cycleReadyQueue() {
@@ -808,7 +819,7 @@
   function currentView() {
     const view = (location.hash || (directVetEntry ? "#today" : "#home")).slice(1);
     if (view.startsWith("task/")) return "task";
-    const allowed = ["home", "today", "reference", "ai-admin", "cycle-2027", "term1-2027", "term2-2027", "term3-2027", "term4-2027", "year", "workflows", "systems", "issues"];
+    const allowed = ["home", "vet-home", "today", "reference", "ai-admin", "cycle-2027", "term1-2027", "term2-2027", "term3-2027", "term4-2027", "year", "workflows", "systems", "issues"];
     if (!allowed.includes(view)) { history.replaceState(null, "", "#home"); return "home"; }
     return view;
   }
@@ -844,17 +855,22 @@
     const showingCycle = isCycleView(view) || (view === "year" && state.activeCycle === "2027");
     document.title = showingTitle ? "WWHS Operations Workboards" : showingCycle ? "Run 2027 · WWHS VET Compliance Workboard" : "WWHS VET Compliance Workboard";
     document.body.classList.toggle("is-title", showingTitle);
+    document.getElementById("dashboard-access").hidden = showingTitle;
+    const brand = document.querySelector(".brand");
+    brand.href = showingTitle ? "#home" : "#vet-home";
+    brand.setAttribute("aria-label", showingTitle ? "WWHS operations home" : "VET dashboard home");
     document.body.classList.toggle("is-welcome", showingWelcome);
     document.body.classList.toggle("is-guided", view === "reference" && state.experience === "guided");
     document.body.classList.toggle("is-cycle-2027", showingCycle);
     document.body.classList.toggle("is-term1", showingCycle);
     document.body.classList.toggle("is-term1-guided", showingCycle && state.cycle2027Mode === "guided");
     document.querySelectorAll(".nav-link, .route-link").forEach(link => {
-      const active = link.classList.contains("route-home") ? showingTitle : !showingTitle && (link.dataset.cycleLink === "2027" ? isCycleView(view) : link.dataset.view === view);
+      const active = !showingTitle && (link.dataset.cycleLink === "2027" ? isCycleView(view) : link.dataset.view === view);
       link.classList.toggle("is-active", active);
       if (active) link.setAttribute("aria-current", "page"); else link.removeAttribute("aria-current");
     });
     if (view === "home") renderTitle();
+    if (view === "vet-home") renderVetHome();
     if (view === "reference") { if (!state.experience) renderWelcome(); else if (state.experience === "guided") renderGuidedToday(); else renderFullToday(); }
     if (view === "ai-admin") { route.innerHTML = window.WWHS_AI_ADMIN.render(); window.WWHS_AI_ADMIN.bind(route); }
     if (view === "task") {
