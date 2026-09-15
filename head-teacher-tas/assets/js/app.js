@@ -424,7 +424,7 @@
     const week = weekKey();
     const checks = safeObject(state.weekly[week]);
     const completedChecks = data.weeklyChecks.filter((_, index) => checks[index] === true).length;
-    const actions = `<a class="button secondary compact" href="#calendar">Open full calendar</a>`;
+    const actions = `<a class="button secondary compact" href="#calendar">Workboard dates</a>`;
 
     routeContent.innerHTML = `<div class="page-wrap">
       ${pageHeader(currentTermLabel(), "Today", "Upcoming dates and the follow-ups you have recorded in this browser.", actions)}
@@ -566,16 +566,27 @@
     const earlier = coreAll.filter(task => task.dueDate && daysUntil(queueDueDate(task)) < -21);
     const core = coreAll.filter(task => !earlier.includes(task));
     const triggered = filtered.filter(task => task.phase === "triggered");
-    const completed = trackableTasks.filter(isClosed).length;
+    const groups = {
+      closed: { label: "recorded closed", title: "Recorded closed tasks", tasks: trackableTasks.filter(isClosed) },
+      critical: { label: "recorded critical follow-ups", title: "Recorded critical follow-ups", tasks: trackableTasks.filter(task => hasReviewedRecord(task) && task.priority === "critical" && !isClosed(task)) },
+      unreviewed: { label: "not reviewed here", title: "Tasks not reviewed here", tasks: trackableTasks.filter(task => !hasReviewedRecord(task)) },
+      triggered: { label: "event-driven workflows", title: "Event-driven workflows", tasks: allTasks.filter(task => task.phase === "triggered") }
+    };
+    const filter = new URLSearchParams(location.hash.split("?")[1] || "").get("filter");
+    const selected = Object.prototype.hasOwnProperty.call(groups, filter) ? groups[filter] : null;
+    const selectedTasks = selected ? selected.tasks.filter(task => !query || [task.title, task.summary, task.source, task.timing].join(" ").toLowerCase().includes(query)) : [];
+
 
     routeContent.innerHTML = `<div class="page-wrap">
       ${pageHeader(meta.label.toUpperCase(), meta.label, meta.intro, `<label class="search-box"><span class="sr-only">Search ${esc(meta.label)}</span><input type="search" value="${esc(state.search)}" placeholder="Search this area" data-area-search></label>`)}
       ${area === "people" ? privacyBanner() : ""}
-      <div class="area-summary"><span><strong>${completed}</strong> recorded closed</span><span><strong>${trackableTasks.filter(task => hasReviewedRecord(task) && task.priority === "critical" && !isClosed(task)).length}</strong> recorded critical follow-ups</span><span><strong>${trackableTasks.filter(task => !hasReviewedRecord(task)).length}</strong> not reviewed here</span><span><strong>${triggered.length}</strong> event-driven workflows</span></div>
+      <nav class="area-summary" aria-label="Filter tasks by status">${Object.entries(groups).map(([key, group]) => `<a href="#${esc(area)}?filter=${key}" ${filter === key ? 'aria-current="true"' : ""}><strong>${group.tasks.length}</strong> ${esc(group.label)}</a>`).join("")}</nav>
+      ${selected ? `<section class="task-section"><div class="section-heading"><div><h2>${esc(selected.title)}</h2><p>${selectedTasks.length} matching task${selectedTasks.length === 1 ? "" : "s"}.</p></div><a class="button secondary compact" href="#${esc(area)}">Show all</a></div><div class="card-grid">${selectedTasks.map(taskCard).join("") || `<div class="empty-state"><h3>No matching tasks</h3><p>${query ? "Clear the search or choose Show all." : "There are no tasks in this category."}</p></div>`}</div></section>` : `
       <section class="task-section"><div class="section-heading"><div><h2>${area === "teaching" ? "Core teaching controls" : area === "faculty" ? "Operating controls" : "Planned people controls"}</h2><p>${state.mode === "guided" ? "Open one task and follow it step by step." : "Fast view—open only the detail you need."}</p></div></div><div class="card-grid">${core.map(taskCard).join("") || emptySearch()}</div></section>
       ${earlier.length ? `<details class="elapsed"><summary>Earlier 2026 controls (${earlier.length})</summary><div class="card-grid compact-card-grid">${earlier.map(taskCard).join("")}</div></details>` : ""}
       ${historyFiltered.length ? `<details class="elapsed history-panel"><summary>Term 1–2 2026 baseline and annual pattern (${historyFiltered.length})</summary><p>Read-only history for handover and future-year planning. It is not retrospective non-compliance.</p><div class="card-grid compact-card-grid">${historyFiltered.map(taskCard).join("")}</div></details>` : ""}
       ${triggered.length ? `<section class="task-section triggered-section"><div class="section-heading"><div><h2>Use only when triggered</h2><p>These interrupt normal work when the event occurs.</p></div></div><div class="card-grid">${triggered.map(taskCard).join("")}</div></section>` : ""}
+      `}
     </div>`;
   }
 
@@ -648,7 +659,9 @@
   }
 
   function currentSystemUrl(system) {
-    return safeUrl(state.links[system.id]) || safeUrl(system.url);
+    const saved = safeUrl(state.links[system.id]);
+    if (system.id === "staff-calendar" && (!saved || /^https:\/\/waggawagga-h\.sentral\.com\.au\/(dashboard\/?)?$/.test(saved))) return safeUrl(system.url);
+    return saved || safeUrl(system.url);
   }
 
   function systemButtons(task) {

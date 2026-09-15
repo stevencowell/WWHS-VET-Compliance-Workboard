@@ -15,7 +15,11 @@
       return saved?.schemaVersion === schemaVersion && saved.linkDefaultsVersion === 2 && saved.links && typeof saved.links === 'object' && !Array.isArray(saved.links) ? saved.links : {};
     } catch (_) { return {}; }
   }
-  function systemUrl(board, system) { return safe(storedLinks(board)[system.id]) || safe(system.url); }
+  function systemUrl(board, system) {
+    const saved = safe(storedLinks(board)[system.id]);
+    if (system.id === 'staff-calendar' && (!saved || /^https:\/\/waggawagga-h\.sentral\.com\.au\/(dashboard\/?)?$/.test(saved))) return safe(system.url);
+    return saved || safe(system.url);
+  }
   function destinationLabel(url) {
     if (/drive\.google\.com\/drive\/(search|shared-drives)/.test(url)) return /\/search/.test(url) ? 'Find in Drive' : 'Open Shared drives';
     if (/docs\.google\.com\/(document|spreadsheets|presentation)\//.test(url) || /drive\.google\.com\/file\//.test(url)) return 'Open document';
@@ -53,7 +57,7 @@
     {id:'document-library', title:'Document Library — VET Coordinator', detail:'RTO procedures and forms', mark:'VC'}
   ] : [
     {id:'sentral', title:'Sentral', detail:'School operations and reports', mark:'SE'},
-    {id:'staff-calendar', title:'Staff calendar', detail:'Open Sentral, then Staff Calendar', mark:'CA'},
+    {id:'staff-calendar', title:'Staff calendar', detail:'Live school dates and events', mark:'CA'},
     {id:'tas-drive', title:'TAS Drive', detail:'Faculty documents and resources', mark:'TD'},
     {id:'head-teacher-guide', title:'Head Teacher guide', detail:'Reference guide and local context', mark:'HT'},
     {id:'faculty-plan', title:'Faculty Management Plan', detail:'Current plan and school alignment', mark:'FP'}

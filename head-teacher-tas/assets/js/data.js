@@ -9,10 +9,10 @@
       label: "Sentral staff calendar",
       group: "School operations",
       kind: "staff",
-      status: "front-door",
-      url: "https://waggawagga-h.sentral.com.au/dashboard/",
+      status: "staff-link",
+      url: "https://waggawagga-h.sentral.com.au/s-lD94m0/webcal/calendar/17",
       purpose: "Live school dates, reporting milestones, meetings and events.",
-      note: "Sign in through Sentral, then open the current Staff School Calendar. The former direct calendar route did not reliably preserve the intended calendar when signed out."
+      note: "Opens the staff calendar directly. Sign in to Sentral if prompted."
     },
     {
       id: "sentral",
