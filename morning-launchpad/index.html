@@ -11,11 +11,20 @@
   <title>Morning Launchpad</title>
   <link rel="icon" href="./favicon.svg" type="image/svg+xml">
   <script src="./assets/theme-2f817b373efd.js"></script>
-  <link rel="stylesheet" href="./assets/launchpad-FKB7Z4MS.css">
+  <link rel="stylesheet" href="./assets/launchpad-FKB7Z4MS.css?v=evernote-choice">
 </head>
 <body>
   <div id="root"></div>
+  <dialog id="evernote-chooser" aria-labelledby="evernote-choice-title">
+    <h2 id="evernote-choice-title">Open Evernote</h2>
+    <p>Choose how you’d like to open Evernote.</p>
+    <div class="evernote-choices">
+      <a href="evernote:///" data-close-evernote>Desktop app</a>
+      <a href="https://www.evernote.com/client/web#/notebook/9d46da23-e5e9-46fd-88bb-d53a9722b334/note/ec1dc378-d039-4e2c-da5b-f316d5383da0" target="_blank" rel="noopener noreferrer" data-close-evernote>Web app</a>
+    </div>
+    <form method="dialog"><button autofocus>Cancel</button></form>
+  </dialog>
   <noscript>Morning Launchpad needs JavaScript to show your saved daily plan and links.</noscript>
-  <script type="module" src="./assets/launchpad-LHM7QKM7.js?v=evernote-desktop"></script>
+  <script type="module" src="./assets/launchpad-LHM7QKM7.js?v=evernote-choice"></script>
 </body>
 </html>
