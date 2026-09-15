@@ -9,6 +9,12 @@ const repo = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 if (!process.argv[2]) throw new Error('Pass the local Launchpad dist-links directory.');
 const built = resolve(process.argv[2]);
 const destination = resolve(repo, 'morning-launchpad');
+// The online edition now includes a maintained import/review extension.
+// Stop an older local build from silently removing it or its plan integration.
+const currentPage = await readFile(resolve(destination, 'index.html'), 'utf8').catch(() => '');
+if (currentPage.includes('summary-import.css')) {
+  throw new Error('The online Launchpad includes summary import. Update the maintained online files directly; port summary-import and useSummaryBridge to the local source before replacing this build. See docs/morning-launchpad-online.md.');
+}
 const original = (await readFile(resolve(built, 'index.html'), 'utf8')).replace(/\r\n/g, '\n');
 if (!original.includes('<title>Morning Launchpad</title>')) throw new Error('Unexpected page.');
 const references = [...original.matchAll(/(?:src|href)="([^"]+)"/g)].map(match => match[1]);

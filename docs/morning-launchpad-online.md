@@ -10,6 +10,18 @@ The TAS/VET Hub links to this online page. Main Page is an outgoing shortcut onl
 
 ## Update
 
+### Summary import and review (15 September 2026)
+
+The online edition adds paste, text/Markdown/HTML import and JSON review-list restore. It extracts explicitly titled actions locally; it is not an AI service and does not connect to Evernote. HTML is parsed in an inert template, active elements are discarded, and only plain text and validated HTTPS links reach the interface. No imported material belongs in this public repository.
+
+Maintained sources are `morning-launchpad/assets/summary-core.mjs`, `summary-import.mjs`, `summary-bridge.mjs` and `summary-import.css`. The existing built React entry imports these modules, renders `<summary-import>` before the daily plan, and calls `useSummaryBridge` with the current day and existing save function. The local installed app's original source is not in this repository.
+
+The importer uses `morning-launchpad-summary:v1` browser storage. It merges reimports, retains edits and resolved states, supports review-list backup, and checks for concurrent writes. It never writes `morning-launchpad-routine:v1` directly: reviewed actions pass to React's existing conflict-safe plan saver in one batch. Small days permit one imported priority; normal days permit three total. Exact note titles are included in saved task titles and the chosen HTTPS URL is retained. All other existing daily-plan behaviour remains in the original component.
+
+Run `node --test tests/summary-import.test.mjs`. Browser verification should cover paste, HTML import without executing active content, duplicate imports, selecting and editing priorities, adding to the actual plan, refresh persistence and full/closed-day handling. Use synthetic notes for public test fixtures. User data must not be committed.
+
+Update cache identifiers when changing published modules. Refresh the SHA-256 manifest for the page and all active assets. The legacy exporter below now stops before overwriting an online edition with this extension; port the extension into the local app's source before re-enabling an export from that app.
+
 Maintain the source in the installed Morning Launchpad project. Build that app, then run this repository's exporter with the generated `dist-links` directory:
 
 ```text
