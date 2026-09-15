@@ -1,4 +1,4 @@
-import {INBOX_KEY, LIMIT, parseSummary, validateInbox, mergeInbox, safeUrl, PRIORITIES, NEXT_ACTIONS, EDITABLE, enrich, todaySydney, bucket, rank, nextDate, reconcilePlans, consolidateDuplicates} from './summary-core.mjs?v=6';
+import {INBOX_KEY, LIMIT, parseSummary, validateInbox, mergeInbox, safeUrl, PRIORITIES, NEXT_ACTIONS, EDITABLE, enrich, todaySydney, bucket, rank, nextDate, reconcilePlans, consolidateDuplicates} from './summary-core.mjs?v=7';
 
 function element(tag, text, attributes = {}) {
   const node = document.createElement(tag);
@@ -44,7 +44,7 @@ class SummaryImport extends HTMLElement {
     this.selected=new Set();this.view='ready';this.expanded=false;this.planState={ready:false,count:0,capacity:'normal',closed:false};this.blocked=false;this.raw=null;
     try {this.raw=localStorage.getItem(INBOX_KEY);this.inbox=validateInbox(this.raw);} catch {this.blocked=true;this.inbox=validateInbox(null);}
     this.build();
-    this.onPlan=event=>{this.planState=event.detail;this.syncPlans();this.renderFocus();this.updateCount();};
+    this.onPlan=event=>{this.planState=event.detail;this.syncPlans();this.updateCount();};
     this.onStorage=event=>{if(event.key===INBOX_KEY||event.key===null){this.blocked=true;this.renderItems();this.say('This review list changed in another tab. Reload before making changes.',true);}};
     window.addEventListener('launchpad:plan-updated',this.onPlan);window.addEventListener('storage',this.onStorage);
     const request={};window.dispatchEvent(new CustomEvent('launchpad:plan-state',{detail:request}));if(request.state)this.planState=request.state;
@@ -58,7 +58,7 @@ class SummaryImport extends HTMLElement {
       const checked=validateInbox(JSON.stringify(next));const raw=JSON.stringify(checked);localStorage.setItem(INBOX_KEY,raw);this.raw=raw;this.inbox=checked;return true;
     } catch(error){this.say(`Could not save: ${error.message} Your previous saved list is unchanged.`,true);return false;}
   }
-  say(message,error=false){this.message.textContent=message;this.message.classList.toggle('import-error',error);this.fileMessage.textContent=message;this.fileMessage.classList.toggle('import-error',error);if(error){if(this.taskDialog?.open)this.taskDialog.close();this.inputDetails.hidden=false;this.inputDetails.open=true;this.fileMessage.scrollIntoView({block:'center'});}}
+  say(message,error=false){this.message.textContent=message;this.message.classList.toggle('import-error',error);this.fileMessage.textContent=message;this.fileMessage.classList.toggle('import-error',error);if(error){this.inputDetails.open=true;this.fileMessage.scrollIntoView({block:'center'});}}
   syncPlans(){
     if(this.blocked||!this.planState.ready||!this.planState.days)return;
     const progress=reconcilePlans(this.inbox.items,this.planState.days,this.planState.date);
@@ -67,12 +67,11 @@ class SummaryImport extends HTMLElement {
   }
   build() {
     this.replaceChildren();this.setAttribute('aria-label','Import and review your email summary');
-    this.focusPanel=element('section',undefined,{class:'focus-panel','aria-label':'Your focus today'});this.append(this.focusPanel);
     const heading=element('div',undefined,{class:'import-heading'});const copy=element('div');
-    copy.append(element('p','CHOOSE WHAT COMES NEXT',{class:'eyebrow'}),element('h2','Your task list'),element('p','Choose a task for today, or open Details when you need the background.',{class:'import-intro'}));
-    heading.append(copy,button('Add my note',()=>this.editPersonal()),button('Import email summary',()=>{this.inputDetails.hidden=false;this.inputDetails.open=true;this.file.focus();}));this.append(heading);
+    copy.append(element('p','FROM YOUR NOTES TO TODAY',{class:'eyebrow'}),element('h2','Bring your work into focus.'),element('p','Bring in your AI-processed summary. Keep the details here and choose up to three priorities for today.',{class:'import-intro'}));
+    heading.append(copy,button('Add my note',()=>this.editPersonal()),button('Import email summary',()=>{this.inputDetails.open=true;this.file.focus();},'import-primary'));this.append(heading);
     this.message=element('p','',{role:'status','aria-live':'polite',class:'import-message'});this.append(this.message);this.buildNoteEditor();
-    this.inputDetails=element('details',undefined,{class:'import-input'});this.inputDetails.hidden=true;this.inputDetails.append(element('summary','Import an AI task file or an Evernote export'));
+    this.inputDetails=element('details',undefined,{class:'import-input'});this.inputDetails.append(element('summary','Import an AI task file or an Evernote export'));
     this.inputDetails.append(element('p','For priorities, dates and follow-ups, upload your Evernote HTML to our chat first and ask for a Launchpad AI task file. Import the returned JSON here. Raw HTML still creates basic review items.'));
     const instructions=element('a','Download the AI processing instructions',{href:'./launchpad-ai-prompt.md',download:'launchpad-ai-prompt.md'});this.inputDetails.append(instructions);
     const label=element('label','Summary or task data',{for:'summary-paste'});this.paste=element('textarea','',{id:'summary-paste',rows:'5',maxlength:String(LIMIT),placeholder:'Choose the AI task file below, or paste a summary with exact note titles.'});
@@ -85,28 +84,26 @@ class SummaryImport extends HTMLElement {
     this.inputDetails.append(label,this.paste,actions,this.fileMessage);this.append(this.inputDetails);
     this.brief=element('details',undefined,{class:'import-other'});this.brief.append(element('summary','Read the processed briefing'));
     this.briefDate=element('p','',{class:'import-help'});this.briefText=element('pre','',{class:'import-briefing'});
-    this.brief.append(this.briefDate,button('Download briefing',()=>download(this.inbox.briefing||'','launchpad-briefing.md','text/markdown')),this.briefText);
+    this.brief.append(this.briefDate,button('Download briefing',()=>download(this.inbox.briefing||'','launchpad-briefing.md','text/markdown')),this.briefText);this.append(this.brief);
     this.toolbar=element('div',undefined,{class:'import-toolbar'});this.counter=element('p');this.addButton=button('Add selected to today',()=>this.addToPlan(),'import-primary');this.toolbar.append(this.counter,this.addButton);this.append(this.toolbar);
     this.nav=element('nav',undefined,{'aria-label':'Task views',class:'import-tabs'});this.tabs={};
-    for(const [key,label]of [['ready','For today'],['upcoming','Coming up'],['waiting','Waiting'],['later','Later'],['notes','My notes'],['done','Done'],['dismissed','Put aside']]){const b=button(label,()=>{this.view=key;this.expanded=false;this.renderItems();});this.tabs[key]={button:b,label};this.nav.append(b);}this.append(this.nav);
+    for(const [key,label]of [['ready','Today'],['upcoming','Coming up'],['waiting','Waiting'],['later','Later'],['notes','My notes'],['done','Done'],['dismissed','Put aside']]){const b=button(label,()=>{this.view=key;this.expanded=false;this.renderItems();});this.tabs[key]={button:b,label};this.nav.append(b);}this.append(this.nav);
     this.viewHelp=element('p','',{class:'import-help'});this.list=element('div',undefined,{class:'import-list'});this.append(this.viewHelp,this.list);
     this.earlier=element('details',undefined,{class:'import-other'});this.earlierHeading=element('summary');this.earlierList=element('div',undefined,{class:'import-list'});this.earlier.append(this.earlierHeading,element('p','The AI task file replaces these basic entries. Their text and edits are kept here; restore one only if it contains additional work.',{class:'import-help'}),this.earlierList);this.append(this.earlier);
-    const footer=element('div',undefined,{class:'import-footer'});footer.append(element('p','Saved in this browser. Export your task backup to keep progress or move to another computer. Email and Evernote are not changed.',{class:'import-help'}),button('Export task backup',()=>{const raw=this.blocked?this.raw:JSON.stringify(this.inbox,null,2);if(raw===null){this.say('There is no saved task list to export.');return;}download(raw,'launchpad-task-backup.json');}));this.append(this.brief,footer);
-    this.taskDialog=element('dialog',undefined,{class:'task-dialog','aria-label':'Task details'});this.dialogBody=element('div');this.taskDialog.append(button('Close details',()=>this.taskDialog.close(),'dialog-close'),this.dialogBody);this.taskDialog.addEventListener('close',()=>{if(this.detailOpener?.isConnected)this.detailOpener.focus();else this.tabs[this.view]?.button.focus();});this.append(this.taskDialog);
+    const footer=element('div',undefined,{class:'import-footer'});footer.append(element('p','Saved in this browser. Export your task backup to keep progress or move to another computer. Email and Evernote are not changed.',{class:'import-help'}),button('Export task backup',()=>{const raw=this.blocked?this.raw:JSON.stringify(this.inbox,null,2);if(raw===null){this.say('There is no saved task list to export.');return;}download(raw,'launchpad-task-backup.json');}));this.append(footer);
   }
   buildNoteEditor(){
-    this.noteEditor=element('details',undefined,{class:'import-input'});this.noteEditor.hidden=true;this.noteEditor.append(element('summary','Write your own note'));
+    this.noteEditor=element('details',undefined,{class:'import-input'});this.noteEditor.append(element('summary','Write your own note'));
     this.noteForm=element('form');this.noteInputs={};
     for(const[key,label,type,max]of [['title','Note title','text',300],['source','My note','textarea',20000],['action','Next action (optional)','textarea',800],['dueDate','Due date (optional)','date',10]]){
       const wrapper=element('label',label);const input=element(type==='textarea'?'textarea':'input',undefined,{'aria-label':label,maxlength:String(max),...(type==='textarea'?{rows:key==='source'?'5':'2'}:{type})});
       if(key==='title')input.required=true;this.noteInputs[key]=input;wrapper.append(input);this.noteForm.append(wrapper);
     }
     this.noteForm.append(element('p','Leave the action blank to keep a reference note. Add an action to include it in your task views. Your notes are included in Export task backup.',{class:'import-help'}));
-    const save=element('button','Save note',{type:'submit',class:'import-primary'});this.noteForm.append(save,button('Cancel',()=>{this.noteEditor.open=false;this.noteEditor.hidden=true;this.editingNote=null;this.noteForm.reset();}));
+    const save=element('button','Save note',{type:'submit',class:'import-primary'});this.noteForm.append(save,button('Cancel',()=>{this.noteEditor.open=false;this.editingNote=null;this.noteForm.reset();}));
     this.noteForm.addEventListener('submit',event=>{event.preventDefault();this.savePersonal();});this.noteEditor.append(this.noteForm);this.append(this.noteEditor);
   }
   editPersonal(item){
-    if(this.taskDialog?.open){this.detailOpener=this.noteInputs.title;this.taskDialog.close();}this.noteEditor.hidden=false;
     this.editingNote=item?.id||null;for(const[key,input]of Object.entries(this.noteInputs))input.value=item?.[key]||'';
     this.noteEditor.open=true;this.noteInputs.title.focus();this.noteEditor.scrollIntoView({behavior:'smooth',block:'center'});
   }
@@ -117,7 +114,7 @@ class SummaryImport extends HTMLElement {
     const item=enrich({...old,...values,id,personal:true,taskKey:old?.taskKey||`personal:${id}`,dueDate:values.dueDate||null,status:values.action?'review':'note',reason:'Your own note',dirty:[...new Set([...(old?.dirty||[]),'title','source','action','dueDate'])]});
     const items=old?this.inbox.items.map(x=>x.id===id?item:x):[...this.inbox.items,item];
     if(!this.persist({...this.inbox,items}))return;
-    this.view='notes';this.noteEditor.open=false;this.noteEditor.hidden=true;this.editingNote=null;this.noteForm.reset();this.renderItems();this.say(`Saved “${item.title}” in My notes.${item.action?' Its action is also in your task views.':''}`);this.nav.scrollIntoView({behavior:'smooth',block:'start'});
+    this.view='notes';this.noteEditor.open=false;this.editingNote=null;this.noteForm.reset();this.renderItems();this.say(`Saved “${item.title}” in My notes.${item.action?' Its action is also in your task views.':''}`);this.nav.scrollIntoView({behavior:'smooth',block:'start'});
   }
   importText(text){try{if(text.trim().startsWith('{'))this.importData(validateInbox(text));else this.importData({items:parseSummary(text)});}catch(error){this.say(error.message,true);}}
   async importFile(file){
@@ -133,7 +130,7 @@ class SummaryImport extends HTMLElement {
     const next={...this.inbox,version:2,items:merged.items,importedAt:new Date().toISOString()};
     for(const key of ['briefing','reviewDate','generatedAt'])if(data[key]!==undefined)next[key]=data[key];
     if(!this.persist(next))return;
-    this.selected.clear();this.paste.value='';this.inputDetails.open=false;this.inputDetails.hidden=true;this.syncPlans();this.renderItems();
+    this.selected.clear();this.paste.value='';this.inputDetails.open=false;this.syncPlans();this.renderItems();
     this.say(`${merged.added} tasks added; ${merged.updated} matched tasks refreshed. Your edits and progress are preserved.${merged.archived?` ${merged.archived} basic entries retained under Earlier imports.`:''}`);
     this.toolbar.scrollIntoView({behavior:'smooth',block:'start'});
   }
@@ -152,9 +149,9 @@ class SummaryImport extends HTMLElement {
     const request={id:item.id,title:`[${item.title}] — ${item.action}`,planAliases:item.planAliases,state:status==='done'?'done':'todo'};
     window.dispatchEvent(new CustomEvent('launchpad:set-reviewed-progress',{detail:request}));
     if(request.result&&!request.result.ok){this.say(request.result.message,true);return;}
-    this.selected.delete(item.id);if(this.updateItem(item.id,{status,preserveDoneOnce:false},true)){if(this.taskDialog.open)this.taskDialog.close();this.view=status==='done'?'done':item.personal?'notes':'ready';this.renderItems();this.say(status==='done'?`Marked done: ${item.title}. Saved in the Done view.`:`Restored: ${item.title}.`);this.nav.scrollIntoView({behavior:'smooth',block:'start'});}
+    this.selected.delete(item.id);if(this.updateItem(item.id,{status,preserveDoneOnce:false},true)){this.view=status==='done'?'done':item.personal?'notes':'ready';this.renderItems();this.say(status==='done'?`Marked done: ${item.title}. Saved in the Done view.`:`Restored: ${item.title}.`);this.nav.scrollIntoView({behavior:'smooth',block:'start'});}
   }
-  fullCard(item){
+  card(item){
     const article=element('article',undefined,{class:'import-card','data-task-key':item.taskKey||item.id});
     const active=['review','added'].includes(item.status);const dependencies=item.dependsOn.map(key=>this.inbox.items.find(x=>x.taskKey===key));
     const blockedBy=dependencies.some(x=>!x||x.status!=='done');
@@ -171,7 +168,7 @@ class SummaryImport extends HTMLElement {
     if(item.waitingOn)article.append(element('p',`Waiting on: ${item.waitingOn}`,{class:'import-help'}));
     if(item.instruction)article.append(element('p',`Steve’s instruction: ${item.instruction}`,{class:'import-instruction'}));
     const action=element('textarea',item.action,{rows:'2',maxlength:'800','aria-label':`Action for ${item.title}`});action.disabled=this.blocked||!active||item.status==='added';
-    action.addEventListener('change',()=>{if(!action.value.trim()){action.value=item.action;this.say('Keep a short action, or put the task aside.',true);return;}this.updateItem(item.id,{action:action.value.trim()},true);});if(item.action)article.append(action);if(item.personal&&item.source)article.append(element('pre',item.source,{class:'import-source'}));
+    action.addEventListener('change',()=>{if(!action.value.trim()){action.value=item.action;this.say('Keep a short action, or put the task aside.',true);return;}this.updateItem(item.id,{action:action.value.trim()});});if(item.action)article.append(action);if(item.personal&&item.source)article.append(element('pre',item.source,{class:'import-source'}));
     if(item.url)article.append(element('a','Open linked work ↗',{href:item.url,target:'_blank',rel:'noopener noreferrer',class:'import-work-link'}));
     if(item.dependsOn.length)article.append(element('p',`Depends on: ${dependencies.map((x,i)=>x?`${x.action}${x.status==='done'?' ✓':''}`:`Missing task ${item.dependsOn[i]}`).join('; ')}${blockedBy?' — complete the prerequisite first.':''}`,{class:'import-help'}));
     if(active){
@@ -190,59 +187,19 @@ class SummaryImport extends HTMLElement {
       if(item.status==='review'){const group=element('select',undefined,{'aria-label':`Review group for ${item.title}`});for(const[value,label]of [['ready','Consider for today'],['later','Later'],['waiting','Waiting on someone']])group.append(element('option',label,{value}));group.value=item.group;group.disabled=this.blocked;group.addEventListener('change',()=>{this.selected.delete(item.id);this.updateItem(item.id,{group:group.value},true);});controls.append(group);}
       else controls.append(button('Open today’s plan',()=>document.getElementById('daily-plan')?.scrollIntoView({behavior:'smooth'})));
       const done=button('Mark done',()=>this.setProgress(item,'done'));done.disabled=this.blocked;controls.append(done);
-      if(item.status==='review'){const dismiss=button('Put aside',()=>{this.selected.delete(item.id);if(this.updateItem(item.id,{status:'dismissed'},true)){this.taskDialog.close();this.say(`Put aside: ${item.title}. Find it in Put aside.`);}});dismiss.disabled=this.blocked;controls.append(dismiss);}
+      if(item.status==='review'){const dismiss=button('Put aside',()=>{this.selected.delete(item.id);this.updateItem(item.id,{status:'dismissed'},true);});dismiss.disabled=this.blocked;controls.append(dismiss);}
     }else if(!item.duplicateOf&&item.status!=='note'){const restore=button('Review again',()=>this.setProgress(item,'review'));restore.disabled=this.blocked;controls.append(restore);}
     article.append(controls);return article;
   }
-  showDetails(item,opener){
-    this.detailOpener=opener;this.dialogBody.replaceChildren(this.fullCard(item));this.taskDialog.showModal();
-  }
-  card(item){
-    const active=['review','added'].includes(item.status);
-    const tone=item.status==='done'?'done':item.status==='added'?'chosen':!active?'quiet':item.dueDate&&item.dueDate<=todaySydney()?'due':item.group==='waiting'?'waiting':'quiet';
-    const card=element('article',undefined,{class:`import-card compact-card tone-${tone}`,'data-task-key':item.taskKey||item.id});
-    const meta=element('div',undefined,{class:'compact-meta'});
-    const label={done:'✓ Completed',chosen:'In today’s focus',due:'Deadline needs attention',waiting:'Waiting',quiet:item.status==='superseded'?'Earlier import · inactive':item.status==='dismissed'?'Put aside':item.personal?'My note':'To consider'}[tone];
-    meta.append(element('span',label,{class:'task-state'}));
-    const date=nextDate(item);if(date)meta.append(element('span',`${date===item.dueDate?'Due':date===item.followUpDate?'Follow up':'Event'} ${dateLabel(date)}`));card.append(meta);
-    card.append(element('h3',item.action||item.title,{class:'compact-action'}));
-    if(item.action)card.append(element('p',item.title,{class:'compact-source'}));
-    else if(item.source)card.append(element('p',item.source.slice(0,180)+(item.source.length>180?'…':''),{class:'compact-source'}));
-    const controls=element('div',undefined,{class:'compact-controls'});
-    if(item.status==='review'){
-      const label=element('label',undefined,{class:'compact-pick'});const pick=element('input',undefined,{type:'checkbox','aria-label':`Choose ${item.title} for today`});pick.checked=this.selected.has(item.id);
-      pick.disabled=this.blocked||item.dependsOn.some(key=>!this.inbox.items.some(x=>x.taskKey===key&&x.status==='done'));
-      pick.addEventListener('change',()=>{if(pick.checked)this.selected.add(item.id);else this.selected.delete(item.id);card.classList.toggle('is-selected',pick.checked);this.updateCount();});label.append(pick,document.createTextNode('Choose for today'));controls.append(label);card.classList.toggle('is-selected',pick.checked);
-      if(pick.disabled&&!this.blocked)card.append(element('p','Prerequisite unfinished — see Details.',{class:'import-help'}));
-    }
-    const details=button('Details',()=>this.showDetails(this.inbox.items.find(x=>x.id===item.id)||item,details));details.setAttribute('aria-label',`Details for ${item.title}`);controls.append(details);
-    if(active){const done=button('Mark done',()=>this.setProgress(item,'done'),'compact-done');done.disabled=this.blocked;controls.append(done);}
-    else if(item.status==='done'){const restore=button('Review again',()=>this.setProgress(item,'review'));restore.disabled=this.blocked;controls.append(restore);}
-    card.append(controls);return card;
-  }
-  renderFocus(){
-    if(!this.focusPanel)return;
-    const day=this.planState.days?.[this.planState.date];const tasks=day?.tasks||[];const pending=tasks.filter(x=>x.state==='todo');
-    this.focusPanel.replaceChildren(element('p','START HERE',{class:'eyebrow'}),element('h2','Your focus today'));
-    this.focusPanel.append(element('p',day?.closed?'Today is wrapped up. Your plan is saved.':pending.length?`${pending.length} chosen ${pending.length===1?'action':'actions'} remaining. The rest can stay in your task list.`:tasks.length?'Your chosen work is finished or put off for today.':'Choose up to three actions below. You don’t need to deal with the whole list.',{class:'focus-intro'}));
-    if(!this.planState.ready)this.focusPanel.append(element('p','Loading your saved plan…'));
-    else for(const[order,task]of pending.entries()){
-      const row=element('div',undefined,{class:'focus-row'});const title=task.title.replace(/^\[[^\]]+\]\s*[—–-]\s*/,'');
-      row.append(element('span',String(order+1),{class:'focus-number'}),element('strong',title));
-      if(safeUrl(task.url))row.append(element('a','Open work ↗',{href:task.url,target:'_blank',rel:'noopener noreferrer',class:'focus-open'}));
-      const done=button('Mark done',()=>{const item=this.inbox.items.find(x=>`summary:${x.id}`===task.id);if(item){this.setProgress(item,'done');return;}const request={id:task.id,title:task.title,state:'done'};window.dispatchEvent(new CustomEvent('launchpad:set-reviewed-progress',{detail:request}));if(!request.result?.ok)this.say(request.result?.message||'The plan is still loading.',true);else this.say(`Marked done: ${title}. Saved in your daily plan.`);});done.disabled=this.blocked||day.closed;row.append(done);this.focusPanel.append(row);
-    }
-    this.focusPanel.append(button(tasks.length?'Open today’s plan':'Set up today’s plan',()=>document.getElementById('daily-plan')?.scrollIntoView({behavior:'smooth',block:'start'}),'focus-plan'));
-  }
   renderItems(){
-    this.renderFocus();const today=todaySydney();const active=this.inbox.items.filter(x=>['review','added'].includes(x.status));
-    const inView=(x,key)=>key==='notes'?x.personal&&['note','review','added'].includes(x.status):['done','dismissed'].includes(key)?x.status===key:x.status!=='review'?false:key==='upcoming'?Boolean(nextDate(x)):key==='waiting'?x.group==='waiting':(x.status==='added'?'ready':bucket(x,today))===key;
+    const today=todaySydney();const active=this.inbox.items.filter(x=>['review','added'].includes(x.status));
+    const inView=(x,key)=>key==='notes'?x.personal&&['note','review','added'].includes(x.status):['done','dismissed'].includes(key)?x.status===key:!['review','added'].includes(x.status)?false:key==='upcoming'?Boolean(nextDate(x)):key==='waiting'?x.group==='waiting':(x.status==='added'?'ready':bucket(x,today))===key;
     for(const[key,{button:b,label}]of Object.entries(this.tabs)){b.textContent=`${label} (${this.inbox.items.filter(x=>inView(x,key)).length})`;b.setAttribute('aria-pressed',String(this.view===key));}
     const sorted=this.inbox.items.filter(x=>inView(x,this.view)).sort((a,b)=>this.view==='upcoming'?nextDate(a).localeCompare(nextDate(b))||rank(b,today)-rank(a,today):rank(b,today)-rank(a,today));
     this.list.replaceChildren();this.nav.hidden=!this.inbox.items.length;
-    this.viewHelp.textContent={ready:'Suggestions for today. Choose only what fits; Details holds the source, priority and dates.',upcoming:'Deadlines, event dates and scheduled follow-ups. Dates come from the source or your edits.',waiting:'Replies and prerequisites. Add a follow-up date when you want an item to return to Today.',later:'Useful work you have chosen to leave for later.',notes:'Your own notes. Use Edit my note to add details or turn a reference note into an action.',done:'Completed tasks are saved here. Review again returns a task to your active work.',dismissed:'Tasks you put aside are saved here. Review again restores them.'}[this.view];
+    this.viewHelp.textContent={ready:'Review the suggestions and choose what fits. An urgent label is a suggestion, not a confirmed deadline.',upcoming:'Deadlines, event dates and scheduled follow-ups. Dates come from the source or your edits.',waiting:'Replies and prerequisites. Add a follow-up date when you want an item to return to Today.',later:'Useful work you have chosen to leave for later.',notes:'Your own notes. Use Edit my note to add details or turn a reference note into an action.',done:'Completed tasks are saved here. Review again returns a task to your active work.',dismissed:'Tasks you put aside are saved here. Review again restores them.'}[this.view];
     if(!sorted.length)this.list.append(element('p',this.inbox.items.length?'Nothing in this view.':'Import your processed task file to begin.',{class:'import-empty'}));
-    const shown=this.view==='ready'&&!this.expanded?sorted.slice(0,3):sorted;shown.forEach(x=>this.list.append(this.card(x)));
+    const shown=this.view==='ready'&&!this.expanded?sorted.slice(0,5):sorted;shown.forEach(x=>this.list.append(this.card(x)));
     if(shown.length<sorted.length)this.list.append(button(`Show ${sorted.length-shown.length} more actions`,()=>{this.expanded=true;this.renderItems();}));
     const earlier=this.inbox.items.filter(x=>x.status==='superseded');
     this.earlierList.replaceChildren(...earlier.map(x=>this.card(x)));this.earlierHeading.textContent=`Earlier imports (${earlier.length})`;this.earlier.hidden=!earlier.length;
@@ -253,7 +210,7 @@ class SummaryImport extends HTMLElement {
     const room=Math.max(0,(this.planState.capacity==='small'?1:3)-this.planState.count);
     this.counter.textContent=this.planState.closed?'Today’s plan is wrapped up. Reopen it below to add priorities.':`${this.selected.size} selected · Room for ${room} more today`;
     this.addButton.disabled=this.blocked||!this.planState.ready||this.planState.closed||!this.selected.size||this.selected.size>room;
-    this.importButton.disabled=this.blocked||this.reading;this.file.disabled=this.blocked||this.reading;this.toolbar.hidden=!this.selected.size;
+    this.importButton.disabled=this.blocked||this.reading;this.file.disabled=this.blocked||this.reading;this.toolbar.hidden=!this.inbox.items.length;
   }
   addToPlan(){
     const items=this.inbox.items.filter(x=>this.selected.has(x.id));
