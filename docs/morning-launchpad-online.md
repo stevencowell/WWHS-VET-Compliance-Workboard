@@ -29,3 +29,15 @@ node scripts/export-launchpad.mjs <path-to-morning-launchpad/dist-links>
 ```
 
 The exporter allows only the four assets referenced by the generated page and creates relative links so the page works in its GitHub Pages subdirectory. It also refreshes `docs/morning-launchpad-2026-09-15.sha256`. Review and publish those output files through the normal workboard release process. Do not recursively copy the local Launchpad folder.
+
+### Structured AI tasks (15 September 2026)
+
+The version 2 task file is the recommended input after the Evernote master prompt is applied in chat. Raw HTML remains a basic extraction path; the website contains no AI service and makes no email or Evernote requests. The downloadable `morning-launchpad/launchpad-ai-prompt.md` documents the workflow and schema. Personal task files and briefings must remain outside this public repository.
+
+The original inbox key is retained for automatic, non-destructive version 1 migration. Validation now accepts version 2 task fields: stable taskKey, priority, nextAction, deadline/event/follow-up dates, date uncertainty, owner, waitingOn, instruction, related source titles, dependency keys and a concrete help request. A briefing snapshot can be included in the file. Dates are validated as real calendar dates; links remain HTTPS-only.
+
+Four task views display Today, Coming up, Waiting and Later. Coming up includes dated waiting items, so their registration or response deadlines remain visible. Waiting follow-ups and overdue deadlines return to Today. Users can edit fields or mark tasks done. Editing sets per-field overrides; subsequent AI imports refresh untouched fields while retaining overrides, local IDs and progress. Exact task keys or exact source-title/action matches deduplicate imports. Matching basic review entries are preserved under Earlier imports, rather than deleted. Missing tasks in a later file are not automatically removed.
+
+Imported daily-plan tasks use `summary:<local task id>` IDs. The bridge passes read-only plan history and Sydney day to the importer; all daily-plan mutations still go through the existing React conflict-safe saver. Completion in the plan is reflected in the task list, and unfinished tasks are available for review on later days. Restoring and completing a task from its card also update the current day's matching plan item. Closed days require reopening before changes. Dependency tasks cannot be selected for today until their prerequisites are marked complete.
+
+The task backup includes richer fields, overrides and the briefing. Daily plan history retains its existing separate backup control. Progress remains in each browser and does not automatically synchronise between computers.

@@ -104,33 +104,6 @@ export function parseSummary(input) {
   return [...unique.values()].sort((a, b) => b.score - a.score).slice(0, 150);
 }
 
-export function validateInbox(raw) {
-  if (raw === null) return {version: 1, items: [], importedAt: null};
-  const value = JSON.parse(raw);
-  if (value?.version !== 1 || !Array.isArray(value.items) || value.items.length > 150) throw new Error('Invalid review list');
-  for (const item of value.items) {
-    if (!item || typeof item.id !== 'string' || typeof item.title !== 'string' || !item.title.trim() || item.title.length > 300 ||
-      typeof item.action !== 'string' || !item.action.trim() || item.action.length > 800 || typeof item.source !== 'string' || item.source.length > 20000 ||
-      !Array.isArray(item.links) || item.links.length > 20 || item.links.some(url => !safeUrl(url)) ||
-      typeof item.url !== 'string' || item.url && !safeUrl(item.url) ||
-      !['ready', 'later', 'waiting'].includes(item.group) || !['review', 'added', 'dismissed'].includes(item.status)) throw new Error('Invalid review item');
-  }
-  if (new Set(value.items.map(item => item.id)).size !== value.items.length) throw new Error('Duplicate review IDs');
-  return value;
-}
-
-export function mergeInbox(existing, incoming) {
-  const items = existing.map(item => ({...item}));
-  let added = 0;
-  for (const next of incoming) {
-    const previous = items.find(item => item.title === next.title && (item.source === next.source || item.action === next.action));
-    if (previous) continue; // Keep edits, review choices and already-added status on reimport.
-    if (items.length >= 150) throw new Error('The review list is full. Export it and remove resolved items before importing more.');
-    items.push({...next, id: crypto.randomUUID(), selected: false}); added++;
-  }
-  return {items, added};
-}
-
 export function prepareTasks(day, candidates, createId = () => crypto.randomUUID()) {
   if (day.closed) throw new Error('Reopen today’s plan before adding priorities.');
   if (!Array.isArray(candidates) || !candidates.length || candidates.length > 3) throw new Error('Choose one to three priorities.');
@@ -140,10 +113,121 @@ export function prepareTasks(day, candidates, createId = () => crypto.randomUUID
     const title = `[${item.title}] — ${item.action.trim()}`;
     if (title.length > 1200) throw new Error('Shorten the action before adding it to your plan.');
     if (item.url && !safeUrl(item.url)) throw new Error('Use a full https:// link.');
-    if (day.tasks.some(task => task.title === title) || additions.some(task => task.title === title)) continue;
-    additions.push({id: createId(), title, state: 'todo', ...(item.url ? {url: item.url} : {})});
+    if (day.tasks.some(task => task.title === title || item.id && task.id === `summary:${item.id}`) || additions.some(task => task.title === title)) continue;
+    additions.push({id: item.id ? `summary:${item.id}` : createId(), title, state: 'todo', ...(item.url ? {url: item.url} : {})});
   }
   const limit = day.capacity === 'small' ? 1 : 3;
   if (day.tasks.length + additions.length > limit) throw new Error(`There is room for ${Math.max(0, limit - day.tasks.length)} more ${limit === 1 ? 'priority on a small day' : 'priorities today'}. Keep the rest for later.`);
   return additions;
+}
+
+export const PRIORITIES = {
+  '': 'Priority needs review', red: '🔴 Urgent / Important to me', blue: '🔵 Urgent / Important to others',
+  green: '🟢 Not Urgent / Important to me', yellow: '🟡 Not Urgent / Important to others',
+  orange: '🟠 Urgent / Not Important', purple: '🟣 Not Urgent / Not Important',
+};
+export const NEXT_ACTIONS = {'': 'Choose next step', do: '✅ Do Now', date: '⏰ Date', delegate: '👥 Delegate', delay: '⏸ Delay', delete: '🗑 Delete'};
+export const EDITABLE = ['action','url','priority','nextAction','dueDate','eventDate','followUpDate','dateNote','owner','waitingOn','instruction','group'];
+export function todaySydney() { return new Intl.DateTimeFormat('en-CA', {timeZone:'Australia/Sydney',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()); }
+export function validDate(value) {
+  if (value === null || value === '') return true;
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const date = new Date(value+'T12:00:00Z');
+  return Number.isFinite(date.getTime()) && date.toISOString().slice(0,10) === value;
+}
+export function enrich(item) {
+  return {taskKey:'', priority:'', nextAction:'', dueDate:null, eventDate:null, followUpDate:null,
+    dateNote:'', owner:'', waitingOn:'', instruction:'', help:'', relatedTitles:[], dependsOn:[], dirty:[],
+    reason:'Action to review', score:30, group:'ready', status:'review', selected:false, links:[], url:'', source:'', ...item};
+}
+export function validateInbox(raw) {
+  if (raw === null) return {version:2, items:[], importedAt:null, briefing:''};
+  if (typeof raw !== 'string' || raw.length > 8 * LIMIT) throw new Error('Review file is too large');
+  const value = JSON.parse(raw);
+  if (![1,2].includes(value?.version) || !Array.isArray(value.items) || value.items.length > 300) throw new Error('Invalid review list');
+  if (value.briefing !== undefined && (typeof value.briefing !== 'string' || value.briefing.length > 150000)) throw new Error('Invalid briefing');
+  if (value.reviewDate !== undefined && !validDate(value.reviewDate)) throw new Error('Invalid review date');
+  const items = value.items.map(enrich);
+  for (const x of items) {
+    if (typeof x.id !== 'string' || !x.id.trim() || x.id.length > 150 || typeof x.title !== 'string' || !x.title.trim() || x.title.length > 300 ||
+      typeof x.action !== 'string' || !x.action.trim() || x.action.length > 800 || typeof x.source !== 'string' || x.source.length > 20000 ||
+      typeof x.taskKey !== 'string' || x.taskKey.length > 150 || !Number.isFinite(x.score) ||
+      !Array.isArray(x.links) || x.links.length > 30 || x.links.some(url => !safeUrl(url)) || typeof x.url !== 'string' || x.url && !safeUrl(x.url) ||
+      !['ready','later','waiting'].includes(x.group) || !['review','added','done','dismissed','superseded'].includes(x.status) ||
+      !Object.hasOwn(PRIORITIES,x.priority) || !Object.hasOwn(NEXT_ACTIONS,x.nextAction) ||
+      ['dueDate','eventDate','followUpDate'].some(key => !validDate(x[key])) ||
+      ['dateNote','owner','waitingOn','instruction','help','reason'].some(key => typeof x[key] !== 'string' || x[key].length > 2000) ||
+      !Array.isArray(x.relatedTitles) || x.relatedTitles.length > 10 || x.relatedTitles.some(t=>typeof t !== 'string' || t.length > 300) ||
+      !Array.isArray(x.dependsOn) || x.dependsOn.length > 20 || x.dependsOn.some(t=>typeof t !== 'string' || !t || t.length > 150 || t === x.taskKey) ||
+      !Array.isArray(x.dirty) || x.dirty.some(key => !EDITABLE.includes(key))) throw new Error('Invalid task fields: '+ (typeof x.title === 'string' ? x.title : 'untitled'));
+  }
+  if (new Set(items.map(x=>x.id)).size !== items.length) throw new Error('Duplicate task IDs');
+  const keys=items.map(x=>x.taskKey).filter(Boolean);
+  if (new Set(keys).size !== keys.length) throw new Error('Duplicate task keys');
+  return {...value, version:2, items};
+}
+export function mergeInbox(existing, incoming) {
+  const items = existing.map(x=>enrich({...x}));
+  let added=0, updated=0, archived=0; const aliases=new Map();
+  const rich = incoming.some(x=>x.taskKey);
+  const titles = new Set(incoming.map(x=>x.title));
+  for (const input of incoming) {
+    const next=enrich(input);
+    const index=items.findIndex(old => next.taskKey && old.taskKey === next.taskKey || old.title === next.title && (old.action === next.action || (!next.taskKey || !old.taskKey) && old.source === next.source));
+    if (index >= 0) {
+      const old=items[index];
+      // Legacy imports retain their existing behaviour. Rich imports update only
+      // fields the user has not edited, and never reset progress or local IDs.
+      if (!next.taskKey) continue;
+      const dirty=old.dirty.length ? old.dirty : !old.taskKey ? ['action','url','group'] : [];
+      const merged={...old,...next,taskKey:old.taskKey||next.taskKey,id:old.id,status:old.status,dirty,selected:false,planStamp:old.planStamp};
+      aliases.set(next.taskKey,merged.taskKey);
+      for (const key of dirty) merged[key]=old[key];
+      items[index]=merged; updated++;
+    } else {
+      if (items.length >= 300) throw new Error('The review list is full. Export a backup before removing old entries.');
+      items.push({...next,id:crypto.randomUUID(),selected:false});added++;
+    }
+  }
+  if (rich) for (const item of items) {
+    if (!item.taskKey && titles.has(item.title) && item.status === 'review') { item.status='superseded';archived++; }
+  }
+  for(const item of items) item.dependsOn=item.dependsOn.map(key=>aliases.get(key)||key);
+  return {items,added,updated,archived};
+}
+export function nextDate(item) { return [item.dueDate,item.followUpDate,item.eventDate].filter(Boolean).sort()[0] || ''; }
+export function bucket(item, today=todaySydney()) {
+  if (item.dueDate && item.dueDate<=today) return 'ready';
+  if (item.group === 'waiting') return item.followUpDate && item.followUpDate <= today ? 'ready' : 'waiting';
+  if ([item.dueDate,item.followUpDate].some(date=>date && date<=today)) return 'ready';
+  if (nextDate(item)) return 'upcoming';
+  return item.group;
+}
+export function rank(item,today=todaySydney()) {
+  return item.score + (item.dueDate && item.dueDate<=today ? 1000 : 0) + (item.followUpDate && item.followUpDate<=today ? 500 : 0);
+}
+export function reconcilePlans(existing, days, today) {
+  let changed=false;
+  const entries=Object.entries(days || {}).sort(([a],[b])=>b.localeCompare(a));
+  const items=existing.map(input=>{
+    const item=enrich(input);
+    if (['superseded','dismissed'].includes(item.status)) return item;
+    let match;
+    for (const [date,day] of entries) {
+      const task=day.tasks.find(t=>t.id===`summary:${item.id}` || t.title===`[${item.title}] — ${item.action}`);
+      if(task) {match={date,task};break;}
+    }
+    if (!match) {
+      if(item.status==='added') {changed=true;return {...item,status:'review',planStamp:''};}
+      return item;
+    }
+    const {date,task}=match; const stamp=`${today}|${date}|${task.id}|${task.state}|${task.title}`;
+    if (item.planStamp===stamp) return item;
+    const next={...item,planStamp:stamp,status:task.state==='done'?'done':date===today && task.state==='todo'?'added':'review'};
+    if(task.state==='deferred') {next.group='later';next.dirty=[...new Set([...item.dirty,'group'])];}
+    const prefix=`[${item.title}] — `;
+    if(task.title.startsWith(prefix) && task.title.slice(prefix.length)!==item.action) {next.action=task.title.slice(prefix.length);next.dirty=[...new Set([...next.dirty,'action'])];}
+    changed=true;return next;
+  });
+  return {items,changed};
 }
