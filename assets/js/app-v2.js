@@ -464,7 +464,7 @@
   function renderTitle() {
     route.innerHTML = `<section class="page dash-home dash-gateway">
       <header class="page-heading gateway-heading">
-        <div><p class="eyebrow"><span aria-hidden="true"></span> YOUR WORK, WITH DIRECTION</p><h1>Two wings.<br><span>One place to begin.</span></h1></div>
+        <div><p class="eyebrow"><span aria-hidden="true"></span> YOUR WORK, WITH DIRECTION</p><h1>WWHS<br><span>TAS/VET HUB</span></h1></div>
         <p class="gateway-intro">A clear starting point for VET and faculty leadership. Choose your wing and get straight to the work that matters.</p>
       </header>
       <nav class="dash-boards" aria-label="Choose a workboard">
@@ -952,12 +952,12 @@
     const showingTitle = view === "home";
     const showingWelcome = view === "reference" && !state.experience;
     const showingCycle = isCycleView(view) || (view === "year" && state.activeCycle === "2027");
-    document.title = showingTitle ? "WWHS Operations Workboards" : showingCycle ? "Run 2027 · WWHS VET Compliance Workboard" : "WWHS VET Compliance Workboard";
+    document.title = showingTitle ? "WWHS TAS/VET HUB" : showingCycle ? "Run 2027 · WWHS VET Compliance Workboard" : "WWHS VET Compliance Workboard";
     document.body.classList.toggle("is-title", showingTitle);
     document.getElementById("dashboard-access").hidden = showingTitle;
     const brand = document.querySelector(".brand");
     brand.href = showingTitle ? "#home" : "#vet-home";
-    brand.setAttribute("aria-label", showingTitle ? "WWHS operations home" : "VET dashboard home");
+    brand.setAttribute("aria-label", showingTitle ? "WWHS TAS/VET Hub home" : "VET dashboard home");
     document.body.classList.toggle("is-welcome", showingWelcome);
     document.body.classList.toggle("is-guided", view === "reference" && state.experience === "guided");
     document.body.classList.toggle("is-cycle-2027", showingCycle);
