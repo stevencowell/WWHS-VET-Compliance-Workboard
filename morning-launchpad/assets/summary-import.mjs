@@ -167,7 +167,7 @@ class SummaryImport extends HTMLElement {
     if(item.dateNote)article.append(element('p',item.dateNote,{class:'import-uncertain'}));
     if(item.waitingOn)article.append(element('p',`Waiting on: ${item.waitingOn}`,{class:'import-help'}));
     if(item.instruction)article.append(element('p',`Steve’s instruction: ${item.instruction}`,{class:'import-instruction'}));
-    const action=element('textarea',item.action,{rows:'2',maxlength:'800','aria-label':`Action for ${item.title}`});action.disabled=this.blocked||!active||item.status==='added';
+    const action=element('textarea',item.action,{class:'import-action',rows:'3',maxlength:'800','aria-label':`Action for ${item.title}`});action.disabled=this.blocked||!active||item.status==='added';
     action.addEventListener('change',()=>{if(!action.value.trim()){action.value=item.action;this.say('Keep a short action, or put the task aside.',true);return;}this.updateItem(item.id,{action:action.value.trim()});});if(item.action)article.append(action);if(item.personal&&item.source)article.append(element('pre',item.source,{class:'import-source'}));
     if(item.url)article.append(element('a','Open linked work ↗',{href:item.url,target:'_blank',rel:'noopener noreferrer',class:'import-work-link'}));
     if(item.dependsOn.length)article.append(element('p',`Depends on: ${dependencies.map((x,i)=>x?`${x.action}${x.status==='done'?' ✓':''}`:`Missing task ${item.dependsOn[i]}`).join('; ')}${blockedBy?' — complete the prerequisite first.':''}`,{class:'import-help'}));

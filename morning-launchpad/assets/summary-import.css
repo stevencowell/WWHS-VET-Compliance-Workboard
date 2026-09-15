@@ -18,3 +18,9 @@ summary-import [hidden]{display:none!important}
 @media(max-width:700px){.import-fields{grid-template-columns:1fr}.import-tabs{display:grid;grid-template-columns:1fr 1fr}.import-tabs button{padding:10px 6px;font-size:14px}}
 
 .import-heading{flex-wrap:wrap}.import-heading>div{flex:1 1 450px}.import-heading>button{flex-shrink:0}.import-input form input{display:block;width:100%;box-sizing:border-box;font:inherit;padding:12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);margin-top:6px}.import-input form>button{margin:12px 8px 0 0}.import-card-top>label{display:flex;align-items:center;gap:6px;margin:0;flex:0 0 100px;font-size:11px}.import-card-top>label input{width:20px;margin:0;flex-shrink:0}.import-tabs{scroll-margin-top:20px}
+
+/* Make the action easy to find without changing the card layout. */
+summary-import textarea.import-action{font-family:Segoe UI,Arial,sans-serif;font-size:20px;font-weight:600;line-height:1.55;min-height:116px;padding:18px 20px;border:2px solid var(--accent);border-left-width:5px;border-radius:12px;background:var(--accent-soft);color:var(--ink);margin:6px 0 10px}
+:root[data-theme=dark] summary-import textarea.import-action{background:#2b443b;border-color:#86b596;color:#f4f7f1}
+summary-import textarea.import-action:disabled{opacity:1;-webkit-text-fill-color:var(--ink)}
+@media(max-width:700px){summary-import textarea.import-action{font-size:18px;padding:16px;min-height:118px}}

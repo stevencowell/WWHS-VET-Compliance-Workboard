@@ -47,3 +47,5 @@ The task backup includes richer fields, overrides and the briefing. Daily plan h
 Use **Add my note** to save a title and note text, with an optional action and due date. Reference notes live in **My notes**; actions also appear in the appropriate task view. **Edit my note** updates active personal notes. They are browser-local and included in **Export task backup**, and are kept separate from imported source notes.
 
 **Mark done** opens the visible **Done** view and confirms the saved task title. **Put aside** has a separate view. Earlier basic imports are labelled inactive; duplicate references cannot be restored accidentally. Exact action matching recognises combined source titles and empty trailing Link labels while preserving edits, completion and plan references.
+
+The task-action text boxes use larger, semibold text (20 px desktop, 18 px narrow screens), a stronger green border and a contrasting background. Other fields retain their existing styling.
