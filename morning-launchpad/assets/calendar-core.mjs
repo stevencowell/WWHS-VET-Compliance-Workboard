@@ -1,5 +1,7 @@
 import {validDate,safeUrl,todaySydney} from './summary-core.mjs?v=9';
 export const CALENDAR_KEY='morning-launchpad-calendar:v1';
+export const MAX_CALENDAR_EVENTS=10000;
+const capacityError=count=>`This import would contain ${count.toLocaleString('en-AU')} saved events; the calendar allows ${MAX_CALENDAR_EVENTS.toLocaleString('en-AU')}. Export a shorter date range from the source calendar. Your saved events have not changed.`;
 export const ZONE='Australia/Sydney';
 export const WEEKDAYS=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 export const dateObject=date=>new Date(date+'T12:00:00Z');
@@ -17,7 +19,8 @@ export function normalEvent(input){
 }
 export function validateCalendar(raw){
  if(raw===null)return {version:1,events:[]};if(typeof raw!=='string'||raw.length>5000000)throw new Error('Calendar file is too large.');
- const v=JSON.parse(raw);if(v?.version!==1||!Array.isArray(v.events)||v.events.length>1000)throw new Error('Use a Launchpad calendar backup.');
+ const v=JSON.parse(raw);if(v?.version!==1||!Array.isArray(v.events))throw new Error('Use a Launchpad calendar backup.');
+ if(v.events.length>MAX_CALENDAR_EVENTS)throw new Error(capacityError(v.events.length));
  const events=v.events.map(normalEvent);if(new Set(events.map(x=>x.id)).size!==events.length)throw new Error('Duplicate calendar event IDs.');return {...v,events};
 }
 export function taskEvents(tasks){
@@ -57,7 +60,7 @@ function parseICS(text){
  if(!out.length)throw new Error('No dated events found.');return out;
 }
 export function parseCalendarFile(text,name){if(text.length>5000000)throw new Error('Use a calendar file smaller than 5 MB.');if(/\.json$/i.test(name))return validateCalendar(text).events;if(/\.csv$/i.test(name))return parseCSV(text);return parseICS(text);}
-export function mergeEvents(existing,incoming,derived=[]){const events=existing.map(x=>({...x}));let added=0,updated=0;for(const x of incoming){const next=normalEvent(x);if(next.uid&&derived.some(e=>e.uid===next.uid))continue;const i=events.findIndex(e=>next.uid&&e.uid?e.uid===next.uid:e.id===next.id||e.title===next.title&&e.startDate===next.startDate&&e.startTime===next.startTime);if(i<0){events.push(next);added++;}else{events[i]={...events[i],...next,id:events[i].id};updated++;}}if(events.length>1000)throw new Error('The calendar supports up to 1,000 saved events. Export a backup before importing a smaller file.');return {events,added,updated};}
+export function mergeEvents(existing,incoming,derived=[]){const events=existing.map(x=>({...x}));let added=0,updated=0;for(const x of incoming){const next=normalEvent(x);if(next.uid&&derived.some(e=>e.uid===next.uid))continue;const i=events.findIndex(e=>next.uid&&e.uid?e.uid===next.uid:e.id===next.id||e.title===next.title&&e.startDate===next.startDate&&e.startTime===next.startTime);if(i<0){events.push(next);added++;}else{events[i]={...events[i],...next,id:events[i].id};updated++;}}if(events.length>MAX_CALENDAR_EVENTS)throw new Error(capacityError(events.length));return {events,added,updated};}
 export function toICS(events){
  const lines=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Morning Launchpad//Calendar//EN','CALSCALE:GREGORIAN','X-WR-TIMEZONE:'+ZONE];
  for(const e of events){const date=d=>d.replaceAll('-',''),time=t=>t.replace(':','')+'00';lines.push('BEGIN:VEVENT','UID:'+escapeICS(e.uid||e.id),'DTSTAMP:'+new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d{3}Z$/,'Z'),'SUMMARY:'+escapeICS(e.title));if(e.startTime){lines.push(`DTSTART;TZID=${ZONE}:${date(e.startDate)}T${time(e.startTime)}`);if(e.endTime)lines.push(`DTEND;TZID=${ZONE}:${date(e.endDate)}T${time(e.endTime)}`);}else lines.push('DTSTART;VALUE=DATE:'+date(e.startDate),'DTEND;VALUE=DATE:'+date(addDays(e.endDate,1)));if(e.description)lines.push('DESCRIPTION:'+escapeICS(e.description));if(e.location)lines.push('LOCATION:'+escapeICS(e.location));if(safeUrl(e.url))lines.push('URL:'+e.url);lines.push('END:VEVENT');}lines.push('END:VCALENDAR');

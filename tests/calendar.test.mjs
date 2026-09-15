@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {addDays,shiftMonth,weekStart,monthDays,normalEvent,validateCalendar,taskEvents,eventsOn,parseCalendarFile,mergeEvents,toICS} from '../morning-launchpad/assets/calendar-core.mjs';
+import {MAX_CALENDAR_EVENTS,addDays,shiftMonth,weekStart,monthDays,normalEvent,validateCalendar,taskEvents,eventsOn,parseCalendarFile,mergeEvents,toICS} from '../morning-launchpad/assets/calendar-core.mjs';
 const event=(x={})=>normalEvent({id:'e',title:'Planning meeting',startDate:'2026-09-16',...x});
 const ics=body=>`BEGIN:VCALENDAR\r\nVERSION:2.0\r\n${body}\r\nEND:VCALENDAR`;
 test('calendar date arithmetic handles Mondays, leap days and month ends',()=>{
@@ -34,4 +34,25 @@ test('CSV supports quoted notes and Australian dates without guessing US dates',
 test('calendar ICS export roundtrips own events and avoids duplicating derived task dates',()=>{
  const e=event({title:'Meeting, notes; and \\ links',startTime:'09:00',endTime:'10:00',description:'Line one\nLine two'});const result=parseCalendarFile(toICS([e]),'export.ics');assert.equal(result[0].startTime,'09:00');assert.equal(result[0].title,e.title);assert.equal(result[0].description,e.description);
  const derived=taskEvents([{id:'a',title:'Note : Due',action:'Do task',dueDate:'2026-09-20',status:'review'}]);const imported=parseCalendarFile(toICS(derived),'export.ics');assert.equal(mergeEvents([],imported,derived).added,0);
+});
+test('a timetable and school diary can exceed 1,000 events and survive reload and reimport',()=>{
+ const timetable=Array.from({length:700},(_,i)=>event({id:`lesson-${i}`,uid:`lesson-${i}`,title:`Lesson ${i}`,location:'Room H02'}));
+ const diary=Array.from({length:1800},(_,i)=>event({id:`diary-${i}`,uid:`diary-${i}`,title:`Diary event ${i}`,description:'School diary details'}));
+ const existing=[event({id:'my-note',title:'My own appointment'}),...timetable];
+ const before=JSON.stringify(existing);
+ const merged=mergeEvents(existing,diary);
+ assert.equal(merged.added,1800);assert.equal(merged.events.length,2501);assert.equal(JSON.stringify(existing),before);
+ const restored=parseCalendarFile(JSON.stringify({version:1,events:merged.events}),'calendar-backup.json');
+ assert.equal(restored.length,2501);assert.deepEqual(restored[0],existing[0]);assert.equal(restored[1].location,'Room H02');
+ const refreshed=mergeEvents(restored,diary.map(e=>({...e,id:`fresh-${e.id}`,title:e.title+' updated'})));
+ assert.equal(refreshed.added,0);assert.equal(refreshed.updated,1800);assert.equal(refreshed.events.length,2501);
+ assert.equal(refreshed.events.at(-1).id,'diary-1799');assert.equal(refreshed.events.at(-1).title,'Diary event 1799 updated');
+});
+test('the larger capacity limit stays consistent and rejects overflow without partial changes',()=>{
+ const saved=Array.from({length:MAX_CALENDAR_EVENTS},(_,i)=>event({id:`e-${i}`,uid:`uid-${i}`}));
+ assert.equal(validateCalendar(JSON.stringify({version:1,events:saved})).events.length,MAX_CALENDAR_EVENTS);
+ const before=JSON.stringify(saved);
+ assert.throws(()=>mergeEvents(saved,[event({id:'extra',uid:'extra'})]),/10,001 saved events.*10,000/);
+ assert.equal(JSON.stringify(saved),before);
+ assert.throws(()=>validateCalendar(JSON.stringify({version:1,events:[...saved,event({id:'extra'})]})),/10,001 saved events.*10,000/);
 });
