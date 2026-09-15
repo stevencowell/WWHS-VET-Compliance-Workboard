@@ -27,3 +27,6 @@ summary-import textarea.import-action:disabled{opacity:1;-webkit-text-fill-color
 
 .import-card-top{align-items:center;justify-content:space-between}.import-card-top strong{flex:1}.import-card-top .import-pin{flex-shrink:0;font-size:14px;font-weight:600;margin-left:12px}.import-pin[aria-pressed="true"]{background:var(--accent);color:var(--bg);border-color:var(--accent)}.import-card.is-pinned{border:2px solid var(--accent);border-left-width:5px}.import-footer{flex-wrap:wrap}#task-list{scroll-margin-top:20px}
 @media(max-width:700px){.import-card-top{align-items:flex-start;flex-direction:column}.import-card-top .import-pin{margin-left:0}}
+/* Give the workboard shortcut the same quiet treatment as neighbouring apps. */
+.destination-card.tone-forest{--tile:#f2f7f3;--icon:#376550;--icon-bg:#e1ece5;color:var(--ink);border-color:var(--line)}.tone-forest .card-description{color:var(--muted)}
+:root[data-theme=dark] .destination-card.tone-forest{--tile:#22362f;--icon:#c8dfc6;--icon-bg:#2d483b}
