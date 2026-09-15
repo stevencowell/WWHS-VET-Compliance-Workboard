@@ -256,7 +256,7 @@ export function consolidateDuplicates(existing) {
   const items=existing.map(x=>enrich({...x}));let archived=0;
   for(const plain of items){
     if(plain.personal||plain.taskKey||plain.status==='superseded')continue;
-    const matches=items.filter(x=>x.taskKey&&x.status!=='superseded'&&sameSourceAction(x,plain));
+    const matches=items.filter(x=>!x.personal&&x.taskKey&&x.status!=='superseded'&&sameSourceAction(x,plain));
     if(matches.length!==1)continue;
     const target=matches[0];
     const mergedAliases=[...(target.planAliases||[]),...(plain.planAliases||[]),{id:`summary:${plain.id}`,title:`[${plain.title}] — ${plain.action}`}];
