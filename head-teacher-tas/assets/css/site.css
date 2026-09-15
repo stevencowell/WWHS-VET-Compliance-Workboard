@@ -736,7 +736,7 @@ main {
 
 .coming-row {
   display: grid;
-  grid-template-columns: 34px 1fr auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 10px;
   width: 100%;
@@ -750,6 +750,39 @@ main {
 
 .coming-row:hover {
   background: rgba(255, 255, 255, 0.66);
+}
+
+.coming-task-open {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0;
+  color: inherit;
+  text-align: left;
+  background: transparent;
+  border: 0;
+}
+
+.coming-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+@media (max-width: 760px) {
+  .coming-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .coming-actions {
+    justify-content: flex-start;
+    margin-left: 44px;
+  }
 }
 
 .coming-row strong,
@@ -1020,8 +1053,8 @@ input[type="checkbox"] {
 
 .task-card-foot {
   display: flex;
-  align-items: end;
-  justify-content: space-between;
+  flex-direction: column;
+  align-items: flex-start;
   gap: 10px;
   margin-top: auto;
   padding-top: 18px;
@@ -1030,6 +1063,13 @@ input[type="checkbox"] {
 .task-card-foot > span {
   color: var(--muted);
   font-size: 11px;
+}
+
+.task-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
 }
 
 .triggered-section {
@@ -1986,8 +2026,12 @@ input[type="checkbox"] {
     padding: 18px;
   }
 
-  .coming-row {
-    grid-template-columns: 28px 1fr;
+  .coming-task-open {
+    grid-template-columns: 28px minmax(0, 1fr);
+  }
+
+  .coming-actions {
+    margin-left: 38px;
   }
 
   .coming-row .pill {

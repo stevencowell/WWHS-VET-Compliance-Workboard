@@ -417,6 +417,7 @@
 
   function renderToday() {
     const followUps = recordedFollowUps();
+    const justCompleted = data.tasks.filter(task => statusFor(task) === "completed" && completionUndo.get(recordKey(task))?.after === recordFor(task));
     const upcoming = operatingYearIsCurrent ? activeDueTasks().filter(task => reminderDate(task) >= currentIso)
       .sort((a, b) => reminderDate(a).localeCompare(reminderDate(b))).slice(0, 6) : [];
     const unreviewedPast = activeDueTasks().filter(task => !hasReviewedRecord(task) && queueDueDate(task) < currentIso);
@@ -429,6 +430,7 @@
       ${pageHeader(currentTermLabel(), "Today", "Upcoming dates and the follow-ups you have recorded in this browser.", actions)}
       ${yearBanner()}
       <section class="coming-section"><div class="section-heading"><div><h2>Recorded follow-ups</h2><p>${followUps.length ? `${followUps.length} open item${followUps.length === 1 ? "" : "s"} you have recorded here.` : "No follow-ups recorded in this browser. Your school systems remain the record."}</p></div></div>${followUps.length ? `<div class="coming-list">${followUps.map((task, index) => comingRow(task, index + 1)).join("")}</div>` : ""}</section>
+      ${justCompleted.length ? `<section class="coming-section"><div class="section-heading"><h2>Just completed</h2></div><div class="coming-list">${justCompleted.map((task, index) => comingRow(task, index + 1, "All checklist boxes ticked")).join("")}</div></section>` : ""}
       <section class="coming-section"><div class="section-heading"><div><h2>Upcoming dates to check</h2><p>Next listed dates from the calendar checked on 26 August 2026. Confirm them in the live staff calendar.</p></div></div>${upcoming.length ? `<div class="coming-list">${upcoming.map((task, index) => comingRow(task, index + 1, `Listed ${shortDate(reminderDate(task))} · check live calendar`)).join("")}</div>` : `<p class="empty-line">${operatingYearIsCurrent ? "No later dates are listed in this calendar snapshot." : "Refresh the school calendar before using dates for this year."}</p>`}</section>
       ${unreviewedPast.length ? `<details class="standing-panel"><summary>Review past dates (${unreviewedPast.length} not reviewed here)</summary><p>These dates have passed, but this browser has no recorded status. They are not assumed to be missed work. Check the school record before adding a status.</p><div class="coming-list">${unreviewedPast.map((task, index) => comingRow(task, index + 1)).join("")}</div></details>` : ""}
       <details class="standing-panel"><summary>Five-minute weekly scan · ${completedChecks} checks recorded</summary><p>Week beginning ${shortDate(week)}. These ticks are local reminders.</p>
@@ -450,7 +452,15 @@
   }
 
   function comingRow(task, number, timing = dueLabel(task)) {
-    return `<button class="coming-row" type="button" data-action="open-task" data-task-id="${esc(task.id)}"><span class="row-number">${String(number).padStart(2, "0")}</span><span><strong>${esc(task.title)}</strong><small>${esc(timing)}</small></span>${statusPill(task)}</button>`;
+    return `<article class="coming-row"><button class="coming-task-open" type="button" data-action="open-task" data-task-id="${esc(task.id)}"><span class="row-number">${String(number).padStart(2, "0")}</span><span><strong>${esc(task.title)}</strong><small>${esc(timing)}</small></span>${statusPill(task)}</button><div class="coming-actions">${taskCompletionActions(task)}</div></article>`;
+  }
+
+  function taskCompletionActions(task) {
+    if (task.historyOnly || task.procedureOnly) return "";
+    const record = recordFor(task);
+    return `${!isClosed(task) ? `<button class="button primary compact" type="button" data-action="complete-task" data-task-id="${esc(task.id)}" aria-label="Task Complete: ${esc(task.title)}" title="Tick all steps, milestones and completion checks">Task Complete</button>` : ""}
+      ${record.status === "completed" ? `<span class="task-complete-label">✓ Task Complete</span>` : ""}
+      ${record.status === "completed" && completionUndo.get(recordKey(task))?.after === record ? `<button class="button secondary compact" type="button" data-action="undo-complete-task" data-task-id="${esc(task.id)}" aria-label="Undo completion: ${esc(task.title)}">Undo</button>` : ""}`;
   }
 
   function renderCalendar() {
@@ -478,9 +488,7 @@
       <div class="date-tile"><span>${esc(month)}</span><strong>${day}</strong></div>
       <div class="timeline-body"><div class="card-badges">${priorityPill(task)}${statusPill(task)}${sourcePill(task)}</div><h3>${esc(task.title)}</h3><p>${esc(task.timing)}</p>${task.milestones ? `<ul class="milestone-mini">${task.milestones.map((item, index) => `<li class="${record.milestones?.[index] ? "is-done" : ""}"><span>${record.milestones?.[index] ? "✓ " : ""}${esc(shortDate(item.date))}</span>${esc(item.label)}</li>`).join("")}</ul>` : ""}</div>
       <div class="timeline-actions">
-        ${!task.historyOnly && !task.procedureOnly && !isClosed(task) ? `<button class="button primary compact" type="button" data-action="complete-task" data-task-id="${esc(task.id)}" aria-label="Task Complete: ${esc(task.title)}" title="Tick all steps, milestones and completion checks">Task Complete</button>` : ""}
-        ${statusFor(task) === "completed" ? `<span class="task-complete-label">✓ Task Complete</span>` : ""}
-        ${completionUndo.get(recordKey(task))?.after === record && statusFor(task) === "completed" ? `<button class="button secondary compact" type="button" data-action="undo-complete-task" data-task-id="${esc(task.id)}" aria-label="Undo completion: ${esc(task.title)}">Undo</button>` : ""}
+        ${taskCompletionActions(task)}
         <button class="button quiet compact" type="button" data-action="open-task" data-task-id="${esc(task.id)}">Open</button>
       </div>
     </article>`;
@@ -488,19 +496,24 @@
 
   function refreshCalendarTask(task) {
     const elapsedOpen = document.querySelector(".elapsed")?.open;
+    const expandedPanels = [...document.querySelectorAll(".standing-panel[open]")].map(panel => panel.querySelector("summary")?.textContent.split("·")[0].split("(")[0].trim());
     render();
+    document.querySelectorAll(".standing-panel").forEach(panel => {
+      const label = panel.querySelector("summary")?.textContent.split("·")[0].split("(")[0].trim();
+      if (expandedPanels.includes(label)) panel.open = true;
+    });
     const elapsed = document.querySelector(".elapsed");
     if (elapsed) elapsed.open = Boolean(elapsedOpen);
     const id = CSS.escape(task.id);
     const replacement = document.querySelector(`[data-action="undo-complete-task"][data-task-id="${id}"]`)
       || document.querySelector(`[data-action="complete-task"][data-task-id="${id}"]`)
       || document.querySelector(`[data-action="open-task"][data-task-id="${id}"]`);
-    replacement?.focus({ preventScroll: true });
+    replacement?.focus({ preventScroll: currentRoute() !== "today" });
   }
 
   function completeCalendarTask(id) {
     const task = data.tasks.find(item => item.id === id);
-    if (!task?.dueDate || task.historyOnly || task.procedureOnly || isClosed(task)) return;
+    if (!task || task.historyOnly || task.procedureOnly || isClosed(task)) return;
     const key = recordKey(task);
     const before = state.records[key];
     const after = {
@@ -576,7 +589,7 @@
       <p class="eyebrow">${esc(phaseLabels[task.phase] || task.timing)}</p>
       <h3>${esc(task.title)}</h3>
       <p>${esc(task.summary)}</p>
-      <div class="task-card-foot"><span>${esc(task.dueDate ? dueLabel(task) : task.timing)}<small>${esc(task.historyOnly ? "Read-only annual pattern" : cycleLabel(task))}</small></span><button class="button quiet compact" type="button" data-action="open-task" data-task-id="${esc(task.id)}">${task.historyOnly ? "View baseline" : "Open task"}</button></div>
+      <div class="task-card-foot"><span>${esc(task.dueDate ? dueLabel(task) : task.timing)}<small>${esc(task.historyOnly ? "Read-only annual pattern" : cycleLabel(task))}</small></span><div class="task-card-actions">${taskCompletionActions(task)}<button class="button quiet compact" type="button" data-action="open-task" data-task-id="${esc(task.id)}">${task.historyOnly ? "View baseline" : "Open task"}</button></div></div>
     </article>`;
   }
 

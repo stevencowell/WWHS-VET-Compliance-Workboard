@@ -17,3 +17,17 @@ The new `completed` status closes the personal workboard task. `verified` retain
 - JavaScript syntax and Git whitespace checks passed.
 
 Tests ran on a local preview origin; live user progress was not modified. Only the Head Teacher TAS application, stylesheet, entry-page cache versions, this note and its runtime fingerprint file are changed. The VET runtime and historical acceptance evidence remain unchanged.
+
+## Today page and area card extension - 15 September 2026
+
+Steve clarified that the same shortcut was expected beside the Today rows. Recorded follow-ups, Upcoming dates to check and editable past-date rows now share the Calendar completion controls, including undated recorded follow-ups. Opening a task and completing it are separate buttons. Read-only and already closed entries retain their existing protections.
+
+The editable task cards in Teaching & reporting, Faculty operations and People & safety now use the same completion controls beside **Open task**. Completed cards show their saved status and session Undo.
+
+A temporary **Just completed** section keeps **Undo** accessible when completion removes a task from an open-work list. Undo restores its previous progress and list placement. Expanded standing-check sections stay open through the refresh.
+
+- All 17 state regression checks passed, including Today row structure, completion and Undo visibility, undated follow-up handling and editable/read-only area card controls.
+- Browser checks completed all 10 Year 12 reporting boxes from Today, reopened the task by unchecking a milestone, and completed and undid the recorded follow-up back to that exact partial state.
+- The Technology Mandatory rotations card completed all seven internal checkboxes; Undo returned it to its original unreviewed state and restored the card button.
+- Desktop and narrow-screen layouts were inspected; the controls remained usable without horizontal overflow.
+- JavaScript syntax and Git whitespace checks passed. Browser tests used a local preview; live user records were untouched.
