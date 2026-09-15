@@ -1,5 +1,6 @@
 // Local text processing only. No network requests or embedded personal records.
 export const INBOX_KEY = 'morning-launchpad-summary:v1';
+export const LEGACY_PLAN_KEY = 'morning-launchpad-routine:v1';
 export const LIMIT = 1000000;
 
 export function safeUrl(value) {
@@ -127,7 +128,7 @@ export const PRIORITIES = {
   orange: '🟠 Urgent / Not Important', purple: '🟣 Not Urgent / Not Important',
 };
 export const NEXT_ACTIONS = {'': 'Choose next step', do: '✅ Do Now', date: '⏰ Date', delegate: '👥 Delegate', delay: '⏸ Delay', delete: '🗑 Delete'};
-export const EDITABLE = ['title','source','action','url','priority','nextAction','dueDate','eventDate','followUpDate','dateNote','owner','waitingOn','instruction','group'];
+export const EDITABLE = ['title','source','action','url','priority','nextAction','dueDate','eventDate','followUpDate','dateNote','owner','waitingOn','instruction','group','pinnedDate'];
 export function todaySydney() { return new Intl.DateTimeFormat('en-CA', {timeZone:'Australia/Sydney',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()); }
 export function validDate(value) {
   if (value === null || value === '') return true;
@@ -136,7 +137,7 @@ export function validDate(value) {
   return Number.isFinite(date.getTime()) && date.toISOString().slice(0,10) === value;
 }
 export function enrich(item) {
-  return {personal:false, taskKey:'', priority:'', nextAction:'', dueDate:null, eventDate:null, followUpDate:null,
+  return {pinnedDate:null, personal:false, taskKey:'', priority:'', nextAction:'', dueDate:null, eventDate:null, followUpDate:null,
     dateNote:'', owner:'', waitingOn:'', instruction:'', help:'', relatedTitles:[], dependsOn:[], dirty:[], planAliases:[],
     reason:'Action to review', score:30, group:'ready', status:'review', selected:false, links:[], url:'', source:'', ...item};
 }
@@ -155,7 +156,7 @@ export function validateInbox(raw) {
       !Array.isArray(x.links) || x.links.length > 30 || x.links.some(url => !safeUrl(url)) || typeof x.url !== 'string' || x.url && !safeUrl(x.url) ||
       !['ready','later','waiting'].includes(x.group) || !['review','added','done','dismissed','superseded','note'].includes(x.status) || typeof x.personal !== 'boolean' ||
       !Object.hasOwn(PRIORITIES,x.priority) || !Object.hasOwn(NEXT_ACTIONS,x.nextAction) ||
-      ['dueDate','eventDate','followUpDate'].some(key => !validDate(x[key])) ||
+      ['dueDate','eventDate','followUpDate','pinnedDate'].some(key => !validDate(x[key])) ||
       ['dateNote','owner','waitingOn','instruction','help','reason'].some(key => typeof x[key] !== 'string' || x[key].length > 2000) ||
       !Array.isArray(x.relatedTitles) || x.relatedTitles.length > 10 || x.relatedTitles.some(t=>typeof t !== 'string' || t.length > 300) ||
       !Array.isArray(x.dependsOn) || x.dependsOn.length > 20 || x.dependsOn.some(t=>typeof t !== 'string' || !t || t.length > 150 || t === x.taskKey) ||
@@ -182,7 +183,7 @@ export function mergeInbox(existing, incoming) {
       // fields the user has not edited, and never reset progress or local IDs.
       if (!next.taskKey) continue;
       const dirty=old.dirty.length ? old.dirty : !old.taskKey ? ['action','url','group'] : [];
-      const merged={...old,...next,taskKey:old.taskKey||next.taskKey,id:old.id,status:old.status,dirty,selected:false,planStamp:old.planStamp,planAliases:old.planAliases,preserveDoneOnce:old.preserveDoneOnce};
+      const merged={...old,...next,taskKey:old.taskKey||next.taskKey,id:old.id,status:old.status,pinnedDate:old.pinnedDate,dirty,selected:false,planStamp:old.planStamp,planAliases:old.planAliases,preserveDoneOnce:old.preserveDoneOnce};
       aliases.set(next.taskKey,merged.taskKey);
       for (const key of dirty) merged[key]=old[key];
       items[index]=merged; updated++;
@@ -268,4 +269,44 @@ export function consolidateDuplicates(existing) {
     plain.previousStatus=plain.status;plain.status='superseded';plain.duplicateOf=target.id;archived++;
   }
   return {items,archived,changed:archived>0};
+}
+
+
+export function isPinned(item,today=todaySydney()) {
+  return ['review','added'].includes(item.status) && item.pinnedDate===today;
+}
+// The retired daily planner is read once. Its original storage is never changed.
+export function migrateToPins(inbox,rawPlan,today=todaySydney()) {
+  if(inbox.pinWorkflowVersion===1)return {inbox,changed:false,warning:''};
+  let days={},warning='';
+  try {
+    if(rawPlan){
+      const plan=JSON.parse(rawPlan);
+      if(plan?.version!==1||!plan.days||typeof plan.days!=='object'||Array.isArray(plan.days))throw new Error();
+      for(const[date,day]of Object.entries(plan.days)){
+        if(!date||!validDate(date)||!day||!Array.isArray(day.tasks)||day.tasks.some(t=>!t||typeof t.id!=='string'||!t.id||typeof t.title!=='string'||!t.title.trim()||!['todo','done','deferred'].includes(t.state)))throw new Error();
+      }
+      days=plan.days;
+    }
+  }catch {warning='Older daily plans could not be read. The original is kept under Export older daily plans.';}
+  const progress=reconcilePlans(inbox.items,days,today);
+  const items=progress.items.map((item,i)=>{
+    // A task marked done directly in the review list must remain done.
+    if(inbox.items[i].status==='done'&&item.status!=='done')item=enrich(inbox.items[i]);
+    return {...item,status:item.status==='added'?'review':item.status,pinnedDate:item.status==='added'?today:item.pinnedDate};
+  });
+  const seen=new Set();let skipped=0;
+  for(const[date,day]of Object.entries(days).sort(([a],[b])=>b.localeCompare(a))){
+    for(const task of day.tasks){
+      const key=task.title.trim();if(seen.has(task.id)||seen.has('title:'+key))continue;seen.add(task.id);seen.add('title:'+key);
+      if(items.some(item=>matchesPlanTask(item,task)))continue;
+      if(items.length>=300){skipped++;continue;}
+      const split=key.match(/^\[([^\]]+)\]\s*[—–-]\s*(.+)$/s);
+      const id=crypto.randomUUID();
+      items.push(enrich({id,taskKey:`personal:${id}`,personal:true,title:(split?.[1]||'My saved task').slice(0,300),action:(split?.[2]||key).slice(0,800),source:`Saved daily plan — ${date}\n${key}`,reason:'From your saved daily plan',url:safeUrl(task.url),links:safeUrl(task.url)?[task.url]:[],status:task.state==='done'?'done':'review',group:task.state==='deferred'?'later':'ready',pinnedDate:date===today&&task.state==='todo'?today:null,planAliases:[{id:task.id,title:task.title.slice(0,1200)}]}));
+    }
+  }
+  if(skipped)warning=`${skipped} older tasks remain in Export older daily plans because the task list is full.`;
+  const consolidated=consolidateDuplicates(items);
+  return {inbox:{...inbox,items:consolidated.items,pinWorkflowVersion:1},changed:true,warning};
 }

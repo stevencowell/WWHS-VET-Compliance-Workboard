@@ -24,3 +24,6 @@ summary-import textarea.import-action{font-family:Segoe UI,Arial,sans-serif;font
 :root[data-theme=dark] summary-import textarea.import-action{background:#2b443b;border-color:#86b596;color:#f4f7f1}
 summary-import textarea.import-action:disabled{opacity:1;-webkit-text-fill-color:var(--ink)}
 @media(max-width:700px){summary-import textarea.import-action{font-size:18px;padding:16px;min-height:118px}}
+
+.import-card-top{align-items:center;justify-content:space-between}.import-card-top strong{flex:1}.import-card-top .import-pin{flex-shrink:0;font-size:14px;font-weight:600;margin-left:12px}.import-pin[aria-pressed="true"]{background:var(--accent);color:var(--bg);border-color:var(--accent)}.import-card.is-pinned{border:2px solid var(--accent);border-left-width:5px}.import-footer{flex-wrap:wrap}#task-list{scroll-margin-top:20px}
+@media(max-width:700px){.import-card-top{align-items:flex-start;flex-direction:column}.import-card-top .import-pin{margin-left:0}}

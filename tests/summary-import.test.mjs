@@ -130,3 +130,37 @@ test('personal reference notes survive backup and AI imports without becoming ta
  assert.equal(restored.items.filter(x=>x.personal).length,1);
  assert.throws(()=>validateInbox(JSON.stringify({version:2,items:[{...personal,personal:false}]})));
 });
+
+
+import {migrateToPins,isPinned} from '../morning-launchpad/assets/summary-core.mjs';
+test('daily planner migration keeps task progress, imports manual work and runs only once',()=>{
+ const today='2026-09-15';
+ const chosen=rich({id:'chosen',status:'added'});
+ const complete=rich({id:'finished',taskKey:'finished',title:'Finished note',status:'done'});
+ const raw=JSON.stringify({version:1,days:{[today]:{tasks:[
+  {id:'summary:chosen',title:`[${chosen.title}] — ${chosen.action}`,state:'todo'},
+  {id:'summary:finished',title:`[${complete.title}] — ${complete.action}`,state:'todo'},
+  {id:'manual',title:'Order workshop supplies',state:'todo',url:'https://example.org/order'}
+ ]},'2026-09-14':{tasks:[{id:'old-manual',title:'Order workshop supplies',state:'todo'},{id:'old',title:'Completed old action',state:'done'}]}}});
+ const original={version:2,items:[chosen,complete]};const result=migrateToPins(original,raw,today);
+ const checked=validateInbox(JSON.stringify(result.inbox));
+ assert.equal(checked.items.length,4);assert.equal(original.items[0].status,'added');
+ assert.equal(checked.items.find(x=>x.id==='chosen').status,'review');assert.ok(isPinned(checked.items.find(x=>x.id==='chosen'),today));
+ assert.equal(checked.items.find(x=>x.id==='finished').status,'done');
+ const manual=checked.items.find(x=>x.action==='Order workshop supplies');assert.ok(isPinned(manual,today));assert.equal(manual.url,'https://example.org/order');
+ assert.equal(checked.items.find(x=>x.action==='Completed old action').status,'done');
+ assert.equal(migrateToPins(checked,raw,'2026-09-16').changed,false);
+ assert.equal(isPinned(manual,'2026-09-16'),false);
+});
+test('pins survive refresh and import without reopening completed tasks',()=>{
+ const pinned=rich({pinnedDate:'2026-09-15',dirty:['pinnedDate']});
+ const updated=mergeInbox([pinned],[rich({priority:'blue',pinnedDate:null})]).items[0];
+ assert.ok(isPinned(updated,'2026-09-15'));assert.equal(updated.priority,'blue');
+ const backup=validateInbox(JSON.stringify({version:2,pinWorkflowVersion:1,items:[updated]}));assert.ok(isPinned(backup.items[0],'2026-09-15'));
+ assert.equal(isPinned({...updated,status:'done'},'2026-09-15'),false);
+ assert.throws(()=>validateInbox(JSON.stringify({version:2,items:[{...updated,pinnedDate:'2026-02-31'}]})));
+});
+test('unreadable older plans leave existing tasks usable and original data untouched',()=>{
+ const before={version:2,items:[rich({status:'done'})]};const raw='{broken original';const result=migrateToPins(before,raw,'2026-09-15');
+ assert.match(result.warning,/could not be read/);assert.equal(result.inbox.items[0].status,'done');assert.equal(raw,'{broken original');
+});
