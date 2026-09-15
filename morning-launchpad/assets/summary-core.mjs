@@ -113,7 +113,7 @@ export function prepareTasks(day, candidates, createId = () => crypto.randomUUID
     const title = `[${item.title}] — ${item.action.trim()}`;
     if (title.length > 1200) throw new Error('Shorten the action before adding it to your plan.');
     if (item.url && !safeUrl(item.url)) throw new Error('Use a full https:// link.');
-    if (day.tasks.some(task => task.title === title || item.id && task.id === `summary:${item.id}`) || additions.some(task => task.title === title)) continue;
+    if (day.tasks.some(task => matchesPlanTask(item,task)) || additions.some(task => task.title === title)) continue;
     additions.push({id: item.id ? `summary:${item.id}` : createId(), title, state: 'todo', ...(item.url ? {url: item.url} : {})});
   }
   const limit = day.capacity === 'small' ? 1 : 3;
@@ -127,7 +127,7 @@ export const PRIORITIES = {
   orange: '🟠 Urgent / Not Important', purple: '🟣 Not Urgent / Not Important',
 };
 export const NEXT_ACTIONS = {'': 'Choose next step', do: '✅ Do Now', date: '⏰ Date', delegate: '👥 Delegate', delay: '⏸ Delay', delete: '🗑 Delete'};
-export const EDITABLE = ['action','url','priority','nextAction','dueDate','eventDate','followUpDate','dateNote','owner','waitingOn','instruction','group'];
+export const EDITABLE = ['title','source','action','url','priority','nextAction','dueDate','eventDate','followUpDate','dateNote','owner','waitingOn','instruction','group'];
 export function todaySydney() { return new Intl.DateTimeFormat('en-CA', {timeZone:'Australia/Sydney',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()); }
 export function validDate(value) {
   if (value === null || value === '') return true;
@@ -136,8 +136,8 @@ export function validDate(value) {
   return Number.isFinite(date.getTime()) && date.toISOString().slice(0,10) === value;
 }
 export function enrich(item) {
-  return {taskKey:'', priority:'', nextAction:'', dueDate:null, eventDate:null, followUpDate:null,
-    dateNote:'', owner:'', waitingOn:'', instruction:'', help:'', relatedTitles:[], dependsOn:[], dirty:[],
+  return {personal:false, taskKey:'', priority:'', nextAction:'', dueDate:null, eventDate:null, followUpDate:null,
+    dateNote:'', owner:'', waitingOn:'', instruction:'', help:'', relatedTitles:[], dependsOn:[], dirty:[], planAliases:[],
     reason:'Action to review', score:30, group:'ready', status:'review', selected:false, links:[], url:'', source:'', ...item};
 }
 export function validateInbox(raw) {
@@ -150,15 +150,16 @@ export function validateInbox(raw) {
   const items = value.items.map(enrich);
   for (const x of items) {
     if (typeof x.id !== 'string' || !x.id.trim() || x.id.length > 150 || typeof x.title !== 'string' || !x.title.trim() || x.title.length > 300 ||
-      typeof x.action !== 'string' || !x.action.trim() || x.action.length > 800 || typeof x.source !== 'string' || x.source.length > 20000 ||
+      typeof x.action !== 'string' || (!x.action.trim() && !(x.personal && x.status==='note')) || x.action.length > 800 || typeof x.source !== 'string' || x.source.length > 20000 ||
       typeof x.taskKey !== 'string' || x.taskKey.length > 150 || !Number.isFinite(x.score) ||
       !Array.isArray(x.links) || x.links.length > 30 || x.links.some(url => !safeUrl(url)) || typeof x.url !== 'string' || x.url && !safeUrl(x.url) ||
-      !['ready','later','waiting'].includes(x.group) || !['review','added','done','dismissed','superseded'].includes(x.status) ||
+      !['ready','later','waiting'].includes(x.group) || !['review','added','done','dismissed','superseded','note'].includes(x.status) || typeof x.personal !== 'boolean' ||
       !Object.hasOwn(PRIORITIES,x.priority) || !Object.hasOwn(NEXT_ACTIONS,x.nextAction) ||
       ['dueDate','eventDate','followUpDate'].some(key => !validDate(x[key])) ||
       ['dateNote','owner','waitingOn','instruction','help','reason'].some(key => typeof x[key] !== 'string' || x[key].length > 2000) ||
       !Array.isArray(x.relatedTitles) || x.relatedTitles.length > 10 || x.relatedTitles.some(t=>typeof t !== 'string' || t.length > 300) ||
       !Array.isArray(x.dependsOn) || x.dependsOn.length > 20 || x.dependsOn.some(t=>typeof t !== 'string' || !t || t.length > 150 || t === x.taskKey) ||
+      !Array.isArray(x.planAliases) || x.planAliases.length > 300 || x.planAliases.some(a=>!a || typeof a.id !== 'string' || a.id.length>160 || typeof a.title !== 'string' || a.title.length>1200) ||
       !Array.isArray(x.dirty) || x.dirty.some(key => !EDITABLE.includes(key))) throw new Error('Invalid task fields: '+ (typeof x.title === 'string' ? x.title : 'untitled'));
   }
   if (new Set(items.map(x=>x.id)).size !== items.length) throw new Error('Duplicate task IDs');
@@ -174,14 +175,14 @@ export function mergeInbox(existing, incoming) {
   const titles = new Set(incoming.flatMap(x=>[x.title,...(x.relatedTitles||[])]).map(titleIdentity));
   for (const input of incoming) {
     const next=enrich(input);
-    const index=items.findIndex(old => next.taskKey && old.taskKey === next.taskKey || old.title === next.title && (old.action === next.action || (!next.taskKey || !old.taskKey) && old.source === next.source));
+    const index=items.findIndex(old => old.personal===next.personal && (next.taskKey && old.taskKey === next.taskKey || sameSourceAction(old,next) || old.title === next.title && (!next.taskKey || !old.taskKey) && old.source === next.source));
     if (index >= 0) {
       const old=items[index];
       // Legacy imports retain their existing behaviour. Rich imports update only
       // fields the user has not edited, and never reset progress or local IDs.
       if (!next.taskKey) continue;
       const dirty=old.dirty.length ? old.dirty : !old.taskKey ? ['action','url','group'] : [];
-      const merged={...old,...next,taskKey:old.taskKey||next.taskKey,id:old.id,status:old.status,dirty,selected:false,planStamp:old.planStamp};
+      const merged={...old,...next,taskKey:old.taskKey||next.taskKey,id:old.id,status:old.status,dirty,selected:false,planStamp:old.planStamp,planAliases:old.planAliases,preserveDoneOnce:old.preserveDoneOnce};
       aliases.set(next.taskKey,merged.taskKey);
       for (const key of dirty) merged[key]=old[key];
       items[index]=merged; updated++;
@@ -191,10 +192,11 @@ export function mergeInbox(existing, incoming) {
     }
   }
   if (rich) for (const item of items) {
-    if (!item.taskKey && titles.has(titleIdentity(item.title)) && item.status === 'review') { item.status='superseded';archived++; }
+    if (!item.personal && !item.taskKey && titles.has(titleIdentity(item.title)) && item.status === 'review') { item.status='superseded';archived++; }
   }
   for(const item of items) item.dependsOn=item.dependsOn.map(key=>aliases.get(key)||key);
-  return {items,added,updated,archived};
+  const consolidated=consolidateDuplicates(items);
+  return {items:consolidated.items,added,updated,archived:archived+consolidated.archived};
 }
 export function nextDate(item) { return [item.dueDate,item.followUpDate,item.eventDate].filter(Boolean).sort()[0] || ''; }
 export function bucket(item, today=todaySydney()) {
@@ -215,7 +217,7 @@ export function reconcilePlans(existing, days, today) {
     if (['superseded','dismissed'].includes(item.status)) return item;
     let match;
     for (const [date,day] of entries) {
-      const task=day.tasks.find(t=>t.id===`summary:${item.id}` || t.title===`[${item.title}] — ${item.action}`);
+      const task=day.tasks.filter(t=>matchesPlanTask(item,t)).sort((a,b)=>(b.state==='done')-(a.state==='done'))[0];
       if(task) {match={date,task};break;}
     }
     if (!match) {
@@ -224,6 +226,7 @@ export function reconcilePlans(existing, days, today) {
     }
     const {date,task}=match; const stamp=`${today}|${date}|${task.id}|${task.state}|${task.title}`;
     if (item.planStamp===stamp) return item;
+    if(item.preserveDoneOnce&&item.status==='done'){changed=true;return {...item,planStamp:stamp,preserveDoneOnce:false};}
     const next={...item,planStamp:stamp,status:task.state==='done'?'done':date===today && task.state==='todo'?'added':'review'};
     if(task.state==='deferred') {next.group='later';next.dirty=[...new Set([...item.dirty,'group'])];}
     const prefix=`[${item.title}] — `;
@@ -231,4 +234,38 @@ export function reconcilePlans(existing, days, today) {
     changed=true;return next;
   });
   return {items,changed};
+}
+
+const normalTitle = title => title.normalize('NFC').replace(/\s+/g,' ').trim();
+const normalAction = action => action.replace(/\s+Link:\s*$/i,'').replace(/\s+/g,' ').trim();
+function sourceTitles(item) {
+  return [...new Set([item.title,...(item.relatedTitles||[])].flatMap(title=>title.split(/\s+\+\s+(?=(?:Note\s*:|Fw(?:d)?:|Note Fw))/i)).map(normalTitle))].sort();
+}
+export function sameSourceAction(a,b) {
+  if(normalAction(a.action)!==normalAction(b.action))return false;
+  const aa=sourceTitles(a),bb=sourceTitles(b);
+  return JSON.stringify(aa)===JSON.stringify(bb) || aa.length===1&&aa[0]===normalTitle(b.title) || bb.length===1&&bb[0]===normalTitle(a.title);
+}
+export function matchesPlanTask(item,task) {
+  return task.id===`summary:${item.id}` || task.title===`[${item.title}] — ${item.action}` ||
+    (item.planAliases||[]).some(alias=>task.id===alias.id||task.title===alias.title);
+}
+// Only combine a basic entry with one unambiguous structured task, using the
+// same action and source titles. Different actions from one note stay separate.
+export function consolidateDuplicates(existing) {
+  const items=existing.map(x=>enrich({...x}));let archived=0;
+  for(const plain of items){
+    if(plain.personal||plain.taskKey||plain.status==='superseded')continue;
+    const matches=items.filter(x=>x.taskKey&&x.status!=='superseded'&&sameSourceAction(x,plain));
+    if(matches.length!==1)continue;
+    const target=matches[0];
+    const mergedAliases=[...(target.planAliases||[]),...(plain.planAliases||[]),{id:`summary:${plain.id}`,title:`[${plain.title}] — ${plain.action}`}];
+    target.planAliases=[...new Map(mergedAliases.map(x=>[x.id+'\n'+x.title,x])).values()];
+    for(const key of plain.dirty)if(!target.dirty.includes(key)){target[key]=plain[key];target.dirty=[...target.dirty,key];}
+    target.links=[...new Set([...target.links,...plain.links])].slice(0,30);
+    if(plain.status==='done'){target.status='done';target.preserveDoneOnce=true;}
+    else if(target.status==='review'&&['added','dismissed'].includes(plain.status))target.status=plain.status;
+    plain.previousStatus=plain.status;plain.status='superseded';plain.duplicateOf=target.id;archived++;
+  }
+  return {items,archived,changed:archived>0};
 }

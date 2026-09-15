@@ -41,3 +41,9 @@ Four task views display Today, Coming up, Waiting and Later. Coming up includes 
 Imported daily-plan tasks use `summary:<local task id>` IDs. The bridge passes read-only plan history and Sydney day to the importer; all daily-plan mutations still go through the existing React conflict-safe saver. Completion in the plan is reflected in the task list, and unfinished tasks are available for review on later days. Restoring and completing a task from its card also update the current day's matching plan item. Closed days require reopening before changes. Dependency tasks cannot be selected for today until their prerequisites are marked complete.
 
 The task backup includes richer fields, overrides and the briefing. Daily plan history retains its existing separate backup control. Progress remains in each browser and does not automatically synchronise between computers.
+
+### Own notes and completed tasks
+
+Use **Add my note** to save a title and note text, with an optional action and due date. Reference notes live in **My notes**; actions also appear in the appropriate task view. **Edit my note** updates active personal notes. They are browser-local and included in **Export task backup**, and are kept separate from imported source notes.
+
+**Mark done** opens the visible **Done** view and confirms the saved task title. **Put aside** has a separate view. Earlier basic imports are labelled inactive; duplicate references cannot be restored accidentally. Exact action matching recognises combined source titles and empty trailing Link labels while preserving edits, completion and plan references.

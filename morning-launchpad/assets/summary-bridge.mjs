@@ -1,4 +1,4 @@
-import {prepareTasks} from './summary-core.mjs?v=4';
+import {prepareTasks} from './summary-core.mjs?v=5';
 // Use the existing conflict-safe React saver for every daily-plan mutation.
 export function useSummaryBridge(React,context){
   React.useEffect(()=>{
@@ -17,7 +17,7 @@ export function useSummaryBridge(React,context){
     function progress(event){
       const request=event.detail;
       try{
-        const matches=t=>t.id===`summary:${request.id}`||t.title===request.title;
+        const matches=t=>t.id===`summary:${request.id}`||t.title===request.title||(request.planAliases||[]).some(a=>t.id===a.id||t.title===a.title);
         if(day.tasks.some(matches)){
           if(!ready||editing||day.closed)throw new Error('Reopen today’s plan and finish editing before changing this task.');
           if(!['todo','done'].includes(request.state))throw new Error('Invalid progress');

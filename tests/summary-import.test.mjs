@@ -96,3 +96,37 @@ test('AI tasks also retain superseded basic entries from explicitly related note
   const result=mergeInbox(basic,[rich({relatedTitles:['Note : Old\u00a0schedule']})]);
   assert.equal(result.archived,1);assert.equal(result.items[0].title,'Note : Old schedule');assert.equal(result.items[0].action,'Complete training');assert.equal(result.items[0].status,'superseded');
 });
+
+import {sameSourceAction,consolidateDuplicates,matchesPlanTask} from '../morning-launchpad/assets/summary-core.mjs';
+test('combined source titles and an empty Link label match the structured task',()=>{
+  const structured=rich({title:'Note : Amended schedule',relatedTitles:['Note : New schedule'],action:'Confirm whether accepted.'});
+  const plain=enrich({id:'old',title:'Note : Amended schedule + Note : New schedule',action:'Confirm whether accepted.\nLink:',source:'Old text'});
+  assert.ok(sameSourceAction(structured,plain));
+  assert.equal(mergeInbox([structured],[plain]).added,0);
+  const result=consolidateDuplicates([structured,plain]);assert.equal(result.archived,1);assert.equal(result.items[1].status,'superseded');assert.equal(result.items[1].source,'Old text');
+  assert.equal(consolidateDuplicates(result.items).archived,0);
+});
+test('separate tasks from one note are never collapsed just for sharing a title',()=>{
+  const a=rich({action:'Complete training'});const b=enrich({id:'b',title:a.title,action:'Claim payment',source:'Training and claim'});
+  assert.equal(sameSourceAction(a,b),false);assert.equal(consolidateDuplicates([a,b]).archived,0);
+});
+test('consolidation retains completion, explicit field edits and daily-plan aliases',()=>{
+  const a=rich({action:'Check status'});const b=enrich({id:'old',title:a.title,action:a.action,status:'done',dueDate:'2026-10-20',dirty:['dueDate'],source:'Old evidence'});
+  let result=consolidateDuplicates([a,b]);assert.equal(result.items[0].status,'done');assert.equal(result.items[0].dueDate,'2026-10-20');assert.equal(result.items[1].previousStatus,'done');
+  const day={capacity:'normal',closed:false,tasks:[{id:'summary:old',title:'Old daily title',state:'todo'}]};assert.ok(matchesPlanTask(result.items[0],day.tasks[0]));assert.equal(prepareTasks(day,[result.items[0]]).length,0);
+  result=reconcilePlans(result.items,{'2026-09-15':day},'2026-09-15');assert.equal(result.items[0].status,'done');assert.equal(reconcilePlans(result.items,{'2026-09-15':day},'2026-09-15').changed,false);
+});
+
+
+test('personal reference notes survive backup and AI imports without becoming tasks', () => {
+ const personal={id:'my-note',taskKey:'personal:my-note',personal:true,title:'Note : Equipment',source:'My own reference',action:'',status:'note'};
+ const saved=validateInbox(JSON.stringify({version:2,items:[personal]}));
+ assert.equal(saved.items[0].source,'My own reference');
+ assert.equal(saved.items[0].status,'note');
+ const merged=mergeInbox(saved.items,[{id:'ai',taskKey:'ai-equipment',title:personal.title,action:'Check equipment',source:'My own reference'}]);
+ assert.equal(merged.items.length,2);
+ assert.equal(merged.items.find(x=>x.personal).status,'note');
+ const restored=validateInbox(JSON.stringify({version:2,items:merged.items}));
+ assert.equal(restored.items.filter(x=>x.personal).length,1);
+ assert.throws(()=>validateInbox(JSON.stringify({version:2,items:[{...personal,personal:false}]})));
+});
