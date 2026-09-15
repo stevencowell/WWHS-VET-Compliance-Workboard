@@ -63,6 +63,14 @@ class SummaryImport extends HTMLElement {
   say(message, error = false) {
     this.message.textContent = message;
     this.message.classList.toggle('import-error', error);
+    if (this.fileMessage) {
+      this.fileMessage.textContent = message;
+      this.fileMessage.classList.toggle('import-error', error);
+      if (error) {
+        this.inputDetails.open = true;
+        this.fileMessage.scrollIntoView({block: 'center', behavior: 'smooth'});
+      }
+    }
   }
   persist(next) {
     try {
@@ -93,23 +101,19 @@ class SummaryImport extends HTMLElement {
     const label = element('label', 'Email summary or exported notes', {for: 'summary-paste'});
     this.paste = element('textarea', '', {id: 'summary-paste', rows: '7', maxlength: String(LIMIT), placeholder: 'Paste your summary here. Keep the exact note titles and any links.\n\n1. [Note : Example] — Confirm the next step'});
     const actions = element('div', undefined, {class: 'import-actions'});
-    this.importButton = button('Review actions', () => this.importText(this.paste.value), 'import-primary');
+    this.importButton = button('Review actions', () => {
+      if (this.paste.value.trim()) this.importText(this.paste.value);
+      else if (this.file.files[0]) this.importFile(this.file.files[0]);
+      else this.say('Choose a notes file or paste a summary in the box above first.', true);
+    }, 'import-primary');
     const fileLabel = element('label', 'Or choose a file', {for: 'summary-file'});
     this.file = element('input', undefined, {id: 'summary-file', type: 'file', accept: '.txt,.md,.html,.htm,.json,text/plain,text/html,application/json'});
-    this.file.addEventListener('change', async () => {
-      const file = this.file.files[0]; if (!file) return;
-      try {
-        if (file.size > LIMIT) throw new Error('Choose a file smaller than 1 MB.');
-        const text = await file.text();
-        if (/\.json$/i.test(file.name)) {
-          const backup = validateInbox(text);
-          this.importItems(backup.items, true);
-        } else this.importText(/\.html?$/i.test(file.name) ? textFromHtml(text) : text);
-      } catch (error) { this.say(error.message, true); }
-      finally { this.file.value = ''; }
+    this.file.addEventListener('change', () => {
+      if (this.file.files[0]) this.importFile(this.file.files[0]);
     });
+    this.fileMessage = element('p', '', {role: 'status', 'aria-live': 'polite', class: 'import-message import-file-message', tabindex: '-1'});
     actions.append(this.importButton, fileLabel, this.file);
-    this.inputDetails.append(label, this.paste, actions, element('p', 'Works with summaries, plain text and Evernote HTML exports. Titles and links stay attached to each action.', {class: 'import-help'}));
+    this.inputDetails.append(label, this.paste, actions, this.fileMessage, element('p', 'Works with summaries, plain text and Evernote HTML exports. Titles and links stay attached to each action.', {class: 'import-help'}));
     this.append(this.inputDetails);
 
     this.toolbar = element('div', undefined, {class: 'import-toolbar'});
@@ -139,12 +143,36 @@ class SummaryImport extends HTMLElement {
     try { this.importItems(parseSummary(text)); }
     catch (error) { this.say(error.message, true); }
   }
+  async importFile(file) {
+    if (this.reading) return;
+    this.reading = true; this.updateCount();
+    this.say(`Reading ${file.name}…`);
+    let timeout;
+    try {
+      // HTML exports may contain large inline images. Limit their extracted text
+      // separately so useful notes aren't rejected just because of attachments.
+      if (file.size > 20 * LIMIT) throw new Error('This file is over 20 MB. Export fewer notes or paste the summary instead.');
+      const text = await Promise.race([
+        file.text(),
+        new Promise((_, reject) => { timeout = setTimeout(() => reject(new Error('The browser could not finish reading this file. Upload the file into our chat so it can be inspected.')), 15000); }),
+      ]);
+      if (/\.json$/i.test(file.name)) this.importItems(validateInbox(text).items, true);
+      else {
+        const extracted = /\.html?$/i.test(file.name) ? textFromHtml(text) : text;
+        this.importItems(parseSummary(extracted));
+      }
+    } catch (error) {
+      this.say(`Could not import ${file.name}. ${error.message}`, true);
+    } finally {
+      clearTimeout(timeout); this.reading = false; this.updateCount();
+    }
+  }
   importItems(incoming, backup = false) {
     const merged = mergeInbox(this.inbox.items, incoming);
     if (!this.persist({...this.inbox, items: merged.items, importedAt: new Date().toISOString()})) return;
     this.selected.clear(); this.paste.value = ''; this.inputDetails.open = false;
     this.renderItems();
-    this.say(`${merged.added} ${backup ? 'review items restored' : 'actions imported'}. ${incoming.length - merged.added} already present. Review the suggestions and choose what belongs in today’s plan.`);
+    this.say(`${merged.added} ${backup ? 'review items restored' : merged.added === 1 ? 'action imported' : 'actions imported'}. ${incoming.length - merged.added} already present. Review the suggestions and choose what belongs in today’s plan.`);
     this.toolbar.scrollIntoView({behavior: 'smooth', block: 'start'});
   }
   updateItem(id, changes, rerender = false) {
@@ -221,7 +249,7 @@ class SummaryImport extends HTMLElement {
     const room = Math.max(0, capacity - this.planState.count);
     this.counter.textContent = this.planState.closed ? 'Today’s plan is wrapped up. Reopen it below to add priorities.' : `${this.selected.size} selected · Room for ${room} more today`;
     this.addButton.disabled = this.blocked || !this.planState.ready || this.planState.closed || !this.selected.size || this.selected.size > room;
-    this.importButton.disabled = this.blocked; this.file.disabled = this.blocked;
+    this.importButton.disabled = this.blocked || this.reading; this.file.disabled = this.blocked || this.reading;
     this.toolbar.hidden = !this.inbox.items.length;
   }
   addToPlan() {
