@@ -26,6 +26,14 @@ Reimports retain local IDs, pins, completion and per-field user overrides, while
 
 Action boxes use semibold 20 px text (18 px on narrow screens), a strong green border and a contrasting background. The established card layout is retained.
 
+## Single-email capture without AI
+
+**Paste email** opens a local, one-email capture panel. Paste the message and optionally specify its subject and Steve’s instruction, then choose **Suggest action and priority**. Keyword rules identify an explicit request, waiting or promotional wording, urgency and fully specified Australian dates. The review form exposes the title, action, category, priority, deadline, event date and follow-up date before **Save to Launchpad**. Relative dates and conflicting dates remain unconfirmed. This is a provisional classification, not semantic AI analysis; one email produces one editable task.
+
+The original text and safe copied HTTPS links are retained; attachments remain in the email app. HTML clipboard content is inspected only inside an inert template and is never rendered. The feature has no network or AI calls. A source-text SHA-256 key matches repeated captures; existing completion and reviewed edits survive repeat saves. Confirmed dates feed the existing calendar. Data remains in the current browser and travels with the task backup.
+
+Maintained files: `email-rules.mjs`, `email-capture.mjs`, and the existing summary UI/CSS. Tests cover explicit versus relative dates, quoted history, instruction precedence, safe links, input limits and repeat-capture progress.
+
 ## Calendar
 
 **Calendar** opens Day, Week, Month and Year views; **Back to tasks** returns to the existing list. Weeks start Monday. Today, previous/next and the date picker navigate the calendar. Year days open Day; month headings open Month. All calendar times use Australia/Sydney, including daylight saving.
