@@ -21,7 +21,7 @@ export function validateCalendar(raw){
  const events=v.events.map(normalEvent);if(new Set(events.map(x=>x.id)).size!==events.length)throw new Error('Duplicate calendar event IDs.');return {...v,events};
 }
 export function taskEvents(tasks){
- return tasks.filter(t=>!['superseded','dismissed'].includes(t.status)).flatMap(t=>[['dueDate','Deadline'],['eventDate','Event'],['followUpDate','Follow-up']].filter(([key])=>t[key]&&validDate(t[key])).map(([key,kind])=>({id:`task:${t.id}:${key}`,uid:`task:${t.id}:${key}`,title:t.title,description:t.action||t.source||'',startDate:t[key],endDate:t[key],startTime:'',endTime:'',taskId:t.id,dateKey:key,kind,done:t.status==='done',url:t.url||'',location:''})));
+ return tasks.filter(t=>!['superseded','dismissed'].includes(t.status)).flatMap(t=>[['dueDate','Deadline'],['eventDate','Event'],['followUpDate','Follow-up']].filter(([key])=>t[key]&&validDate(t[key])).map(([key,kind])=>({id:`task:${t.id}:${key}`,uid:`task:${t.id}:${key}`,title:(t.action||t.title).slice(0,300),sourceTitle:t.title,description:t.action||t.source||'',startDate:t[key],endDate:t[key],startTime:'',endTime:'',taskId:t.id,dateKey:key,kind,done:t.status==='done',url:t.url||'',location:''})));
 }
 export function eventsOn(events,date){return events.filter(e=>e.startDate<=date&&e.endDate>=date&&!(e.startTime&&e.endDate===date&&e.endDate>e.startDate&&e.endTime==='00:00')).sort((a,b)=>(a.startTime||'').localeCompare(b.startTime||'')||a.title.localeCompare(b.title));}
 const csvCell=s=>'"'+String(s).replaceAll('"','""')+'"';
