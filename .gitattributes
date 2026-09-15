@@ -1,4 +1,6 @@
 /.gitattributes text eol=lf
+/morning-launchpad/** text eol=lf
+/scripts/export-launchpad.mjs text eol=lf
 *.html text eol=lf
 *.css text eol=lf
 *.js text eol=lf

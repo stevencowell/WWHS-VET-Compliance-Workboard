@@ -9,7 +9,7 @@ const repo = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 if (!process.argv[2]) throw new Error('Pass the local Launchpad dist-links directory.');
 const built = resolve(process.argv[2]);
 const destination = resolve(repo, 'morning-launchpad');
-const original = await readFile(resolve(built, 'index.html'), 'utf8');
+const original = (await readFile(resolve(built, 'index.html'), 'utf8')).replace(/\r\n/g, '\n');
 if (!original.includes('<title>Morning Launchpad</title>')) throw new Error('Unexpected page.');
 const references = [...original.matchAll(/(?:src|href)="([^"]+)"/g)].map(match => match[1]);
 if (references.length !== 4 || references.some(path => !/^\/(?:favicon\.svg|assets\/(?:theme|launchpad)-[a-zA-Z0-9]+\.(?:js|css))$/.test(path))) {
@@ -20,7 +20,8 @@ const html = original.replace('<head>', `<head>\n  <meta http-equiv="Content-Sec
   .replace(/((?:src|href)=")\//g, '$1./');
 const files = new Map([['index.html', Buffer.from(html)]]);
 for (const reference of references) {
-  files.set(reference.slice(1), await readFile(resolve(built, reference.slice(1))));
+  const text = (await readFile(resolve(built, reference.slice(1)), 'utf8')).replace(/\r\n/g, '\n');
+  files.set(reference.slice(1), Buffer.from(text));
 }
 // Load and validate the entire package before writing any public files.
 for (const [path, bytes] of files) {
