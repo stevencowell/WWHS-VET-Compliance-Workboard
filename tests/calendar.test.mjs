@@ -1,8 +1,19 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {MAX_CALENDAR_EVENTS,addDays,shiftMonth,weekStart,monthDays,normalEvent,validateCalendar,taskEvents,eventsOn,parseCalendarFile,mergeEvents,toICS} from '../morning-launchpad/assets/calendar-core.mjs';
+import {MAX_CALENDAR_EVENTS,addDays,shiftMonth,weekStart,monthDays,normalEvent,validateCalendar,taskEvents,calendarCategory,eventsOn,parseCalendarFile,mergeEvents,toICS} from '../morning-launchpad/assets/calendar-core.mjs';
 const event=(x={})=>normalEvent({id:'e',title:'Planning meeting',startDate:'2026-09-16',...x});
 const ics=body=>`BEGIN:VCALENDAR\r\nVERSION:2.0\r\n${body}\r\nEND:VCALENDAR`;
+test('existing timetable lessons and duties stand apart from diary imports and task dates',()=>{
+ const lesson=event({origin:'import',title:'10WOTE2: Timber - Industrial Technology Elective Yr10',description:'Period: 2'});
+ const before=JSON.stringify(lesson);
+ assert.equal(calendarCategory(lesson),'timetable');assert.equal(JSON.stringify(lesson),before);
+ assert.equal(calendarCategory(event({origin:'import',title:'Duty.B: Amphitheatre',description:'Period: L1'})),'timetable');
+ assert.equal(calendarCategory(event({origin:'import',title:'Week A Timetable'})),'diary');
+ assert.equal(calendarCategory(event({origin:'import',title:'Year 11 exam period',description:'Period: 2'})),'diary');
+ assert.equal(calendarCategory(event()),'event');
+ const [deadline]=taskEvents([{id:'a',title:'Note : School diary task',dueDate:'2026-09-16',status:'review'}]);
+ assert.equal(calendarCategory(deadline),'deadline');assert.equal(calendarCategory({...deadline,done:true}),'done');
+});
 test('calendar date arithmetic handles Mondays, leap days and month ends',()=>{
  assert.equal(weekStart('2026-09-20'),'2026-09-14');assert.equal(addDays('2028-02-28',1),'2028-02-29');assert.equal(shiftMonth('2026-01-31',1),'2026-02-28');assert.equal(monthDays('2026-09-16').length,42);assert.equal(monthDays('2026-09-16')[0],'2026-08-31');
 });

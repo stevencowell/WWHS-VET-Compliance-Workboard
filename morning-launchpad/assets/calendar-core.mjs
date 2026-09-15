@@ -26,6 +26,15 @@ export function validateCalendar(raw){
 export function taskEvents(tasks){
  return tasks.filter(t=>!['superseded','dismissed'].includes(t.status)).flatMap(t=>[['dueDate','Deadline'],['eventDate','Event'],['followUpDate','Follow-up']].filter(([key])=>t[key]&&validDate(t[key])).map(([key,kind])=>({id:`task:${t.id}:${key}`,uid:`task:${t.id}:${key}`,title:(t.action||t.title).slice(0,300),sourceTitle:t.title,description:t.action||t.source||'',startDate:t[key],endDate:t[key],startTime:'',endTime:'',taskId:t.id,dateKey:key,kind,done:t.status==='done',url:t.url||'',location:''})));
 }
+// Older imports already retain these Sentral timetable markers. Derive their
+// appearance without rewriting saved events or requiring another import.
+export function calendarCategory(event){
+ if(event.taskId)return event.done?'done':(event.kind||'Event').toLowerCase();
+ if(event.origin!=='import')return 'event';
+ const period=/^Period:\s*[A-Za-z0-9]+\s*$/im.test(event.description||'');
+ const classCode=/^(?:\d{1,2}[A-Z][A-Z0-9]*|Duty(?:\.[A-Za-z0-9]+)?)\s*:/i.test(event.title||'');
+ return period&&classCode?'timetable':'diary';
+}
 export function eventsOn(events,date){return events.filter(e=>e.startDate<=date&&e.endDate>=date&&!(e.startTime&&e.endDate===date&&e.endDate>e.startDate&&e.endTime==='00:00')).sort((a,b)=>(a.startTime||'').localeCompare(b.startTime||'')||a.title.localeCompare(b.title));}
 const csvCell=s=>'"'+String(s).replaceAll('"','""')+'"';
 export const csvTemplate=()=>['title,startDate,endDate,startTime,endTime,description,location,url','Example meeting,2026-09-18,2026-09-18,09:00,10:00,Optional notes,,'].join('\r\n');

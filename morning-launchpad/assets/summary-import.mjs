@@ -1,4 +1,4 @@
-import './launchpad-calendar.mjs?v=3';
+import './launchpad-calendar.mjs?v=4';
 import {INBOX_KEY, LIMIT, parseSummary, validateInbox, mergeInbox, safeUrl, PRIORITIES, NEXT_ACTIONS, EDITABLE, enrich, todaySydney, bucket, rank, nextDate, consolidateDuplicates, LEGACY_PLAN_KEY, isPinned, migrateToPins} from './summary-core.mjs?v=9';
 
 function element(tag, text, attributes = {}) {

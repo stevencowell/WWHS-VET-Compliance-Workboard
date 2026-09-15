@@ -3,3 +3,16 @@ launchpad-calendar{display:block;margin-top:22px;color:var(--ink)}launchpad-cale
 @media(max-width:800px){.cal-year{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;padding:12px}.cal-toolbar h3{font-size:20px}.cal-views button{min-width:60px;padding:9px 12px}.cal-heading button{padding:9px 12px}}@media(max-width:480px){.cal-year{grid-template-columns:1fr}.cal-toolbar h3{flex-basis:100%;order:-1;margin:0 0 8px}.cal-dialog{padding:18px}.cal-dialog form{grid-template-columns:1fr}.cal-dialog form>*{grid-column:1!important}.cal-agenda-row{grid-template-columns:80px 1fr}}
 
 .cal-event.cal-deadline{--cal-colour:#bd751d}:root[data-theme=dark] .cal-event.cal-deadline{--cal-colour:#e7b574}
+
+/* Give personal teaching commitments a stronger visual weight than the diary. */
+.cal-timetable{--cal-colour:#2678bd}.cal-diary{--cal-colour:#929ca7}
+launchpad-calendar button.cal-timetable{--cal-colour:#2678bd;background:#dceeff;color:#153b5d;border-color:#a7cbea;border-left:5px solid var(--cal-colour);font-weight:700}
+launchpad-calendar button.cal-timetable:hover{background:#c8e4ff}
+launchpad-calendar button.cal-diary{--cal-colour:#929ca7;background:#f0f2f4;color:#505e6b;border-color:#d4dae0;border-left-color:var(--cal-colour);font-weight:400}
+launchpad-calendar button.cal-diary:hover{background:#e4e8ec}
+:root[data-theme=dark] .cal-timetable{--cal-colour:#74beff}
+:root[data-theme=dark] .cal-diary{--cal-colour:#81909e}
+:root[data-theme=dark] launchpad-calendar button.cal-timetable{--cal-colour:#74beff;background:#193f61;color:#eff7ff;border-color:#3d6d96;border-left-color:var(--cal-colour)}
+:root[data-theme=dark] launchpad-calendar button.cal-timetable:hover{background:#245279}
+:root[data-theme=dark] launchpad-calendar button.cal-diary{--cal-colour:#81909e;background:#2d353c;color:#d1d8de;border-color:#48545f;border-left-color:var(--cal-colour)}
+:root[data-theme=dark] launchpad-calendar button.cal-diary:hover{background:#38434d}

@@ -34,6 +34,8 @@ Task deadlines, event dates and follow-up dates are derived directly from the cu
 
 **Add event** supports title, dates, optional times, notes, location and an HTTPS work link. Own/imported events use the independent browser key `morning-launchpad-calendar:v1`. **Import dates** accepts one-off .ics events, CSV dates (including Australian DD/MM/YYYY and common Outlook column headings), and calendar JSON backups. Matching UIDs update events on reimport. Recurrences, cancellations and duration-only ICS records are rejected with an explanation before any changes; export those as individual dated occurrences. Unsupported timezones are also rejected rather than guessed.
 
+Imported Sentral teaching lessons and duties use a blue background and bold text; diary and other imported events use muted grey. Existing timetable entries are recognised from their class/duty code and Period description, so no reimport or data migration is needed. Personal dates stay green, and derived task dates retain their priority colours. The legend, tooltips and event dialog also identify the category in text.
+
 The calendar accepts up to 10,000 saved events across imported calendars and manual entries; the 5 MB file limit and actual browser storage quota still apply. Imports validate the complete result before saving, and a failed save leaves existing events unchanged. The same event limit applies when restoring backups and reloading saved data.
 
 **Export calendar backup** saves own/imported events; task dates remain in the task backup. **Export dates (.ics)** includes both own events and derived task dates. Reimporting an export skips matching current task-date UIDs to avoid duplicates. The app does not send invitations, synchronise to external calendars or create reminders.
