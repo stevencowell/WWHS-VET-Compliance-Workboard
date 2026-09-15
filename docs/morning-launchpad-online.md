@@ -26,10 +26,22 @@ Reimports retain local IDs, pins, completion and per-field user overrides, while
 
 Action boxes use semibold 20 px text (18 px on narrow screens), a strong green border and a contrasting background. The established card layout is retained.
 
+## Calendar
+
+**Calendar** opens Day, Week, Month and Year views; **Back to tasks** returns to the existing list. Weeks start Monday. Today, previous/next and the date picker navigate the calendar. Year days open Day; month headings open Month. All calendar times use Australia/Sydney, including daylight saving.
+
+Task deadlines, event dates and follow-up dates are derived directly from the current inbox. Completed dates remain labelled; superseded and put-aside tasks are excluded. Clicking a task date opens its source information. **Save task date** changes the matching field on the task card; **Open source task** returns to that exact card. Derived entries are not stored as copies.
+
+**Add event** supports title, dates, optional times, notes, location and an HTTPS work link. Own/imported events use the independent browser key `morning-launchpad-calendar:v1`. **Import dates** accepts one-off .ics events, CSV dates (including Australian DD/MM/YYYY and common Outlook column headings), and calendar JSON backups. Matching UIDs update events on reimport. Recurrences, cancellations and duration-only ICS records are rejected with an explanation before any changes; export those as individual dated occurrences. Unsupported timezones are also rejected rather than guessed.
+
+**Export calendar backup** saves own/imported events; task dates remain in the task backup. **Export dates (.ics)** includes both own events and derived task dates. Reimporting an export skips matching current task-date UIDs to avoid duplicates. The app does not send invitations, synchronise to external calendars or create reminders.
+
+Calendar source files are `calendar-core.mjs`, `launchpad-calendar.mjs` and `calendar.css`. Calendar tests cover leap days, date boundaries, live task-date derivation, CSV parsing, ICS exclusive all-day ends, timezone conversion, import identity and export roundtrips. Date-file handling follows the relevant parts of RFC 5545: https://www.rfc-editor.org/rfc/rfc5545.
+
 ## Maintenance
 
 Maintained application sources are `summary-core.mjs`, `summary-import.mjs` and `summary-import.css` in `morning-launchpad/assets`. The built React entry renders the app links and `<summary-import>`. It no longer mounts the daily-plan component or imports the old `summary-bridge.mjs`; that file is retained only for historical reference. The original installed app source is not in this repository.
 
-Run `node --test tests/summary-import.test.mjs`. Relevant coverage includes safe imports, merging and completion, legacy migration, pin persistence, date rollover and backup validation. Browser verification should cover pin/unpin, reload, completion and absence of the retired panel. Use synthetic data for public fixtures.
+Run `node --test tests/summary-import.test.mjs tests/calendar.test.mjs`. Relevant coverage includes safe imports, merging and completion, legacy migration, pin persistence, date rollover and backup validation. Browser verification should cover pin/unpin, reload, completion and absence of the retired panel. Use synthetic data for public fixtures.
 
 Update cache identifiers when changing published modules and refresh `docs/morning-launchpad-2026-09-15.sha256`. The legacy `scripts/export-launchpad.mjs` intentionally stops an older local build from replacing this maintained online edition. Port the current task workflow into the local source before re-enabling that export. Publish only the application files; never copy the full local Launchpad folder.

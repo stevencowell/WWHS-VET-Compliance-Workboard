@@ -1,3 +1,4 @@
+import './launchpad-calendar.mjs?v=1';
 import {INBOX_KEY, LIMIT, parseSummary, validateInbox, mergeInbox, safeUrl, PRIORITIES, NEXT_ACTIONS, EDITABLE, enrich, todaySydney, bucket, rank, nextDate, consolidateDuplicates, LEGACY_PLAN_KEY, isPinned, migrateToPins} from './summary-core.mjs?v=9';
 
 function element(tag, text, attributes = {}) {
@@ -53,7 +54,7 @@ class SummaryImport extends HTMLElement {
   persist(next) {
     try {
       if(this.blocked||localStorage.getItem(INBOX_KEY)!==this.raw)throw new Error('The review list changed in another tab. Reload before saving.');
-      const checked=validateInbox(JSON.stringify(next));const raw=JSON.stringify(checked);localStorage.setItem(INBOX_KEY,raw);this.raw=raw;this.inbox=checked;return true;
+      const checked=validateInbox(JSON.stringify(next));const raw=JSON.stringify(checked);localStorage.setItem(INBOX_KEY,raw);this.raw=raw;this.inbox=checked;this.calendar?.setTasks(checked.items);return true;
     } catch(error){this.say(`Could not save: ${error.message} Your previous saved list is unchanged.`,true);return false;}
   }
   say(message,error=false){this.message.textContent=message;this.message.classList.toggle('import-error',error);this.fileMessage.textContent=message;this.fileMessage.classList.toggle('import-error',error);if(error){this.inputDetails.open=true;this.fileMessage.scrollIntoView({block:'center'});}}
@@ -67,7 +68,8 @@ class SummaryImport extends HTMLElement {
     this.replaceChildren();this.setAttribute('aria-label','Import and review your email summary');
     const heading=element('div',undefined,{class:'import-heading'});const copy=element('div');
     copy.append(element('p','FROM YOUR NOTES TO TODAY',{class:'eyebrow'}),element('h2','Bring your work into focus.'),element('p','Keep your tasks here. Pin what you want to work on today to the top of the list.',{class:'import-intro'}));
-    heading.append(copy,button('Add my note',()=>this.editPersonal()),button('Import email summary',()=>{this.inputDetails.open=true;this.file.focus();},'import-primary'));this.append(heading);
+    this.calendarToggle=button('Calendar',()=>this.showCalendar(this.calendar.hidden));
+    heading.append(copy,this.calendarToggle,button('Add my note',()=>this.editPersonal()),button('Import email summary',()=>{this.showCalendar(false);this.inputDetails.open=true;this.file.focus();},'import-primary'));this.append(heading);
     this.message=element('p','',{role:'status','aria-live':'polite',class:'import-message'});this.append(this.message);this.buildNoteEditor();
     this.inputDetails=element('details',undefined,{class:'import-input'});this.inputDetails.append(element('summary','Import an AI task file or an Evernote export'));
     this.inputDetails.append(element('p','For priorities, dates and follow-ups, upload your Evernote HTML to our chat first and ask for a Launchpad AI task file. Import the returned JSON here. Raw HTML still creates basic review items.'));
@@ -88,7 +90,14 @@ class SummaryImport extends HTMLElement {
     this.viewHelp=element('p','',{class:'import-help'});this.list=element('div',undefined,{class:'import-list'});this.append(this.viewHelp,this.list);
     this.earlier=element('details',undefined,{class:'import-other'});this.earlierHeading=element('summary');this.earlierList=element('div',undefined,{class:'import-list'});this.earlier.append(this.earlierHeading,element('p','The AI task file replaces these basic entries. Their text and edits are kept here; restore one only if it contains additional work.',{class:'import-help'}),this.earlierList);this.append(this.earlier);
     const footer=element('div',undefined,{class:'import-footer'});footer.append(element('p','Saved in this browser. Export your task backup to keep progress or move to another computer. Email and Evernote are not changed.',{class:'import-help'}),button('Export task backup',()=>{const raw=this.blocked?this.raw:JSON.stringify(this.inbox,null,2);if(raw===null){this.say('There is no saved task list to export.');return;}download(raw,'launchpad-task-backup.json');}));if(this.legacyRaw!==null)footer.append(button('Export older daily plans',()=>download(this.legacyRaw,'launchpad-older-daily-plans.json')));this.append(footer);
+    this.taskArea=element('div',undefined,{class:'task-area'});for(const child of [...this.children])if(child!==heading&&child!==this.message)this.taskArea.append(child);this.append(this.taskArea);
+    this.calendar=element('launchpad-calendar');this.calendar.hidden=true;
+    this.calendar.addEventListener('calendar:open-task',event=>this.openCalendarTask(event.detail.id));
+    this.calendar.addEventListener('calendar:change-task-date',event=>{const d=event.detail;if(['dueDate','eventDate','followUpDate'].includes(d.key)&&this.inbox.items.some(x=>x.id===d.id))d.ok=this.updateItem(d.id,{[d.key]:d.date},true);});this.append(this.calendar);
+
   }
+  showCalendar(open){this.taskArea.hidden=open;this.calendar.hidden=!open;this.calendarToggle.textContent=open?'Back to tasks':'Calendar';this.calendarToggle.setAttribute('aria-pressed',String(open));if(open)this.calendar.setTasks(this.inbox.items);}
+  openCalendarTask(id){const item=this.inbox.items.find(x=>x.id===id);if(!item)return;this.showCalendar(false);this.view=item.status==='done'?'done':item.personal&&!item.action?'notes':isPinned(item)?'ready':bucket(item);this.expanded=true;this.renderItems();const card=[...this.list.querySelectorAll('article')].find(x=>x.dataset.taskKey===(item.taskKey||item.id));card?.scrollIntoView({behavior:'smooth',block:'center'});}
   buildNoteEditor(){
     this.noteEditor=element('details',undefined,{class:'import-input'});this.noteEditor.append(element('summary','Write your own note'));
     this.noteForm=element('form');this.noteInputs={};
@@ -101,6 +110,7 @@ class SummaryImport extends HTMLElement {
     this.noteForm.addEventListener('submit',event=>{event.preventDefault();this.savePersonal();});this.noteEditor.append(this.noteForm);this.append(this.noteEditor);
   }
   editPersonal(item){
+    this.showCalendar(false);
     this.editingNote=item?.id||null;for(const[key,input]of Object.entries(this.noteInputs))input.value=item?.[key]||'';
     this.noteEditor.open=true;this.noteInputs.title.focus();this.noteEditor.scrollIntoView({behavior:'smooth',block:'center'});
   }
@@ -205,7 +215,7 @@ class SummaryImport extends HTMLElement {
     const earlier=this.inbox.items.filter(x=>x.status==='superseded');
     this.earlierList.replaceChildren(...earlier.map(x=>this.card(x)));this.earlierHeading.textContent=`Earlier imports (${earlier.length})`;this.earlier.hidden=!earlier.length;
     this.brief.hidden=!this.inbox.briefing;this.briefText.textContent=this.inbox.briefing||'';this.briefDate.textContent=this.inbox.reviewDate?`Prepared ${dateLabel(this.inbox.reviewDate)}. The briefing is a snapshot; task cards retain your later edits.`:'';
-    this.updateCount();
+    this.calendar?.setTasks(this.inbox.items);this.updateCount();
   }
   updateCount(){
     this.importButton.disabled=this.blocked||this.reading;this.file.disabled=this.blocked||this.reading;
