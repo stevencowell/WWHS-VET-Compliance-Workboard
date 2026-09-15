@@ -47,3 +47,11 @@ The task backup includes richer fields, overrides and the briefing. Daily plan h
 Use **Add my note** to save a title and note text, with an optional action and due date. Reference notes live in **My notes**; actions also appear in the appropriate task view. **Edit my note** updates active personal notes. They are browser-local and included in **Export task backup**, and are kept separate from imported source notes.
 
 **Mark done** opens the visible **Done** view and confirms the saved task title. **Put aside** has a separate view. Earlier basic imports are labelled inactive; duplicate references cannot be restored accidentally. Exact action matching recognises combined source titles and empty trailing Link labels while preserving edits, completion and plan references.
+
+### Visual hierarchy
+
+The main view starts with **Your focus today**, reflecting the saved daily plan. Everyday app links are compact. The task list shows three suggestions initially, with the action larger than the exact source title. **Details** opens a native modal with source material, full priority labels and editing controls; Escape or Close details returns to the list. The selection bar appears only after choosing a task.
+
+Green identifies chosen/completed work, amber identifies a recorded deadline on or before today, blue identifies waiting items, and neutral styling keeps the other work quieter. Text labels accompany every colour. Import and note forms open on request; the briefing and archived imports remain below the task list. The existing inbox and daily-plan storage formats are unchanged.
+
+Design references: https://www.nngroup.com/articles/visual-hierarchy-ux-definition/ ; https://www.nngroup.com/articles/progressive-disclosure/ ; https://www.w3.org/WAI/WCAG22/Understanding/use-of-color.html

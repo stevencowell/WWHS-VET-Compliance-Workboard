@@ -1,4 +1,4 @@
-import {prepareTasks} from './summary-core.mjs?v=5';
+import {prepareTasks} from './summary-core.mjs?v=6';
 // Use the existing conflict-safe React saver for every daily-plan mutation.
 export function useSummaryBridge(React,context){
   React.useEffect(()=>{
