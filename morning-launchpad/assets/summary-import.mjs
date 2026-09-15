@@ -1,4 +1,4 @@
-import {INBOX_KEY, LIMIT, parseSummary, validateInbox, mergeInbox, safeUrl, PRIORITIES, NEXT_ACTIONS, EDITABLE, enrich, todaySydney, bucket, rank, nextDate, reconcilePlans} from './summary-core.mjs?v=3';
+import {INBOX_KEY, LIMIT, parseSummary, validateInbox, mergeInbox, safeUrl, PRIORITIES, NEXT_ACTIONS, EDITABLE, enrich, todaySydney, bucket, rank, nextDate, reconcilePlans} from './summary-core.mjs?v=4';
 
 function element(tag, text, attributes = {}) {
   const node = document.createElement(tag);

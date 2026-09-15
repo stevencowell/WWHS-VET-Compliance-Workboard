@@ -170,7 +170,8 @@ export function mergeInbox(existing, incoming) {
   const items = existing.map(x=>enrich({...x}));
   let added=0, updated=0, archived=0; const aliases=new Map();
   const rich = incoming.some(x=>x.taskKey);
-  const titles = new Set(incoming.map(x=>x.title));
+  const titleIdentity=title=>title.normalize('NFC').replace(/\s+/g,' ').trim();
+  const titles = new Set(incoming.flatMap(x=>[x.title,...(x.relatedTitles||[])]).map(titleIdentity));
   for (const input of incoming) {
     const next=enrich(input);
     const index=items.findIndex(old => next.taskKey && old.taskKey === next.taskKey || old.title === next.title && (old.action === next.action || (!next.taskKey || !old.taskKey) && old.source === next.source));
@@ -190,7 +191,7 @@ export function mergeInbox(existing, incoming) {
     }
   }
   if (rich) for (const item of items) {
-    if (!item.taskKey && titles.has(item.title) && item.status === 'review') { item.status='superseded';archived++; }
+    if (!item.taskKey && titles.has(titleIdentity(item.title)) && item.status === 'review') { item.status='superseded';archived++; }
   }
   for(const item of items) item.dependsOn=item.dependsOn.map(key=>aliases.get(key)||key);
   return {items,added,updated,archived};

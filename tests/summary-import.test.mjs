@@ -91,3 +91,8 @@ test('removing a daily task returns it to review; plan edits and deferrals persi
   const days={'2026-09-15':{tasks:[{id:'summary:local',title:'[Note : Sample] — Edited in daily plan',state:'deferred'}]}};
   const result=reconcilePlans([row],days,'2026-09-15');assert.equal(result.items[0].action,'Edited in daily plan');assert.equal(result.items[0].group,'later');assert.ok(result.items[0].dirty.includes('group'));assert.ok(result.items[0].dirty.includes('action'));
 });
+test('AI tasks also retain superseded basic entries from explicitly related notes',()=>{
+  const basic=parseSummary('Note : Old schedule\nComplete training');
+  const result=mergeInbox(basic,[rich({relatedTitles:['Note : Old\u00a0schedule']})]);
+  assert.equal(result.archived,1);assert.equal(result.items[0].title,'Note : Old schedule');assert.equal(result.items[0].action,'Complete training');assert.equal(result.items[0].status,'superseded');
+});
