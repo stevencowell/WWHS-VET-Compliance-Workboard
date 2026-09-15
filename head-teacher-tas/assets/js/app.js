@@ -15,11 +15,13 @@
   let lastSettingsTrigger = null;
   let taskStateDirty = false;
   let settingsStateDirty = false;
+  const completionUndo = new Map();
 
   const statusMeta = {
     "not-started": { label: "Not started", className: "neutral" },
     "in-progress": { label: "In progress", className: "progress" },
     waiting: { label: "Waiting", className: "waiting" },
+    completed: { label: "Task complete", className: "completed" },
     verified: { label: "Verified", className: "verified" },
     exception: { label: "Exception", className: "exception" },
     "not-applicable": { label: "Not applicable", className: "muted" }
@@ -101,6 +103,9 @@
       if (status === "verified" && (!allSteps || !allMilestones || !evidenceRef || !verifier || !sourceChecked || !doneConfirmed)) {
         status = hasProgress ? "in-progress" : "not-started";
       }
+      if (status === "completed" && (!allSteps || !allMilestones || !sourceChecked || !doneConfirmed)) {
+        status = hasProgress ? "in-progress" : "not-started";
+      }
       if (["exception", "not-applicable"].includes(status) && (!exceptionReason || !verifier)) {
         status = hasProgress ? "in-progress" : "not-started";
       }
@@ -112,7 +117,7 @@
         evidenceRef,
         verifier,
         sourceChecked,
-        doneConfirmed: status === "verified" ? doneConfirmed : false,
+        doneConfirmed: ["completed", "verified"].includes(status) ? doneConfirmed : false,
         exceptionReason,
         updatedAt: String(raw.updatedAt || "")
       };
@@ -123,8 +128,10 @@
   function saveState() {
     try {
       localStorage.setItem(data.config.storageKey, JSON.stringify(state));
+      return true;
     } catch (_) {
       toast("This browser could not save the workboard", "error");
+      return false;
     }
   }
 
@@ -198,7 +205,7 @@
     if (!task.dueDate) return task.timing;
     if (task.historyOnly) return `${shortDate(task.dueDate)} · 2026 baseline`;
     const dueDate = activeDueDate(task);
-    if (!dueDate) return "Milestones complete · verify closure";
+    if (!dueDate) return isClosed(task) ? "Milestones complete · closed here" : "Milestones complete · verify closure";
     if (!operatingYearIsCurrent) return `${shortDate(dueDate)} · 2026 baseline`;
     if (isClosed(task)) return `${shortDate(dueDate)} · closed here`;
     const days = daysUntil(dueDate);
@@ -272,7 +279,7 @@
   }
 
   function isClosed(task) {
-    return ["verified", "not-applicable"].includes(statusFor(task));
+    return ["completed", "verified", "not-applicable"].includes(statusFor(task));
   }
 
   function sourcePill(task) {
@@ -470,8 +477,67 @@
     return `<article class="timeline-item ${isClosed(task) ? "is-closed" : ""}">
       <div class="date-tile"><span>${esc(month)}</span><strong>${day}</strong></div>
       <div class="timeline-body"><div class="card-badges">${priorityPill(task)}${statusPill(task)}${sourcePill(task)}</div><h3>${esc(task.title)}</h3><p>${esc(task.timing)}</p>${task.milestones ? `<ul class="milestone-mini">${task.milestones.map((item, index) => `<li class="${record.milestones?.[index] ? "is-done" : ""}"><span>${record.milestones?.[index] ? "✓ " : ""}${esc(shortDate(item.date))}</span>${esc(item.label)}</li>`).join("")}</ul>` : ""}</div>
-      <button class="button quiet compact" type="button" data-action="open-task" data-task-id="${esc(task.id)}">Open</button>
+      <div class="timeline-actions">
+        ${!task.historyOnly && !task.procedureOnly && !isClosed(task) ? `<button class="button primary compact" type="button" data-action="complete-task" data-task-id="${esc(task.id)}" aria-label="Task Complete: ${esc(task.title)}" title="Tick all steps, milestones and completion checks">Task Complete</button>` : ""}
+        ${statusFor(task) === "completed" ? `<span class="task-complete-label">✓ Task Complete</span>` : ""}
+        ${completionUndo.get(recordKey(task))?.after === record && statusFor(task) === "completed" ? `<button class="button secondary compact" type="button" data-action="undo-complete-task" data-task-id="${esc(task.id)}" aria-label="Undo completion: ${esc(task.title)}">Undo</button>` : ""}
+        <button class="button quiet compact" type="button" data-action="open-task" data-task-id="${esc(task.id)}">Open</button>
+      </div>
     </article>`;
+  }
+
+  function refreshCalendarTask(task) {
+    const elapsedOpen = document.querySelector(".elapsed")?.open;
+    render();
+    const elapsed = document.querySelector(".elapsed");
+    if (elapsed) elapsed.open = Boolean(elapsedOpen);
+    const id = CSS.escape(task.id);
+    const replacement = document.querySelector(`[data-action="undo-complete-task"][data-task-id="${id}"]`)
+      || document.querySelector(`[data-action="complete-task"][data-task-id="${id}"]`)
+      || document.querySelector(`[data-action="open-task"][data-task-id="${id}"]`);
+    replacement?.focus({ preventScroll: true });
+  }
+
+  function completeCalendarTask(id) {
+    const task = data.tasks.find(item => item.id === id);
+    if (!task?.dueDate || task.historyOnly || task.procedureOnly || isClosed(task)) return;
+    const key = recordKey(task);
+    const before = state.records[key];
+    const after = {
+      ...recordFor(task),
+      status: "completed",
+      steps: Object.fromEntries(task.steps.map((_, index) => [index, true])),
+      milestones: Object.fromEntries((task.milestones || []).map((_, index) => [index, true])),
+      sourceChecked: true,
+      doneConfirmed: true,
+      updatedAt: new Date().toISOString()
+    };
+    state.records[key] = after;
+    if (!saveState()) {
+      if (before) state.records[key] = before;
+      else delete state.records[key];
+      return;
+    }
+    completionUndo.set(key, { before, after });
+    refreshCalendarTask(task);
+    toast("Task complete — all checklist boxes ticked");
+  }
+
+  function undoCalendarCompletion(id) {
+    const task = data.tasks.find(item => item.id === id);
+    if (!task || task.historyOnly || task.procedureOnly) return;
+    const key = recordKey(task);
+    const undo = completionUndo.get(key);
+    if (!undo || state.records[key] !== undo.after) return;
+    if (undo.before) state.records[key] = undo.before;
+    else delete state.records[key];
+    if (!saveState()) {
+      state.records[key] = undo.after;
+      return;
+    }
+    completionUndo.delete(key);
+    refreshCalendarTask(task);
+    toast("Completion undone — previous progress restored");
   }
 
   function renderArea(area) {
@@ -645,6 +711,7 @@
     const allMilestones = !task.milestones?.length || task.milestones.every((_, index) => previous.milestones?.[index] === true || previous.milestones?.[String(index)] === true);
     const error = form.querySelector(".form-error");
 
+    if (status === "completed" && (!allSteps || !allMilestones || !sourceChecked || !doneConfirmed)) return formError(error, "Task completion needs every action, milestone and completion check ticked.");
     if (status === "verified" && !allSteps) return formError(error, "Complete each action step before verifying this task.");
     if (status === "verified" && !allMilestones) return formError(error, "Complete each dated milestone before verifying this task.");
     if (status === "verified" && (!evidenceRef || !verifier || !sourceChecked || !doneConfirmed)) return formError(error, "Verification needs a safe owner-system reference, verifier, live-source check and Done when confirmation.");
@@ -824,6 +891,10 @@
     } else if (action === "open-task") {
       if (taskDialog.open) taskDialog.close();
       openTask(actionTarget.dataset.taskId);
+    } else if (action === "complete-task") {
+      completeCalendarTask(actionTarget.dataset.taskId);
+    } else if (action === "undo-complete-task") {
+      undoCalendarCompletion(actionTarget.dataset.taskId);
     } else if (action === "close-task") {
       taskDialog.close();
     } else if (action === "open-settings") {
@@ -871,9 +942,9 @@
       const previous = recordFor(task);
       state.records[recordKey(task)] = {
         ...previous,
-        status: previous.status === "not-started" || previous.status === "verified" ? "in-progress" : previous.status,
+        status: ["not-started", "completed", "verified"].includes(previous.status) ? "in-progress" : previous.status,
         steps: { ...safeObject(previous.steps), [event.target.dataset.taskStep]: event.target.checked },
-        doneConfirmed: previous.status === "verified" ? false : previous.doneConfirmed,
+        doneConfirmed: ["completed", "verified"].includes(previous.status) ? false : previous.doneConfirmed,
         updatedAt: new Date().toISOString()
       };
       taskStateDirty = true;
@@ -886,22 +957,34 @@
       const previous = recordFor(task);
       state.records[recordKey(task)] = {
         ...previous,
-        status: previous.status === "not-started" || previous.status === "verified" ? "in-progress" : previous.status,
+        status: ["not-started", "completed", "verified"].includes(previous.status) ? "in-progress" : previous.status,
         milestones: { ...safeObject(previous.milestones), [event.target.dataset.taskMilestone]: event.target.checked },
-        doneConfirmed: previous.status === "verified" ? false : previous.doneConfirmed,
+        doneConfirmed: ["completed", "verified"].includes(previous.status) ? false : previous.doneConfirmed,
         updatedAt: new Date().toISOString()
       };
       taskStateDirty = true;
       saveState();
       const item = event.target.closest("li");
       item?.classList.toggle("is-done", event.target.checked);
-      const due = taskDialogContent.querySelector(".pill.due");
-      if (due) due.textContent = dueLabel(task);
-      const status = taskDialogContent.querySelector(".pill.status");
-      const meta = statusMeta[statusFor(task)];
-      if (status && meta) {
-        status.className = `pill status ${meta.className}`;
-        status.textContent = meta.label;
+    }
+
+    if (event.target.matches("[data-task-step], [data-task-milestone]")) {
+      const task = data.tasks.find(item => item.id === event.target.dataset.taskId);
+      if (task && !task.historyOnly && !task.procedureOnly) {
+        const record = recordFor(task);
+        const form = document.getElementById("task-record-form");
+        if (form) {
+          form.elements.status.value = record.status;
+          if (!record.doneConfirmed) form.elements.doneConfirmed.checked = false;
+        }
+        const due = taskDialogContent.querySelector(".pill.due");
+        if (due) due.textContent = dueLabel(task);
+        const badge = taskDialogContent.querySelector(".pill.status");
+        const meta = statusMeta[record.status];
+        if (badge && meta) {
+          badge.className = `pill status ${meta.className}`;
+          badge.textContent = meta.label;
+        }
       }
     }
 

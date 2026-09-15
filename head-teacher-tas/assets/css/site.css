@@ -631,6 +631,7 @@ main {
 }
 
 .pill.source.good,
+.pill.status.completed,
 .pill.status.verified {
   color: var(--green);
   background: var(--green-soft);
@@ -843,6 +844,21 @@ input[type="checkbox"] {
 .timeline-item.is-closed,
 .task-card.is-closed {
   opacity: 0.68;
+}
+
+.timeline-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  max-width: 245px;
+}
+
+.task-complete-label {
+  color: var(--teal);
+  font-size: 13px;
+  font-weight: 800;
 }
 
 .date-tile {
@@ -1823,9 +1839,11 @@ input[type="checkbox"] {
     padding: 14px;
   }
 
-  .timeline-item > .button {
+  .timeline-actions {
     grid-column: 2;
     justify-self: start;
+    justify-content: flex-start;
+    max-width: none;
   }
 
   .date-tile {
