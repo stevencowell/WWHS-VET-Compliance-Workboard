@@ -57,3 +57,7 @@ Maintained application sources are `summary-core.mjs`, `summary-import.mjs` and 
 Run `node --test tests/summary-import.test.mjs tests/calendar.test.mjs`. Relevant coverage includes safe imports, merging and completion, legacy migration, pin persistence, date rollover and backup validation. Browser verification should cover pin/unpin, reload, completion and absence of the retired panel. Use synthetic data for public fixtures.
 
 Update cache identifiers when changing published modules and refresh `docs/morning-launchpad-2026-09-15.sha256`. The legacy `scripts/export-launchpad.mjs` intentionally stops an older local build from replacing this maintained online edition. Port the current task workflow into the local source before re-enabling that export. Publish only the application files; never copy the full local Launchpad folder.
+
+## ChatGPT help launcher
+
+Each **Copy help request** control has an adjacent **Open ChatGPT** button. Its native dialog offers the web at `https://chatgpt.com/` or an attempted desktop handoff via `chatgpt://`. The desktop protocol is not confirmed by the available official documentation or on Steve’s Windows installation; the dialog retains a web fallback and Start-menu guidance. Requests are copied separately and are never embedded in launch URLs or automatically sent. The popup follows the current theme and supports Escape/Cancel.
