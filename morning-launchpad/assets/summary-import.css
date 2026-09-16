@@ -101,3 +101,7 @@ summary-import .import-card-quick-controls{margin:0;padding:10px 18px;align-item
 summary-import textarea.import-card-summary-text{flex:1;display:block;min-width:0;width:100%;margin:0;padding:0;border:0;border-radius:4px;background:transparent;color:inherit;font:inherit;line-height:inherit;resize:vertical;overflow:hidden;cursor:text;min-height:60px}
 summary-import textarea.import-card-summary-text:focus-visible{outline:2px solid var(--focus);outline-offset:5px}
 .card-save-status{font-size:12px;color:var(--muted)}.card-save-status:empty{display:none}
+
+/* One midpoint green for the four capture toolbar buttons. */
+summary-import .import-heading-actions button{background:#708877;color:#101f19;border-color:#708877;font-weight:600}
+summary-import .import-heading-actions button:hover{background:#819887;border-color:#819887}
