@@ -41,3 +41,21 @@ email-capture{display:block}email-capture [hidden]{display:none!important}.email
 .today-lessons-list a{text-decoration:none}.today-lesson-resource{font-size:11px;font-weight:700;margin-top:4px}.today-lessons-list a:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 
 .import-last-action{margin:5px 0 10px;font-size:13px;font-weight:600;color:var(--muted)}
+
+/* Compact capture toolbar: closed forms no longer duplicate the toolbar. */
+summary-import .import-heading{gap:14px 24px;align-items:center;margin-bottom:16px}
+summary-import .import-heading>div:first-child{flex:1 1 320px}
+summary-import .import-heading h2{font-size:25px;margin-bottom:5px}
+summary-import .import-heading .eyebrow{font-size:10px;letter-spacing:.16em}
+summary-import .import-intro{font-size:14px;line-height:1.5;margin:0}
+summary-import .import-heading>.import-heading-actions{display:flex;flex:0 1 auto;flex-wrap:wrap;gap:8px;padding:8px;background:var(--surface-soft);border:1px solid var(--line);border-radius:14px}
+.import-heading-actions button{font-size:14px;padding:10px 13px;white-space:nowrap}
+.task-area>.import-input:not([open]),.task-area>email-capture .email-panel:not([open]){display:none}
+.task-area>.import-input[open],.task-area>email-capture .email-panel[open]{margin:12px 0;padding:18px;border:1px solid var(--line)}
+.task-area>.import-other:first-of-type{margin-top:4px;padding-top:10px;font-size:13px}
+@media(max-width:700px){
+ summary-import .import-heading{align-items:stretch;gap:12px}
+ summary-import .import-heading>div:first-child{flex:auto}
+ summary-import .import-heading>.import-heading-actions{flex:auto;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+ .import-heading-actions button{white-space:normal}
+}
