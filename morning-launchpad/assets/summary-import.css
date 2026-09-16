@@ -96,3 +96,8 @@ summary-import .import-card-summary:focus-visible{outline:3px solid var(--focus)
 summary-import .import-card-quick-controls{margin:0;padding:10px 18px;align-items:center;border-top:1px solid var(--line);gap:10px}
 .import-card-quick-controls select{max-width:100%;min-height:44px;padding:8px 12px;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:10px;font:inherit}
 .import-card-quick-controls button{margin-left:auto}
+
+/* Edit the front-card text directly; the arrow opens the supporting details. */
+summary-import textarea.import-card-summary-text{flex:1;display:block;min-width:0;width:100%;margin:0;padding:0;border:0;border-radius:4px;background:transparent;color:inherit;font:inherit;line-height:inherit;resize:vertical;overflow:hidden;cursor:text;min-height:60px}
+summary-import textarea.import-card-summary-text:focus-visible{outline:2px solid var(--focus);outline-offset:5px}
+.card-save-status{font-size:12px;color:var(--muted)}.card-save-status:empty{display:none}
