@@ -59,3 +59,5 @@ summary-import .import-heading>.import-heading-actions{display:flex;flex:0 1 aut
  summary-import .import-heading>.import-heading-actions{flex:auto;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
  .import-heading-actions button{white-space:normal}
 }
+
+.today-lessons-links{display:flex;align-items:center;flex-wrap:wrap;gap:0 18px}.today-lessons-links a{display:inline-block}
