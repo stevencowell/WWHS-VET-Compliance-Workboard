@@ -65,3 +65,5 @@ summary-import .import-heading>.import-heading-actions{display:flex;flex:0 1 aut
 .import-email-link{display:inline-block;margin:12px 12px 0 0;padding:9px 13px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--accent);font-size:14px;font-weight:650;text-decoration:none}.import-email-link:hover{text-decoration:underline}
 
 .import-email-search input{box-sizing:border-box;width:100%;margin-top:8px;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font:inherit}.import-email-search .import-help{margin:6px 0}.help-request-actions .import-email-link{margin:0}
+
+summary-import button.is-copied{background:#246749;color:#fff;border-color:#246749;box-shadow:0 0 0 3px #24674922}
