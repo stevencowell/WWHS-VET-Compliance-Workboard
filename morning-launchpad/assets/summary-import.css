@@ -108,4 +108,4 @@ summary-import .import-heading-actions button:hover{background:#819887;border-co
 
 .import-working-note{margin:20px 0;padding:16px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
 .import-card .import-working-note label{margin:0;font-size:18px;font-weight:650}
-.import-working-note textarea{display:block;margin-top:10px;min-height:160px;font-weight:400}
+.import-working-note textarea{display:block;margin-top:10px;min-height:96px;font-weight:400;overflow:hidden;resize:none}

@@ -242,5 +242,13 @@ test('working notes survive backups and reimports, including deliberate clearing
   assert.equal(restored.noteText,edited.noteText);
   assert.equal(mergeInbox([restored],[initial]).items[0].noteText,edited.noteText);
   assert.equal(mergeInbox([{...restored,noteText:''}],[{...initial,noteText:'Old draft'}]).items[0].noteText,'');
-  assert.throws(()=>validateInbox(JSON.stringify({version:2,items:[{...initial,noteText:'x'.repeat(20001)}]})));
+  assert.throws(()=>validateInbox(JSON.stringify({version:2,items:[{...initial,noteText:'x'.repeat(200001)}]})));
+});
+
+
+test('working notes support long documents up to 200000 characters',()=>{
+ const [item]=parseSummary('Note : Long document\nReview document');
+ const noteText='x'.repeat(200000);
+ const restored=validateInbox(JSON.stringify({version:2,items:[{...item,noteText}]}));
+ assert.equal(restored.items[0].noteText,noteText);
 });

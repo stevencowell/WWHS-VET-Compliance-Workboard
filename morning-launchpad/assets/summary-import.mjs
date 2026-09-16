@@ -1,7 +1,7 @@
 import {emailSearchText} from './email-search.mjs?v=1';
 import './email-capture.mjs?v=4';
 import './launchpad-calendar.mjs?v=10';
-import {INBOX_KEY, LIMIT, parseSummary, validateInbox, mergeInbox, safeUrl, PRIORITIES, NEXT_ACTIONS, EDITABLE, enrich, todaySydney, taskSection, rank, nextDate, consolidateDuplicates, LEGACY_PLAN_KEY, isPinned, migrateToPins, recordNoteAction} from './summary-core.mjs?v=15';
+import {INBOX_KEY, LIMIT, parseSummary, validateInbox, mergeInbox, safeUrl, PRIORITIES, NEXT_ACTIONS, EDITABLE, enrich, todaySydney, taskSection, rank, nextDate, consolidateDuplicates, LEGACY_PLAN_KEY, isPinned, migrateToPins, recordNoteAction} from './summary-core.mjs?v=16';
 
 function element(tag, text, attributes = {}) {
   const node = document.createElement(tag);
@@ -9,6 +9,7 @@ function element(tag, text, attributes = {}) {
   for (const [key, value] of Object.entries(attributes)) node.setAttribute(key, value);
   return node;
 }
+function fitNoteText(node){if(!node.getClientRects().length)return;node.style.height='auto';node.style.height=`${node.scrollHeight+2}px`;}
 function copyFeedback(node, success=true) {
   node.dataset.copyLabel ||= node.textContent;
   clearTimeout(node.copyFeedbackTimer);
@@ -54,7 +55,7 @@ class SummaryImport extends HTMLElement {
     if(this.started)return;this.started=true;
     this.openCards=new Set();this.view='ready';this.expanded=false;this.legacyRaw=null;this.blocked=false;this.raw=null;
     try {this.raw=localStorage.getItem(INBOX_KEY);this.inbox=validateInbox(this.raw);this.legacyRaw=localStorage.getItem(LEGACY_PLAN_KEY);} catch {this.blocked=true;this.inbox=validateInbox(null);}
-    this.build();
+    this.build();this.resizeNotes=()=>this.querySelectorAll('.import-working-note textarea').forEach(fitNoteText);window.addEventListener('resize',this.resizeNotes);
     this.onStorage=event=>{if(event.key===INBOX_KEY||event.key===null){this.blocked=true;this.renderItems();this.say('This review list changed in another tab. Reload before making changes.',true);}};
     window.addEventListener('storage',this.onStorage);
     this.openToday=()=>{this.showCalendar(true);this.calendar.openDate(todaySydney(),'day');this.calendar.scrollIntoView({behavior:'smooth',block:'start'});};window.addEventListener('launchpad:open-today',this.openToday);
@@ -62,7 +63,7 @@ class SummaryImport extends HTMLElement {
     this.syncPlans();this.renderItems();this.displayDate=todaySydney();this.dayTimer=setInterval(()=>{const date=todaySydney();if(date!==this.displayDate){this.displayDate=date;this.renderItems();}},30000);
     if(this.blocked)this.say('Your saved review list could not be read. It is untouched. Export a copy before recovering it.',true);
   }
-  disconnectedCallback(){window.removeEventListener('launchpad:open-calendar',this.openCalendarChoice);window.removeEventListener('launchpad:open-today',this.openToday);clearInterval(this.dayTimer);window.removeEventListener('storage',this.onStorage);this.started=false;}
+  disconnectedCallback(){window.removeEventListener('resize',this.resizeNotes);window.removeEventListener('launchpad:open-calendar',this.openCalendarChoice);window.removeEventListener('launchpad:open-today',this.openToday);clearInterval(this.dayTimer);window.removeEventListener('storage',this.onStorage);this.started=false;}
   persist(next) {
     try {
       if(this.blocked||localStorage.getItem(INBOX_KEY)!==this.raw)throw new Error('The review list changed in another tab. Reload before saving.');
@@ -258,12 +259,12 @@ class SummaryImport extends HTMLElement {
     }
     const notes=element('section',undefined,{class:'import-working-note'});
     const noteLabel=element('label','Note');
-    const noteText=element('textarea',item.noteText||'',{rows:'7',maxlength:'20000',placeholder:'Paste a draft email, add information or keep document and attachment links here…','aria-label':`Note for ${item.title}`});
+    const noteText=element('textarea',item.noteText||'',{rows:'3',maxlength:'200000',placeholder:'Paste a draft email, add information or keep document and attachment links here…','aria-label':`Note for ${item.title}`});
     noteText.disabled=this.blocked;noteLabel.append(noteText);
     const noteStatus=element('p','',{class:'import-help',role:'status','aria-live':'polite'});
     let noteTimer, savedNote=item.noteText||'';
     const saveNote=()=>{clearTimeout(noteTimer);const value=noteText.value;if(value===savedNote)return;if(!this.inbox.items.some(x=>x.id===item.id))return;if(this.updateItem(item.id,{noteText:value})){savedNote=value;noteStatus.textContent='Saved';}else noteStatus.textContent='Not saved — see the message above.';};
-    noteText.addEventListener('input',()=>{noteStatus.textContent='Saving…';clearTimeout(noteTimer);noteTimer=setTimeout(saveNote,500);});
+    noteText.addEventListener('input',()=>{fitNoteText(noteText);noteStatus.textContent='Saving…';clearTimeout(noteTimer);noteTimer=setTimeout(saveNote,500);});
     noteText.addEventListener('blur',saveNote);
     notes.append(noteLabel,noteStatus,element('p','Saves automatically in this browser. Paste document links here; files themselves are not uploaded.',{class:'import-help'}));article.append(notes);
     const source=element('details');source.append(element('summary','Source and links'),element('p',item.personal?'Your note title:':'Exact note title for Evernote search:'),element('p',item.title,{class:'import-source-title'}));
@@ -320,10 +321,10 @@ class SummaryImport extends HTMLElement {
     summary.setAttribute('aria-label',`Expand or collapse ${item.title}`);
     summary.append(frontText,element('span','',{class:'import-card-chevron','aria-hidden':'true'}));
     quickControls.prepend(saveStatus);
-    requestAnimationFrame(()=>{if(frontText.isConnected)resizeText();});
+    requestAnimationFrame(()=>{if(frontText.isConnected){resizeText();fitNoteText(noteText);}});
     const body=element('div',undefined,{class:'import-card-body'});
     body.append(...article.childNodes);disclosure.append(summary,body);article.append(disclosure);if(quickControls.childElementCount)article.append(quickControls);
-    disclosure.addEventListener('toggle',()=>{if(!disclosure.isConnected)return;if(disclosure.open)this.openCards.add(item.id);else this.openCards.delete(item.id);});
+    disclosure.addEventListener('toggle',()=>{if(!disclosure.isConnected)return;if(disclosure.open)fitNoteText(noteText);if(disclosure.open)this.openCards.add(item.id);else this.openCards.delete(item.id);});
     return article;
   }
   renderItems(){

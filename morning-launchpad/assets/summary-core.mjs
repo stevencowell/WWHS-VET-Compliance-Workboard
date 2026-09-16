@@ -151,7 +151,7 @@ export function validateInbox(raw) {
   const items = value.items.map(enrich);
   for (const x of items) {
     if (typeof x.id !== 'string' || !x.id.trim() || x.id.length > 150 || typeof x.title !== 'string' || !x.title.trim() || x.title.length > 300 ||
-      typeof x.action !== 'string' || (!x.action.trim() && !(x.personal && ['note','done','dismissed'].includes(x.status))) || x.action.length > 800 || typeof x.source !== 'string' || x.source.length > 20000 || typeof x.noteText !== 'string' || x.noteText.length > 20000 ||
+      typeof x.action !== 'string' || (!x.action.trim() && !(x.personal && ['note','done','dismissed'].includes(x.status))) || x.action.length > 800 || typeof x.source !== 'string' || x.source.length > 20000 || typeof x.noteText !== 'string' || x.noteText.length > 200000 ||
       typeof x.taskKey !== 'string' || x.taskKey.length > 150 || !Number.isFinite(x.score) ||
       !Array.isArray(x.links) || x.links.length > 30 || x.links.some(url => !safeUrl(url)) || typeof x.url !== 'string' || x.url && !safeUrl(x.url) ||
       typeof x.originalEmailUrl !== 'string' || x.originalEmailUrl && !safeUrl(x.originalEmailUrl) ||
