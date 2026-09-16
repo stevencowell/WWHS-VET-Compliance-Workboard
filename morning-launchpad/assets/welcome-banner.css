@@ -1,0 +1,12 @@
+/* Decorative landscape; greeting and lesson details remain real, accessible text. */
+.welcome{position:relative;isolation:isolate;min-height:310px;padding:30px 34px;margin:12px 0 24px;border-radius:22px;overflow:hidden;background:#173b33 url('./riverina-welcome-v1.webp') center 56%/cover no-repeat;box-shadow:0 12px 28px #17302d18;gap:28px;box-sizing:border-box}
+.welcome::before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,rgba(8,31,25,.87),rgba(8,31,25,.59) 46%,rgba(8,31,25,.16))}
+.welcome>div:first-child{padding:20px 0;max-width:600px}
+.welcome .date-line{display:inline-block;color:#f3dfb5;background:#17352dcc;border:1px solid #e7cd953d;border-radius:30px;padding:7px 12px;font-size:12px;letter-spacing:.025em;margin:0 0 18px}
+.welcome h1{color:#fff;font-size:clamp(30px,3.4vw,46px);line-height:1.1;font-weight:650;letter-spacing:-1.3px;margin:0 0 16px;text-wrap:balance;text-shadow:0 2px 12px #0003}
+.welcome .welcome-copy{color:#f0f4ef;font-size:15px;line-height:1.6;max-width:370px}
+.welcome today-lessons{flex:0 1 470px;min-width:310px;background:var(--surface,#fff);border-color:var(--line,#d8e2dc);box-shadow:0 8px 24px #0002;padding:18px;border-radius:15px}
+@media(max-width:1000px){.welcome{padding:26px;gap:20px}.welcome today-lessons{flex-basis:420px}}
+@media(max-width:900px){.welcome{align-items:stretch;min-height:0;background-position:65% center;padding:26px}.welcome>div:first-child{max-width:650px;padding:12px 0 22px}.welcome today-lessons{flex:auto;min-width:0;width:100%}.welcome::before{background:linear-gradient(90deg,#081f19e6,#081f194d)}}
+@media(max-width:480px){.welcome{padding:22px 18px;border-radius:16px}.welcome h1{font-size:33px}.welcome .date-line{font-size:11px}}
+@media print{.welcome{background:none;box-shadow:none;min-height:0;padding:0;color:#000}.welcome::before{display:none}.welcome h1,.welcome .date-line,.welcome .welcome-copy{color:#000;text-shadow:none}.welcome .date-line{background:none;border:0;padding:0}}
