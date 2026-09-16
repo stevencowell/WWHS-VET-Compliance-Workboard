@@ -226,7 +226,7 @@ class SummaryImport extends HTMLElement {
     if(item.waitingOn)article.append(element('p',`Waiting on: ${item.waitingOn}`,{class:'import-help'}));
     if(item.instruction){const tasks=element('section',undefined,{class:'import-instruction','aria-label':'Tasks'});tasks.append(element('h3','Tasks'),element('p',item.instruction));article.append(tasks);}
     const action=element('textarea',item.action,{class:'import-action',rows:'3',maxlength:'800','aria-label':`Action for ${item.title}`});action.disabled=this.blocked||!active;
-    action.addEventListener('change',()=>{if(!action.value.trim()){action.value=item.action;this.say('Keep a short action, or put the task aside.',true);return;}if(this.updateItem(item.id,{action:action.value.trim()}))article.querySelector('.import-card-summary-text').textContent=action.value.trim();});if(item.action)article.append(action);if(item.personal&&item.source)article.append(element('pre',item.source,{class:'import-source'}));
+    action.addEventListener('change',()=>{if(!action.value.trim()){action.value=item.action;this.say('Keep a short action, or put the task aside.',true);return;}if(this.updateItem(item.id,{action:action.value.trim()}))article.querySelector('.import-card-summary-text').textContent=action.value.trim();});if(item.personal&&item.source)article.append(element('pre',item.source,{class:'import-source'}));
     if(!item.personal){
       const search=element('details',undefined,{class:'import-email-search'});
       search.append(element('summary','Email search text'));
@@ -243,7 +243,7 @@ class SummaryImport extends HTMLElement {
     if(active){
       const edit=element('details');edit.append(element('summary','Edit priority, dates and tasks'));const grid=element('div',undefined,{class:'import-fields'});
       grid.append(this.field(item,'priority','Priority','text',PRIORITIES),this.field(item,'nextAction','Next step','text',NEXT_ACTIONS),this.field(item,'dueDate','Deadline','date'),this.field(item,'eventDate','Event date','date'),this.field(item,'followUpDate','Follow-up date','date'),this.field(item,'owner','Responsible person'),this.field(item,'waitingOn','Waiting on'),this.field(item,'instruction','Tasks'),this.field(item,'dateNote','Date or status uncertainty'));
-      edit.append(grid);article.append(edit);
+      if(item.action){const actionLabel=element('label','Action');actionLabel.append(action);edit.append(actionLabel);}edit.append(grid);article.append(edit);
     }
     const source=element('details');source.append(element('summary','Source and links'),element('p',item.personal?'Your note title:':'Exact note title for Evernote search:'),element('p',item.title,{class:'import-source-title'}));
     for(const title of item.relatedTitles)source.append(element('p',`Also: ${title}`,{class:'import-source-title'}));
