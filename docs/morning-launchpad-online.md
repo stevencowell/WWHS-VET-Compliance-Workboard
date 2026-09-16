@@ -65,3 +65,6 @@ Each **Copy help request** control has an adjacent **Open ChatGPT** button. Its 
 ## Today’s lessons beside the greeting
 
 The welcome panel replaces the decorative sunrise with a read-only list of today’s imported Sentral lessons and duties. It uses the same calendar storage and timetable classification, sorted by start time, and shows times, class codes, subject names, periods and rooms. Entries and the Open today’s calendar link open Day view. The panel refreshes after calendar saves, browser storage events and Sydney-date rollover (30-second interval); it never writes or duplicates events. Empty and unreadable timetable states are explicit. On narrow screens it stacks below the greeting.
+
+
+Today's lesson cards open Steve's mapped course resources in a new tab. Both Timber classes use Folding Chair; both Construction classes use the Construction supplementary homepage; Metal uses Manufacturing; TLC uses Google Classroom. Duty and unmapped entries still open today's calendar. Engineering uses Hydraulic Digger before 13 October 2026, then Lolly Dispenser. Review this unit schedule for 2027. Term boundary source: https://education.nsw.gov.au/schooling/calendars/2026
