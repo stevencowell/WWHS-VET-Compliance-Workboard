@@ -75,3 +75,5 @@ summary-import .import-tabs button[aria-pressed="true"]{background:#28699f;color
 :root[data-theme=dark] summary-import .import-tabs button{background:#1c3549;color:#e6f2ff;border-color:#3f617e}
 :root[data-theme=dark] summary-import .import-tabs button:hover{background:#274962;border-color:#7caed5}
 :root[data-theme=dark] summary-import .import-tabs button[aria-pressed="true"]{background:#a9cfee;color:#12334e;border-color:#a9cfee}
+
+.import-footer{flex-wrap:wrap}.clear-notes-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}summary-import button.import-danger{color:#a12c2c;border-color:#c98989;background:transparent}summary-import button.import-danger:hover{background:#faeaea}:root[data-theme=dark] summary-import button.import-danger{color:#ffc5c5;border-color:#a96b6b}:root[data-theme=dark] summary-import button.import-danger:hover{background:#4a2929}

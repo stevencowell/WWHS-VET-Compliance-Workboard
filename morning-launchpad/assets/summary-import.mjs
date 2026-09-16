@@ -102,12 +102,34 @@ class SummaryImport extends HTMLElement {
     for(const [key,label]of [['ready','Today'],['upcoming','Coming up'],['waiting','Waiting'],['later','Later'],['notes','My notes'],['done','Done'],['dismissed','Put aside']]){const b=button(label,()=>{this.view=key;this.expanded=false;this.renderItems();});this.tabs[key]={button:b,label};this.nav.append(b);}this.append(this.nav);
     this.viewHelp=element('p','',{class:'import-help'});this.list=element('div',undefined,{class:'import-list'});this.append(this.viewHelp,this.list);
     this.earlier=element('details',undefined,{class:'import-other'});this.earlierHeading=element('summary');this.earlierList=element('div',undefined,{class:'import-list'});this.earlier.append(this.earlierHeading,element('p','The AI task file replaces these basic entries. Their text and edits are kept here; restore one only if it contains additional work.',{class:'import-help'}),this.earlierList);this.append(this.earlier);
-    const footer=element('div',undefined,{class:'import-footer'});footer.append(element('p','Saved in this browser. Export your task backup to keep progress or move to another computer. Email and Evernote are not changed.',{class:'import-help'}),button('Export task backup',()=>{const raw=this.blocked?this.raw:JSON.stringify(this.inbox,null,2);if(raw===null){this.say('There is no saved task list to export.');return;}download(raw,'launchpad-task-backup.json');}));if(this.legacyRaw!==null)footer.append(button('Export older daily plans',()=>download(this.legacyRaw,'launchpad-older-daily-plans.json')));this.append(footer);
+    const footer=element('div',undefined,{class:'import-footer'});footer.append(element('p','Saved in this browser. Export your task backup to keep progress or move to another computer. Email and Evernote are not changed.',{class:'import-help'}),button('Export task backup',()=>{const raw=this.blocked?this.raw:JSON.stringify(this.inbox,null,2);if(raw===null){this.say('There is no saved task list to export.');return;}download(raw,'launchpad-task-backup.json');}));if(this.legacyRaw!==null)footer.append(button('Export older daily plans',()=>download(this.legacyRaw,'launchpad-older-daily-plans.json')));this.clearNotesButton=button('Clear all notes',()=>this.openClearNotes(),'import-danger');footer.append(this.clearNotesButton);this.append(footer);
     this.taskArea=element('div',undefined,{class:'task-area'});for(const child of [...this.children])if(child!==heading&&child!==this.message)this.taskArea.append(child);this.append(this.taskArea);
     this.calendar=element('launchpad-calendar');this.calendar.hidden=true;
     this.calendar.addEventListener('calendar:open-task',event=>this.openCalendarTask(event.detail.id));
-    this.calendar.addEventListener('calendar:change-task-date',event=>{const d=event.detail;if(['dueDate','eventDate','followUpDate'].includes(d.key)&&this.inbox.items.some(x=>x.id===d.id))d.ok=this.updateItem(d.id,{[d.key]:d.date},true);});this.append(this.calendar);this.buildChatGPTChooser();
+    this.calendar.addEventListener('calendar:change-task-date',event=>{const d=event.detail;if(['dueDate','eventDate','followUpDate'].includes(d.key)&&this.inbox.items.some(x=>x.id===d.id))d.ok=this.updateItem(d.id,{[d.key]:d.date},true);});this.append(this.calendar);this.buildChatGPTChooser();this.buildClearNotesDialog();
 
+  }
+  buildClearNotesDialog(){
+    this.clearDialog=element('dialog',undefined,{class:'chatgpt-chooser','aria-labelledby':'clear-notes-title'});
+    this.clearDialog.append(element('h2','Clear all notes?',{id:'clear-notes-title'}));
+    this.clearDescription=element('p');this.clearDialog.append(this.clearDescription,element('p','This removes saved notes and tasks from every section, including Done, Put aside and Earlier imports, plus the processed briefing. Task dates disappear from Calendar. Imported lessons and diary events stay. Evernote and Outlook are not changed.'),element('p','This cannot be undone here. Export a backup first if you may need these notes again.'));
+    const actions=element('div',undefined,{class:'clear-notes-actions'});
+    const cancel=button('Cancel',()=>this.clearDialog.close());cancel.setAttribute('autofocus','');
+    actions.append(cancel,button('Export backup first',()=>download(JSON.stringify(this.inbox,null,2),'launchpad-task-backup.json')),button('Yes, clear all notes',()=>{
+      if(this.blocked||this.raw!==this.clearSnapshot){this.clearDialog.close();this.say('The notes changed while this confirmation was open. Review the list and choose Clear all notes again.',true);return;}
+      // Mark migration complete so old daily plans cannot repopulate the cleared list.
+      const empty={version:2,items:[],importedAt:null,briefing:'',pinWorkflowVersion:1};
+      if(!this.persist(empty)){this.clearDialog.close();return;}
+      this.clearDialog.close();this.view='ready';this.expanded=false;this.editingNote=null;this.noteForm.reset();this.noteEditor.open=false;this.paste.value='';this.inputDetails.open=false;this.renderItems();this.say('All saved Launchpad notes and tasks cleared. Imported calendar events were kept.');
+    },'import-danger'));
+    this.clearDialog.append(actions);this.append(this.clearDialog);
+  }
+  openClearNotes(){
+    if(this.blocked)return;
+    this.clearSnapshot=this.raw;
+    const count=this.inbox.items.length;
+    this.clearDescription.textContent=`You are about to remove ${count} saved ${count===1?'item':'items'} from Daily Launchpad in this browser.`;
+    this.clearDialog.showModal();
   }
   buildChatGPTChooser(){
     this.chatGPTChooser=element('dialog',undefined,{'aria-labelledby':'chatgpt-choice-title',class:'chatgpt-chooser'});
@@ -267,6 +289,7 @@ class SummaryImport extends HTMLElement {
     this.calendar?.setTasks(this.inbox.items);this.updateCount();
   }
   updateCount(){
+    this.clearNotesButton.disabled=this.blocked||this.reading||(!this.inbox.items.length&&!this.inbox.briefing);
     this.importButton.disabled=this.blocked||this.reading;this.file.disabled=this.blocked||this.reading;
   }
 }
