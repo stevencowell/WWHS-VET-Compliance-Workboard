@@ -86,6 +86,8 @@
     term1Mode: "guided", selectedTerm1Week: 0, eventOccurrences: [],
     linkDefaultsVersion: 2, links: {}, records: {}, statuses: {}, assignments: {}, weekly: {}, gaps: {}, resetArmed: false, lastBackup: ""
   };
+  let loadedStorageRaw = null;
+  let storageReadable = true;
   let state = loadState();
   const completionUndo = new Map();
   let activeWorkflow = null;
@@ -94,11 +96,13 @@
     return { ...defaultState, links: {}, records: {}, statuses: {}, assignments: {}, weekly: {}, gaps: {}, eventOccurrences: [] };
   }
   function localIsoDate(value) {
-    return [value.getFullYear(), String(value.getMonth() + 1).padStart(2, "0"), String(value.getDate()).padStart(2, "0")].join("-");
+    const parts = new Intl.DateTimeFormat("en-AU", { timeZone: "Australia/Sydney", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(value);
+    return ["year", "month", "day"].map(type => parts.find(part => part.type === type).value).join("-");
   }
   function refreshBoardDate() {
     const next = new Date(), nextIso = localIsoDate(next), changed = nextIso !== boardTodayIso;
     boardToday = next; boardTodayIso = nextIso;
+    if (changed) window.dispatchEvent(new CustomEvent("wwhs:forecast-updated", { detail: { wing: "vet" } }));
     return changed;
   }
   function boundedString(value, length = 500) { return String(value || "").slice(0, length); }
@@ -233,14 +237,42 @@
   }
   function loadState() {
     try {
-      const saved = JSON.parse(localStorage.getItem(data.config.storageKey) || "{}");
-      if (saved.schemaVersion !== 3) return freshState();
+      loadedStorageRaw = localStorage.getItem(data.config.storageKey);
+      if (loadedStorageRaw === null) return freshState();
+      const saved = JSON.parse(loadedStorageRaw);
+      if (!saved || Array.isArray(saved) || saved.schemaVersion !== 3) { storageReadable = false; return freshState(); }
       return normaliseState(saved);
-    } catch (_) { return freshState(); }
+    } catch (_) { storageReadable = false; return freshState(); }
+  }
+
+  function storageIsCurrent() {
+    if (!storageReadable) {
+      toast("Saved VET progress could not be read. Nothing has been overwritten. Recover the saved data before making changes.", "error");
+      return false;
+    }
+    try {
+      if (localStorage.getItem(data.config.storageKey) !== loadedStorageRaw) {
+        toast("VET progress changed in another tab. Keep any unsaved notes, then reload this page before saving.", "error");
+        return false;
+      }
+      return true;
+    } catch (_) {
+      toast("This browser could not read saved VET progress. Nothing has been overwritten.", "error");
+      return false;
+    }
   }
 
   function saveState() {
-    try { localStorage.setItem(data.config.storageKey, JSON.stringify(state)); return true; }
+    if (!storageIsCurrent()) return false;
+    try {
+      const previousRole = loadedStorageRaw === null ? "all" : JSON.parse(loadedStorageRaw).role;
+      const nextRaw = JSON.stringify(state);
+      localStorage.setItem(data.config.storageKey, nextRaw);
+      loadedStorageRaw = nextRaw;
+      window.dispatchEvent(new CustomEvent("wwhs:records-updated", { detail: { wing: "vet" } }));
+      if (previousRole !== state.role) window.dispatchEvent(new CustomEvent("wwhs:forecast-updated", { detail: { wing: "vet" } }));
+      return true;
+    }
     catch (_) { toast("This browser could not save the latest change. Export a backup before continuing.", "error"); return false; }
   }
   function slugStatus(label) {
@@ -273,6 +305,168 @@
     return data.sources.find(source => source.id === (sourceAliases[id] || id)) || null;
   }
   function taskById(id) { return allTasks.find(task => task.id === id) || null; }
+  function describeWorkTask(id) {
+    const task = taskById(id);
+    if (!task) return null;
+    const record = getRecord(id), sourceStatus = getStatus(task);
+    const nextStep = (task.actionSteps || []).find((_, index) => !record.stepChecks?.[index]);
+    return {
+      wing: "vet", taskId: task.id, recordKey: task.id, title: task.title,
+      action: nextStep || task.doneWhen || task.title,
+      notes: record.exceptionSummary || "",
+      dueDate: record.reviewDate || task.dueDate || task.windowEnd || null,
+      waitingOn: record.waitingForRole || "",
+      status: isTaskComplete(task) ? "done" : ["waiting", "exception"].includes(sourceStatus) ? "waiting" : "review",
+      sourceStatus,
+      cycle: is2027Task(task) ? "2027" : "2026",
+      route: "#task/" + encodeURIComponent(task.id)
+    };
+  }
+  function trackTaskButton(task) {
+    if (!task) return "";
+    return `<button class="button secondary compact" type="button" data-action="track-work-task" data-task-id="${esc(task.id)}" aria-label="Add to my work: ${esc(task.title)}">Add to my work</button>`;
+  }
+  function forecastRoleMatches(task) {
+    if (state.role === "all") return true;
+    const assigned = state.assignments[task.id];
+    if (!assigned) return roleMatches(task);
+    const assignedKeys = { "Head Teacher VET": "htvet", "VET Coordinator": "coordinator", "VET Coordinator Assistant": "assistant", "Trainer/assessor": "trainer", "Principal or delegate": "principal", "Workplace learning coordinator": "workplace", "Authorised NESA staff": "nesa" };
+    return assignedKeys[assigned] === state.role;
+  }
+  function getForecast() {
+    refreshBoardDate();
+    const date = boardTodayIso, year = Number(date.slice(0, 4)), horizonDays = 21;
+    const end = new Date(`${date}T12:00:00Z`); end.setUTCDate(end.getUTCDate() + horizonDays);
+    const throughDate = end.toISOString().slice(0, 10);
+    const sourceYear = year === 2026 || year === 2027 ? year : null;
+    const roleLabels = { all: "All work", htvet: "Head Teacher VET", coordinator: "Coordinator", assistant: "Assistant", trainer: "Trainer / assessor", principal: "Principal / delegate", workplace: "Workplace learning", nesa: "NESA / data role" };
+    const context = {
+      wing: "vet", date, year, role: state.role, roleLabel: roleLabels[state.role] || "All work",
+      sourceYear, sourceAsAt: year === 2026 ? register.asAt : null,
+      sourceStateKey: data.config.storageKey, horizonDays, throughDate, simulation: false,
+      mode: sourceYear ? "current" : "unavailable", title: "VET scheduled work",
+      note: year === 2026
+        ? `Dated reminders from the ${register.asAt} VET register, plus your recorded follow-ups. Check the live source; a missing local status does not mean work was missed. Undated triggers stay in Workflows.`
+        : year === 2027
+          ? "2027 term and week planning windows, the next ready annual setup controls and your recorded follow-ups. NESA, RTO and WWHS sources still require live checking; a planning window is not an official deadline."
+          : `No ${year} VET schedule is loaded. Only explicitly recorded follow-ups can be shown; older dates are not rolled into this year.`
+    };
+    try {
+      if (!storageReadable || localStorage.getItem(data.config.storageKey) !== loadedStorageRaw) {
+        return { entries: [], context: { ...context, mode: "unavailable", note: "Saved VET progress is unreadable or changed in another tab. Reload or recover it before an automatic forecast can be prepared." } };
+      }
+    } catch (_) {
+      return { entries: [], context: { ...context, mode: "unavailable", note: "Saved VET progress cannot be read. Existing work is untouched; an automatic forecast is unavailable." } };
+    }
+    const sourceTasks = year === 2027 ? [...cycleTasks, ...eventOccurrenceTasks] : year === 2026 ? tasks : [];
+    const candidates = new Map(sourceTasks.map(task => [task.id, task]));
+    allTasks.filter(hasRecord).forEach(task => { if (!is2027Task(task) || year >= 2027) candidates.set(task.id, task); });
+    const gate = year === 2027 ? currentCycleGate() : null;
+    const entries = [];
+    for (const task of candidates.values()) {
+      if (task.historyOnly || task.procedureOnly || isTaskComplete(task) || !forecastRoleMatches(task)) continue;
+      const record = getRecord(task.id), saved = hasRecord(task), taskYear = is2027Task(task) ? 2027 : 2026;
+      if (taskYear > year) continue;
+      const sourceDate = taskYear === year ? safeIsoDate(task.dueDate || task.windowEnd) : "";
+      const windowStart = taskYear === year ? safeIsoDate(task.windowStart) : "";
+      const windowEnd = taskYear === year ? safeIsoDate(task.windowEnd) : "";
+      const followDates = saved ? [safeIsoDate(record.reviewDate), safeIsoDate(record.escalationDate)].filter(Boolean).sort() : [];
+      const followDate = followDates[0] || "";
+      let kind, reason, scheduledDate = followDate || sourceDate || windowStart || null;
+      if (followDate) {
+        if (followDate > throughDate) continue;
+        kind = "follow-up";
+        reason = `${followDate <= date ? "Recorded follow-up is due" : "Recorded follow-up scheduled"} ${shortDate(followDate)}${record.waitingForRole ? ` · waiting for ${record.waitingForRole}` : ""}.`;
+      } else if (sourceDate || windowStart) {
+        if ((windowStart || sourceDate) > throughDate) continue;
+        const elapsed = (sourceDate || windowEnd || windowStart) < date;
+        kind = elapsed ? saved ? "overdue" : "source-check" : windowStart ? "window" : "due";
+        reason = elapsed
+          ? saved ? `The recorded source date ${shortDate(sourceDate || windowStart)} has passed and this browser still shows open progress. Check the official record.` : `Source date ${shortDate(sourceDate || windowStart)} has passed; its official status has not been confirmed here. Check the record before assuming work is outstanding.`
+          : windowStart ? `Scheduled ${task.week ? `Term ${task.term} Week ${task.week}` : "planning"} window ${shortDate(windowStart)}${windowEnd ? `–${shortDate(windowEnd)}` : ""}. Confirm current sources before acting.` : `Source-dated reminder for ${shortDate(sourceDate)}. Confirm the current NESA/RTO or school date.`;
+      } else if (saved && !["not-started"].includes(record.status)) {
+        kind = "follow-up"; reason = "Open progress is already recorded here; confirm its next action and review date.";
+      } else if (year === 2027 && task.gate === gate && isTaskReady(task) && earlier2027GatesComplete(task) && !task.week) {
+        kind = "sequence"; reason = `Next dependency-cleared control in annual setup gate ${gate}. It has no fixed deadline; complete the source checks in sequence.`;
+      } else continue;
+      const dependency = dependencyState(task), previousGateOpen = is2027Task(task) && !earlier2027GatesComplete(task);
+      const blocked = Boolean(dependency.open.length || dependency.hardOpen.length || dependency.missing.length || previousGateOpen);
+      const blockerReason = dependency.missing.length ? "A prerequisite is missing from the task configuration."
+        : dependency.hardOpen.length ? `Hard prerequisite not verified: ${dependency.hardOpen.map(item => item.title).join("; ")}`
+          : previousGateOpen ? "An earlier annual gate still needs verification."
+            : dependency.open.length ? `Prerequisite not verified: ${dependency.open.map(item => item.title).join("; ")}` : "";
+      const waiting = ["waiting", "exception"].includes(record.status) && (!followDate || followDate > date);
+      const future = followDate ? followDate > date : windowStart ? windowStart > date : sourceDate ? sourceDate > date : false;
+      const section = blocked || waiting ? "waiting" : future ? "upcoming" : "ready";
+      const period = task.term ? `Term ${task.term}${task.week ? ` · Week ${task.week}` : ""} · ${taskYear}` : `${phaseMeta[task.phase]?.short || "Recorded follow-up"} · ${taskYear}`;
+      entries.push({ ...describeWorkTask(task.id), dueDate: followDate || sourceDate || null,
+        forecast: { section, kind, reason, scheduledDate, windowStart: windowStart || null, windowEnd: windowEnd || null, period, sourceStatus: getStatus(task), blocked, blockerReason, assignedRole: assignedRole(task), sourceAuthority: task.dueAuthority || "Current authorised source" }
+      });
+    }
+    // A scheduled blocker should lead to the next useful source control, rather
+    // than make staff search the entire register for the beginning of its chain.
+    function nextPrerequisite(task, visited, otherOwners) {
+      if (visited.has(task.id)) return null;
+      visited.add(task.id);
+      const required = [...new Set([...(task.dependencies || []), ...(task.hardDependencies || [])])].map(taskById).filter(Boolean);
+      if (is2027Task(task) && !earlier2027GatesComplete(task)) {
+        const firstGate = currentCycleGate();
+        cycleTasks.filter(item => item.gate === firstGate && !isClosed(item)).sort((a, b) => (a.order ?? 9999) - (b.order ?? 9999)).forEach(item => { if (!required.some(existing => existing.id === item.id)) required.push(item); });
+      }
+      for (const prerequisite of required) {
+        const prerequisiteYear = is2027Task(prerequisite) ? 2027 : 2026;
+        if (visited.has(prerequisite.id) || isClosed(prerequisite) || prerequisiteYear !== year || prerequisite.historyOnly || prerequisite.procedureOnly || prerequisite.occurrenceTemplate) continue;
+        if (prerequisite.phase === "event_driven" && !hasRecord(prerequisite)) continue;
+        if (prerequisite.windowStart && prerequisite.windowStart > date) continue;
+        if (isTaskComplete(prerequisite)) { otherOwners.add(`${verifierRole(prerequisite)} to verify the completed checklist`); continue; }
+        if (isTaskReady(prerequisite) && earlier2027GatesComplete(prerequisite)) {
+          if (isWaitingParked(prerequisite)) { otherOwners.add(getRecord(prerequisite.id).waitingForRole || assignedRole(prerequisite)); continue; }
+          if (forecastRoleMatches(prerequisite)) return prerequisite;
+          otherOwners.add(assignedRole(prerequisite));
+        } else {
+          const next = nextPrerequisite(prerequisite, visited, otherOwners);
+          if (next) return next;
+        }
+      }
+      return null;
+    }
+    for (const scheduled of [...entries]) {
+      if (!scheduled.forecast.blocked) continue;
+      const otherOwners = new Set(), prerequisite = nextPrerequisite(taskById(scheduled.taskId), new Set(), otherOwners);
+      if (!prerequisite) {
+        if (otherOwners.size) scheduled.forecast.blockerReason += ` Next prerequisite action belongs to ${[...otherOwners].join("; ")}.`;
+        continue;
+      }
+      const existing = entries.find(entry => entry.taskId === prerequisite.id);
+      if (existing?.forecast.kind === "prerequisite") {
+        existing.forecast.prerequisiteFor.push(scheduled.taskId);
+        continue;
+      }
+      const prerequisiteRecord = getRecord(prerequisite.id);
+      const recordedDates = [safeIsoDate(prerequisiteRecord.reviewDate), safeIsoDate(prerequisiteRecord.escalationDate)].filter(Boolean).sort();
+      const nativeDate = recordedDates[0] || safeIsoDate(prerequisite.dueDate) || null;
+      const entry = { ...describeWorkTask(prerequisite.id), dueDate: nativeDate,
+        forecast: {
+          section: "ready", kind: "prerequisite", reason: `Needed before ${scheduled.title}. Check the current source and official status before repeating work; this planning step does not verify or unlock the dependent task.`,
+          scheduledDate: nativeDate, windowStart: safeIsoDate(prerequisite.windowStart) || null, windowEnd: safeIsoDate(prerequisite.windowEnd) || null,
+          period: prerequisite.term ? `Term ${prerequisite.term}${prerequisite.week ? ` · Week ${prerequisite.week}` : ""} · ${year}` : `${phaseMeta[prerequisite.phase]?.short || "Source control"} · ${year}`,
+          sourceStatus: getStatus(prerequisite), blocked: false, blockerReason: "", assignedRole: assignedRole(prerequisite),
+          sourceAuthority: prerequisite.dueAuthority || "Current authorised source", prerequisiteFor: [scheduled.taskId]
+        }
+      };
+      if (existing) Object.assign(existing, entry); else entries.push(entry);
+    }
+    entries.sort((a, b) => Number(b.forecast.kind === "prerequisite") - Number(a.forecast.kind === "prerequisite") || Number(b.forecast.kind === "follow-up") - Number(a.forecast.kind === "follow-up") || String(a.forecast.scheduledDate || "9999").localeCompare(String(b.forecast.scheduledDate || "9999")) || a.title.localeCompare(b.title));
+    return { entries, context };
+  }
+  window.WWHS_WORKBOARD_ADAPTER = {
+    wing: "vet",
+    getEntries: () => allTasks.filter(hasRecord).map(task => describeWorkTask(task.id)),
+    describeTask: describeWorkTask,
+    describeRecord: describeWorkTask,
+    getForecast,
+    openTask: id => openTask(id)
+  };
   function dependencyState(task) {
     if (task.dependencyMode === "follow-up") return { open: [], hardOpen: [], missing: [] };
     const hard = new Set(task.hardDependencies || []), open = [], hardOpen = [], missing = [];
@@ -458,7 +652,7 @@
     const depState = dependencyState(task), dependencies = [...depState.hardOpen, ...depState.open], future = cycleDateState(task) === "future", earlierGate = is2027Task(task) && !earlier2027GatesComplete(task);
     const blocked = dependencies.length > 0 || future || earlierGate;
     const blockedLabel = depState.missing.length ? "Blocked · prerequisite configuration error" : dependencies.length ? `Blocked · ${dependencies.length} open` : earlierGate ? "Earlier gate open" : future ? `Opens ${shortDate(task.windowStart)}` : "";
-    return `<article class="task-card priority-${esc(task.priority)}${compact}${blocked ? " is-blocked" : ""}"><div class="priority-rail" aria-hidden="true"></div><div class="task-main"><div class="task-meta"><span class="badge">${esc(applicabilityLabel(task))}</span>${dueBadge(task)}${blocked ? `<span class="badge blocked">${esc(blockedLabel)}</span>` : ""}${statusPill(task)}</div><h3>${esc(task.title)}</h3>${options.compact ? "" : `<p class="summary">${esc(task.timing)}</p>`}<p class="task-owner">${esc(assignedRole(task))}</p></div><div class="task-card-actions">${taskCompletionActions(task)}<button class="task-action" type="button" data-action="open-task" data-task-id="${esc(task.id)}">${blocked ? future ? "View timing" : "View blockers" : !hasRecord(task) ? "Review task" : getStatus(task) === "not-started" ? "Start task" : "Open task"}</button></div></article>`;
+    return `<article class="task-card priority-${esc(task.priority)}${compact}${blocked ? " is-blocked" : ""}"><div class="priority-rail" aria-hidden="true"></div><div class="task-main"><div class="task-meta"><span class="badge">${esc(applicabilityLabel(task))}</span>${dueBadge(task)}${blocked ? `<span class="badge blocked">${esc(blockedLabel)}</span>` : ""}${statusPill(task)}</div><h3>${esc(task.title)}</h3>${options.compact ? "" : `<p class="summary">${esc(task.timing)}</p>`}<p class="task-owner">${esc(assignedRole(task))}</p></div><div class="task-card-actions">${taskCompletionActions(task)}${trackTaskButton(task)}<button class="task-action" type="button" data-action="open-task" data-task-id="${esc(task.id)}">${blocked ? future ? "View timing" : "View blockers" : !hasRecord(task) ? "Review task" : getStatus(task) === "not-started" ? "Start task" : "Open task"}</button></div></article>`;
   }
 
   function renderTitle() {
@@ -513,7 +707,7 @@
     route.innerHTML = `<section class="page"><header class="page-heading calm-heading"><div><p class="eyebrow">${esc(data.config.currentTerm)} · ${esc(data.config.currentWeek)}</p><h1>Your next step</h1><p>Do this one action first. The rest of the workboard will wait.</p></div><button class="button quiet compact" type="button" data-action="choose-experience" data-experience="full">Explore the full workboard</button></header><aside class="privacy-line"><strong>Keep personal information out of this workboard.</strong> Complete the real action and keep its evidence in the authorised system.</aside>${earlierCount ? `<details class="prior-status-note"><summary>Earlier-year status has not been imported</summary><p>This new workboard does not assume those actions were missed. Confirm them in the official systems as they enter the guided queue.</p></details>` : ""}${current ? focusTask(current) : `<div class="empty-state"><h2>Every applicable action in this view is closed.</h2><p>Use the full workboard to review exceptions, future work or source changes.</p><button class="button" type="button" data-action="choose-experience" data-experience="full">Explore the full workboard</button></div>`}${upcoming.length ? `<section class="coming-next"><div class="section-heading"><div><h2>Coming next</h2><p>A preview only—nothing else to act on yet.</p></div></div>${upcoming.map((task, index) => `<div class="next-row"><span>0${index + 2}</span><div><strong>${esc(task.title)}</strong><small>${esc(task.timing)}</small></div></div>`).join("")}</section>` : ""}<button class="guidance-footer" type="button" data-action="choose-experience" data-experience="full"><span>Already know the role?</span><strong>Switch to the fast workboard →</strong></button></section>`;
   }
   function focusTask(task) {
-    return `<section class="focus-task"><div class="focus-top"><span class="focus-number">01</span><div><span class="badge">${esc(applicabilityLabel(task))}</span>${dueBadge(task)}</div></div><h2>${esc(task.title)}</h2><p>${esc(task.timing)}</p><div class="focus-facts"><span><small>Accountable role</small><strong>${esc(accountableRole(task))}</strong></span><span><small>Start in</small><strong>${esc(task.systems?.[0] || "Authorised owner system")}</strong></span></div><div class="task-card-actions">${taskCompletionActions(task)}<button class="button secondary focus-button" type="button" data-action="open-task" data-task-id="${esc(task.id)}">Show me this task</button></div></section>`;
+    return `<section class="focus-task"><div class="focus-top"><span class="focus-number">01</span><div><span class="badge">${esc(applicabilityLabel(task))}</span>${dueBadge(task)}</div></div><h2>${esc(task.title)}</h2><p>${esc(task.timing)}</p><div class="focus-facts"><span><small>Accountable role</small><strong>${esc(accountableRole(task))}</strong></span><span><small>Start in</small><strong>${esc(task.systems?.[0] || "Authorised owner system")}</strong></span></div><div class="task-card-actions">${taskCompletionActions(task)}${trackTaskButton(task)}<button class="button secondary focus-button" type="button" data-action="open-task" data-task-id="${esc(task.id)}">Show me this task</button></div></section>`;
   }
 
   function renderFullToday() {
@@ -527,7 +721,7 @@
   }
   function weeklyPanel() {
     const items = [["c-01-rto-updates", "Review current RTO Updates and Hub To Do"], ["c-02-team-meetings", "Review team actions and hand-backs"], ["e-06-discrepancy-corrective-action", "Review exceptions and changed-source actions"]];
-    return `<section class="panel"><div class="section-heading"><div><h2>Weekly controls</h2><p>Open the action or complete its checklist here.</p></div></div><div class="weekly-list">${items.map(([id, label]) => `<div class="weekly-task-row"><button class="weekly-item" type="button" data-action="open-task" data-task-id="${id}"><span>${esc(label)}</span><strong>Open</strong></button><div class="task-card-actions">${taskCompletionActions(taskById(id))}</div></div>`).join("")}</div></section>`;
+    return `<section class="panel"><div class="section-heading"><div><h2>Weekly controls</h2><p>Open the action or complete its checklist here.</p></div></div><div class="weekly-list">${items.map(([id, label]) => `<div class="weekly-task-row"><button class="weekly-item" type="button" data-action="open-task" data-task-id="${id}"><span>${esc(label)}</span><strong>Open</strong></button><div class="task-card-actions">${taskCompletionActions(taskById(id))}${trackTaskButton(taskById(id))}</div></div>`).join("")}</div></section>`;
   }
   function quickSystemsPanel() {
     const ids = ["vet-schools-hub", "document-library", "evidence-central", "schools-online", "nesa-toa", "wwhs-drive"];
@@ -598,7 +792,7 @@
       return `<div class="empty-state"><h2>No action is open for this role right now.</h2><p>${nextOpening ? `The next dependency-cleared control opens ${esc(shortDate(nextOpening.windowStart))}.` : "Review the blockers below or switch to All work."} A blocked or future action will not be presented as your next step.</p></div>`;
     }
     const positionLabel = task.lane === "interrupt" ? "Interrupt" : task.week ? `Term ${esc(task.term)} · Week ${esc(task.week)}` : `Annual gate ${esc(task.gate)}`;
-    return `<section class="focus-task term-focus"><div class="focus-top"><span class="focus-number">01</span><div><span class="badge">${positionLabel}</span>${isEscalationDue(task) ? `<span class="badge overdue">Escalation due</span>` : isChaseDue(task) ? `<span class="badge overdue">Chase due</span>` : task.lane === "interrupt" ? `<span class="badge overdue">Respond now</span>` : `<span class="badge due">Ready now</span>`}</div></div><h2>${esc(task.title)}</h2><p>${esc(task.timing)}</p><div class="focus-facts term-focus-facts"><span><small>Responsible</small><strong>${esc(assignedRole(task))}</strong></span><span><small>Accountable</small><strong>${esc(accountableRole(task))}</strong></span><span><small>Verifier</small><strong>${esc(verifierRole(task))}</strong></span><span><small>Start in</small><strong>${esc(task.systems?.[0] || "Authorised owner system")}</strong></span></div><div class="term-done-preview"><small>Done when</small><p>${esc(task.doneWhen)}</p></div><div class="task-card-actions">${taskCompletionActions(task)}<button class="button secondary focus-button" type="button" data-action="open-task" data-task-id="${esc(task.id)}">Open this task</button></div></section>`;
+    return `<section class="focus-task term-focus"><div class="focus-top"><span class="focus-number">01</span><div><span class="badge">${positionLabel}</span>${isEscalationDue(task) ? `<span class="badge overdue">Escalation due</span>` : isChaseDue(task) ? `<span class="badge overdue">Chase due</span>` : task.lane === "interrupt" ? `<span class="badge overdue">Respond now</span>` : `<span class="badge due">Ready now</span>`}</div></div><h2>${esc(task.title)}</h2><p>${esc(task.timing)}</p><div class="focus-facts term-focus-facts"><span><small>Responsible</small><strong>${esc(assignedRole(task))}</strong></span><span><small>Accountable</small><strong>${esc(accountableRole(task))}</strong></span><span><small>Verifier</small><strong>${esc(verifierRole(task))}</strong></span><span><small>Start in</small><strong>${esc(task.systems?.[0] || "Authorised owner system")}</strong></span></div><div class="term-done-preview"><small>Done when</small><p>${esc(task.doneWhen)}</p></div><div class="task-card-actions">${taskCompletionActions(task)}${trackTaskButton(task)}<button class="button secondary focus-button" type="button" data-action="open-task" data-task-id="${esc(task.id)}">Open this task</button></div></section>`;
   }
   function cycleBlockers() {
     const gate = currentCycleGate();
@@ -667,7 +861,7 @@
     };
   }
   function workflowTaskButtons(related) {
-    return related.map((task, index) => `<article class="workflow-task-row"><button type="button" class="workflow-task" data-action="open-task" data-task-id="${esc(task.id)}"><span>${String(index + 1).padStart(2, "0")}</span><div><strong>${esc(task.title)}</strong><small>${esc(statusMeta[getStatus(task)].label)} · ${esc(task.timing)}</small></div></button><div class="task-card-actions">${taskCompletionActions(task)}</div></article>`).join("");
+    return related.map((task, index) => `<article class="workflow-task-row"><button type="button" class="workflow-task" data-action="open-task" data-task-id="${esc(task.id)}"><span>${String(index + 1).padStart(2, "0")}</span><div><strong>${esc(task.title)}</strong><small>${esc(statusMeta[getStatus(task)].label)} · ${esc(task.timing)}</small></div></button><div class="task-card-actions">${taskCompletionActions(task)}${trackTaskButton(task)}</div></article>`).join("");
   }
   function openWorkflow(id, cycleContext = "") {
     const workflow = data.workflows.find(item => item.id === id); if (!workflow) return;
@@ -688,9 +882,11 @@
     const createdAt = new Date().toISOString();
     const suffix = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
     const item = { id: `2027-event-${template.canonicalTaskId}-${suffix}`, templateId, workflowId, createdAt, term: state.selected2027Term };
+    const previous = state.eventOccurrences;
     state.eventOccurrences = [...(state.eventOccurrences || []), item].slice(-100);
     refreshAllTasks(state.eventOccurrences);
-    saveState(); render();
+    if (!saveState()) { state.eventOccurrences = previous; refreshAllTasks(previous); return; }
+    render();
     openTask(item.id);
     toast("A fresh 2027 event occurrence is ready; keep protected details in the owner system");
   }
@@ -750,8 +946,10 @@
     if (status === "resolved" && (!reference || !verifier || !sourceChecked)) {
       error.textContent = "Resolving an authority gap requires a privacy-safe owner-system reference, verifier and current-source check."; error.hidden = false; form.querySelector(".gap-resolution").open = true; return;
     }
+    const previous = state.gaps[form.dataset.gapForm];
     state.gaps[form.dataset.gapForm] = { status, reference, verifier, sourceChecked, updatedAt: new Date().toISOString() };
-    saveState(); renderIssues(); toast(status === "resolved" ? "Gap resolution recorded with verification" : "Gap status saved");
+    if (!saveState()) { if (previous) state.gaps[form.dataset.gapForm] = previous; else delete state.gaps[form.dataset.gapForm]; return; }
+    renderIssues(); toast(status === "resolved" ? "Gap resolution recorded with verification" : "Gap status saved");
   }
   function handoverPanel() {
     const scopedTasks = state.activeCycle === "2027" ? cycleTasks : tasks;
@@ -765,7 +963,7 @@
     const record = getRecord(task.id), systems = taskSystems(task), sources = (task.sourceIds || []).map(idValue => ({ id: idValue, item: sourceFor(idValue, task) }));
     const dependencies = (task.dependencies || []).map(dependencyId => taskById(dependencyId) || { id: dependencyId, title: `Missing prerequisite configuration: ${dependencyId}`, missing: true });
     const guidanceOpen = state.guidance || state.experience === "guided";
-    taskDialogContent.innerHTML = `<header class="dialog-head"><div><p class="eyebrow">${esc(phaseMeta[task.phase]?.short || task.phase)} · ${esc(applicabilityLabel(task))}</p><h2 id="task-dialog-title">${esc(task.title)}</h2></div><button class="dialog-close" type="button" data-action="close-dialog" aria-label="Close task">×</button></header><div class="dialog-body"><div class="task-facts"><div class="fact"><span>When</span><strong>${esc(task.dueDate ? longDate(task.dueDate) : task.timing)}</strong></div><div class="fact"><span>Accountable</span><strong>${esc(accountableRole(task))}</strong></div><div class="fact"><span>Doer</span><strong>${esc(assignedRole(task))}</strong></div><div class="fact"><span>Expected verifier</span><strong>${esc(verifierRole(task))}</strong></div></div>${authorityPanel(task)}${dependencies.length ? dependencyPanel(dependencies, task.dependencyMode) : ""}<section class="dialog-section"><h3>Do this</h3><ol class="step-list">${(task.actionSteps || []).map((step, index) => `<li><label><input type="checkbox" data-task-step="${index}" data-task-id="${esc(task.id)}" ${record.stepChecks?.[index] ? "checked" : ""}><span class="step-number">${index + 1}</span><span>${esc(step)}</span></label></li>`).join("")}</ol></section><section class="done-when"><span>Done when</span><p>${esc(task.doneWhen)}</p></section>${ownerSystemsPanel(task, systems)}<details class="guidance-details" ${guidanceOpen ? "open" : ""}><summary>Explain this in plain English</summary><div class="guidance-box"><p><strong>Why it matters:</strong> ${esc(task.guidance?.why || "This action supports the authorised annual VET process.")}</p><p><strong>Common trap:</strong> ${esc(task.guidance?.commonTrap || "Treating the workboard as the official record.")}</p><p><strong>Applies to:</strong> ${esc(task.applicability?.conditions || "Confirm locally")}</p></div></details><details class="source-details"><summary>Show mapped sources</summary><div class="source-mini-list">${sources.map(({ id: sourceId, item }) => item ? `<p><strong>${esc(item.title)}</strong><span>${esc(item.note)}</span>${item.url ? `<a href="${esc(item.url)}" target="_blank" rel="noopener">Open approved location ↗</a>` : `<small>Open through the approved staff system</small>`}</p>` : `<p><strong>${esc(sourceId)}</strong><span>Controlled or local source—confirm the current authorised version.</span></p>`).join("")}</div></details>${completionForm(task, record)}${historyPanel(record)}</div>`;
+    taskDialogContent.innerHTML = `<header class="dialog-head"><div><p class="eyebrow">${esc(phaseMeta[task.phase]?.short || task.phase)} · ${esc(applicabilityLabel(task))}</p><h2 id="task-dialog-title">${esc(task.title)}</h2></div><button class="dialog-close" type="button" data-action="close-dialog" aria-label="Close task">×</button></header><div class="dialog-body"><div class="task-facts"><div class="fact"><span>When</span><strong>${esc(task.dueDate ? longDate(task.dueDate) : task.timing)}</strong></div><div class="fact"><span>Accountable</span><strong>${esc(accountableRole(task))}</strong></div><div class="fact"><span>Doer</span><strong>${esc(assignedRole(task))}</strong></div><div class="fact"><span>Expected verifier</span><strong>${esc(verifierRole(task))}</strong></div></div>${authorityPanel(task)}<div class="task-card-actions">${trackTaskButton(task)}</div>${dependencies.length ? dependencyPanel(dependencies, task.dependencyMode) : ""}<section class="dialog-section"><h3>Do this</h3><ol class="step-list">${(task.actionSteps || []).map((step, index) => `<li><label><input type="checkbox" data-task-step="${index}" data-task-id="${esc(task.id)}" ${record.stepChecks?.[index] ? "checked" : ""}><span class="step-number">${index + 1}</span><span>${esc(step)}</span></label></li>`).join("")}</ol></section><section class="done-when"><span>Done when</span><p>${esc(task.doneWhen)}</p></section>${ownerSystemsPanel(task, systems)}<details class="guidance-details" ${guidanceOpen ? "open" : ""}><summary>Explain this in plain English</summary><div class="guidance-box"><p><strong>Why it matters:</strong> ${esc(task.guidance?.why || "This action supports the authorised annual VET process.")}</p><p><strong>Common trap:</strong> ${esc(task.guidance?.commonTrap || "Treating the workboard as the official record.")}</p><p><strong>Applies to:</strong> ${esc(task.applicability?.conditions || "Confirm locally")}</p></div></details><details class="source-details"><summary>Show mapped sources</summary><div class="source-mini-list">${sources.map(({ id: sourceId, item }) => item ? `<p><strong>${esc(item.title)}</strong><span>${esc(item.note)}</span>${item.url ? `<a href="${esc(item.url)}" target="_blank" rel="noopener">Open approved location ↗</a>` : `<small>Open through the approved staff system</small>`}</p>` : `<p><strong>${esc(sourceId)}</strong><span>Controlled or local source—confirm the current authorised version.</span></p>`).join("")}</div></details>${completionForm(task, record)}${historyPanel(record)}</div>`;
     if (!taskDialog.open) taskDialog.showModal();
     else taskDialogContent.querySelector(".dialog-close")?.focus();
   }
@@ -859,9 +1057,11 @@
     if (mobileRoleFilter) { mobileRoleFilter.innerHTML = options; mobileRoleFilter.value = state.role; }
   }
   function saveSettings(form) {
+    const previous = { experience: state.experience, role: state.role, guidance: state.guidance, links: { ...state.links } };
     const values = new FormData(form); state.experience = String(values.get("experience") || "guided"); state.role = String(values.get("role") || "all"); state.guidance = values.get("guidance") === "on";
     data.systems.filter(system => system.kind === "private").forEach(system => { const proposed = String(values.get(`link:${system.id}`) || "").trim(), builtIn = safeUrl(system.url); if (!proposed || proposed === builtIn) delete state.links[system.id]; else if (safeUrl(proposed)) state.links[system.id] = proposed; });
-    saveState(); syncRoleFilters(); updateGuidanceToggle(); settingsDialog.close(); render(); toast("Workspace setup saved; confirmed front doors remain built in");
+    if (!saveState()) { Object.assign(state, previous); return; }
+    syncRoleFilters(); updateGuidanceToggle(); settingsDialog.close(); render(); toast("Workspace setup saved; confirmed front doors remain built in");
   }
   function updateGuidanceToggle() { const toggle = document.querySelector("[data-action='toggle-guidance']"); toggle.setAttribute("aria-pressed", String(state.guidance)); toggle.querySelector("span:last-child").textContent = state.guidance ? "Guidance on" : "Guidance off"; }
   function toast(message, kind = "info") { const element = document.createElement("div"); element.className = `toast ${kind === "error" ? "is-error" : ""}`; element.textContent = message; toastRegion.appendChild(element); setTimeout(() => element.remove(), 3200); }
@@ -887,7 +1087,7 @@
       const payload = JSON.parse(String(reader.result || ""));
       const compatibleBuildIds = new Set([data.config.buildId, ...(data.config.compatibleBuildIds || [])]);
       if (payload.kind !== "WWHS-VET-COMPLIANCE-WORKBOARD-BACKUP" || (payload.productId && payload.productId !== data.config.productId) || payload.schemaVersion !== 3 || !compatibleBuildIds.has(payload.buildId) || !payload.state || Array.isArray(payload.state) || typeof payload.state !== "object") throw new Error("Unsupported backup");
-      const localLinks = { ...state.links }, restored = payload.state;
+      const previous = state, localLinks = { ...state.links }, restored = payload.state;
       if (payload.buildId === data.config.buildId) {
         state = normaliseState(restored, localLinks);
       } else {
@@ -906,19 +1106,26 @@
         };
         state = normaliseState(merged, localLinks);
       }
-      saveState(); syncRoleFilters(); updateGuidanceToggle(); render(); toast(payload.buildId === data.config.buildId ? "Workboard backup restored; authenticated links stayed on this device" : /2027-term1-prototype/i.test(payload.buildId) ? "Term 1 backup merged; newer full-year work and device links were preserved" : "2026 backup merged; existing 2027 work and authenticated links were preserved");
+      if (!saveState()) { state = previous; refreshAllTasks(state.eventOccurrences); return; }
+      completionUndo.clear();
+      syncRoleFilters(); updateGuidanceToggle(); render(); toast(payload.buildId === data.config.buildId ? "Workboard backup restored; authenticated links stayed on this device" : /2027-term1-prototype/i.test(payload.buildId) ? "Term 1 backup merged; newer full-year work and device links were preserved" : "2026 backup merged; existing 2027 work and authenticated links were preserved");
     } catch (_) { toast("That backup is unsupported or belongs to a different workboard build", "error"); } };
     reader.readAsText(file);
   }
   function resetWorkspace() {
-    if (!state.resetArmed) { state.resetArmed = true; saveState(); render(); toast("Nothing cleared yet. Use the red button again to confirm."); return; }
-    localStorage.removeItem(data.config.storageKey); state = freshState(); refreshAllTasks([]); syncRoleFilters(); updateGuidanceToggle(); location.hash = "#today"; render(); toast("Local workboard data cleared");
+    if (!state.resetArmed) { state.resetArmed = true; if (!saveState()) { state.resetArmed = false; return; } render(); toast("Nothing cleared yet. Use the red button again to confirm."); return; }
+    if (!storageIsCurrent()) return;
+    try { localStorage.removeItem(data.config.storageKey); }
+    catch (_) { toast("This browser could not clear saved VET progress. Nothing has been changed.", "error"); return; }
+    loadedStorageRaw = null; state = freshState(); completionUndo.clear(); refreshAllTasks([]);
+    window.dispatchEvent(new CustomEvent("wwhs:records-updated", { detail: { wing: "vet" } }));
+    syncRoleFilters(); updateGuidanceToggle(); location.hash = "#today"; render(); toast("Local workboard data cleared");
   }
 
   function currentView() {
     const view = (location.hash || (directVetEntry ? "#today" : "#home")).slice(1);
     if (view.startsWith("task/")) return "task";
-    const allowed = ["home", "vet-home", "today", "reference", "ai-admin", "cycle-2027", "term1-2027", "term2-2027", "term3-2027", "term4-2027", "year", "workflows", "systems", "issues"];
+    const allowed = ["home", "vet-home", "my-work", "today", "reference", "ai-admin", "cycle-2027", "term1-2027", "term2-2027", "term3-2027", "term4-2027", "year", "workflows", "systems", "issues"];
     if (!allowed.includes(view)) { history.replaceState(null, "", "#home"); return "home"; }
     return view;
   }
@@ -970,6 +1177,7 @@
     });
     if (view === "home") renderTitle();
     if (view === "vet-home") renderVetHome();
+    if (view === "my-work") route.innerHTML = "";
     if (view === "reference") { if (!state.experience) renderWelcome(); else if (state.experience === "guided") renderGuidedToday(); else renderFullToday(); }
     if (view === "ai-admin") { route.innerHTML = window.WWHS_AI_ADMIN.render(); window.WWHS_AI_ADMIN.bind(route); }
     if (view === "task") {
@@ -1004,6 +1212,7 @@
     if (action === "set-cycle-mode") { state.cycle2027Mode = target.dataset.mode === "full" ? "full" : "guided"; state.guidance = state.cycle2027Mode === "guided"; saveState(); updateGuidanceToggle(); if (state.cycle2027Mode === "guided" && ["year", "term2-2027", "term3-2027", "term4-2027"].includes(currentView())) location.hash = "#cycle-2027"; else render(true); }
     if (action === "select-cycle-term") { const term = Math.max(1, Math.min(4, Number(target.dataset.term) || 1)); state.selected2027Term = term; state.selected2027Week = term === 1 ? 0 : 1; state.cycle2027Mode = "full"; state.activeCycle = "2027"; saveState(); location.hash = `#term${term}-2027`; }
     if (action === "select-cycle-week") { const maxWeek = selectedTerm()?.weeks?.length || 10; state.selected2027Week = Math.max(state.selected2027Term === 1 ? 0 : 1, Math.min(maxWeek, Number(target.dataset.week) || 0)); state.cycle2027Mode = "full"; saveState(); render(true); }
+    if (action === "track-work-task") { const detail = describeWorkTask(target.dataset.taskId); if (detail) window.dispatchEvent(new CustomEvent("wwhs:track-task", { detail })); }
     if (action === "complete-task") completeTask(target.dataset.taskId);
     if (action === "undo-complete-task") undoTaskCompletion(target.dataset.taskId);
     if (action === "open-task") { lastTaskTrigger = target; openTask(target.dataset.taskId); }

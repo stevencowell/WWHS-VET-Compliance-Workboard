@@ -1,4 +1,16 @@
 summary-import{display:block;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:28px;margin-bottom:28px;scroll-margin-top:20px}
+.import-workstreams{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0 4px;padding-bottom:16px;border-bottom:1px solid var(--line)}
+.import-workstreams button{font-size:14px;font-weight:600}
+.import-workstreams button[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--ink)}
+.import-origin-link{display:inline-flex;align-items:center;min-height:44px;padding:8px 12px;margin-top:8px;border:1px solid var(--accent);border-radius:8px;color:var(--accent);font-weight:600;text-decoration:none}
+.import-origin-link:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
+.import-draft-recovery{padding:16px;margin:16px 0;border:2px solid var(--focus);border-radius:10px;background:var(--surface-soft)}
+.import-draft-recovery summary{cursor:pointer;font-weight:600}.import-draft-recovery .import-source{max-height:320px;user-select:text}
+.import-chip.workstream-vet,.import-chip.workstream-tas{font-weight:700;border-color:var(--accent)}
+.import-card-quick-controls select{max-width:100%;min-height:44px}
+.import-forecast{margin:12px 0;padding:12px 14px;border-left:3px solid var(--accent);background:var(--surface);border-radius:8px;font-size:14px;line-height:1.5;overflow-wrap:anywhere}
+.import-forecast>strong{font-size:13px;color:var(--accent)}.import-forecast p{margin:5px 0 0}.import-forecast .import-forecast-meta{font-size:12px;color:var(--muted)}
+.import-forecast.is-history{border-left-color:var(--line)}.import-forecast.is-stale{border-left-color:var(--focus)}.import-forecast-blocker,.import-forecast-stale{font-size:13px;color:var(--focus)}
 .import-heading{display:flex;justify-content:space-between;align-items:center;gap:24px}
 .import-heading h2{font-size:26px;margin:0 0 8px;letter-spacing:-.6px}.import-heading .eyebrow{margin-bottom:6px}.import-intro{color:var(--muted);margin-bottom:0;max-width:660px}
 summary-import button{border:1px solid var(--line);border-radius:10px;background:var(--surface-soft);color:var(--ink);padding:10px 16px;min-height:44px;font:inherit}

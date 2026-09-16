@@ -2,6 +2,143 @@
 export const INBOX_KEY = 'morning-launchpad-summary:v1';
 export const LEGACY_PLAN_KEY = 'morning-launchpad-routine:v1';
 export const LIMIT = 1000000;
+export const WORKSTREAMS = {personal:'Personal',vet:'VET',tas:'TAS'};
+
+export function mergeWorkboardImports(current=[],incoming=[]) {
+  for(const entries of [current,incoming])if(!Array.isArray(entries)||entries.length>2000||entries.some(value=>typeof value!=='string'||value.length>2004||!/^(?:vet|tas):[\s\S]+$/.test(value)||!value.slice(4).trim()))throw new Error('Invalid workboard import history');
+  const merged=[...new Set([...current,...incoming])];
+  if(merged.length>2000)throw new Error('The workboard import history is full. Export a task backup before continuing.');
+  return merged;
+}
+
+export function clearWorkInbox(inbox) {
+  return {version:2,items:[],importedAt:null,briefing:'',pinWorkflowVersion:1,workboardImports:mergeWorkboardImports(inbox.workboardImports),forecastContexts:inbox.forecastContexts||{}};
+}
+
+export function normaliseForecastContext(input) {
+  if(!input||typeof input!=='object'||Array.isArray(input))throw new Error('Invalid workboard forecast context');
+  const context={wing:input.wing,date:input.date,role:input.role??'',roleLabel:input.roleLabel??'',year:String(input.year??''),sourceYear:String(input.sourceYear??''),sourceAsAt:input.sourceAsAt??'',horizonDays:input.horizonDays,mode:input.mode,title:input.title??'',note:input.note??''};
+  if(!['vet','tas'].includes(context.wing)||!context.date||!validDate(context.date)||!['current','reference-only','unavailable'].includes(context.mode)||!Number.isInteger(context.horizonDays)||context.horizonDays<1||context.horizonDays>366||
+    !/^\d{4}$/.test(context.year)||!/^\d{4}$|^$/.test(context.sourceYear)||
+    ['role','roleLabel','sourceAsAt','title','note'].some(key=>typeof context[key]!=='string'||context[key].length>(key==='note'?2000:300)))throw new Error('Invalid workboard forecast context');
+  return context;
+}
+
+function normaliseForecast(input,context,{managed=false,active=true}={}) {
+  if(!input||typeof input!=='object'||Array.isArray(input))throw new Error('Invalid workboard forecast');
+  const result={version:1,managed,active,section:input.section,kind:input.kind??'scheduled',reason:input.reason??'Scheduled by your workboard',
+    scheduledDate:input.scheduledDate??null,windowStart:input.windowStart??null,windowEnd:input.windowEnd??null,period:input.period??'',
+    sourceStatus:input.sourceStatus??'review',blocked:input.blocked??false,blockerReason:input.blockerReason??'',asOf:context.date,
+    role:context.role,roleLabel:context.roleLabel,year:context.year,sourceYear:context.sourceYear,horizonDays:context.horizonDays};
+  if(!validForecast(result))throw new Error('Invalid workboard forecast');
+  return result;
+}
+
+export function validForecast(value) {
+  return value===null||!!(value&&typeof value==='object'&&!Array.isArray(value)&&value.version===1&&typeof value.managed==='boolean'&&typeof value.active==='boolean'&&
+    ['ready','upcoming','waiting'].includes(value.section)&&typeof value.blocked==='boolean'&&value.asOf&&validDate(value.asOf)&&
+    ['scheduledDate','windowStart','windowEnd'].every(key=>validDate(value[key]))&&
+    (!value.windowStart||!value.windowEnd||value.windowStart<=value.windowEnd)&&
+    ['kind','reason','period','sourceStatus','blockerReason','role','roleLabel','year','sourceYear'].every(key=>typeof value[key]==='string'&&value[key].length<=(['reason','blockerReason'].includes(key)?2000:300))&&
+    /^\d{4}$/.test(value.year)&&/^\d{4}$|^$/.test(value.sourceYear)&&Number.isInteger(value.horizonDays)&&value.horizonDays>=1&&value.horizonDays<=366);
+}
+
+export function hasPersonalWork(item) {
+  return !item.forecast?.managed||item.progressOverride||item.dirty.length>0||!!item.lastActionOn||!!item.pinnedDate;
+}
+
+export function sourceCompleted(item) {
+  return !!item.forecast&&!item.progressOverride&&['done','completed','verified','not-applicable'].includes(item.forecast.sourceStatus);
+}
+
+// Forecasts refresh machine metadata only. Reviewed work and native checklists
+// stay owned by their original records; deliberate card deletion is remembered.
+export async function reconcileForecast(inbox,{entries=[],resolved=[],context:input}) {
+  const context=normaliseForecastContext(input);
+  if(context.mode!=='current')return {inbox,context,changed:false,skipped:true,added:0,updated:0,retired:0,suppressed:0};
+  if(!Array.isArray(entries)||!Array.isArray(resolved)||entries.length>300||resolved.length>300)throw new Error('The workboard forecast is too large.');
+  const identity=descriptor=>`${descriptor.wing}:${descriptor.recordKey}`;
+  const scheduled=new Map(),sources=new Map();
+  for(const descriptor of [...resolved,...entries]){
+    if(descriptor?.wing!==context.wing||!validWorkOrigin({wing:descriptor.wing,taskId:descriptor.taskId,recordKey:descriptor.recordKey,route:descriptor.route,cycle:String(descriptor.cycle??'')}))throw new Error('Invalid task identity in the workboard forecast.');
+    sources.set(identity(descriptor),descriptor);
+  }
+  for(const descriptor of entries){if(scheduled.has(identity(descriptor)))throw new Error('Duplicate occurrence in the workboard forecast.');scheduled.set(identity(descriptor),descriptor);}
+  let added=0,updated=0,retired=0,suppressed=0;
+  let imports=mergeWorkboardImports(inbox.workboardImports);
+  const seen=new Set();
+  const items=inbox.items.map(original=>{
+    if(original.origin?.wing!==context.wing)return original;
+    const key=identity(original.origin),scheduledEntry=scheduled.get(key),source=sources.get(key);seen.add(key);
+    if(!scheduledEntry&&!original.forecast)return original;
+    const sourceStatus=source?.forecast?.sourceStatus??source?.sourceStatus??source?.status??original.forecast?.sourceStatus??'review';
+    let forecast;
+    if(scheduledEntry){
+      imports=mergeWorkboardImports(imports,[key]);
+      forecast=normaliseForecast({...scheduledEntry.forecast,sourceStatus},context,{managed:original.forecast?.managed||false,active:true});
+    }else{
+      const previous=original.forecast;
+      const blocked=source?.forecast?.blocked??(['waiting','blocked'].includes(sourceStatus)?true:source?false:previous.blocked);
+      forecast=normaliseForecast({...previous,sourceStatus,blocked,blockerReason:source?.forecast?.blockerReason??(blocked?previous.blockerReason:''),
+        reason:hasPersonalWork(original)?'Outside the current forecast. Your own work and notes are kept here.':'No longer in the current forecast. Kept with your notes and history.'},context,{managed:previous.managed,active:false});
+      if(previous.active)retired++;
+    }
+    const refreshed={...original,forecast};
+    if(original.forecast?.managed&&source){
+      for(const field of ['title','action','dueDate','waitingOn']){
+        if(original.dirty.includes(field)||!Object.hasOwn(source,field))continue;
+        const value=field==='dueDate'?(source[field]&&validDate(source[field])?source[field]:null):String(source[field]??'').trim();
+        if(['title','action'].includes(field)&&!value)continue;
+        refreshed[field]=value;
+      }
+    }
+    if(JSON.stringify(refreshed)===JSON.stringify(original))return original;
+    updated++;return refreshed;
+  });
+  for(const[key,descriptor]of scheduled){
+    if(seen.has(key))continue;
+    if(imports.includes(key)){suppressed++;continue;}
+    const candidate=await createTrackedWork(descriptor);
+    candidate.status='review';candidate.group='ready';
+    candidate.forecast=normaliseForecast({...descriptor.forecast,sourceStatus:descriptor.forecast?.sourceStatus??descriptor.sourceStatus??descriptor.status??'review'},context,{managed:true,active:true});
+    items.push(candidate);imports=mergeWorkboardImports(imports,[key]);added++;
+  }
+  const next=validateInbox(JSON.stringify({...inbox,items,workboardImports:imports,forecastContexts:{...(inbox.forecastContexts||{}),[context.wing]:context}}));
+  return {inbox:next,context,changed:JSON.stringify(next)!==JSON.stringify(inbox),skipped:false,added,updated,retired,suppressed};
+}
+
+export function validWorkOrigin(origin) {
+  return origin === null || !!(origin && typeof origin === 'object' && !Array.isArray(origin) &&
+    ['vet','tas'].includes(origin.wing) &&
+    ['taskId','recordKey','route','cycle'].every(key=>typeof origin[key] === 'string') &&
+    origin.taskId.trim() && origin.taskId.length<=300 && origin.recordKey.trim() && origin.recordKey.length<=2000 &&
+    /^#[^\s\u0000-\u001f]*$/.test(origin.route) && origin.route.length<=2000 && origin.cycle.length<=100);
+}
+
+export async function workboardTaskKey(wing,recordKey) {
+  if(!['vet','tas'].includes(wing)||typeof recordKey!=='string'||!recordKey.trim()||recordKey.length>2000)throw new Error('This workboard task has an invalid identity.');
+  const prefix=`workboard:${wing}:`;
+  if(prefix.length+recordKey.length<=150&&!recordKey.startsWith('sha256:'))return prefix+recordKey;
+  const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(recordKey));
+  return prefix+'sha256:'+Array.from(new Uint8Array(digest),byte=>byte.toString(16).padStart(2,'0')).join('');
+}
+
+// A linked task is a personal work queue entry, never a verification record.
+export async function createTrackedWork(descriptor) {
+  const {wing,taskId,recordKey,route}=descriptor;
+  const origin={wing,taskId,recordKey,route,cycle:String(descriptor.cycle??'')};
+  if(!validWorkOrigin(origin))throw new Error('This workboard task has an invalid source link.');
+  const title=String(descriptor.title||'').trim();
+  const action=String(descriptor.action||'Review the task and choose the next action.').trim();
+  const noteText=String(descriptor.notes||'');
+  const taskKey=await workboardTaskKey(wing,recordKey);
+  const item=enrich({id:crypto.randomUUID(),taskKey,title,action,noteText,workstream:wing,origin,
+    createdOn:todaySydney(),status:['done','completed','verified'].includes(descriptor.status)?'done':'review',
+    group:['waiting','blocked'].includes(descriptor.status)?'waiting':'ready',
+    waitingOn:String(descriptor.waitingOn||''),dueDate:descriptor.dueDate&&validDate(descriptor.dueDate)?descriptor.dueDate:null,
+    reason:`From your ${WORKSTREAMS[wing]} workboard`});
+  return validateInbox(JSON.stringify({version:2,items:[item]})).items[0];
+}
 
 export function safeUrl(value) {
   if (typeof value !== 'string' || value.length > 2048) return '';
@@ -136,7 +273,7 @@ export const PRIORITIES = {
   orange: '🟠 Urgent / Not Important', purple: '🟣 Not Urgent / Not Important',
 };
 export const NEXT_ACTIONS = {'': 'Choose next step', do: '✅ Do Now', date: '⏰ Date', delegate: '👥 Delegate', delay: '⏸ Delay', delete: '🗑 Delete'};
-export const EDITABLE = ['title','source','noteHtml','noteText','action','url','originalEmailUrl','priority','nextAction','dueDate','eventDate','followUpDate','dateNote','owner','waitingOn','instruction','group','pinnedDate','sectionOverride'];
+export const EDITABLE = ['title','source','noteHtml','noteText','action','url','originalEmailUrl','priority','nextAction','dueDate','eventDate','followUpDate','dateNote','owner','waitingOn','instruction','group','pinnedDate','sectionOverride','workstream'];
 export function todaySydney() { return new Intl.DateTimeFormat('en-CA', {timeZone:'Australia/Sydney',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()); }
 export function validDate(value) {
   if (value === null || value === '') return true;
@@ -145,22 +282,26 @@ export function validDate(value) {
   return Number.isFinite(date.getTime()) && date.toISOString().slice(0,10) === value;
 }
 export function enrich(item) {
-  return {sectionOverride:'',createdOn:null, lastActionOn:null, pinnedDate:null, personal:false, taskKey:'', priority:'', nextAction:'', dueDate:null, eventDate:null, followUpDate:null,
+  return {workstream:'personal',origin:null,forecast:null,progressOverride:false,sectionOverride:'',createdOn:null, lastActionOn:null, pinnedDate:null, personal:false, taskKey:'', priority:'', nextAction:'', dueDate:null, eventDate:null, followUpDate:null,
     noteHtml:'', noteText:'', dateNote:'', owner:'', waitingOn:'', instruction:'', help:'', relatedTitles:[], dependsOn:[], dirty:[], planAliases:[],
     reason:'Action to review', score:30, group:'ready', status:'review', selected:false, links:[], url:'', originalEmailUrl:'', source:'', ...item};
 }
 export function validateInbox(raw) {
-  if (raw === null) return {version:2, items:[], importedAt:null, briefing:''};
+  if (raw === null) return {version:2, items:[], importedAt:null, briefing:'',workboardImports:[],forecastContexts:{}};
   if (typeof raw !== 'string' || raw.length > 8 * LIMIT) throw new Error('Review file is too large');
   const value = JSON.parse(raw);
   if (![1,2].includes(value?.version) || !Array.isArray(value.items) || value.items.length > 300) throw new Error('Invalid review list');
   if (value.briefing !== undefined && (typeof value.briefing !== 'string' || value.briefing.length > 150000)) throw new Error('Invalid briefing');
   if (value.reviewDate !== undefined && !validDate(value.reviewDate)) throw new Error('Invalid review date');
+  const workboardImports=mergeWorkboardImports(value.workboardImports);
+  if(value.forecastContexts!==undefined&&(!value.forecastContexts||typeof value.forecastContexts!=='object'||Array.isArray(value.forecastContexts)))throw new Error('Invalid workboard forecast contexts');
+  const forecastContexts={};
+  for(const[wing,context]of Object.entries(value.forecastContexts||{})){if(!['vet','tas'].includes(wing)||context?.wing!==wing)throw new Error('Invalid workboard forecast contexts');forecastContexts[wing]=normaliseForecastContext(context);}
   const items = value.items.map(enrich);
   for (const x of items) {
     if (typeof x.id !== 'string' || !x.id.trim() || x.id.length > 150 || typeof x.title !== 'string' || !x.title.trim() || x.title.length > 300 ||
       typeof x.action !== 'string' || (!x.action.trim() && !(x.personal && ['note','done','dismissed'].includes(x.status))) || x.action.length > 800 || typeof x.source !== 'string' || x.source.length > 20000 || typeof x.noteText !== 'string' || x.noteText.length > 200000 || typeof x.noteHtml !== 'string' || x.noteHtml.length > 1000000 ||
-      typeof x.taskKey !== 'string' || x.taskKey.length > 150 || !Number.isFinite(x.score) ||
+      typeof x.taskKey !== 'string' || x.taskKey.length > 150 || !Number.isFinite(x.score) || !Object.hasOwn(WORKSTREAMS,x.workstream) || !validWorkOrigin(x.origin) || !validForecast(x.forecast) || (x.forecast&&!x.origin) || typeof x.progressOverride!=='boolean' ||
       !Array.isArray(x.links) || x.links.length > 30 || x.links.some(url => !safeUrl(url)) || typeof x.url !== 'string' || x.url && !safeUrl(x.url) ||
       typeof x.originalEmailUrl !== 'string' || x.originalEmailUrl && !safeUrl(x.originalEmailUrl) ||
       !['','ready','upcoming','waiting','later','notes'].includes(x.sectionOverride) || !['ready','later','waiting'].includes(x.group) || !['review','added','done','dismissed','superseded','note'].includes(x.status) || typeof x.personal !== 'boolean' ||
@@ -175,7 +316,7 @@ export function validateInbox(raw) {
   if (new Set(items.map(x=>x.id)).size !== items.length) throw new Error('Duplicate task IDs');
   const keys=items.map(x=>x.taskKey).filter(Boolean);
   if (new Set(keys).size !== keys.length) throw new Error('Duplicate task keys');
-  return {...value, version:2, items};
+  return {...value, version:2, items,workboardImports,forecastContexts};
 }
 export function mergeInbox(existing, incoming) {
   const items = existing.map(x=>enrich({...x}));
@@ -192,7 +333,9 @@ export function mergeInbox(existing, incoming) {
       // fields the user has not edited, and never reset progress or local IDs.
       if (!next.taskKey) continue;
       const dirty=old.dirty.length ? old.dirty : !old.taskKey ? ['action','url','group'] : [];
-      const merged={...old,...next,taskKey:old.taskKey||next.taskKey,id:old.id,createdOn:old.createdOn||next.createdOn,lastActionOn:old.lastActionOn||next.lastActionOn,status:old.status,pinnedDate:old.pinnedDate,dirty,selected:false,planStamp:old.planStamp,planAliases:old.planAliases,preserveDoneOnce:old.preserveDoneOnce};
+      // Classification and source identity belong to the saved card. Older
+      // exports and AI refreshes must never detach work from its native task.
+      const merged={...old,...next,workstream:old.workstream,origin:old.origin||next.origin,forecast:old.forecast||next.forecast,progressOverride:old.progressOverride,taskKey:old.taskKey||next.taskKey,id:old.id,createdOn:old.createdOn||next.createdOn,lastActionOn:old.lastActionOn||next.lastActionOn,status:old.status,pinnedDate:old.pinnedDate,dirty,selected:false,planStamp:old.planStamp,planAliases:old.planAliases,preserveDoneOnce:old.preserveDoneOnce};
       aliases.set(next.taskKey,merged.taskKey);
       for (const key of dirty) merged[key]=old[key];
       items[index]=merged; updated++;
@@ -208,7 +351,7 @@ export function mergeInbox(existing, incoming) {
   const consolidated=consolidateDuplicates(items);
   return {items:consolidated.items,added,updated,archived:archived+consolidated.archived};
 }
-export function nextDate(item) { return [item.dueDate,item.followUpDate,item.eventDate].filter(Boolean).sort()[0] || ''; }
+export function nextDate(item) { return [item.dueDate,item.followUpDate,item.eventDate,...(item.forecast?.active?[item.forecast.scheduledDate,item.forecast.windowStart]:[])].filter(Boolean).sort()[0] || ''; }
 export function bucket(item, today=todaySydney()) {
   if(item.sectionOverride)return item.sectionOverride;
   if (item.dueDate && item.dueDate<=today) return 'ready';
@@ -221,9 +364,16 @@ export function bucket(item, today=todaySydney()) {
 export function taskSection(item,today=todaySydney()) {
   if (['done','superseded'].includes(item.status)) return item.status;
   if (item.status==='dismissed') return 'notes';
+  if(sourceCompleted(item))return 'done';
+  const forecast=item.forecast;
+  const current=forecast?.asOf===today;
+  if(item.sectionOverride==='notes'||item.status==='note')return 'notes';
+  if(current&&(forecast.blocked||(forecast.active&&forecast.section==='waiting')))return 'waiting';
   if (item.sectionOverride) return item.sectionOverride==='later'?'upcoming':item.sectionOverride;
   if (item.status==='note' || (item.personal && !item.action)) return 'notes';
   if (isPinned(item,today)) return 'ready';
+  if(current&&forecast.active)return forecast.section;
+  if(forecast?.managed&&!hasPersonalWork(item))return 'notes';
   const section=bucket(item,today);
   return section==='later'?'upcoming':section;
 }
@@ -263,6 +413,7 @@ function sourceTitles(item) {
   return [...new Set([item.title,...(item.relatedTitles||[])].flatMap(title=>title.split(/\s+\+\s+(?=(?:Note\s*:|Fw(?:d)?:|Note Fw))/i)).map(normalTitle))].sort();
 }
 export function sameSourceAction(a,b) {
+  if(a.origin||b.origin)return !!(a.origin&&b.origin&&a.origin.wing===b.origin.wing&&a.origin.recordKey===b.origin.recordKey);
   if(normalAction(a.action)!==normalAction(b.action))return false;
   const aa=sourceTitles(a),bb=sourceTitles(b);
   return JSON.stringify(aa)===JSON.stringify(bb) || aa.length===1&&aa[0]===normalTitle(b.title) || bb.length===1&&bb[0]===normalTitle(a.title);

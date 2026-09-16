@@ -46,10 +46,13 @@
     links: {},
     records: {},
     weekly: {},
+    eventOccurrences: {},
     search: "",
     lastBackup: ""
   };
 
+  let savedStateRaw = null;
+  let stateStorageBlocked = false;
   let state = loadState();
 
   function safeObject(value) {
@@ -57,13 +60,18 @@
   }
 
   function freshState() {
-    return { ...defaultState, links: {}, records: {}, weekly: {} };
+    return { ...defaultState, links: {}, records: {}, weekly: {}, eventOccurrences: {} };
   }
 
   function loadState() {
     try {
-      const parsed = JSON.parse(localStorage.getItem(data.config.storageKey) || "null");
-      if (!parsed || parsed.schemaVersion !== 2) return freshState();
+      savedStateRaw = localStorage.getItem(data.config.storageKey);
+      if (savedStateRaw === null) return freshState();
+      const parsed = JSON.parse(savedStateRaw);
+      if (!parsed || parsed.schemaVersion !== 2) {
+        stateStorageBlocked = true;
+        return freshState();
+      }
       return {
         ...defaultState,
         ...parsed,
@@ -72,11 +80,20 @@
         linkDefaultsVersion: 2,
         links: parsed.linkDefaultsVersion === 2 ? safeObject(parsed.links) : {},
         records: sanitiseRecords(parsed.records),
-        weekly: safeObject(parsed.weekly)
+        weekly: safeObject(parsed.weekly),
+        eventOccurrences: sanitiseEventOccurrences(parsed.eventOccurrences)
       };
     } catch (_) {
+      stateStorageBlocked = true;
       return freshState();
     }
+  }
+
+  function sanitiseEventOccurrences(value) {
+    return Object.fromEntries(Object.entries(safeObject(value)).filter(([id, token]) => {
+      const task = data.tasks.find(item => item.id === id);
+      return task && taskCycle(task) === "event" && typeof token === "string" && /^event-[a-z0-9-]{1,100}$/i.test(token);
+    }));
   }
 
   function sanitiseRecords(value) {
@@ -125,9 +142,34 @@
     return output;
   }
 
+  function storageIsCurrent() {
+    if (stateStorageBlocked) {
+      toast("Saved TAS progress could not be read safely. It has been kept unchanged. Recover the original browser data before saving.", "error");
+      return false;
+    }
+    if (localStorage.getItem(data.config.storageKey) !== savedStateRaw) {
+      toast("TAS progress changed in another tab. Nothing was overwritten. Copy any unsaved text, then reload before saving.", "error");
+      return false;
+    }
+    return true;
+  }
+
+  function recordsUpdated() {
+    window.dispatchEvent(new CustomEvent("wwhs:records-updated", { detail: { wing: "tas" } }));
+    forecastUpdated();
+  }
+
+  function forecastUpdated() {
+    window.dispatchEvent(new CustomEvent("wwhs:forecast-updated", { detail: { wing: "tas" } }));
+  }
+
   function saveState() {
     try {
-      localStorage.setItem(data.config.storageKey, JSON.stringify(state));
+      if (!storageIsCurrent()) return false;
+      const raw = JSON.stringify(state);
+      localStorage.setItem(data.config.storageKey, raw);
+      savedStateRaw = raw;
+      recordsUpdated();
       return true;
     } catch (_) {
       toast("This browser could not save the workboard", "error");
@@ -263,7 +305,7 @@
     if (cycle === "week") return `${task.id}::${weekKey()}`;
     if (cycle === "term") return `${task.id}::${termKey()}`;
     if (cycle === "year") return `${task.id}::${currentDate.getFullYear()}`;
-    return `${task.id}::current-event`;
+    return `${task.id}::${state.eventOccurrences[task.id] || "current-event"}`;
   }
 
   function recordFor(task) {
@@ -280,6 +322,141 @@
 
   function isClosed(task) {
     return ["completed", "verified", "not-applicable"].includes(statusFor(task));
+  }
+
+  function describeTask(id, key) {
+    const task = data.tasks.find(item => item.id === id);
+    if (!task || task.historyOnly || task.procedureOnly) return null;
+    refreshDate();
+    const sourceKey = key || recordKey(task);
+    const record = state.records[sourceKey] || { status: "not-started", steps: {}, milestones: {} };
+    const closed = ["completed", "verified", "not-applicable"].includes(record.status);
+    const nextStep = task.steps.find((_, index) => record.steps?.[index] !== true);
+    const milestone = task.milestones?.find((_, index) => record.milestones?.[index] !== true);
+    return {
+      wing: "tas", taskId: task.id, recordKey: sourceKey,
+      title: task.title, action: closed ? task.doneWhen : nextStep || task.doneWhen,
+      notes: record.exceptionReason || "",
+      dueDate: task.milestones?.length ? milestone?.date || "" : task.dueDate || "",
+      waitingOn: ["waiting", "exception"].includes(record.status) ? record.exceptionReason || task.owner || "" : "",
+      status: closed ? "done" : ["waiting", "exception"].includes(record.status) ? "waiting" : "review",
+      sourceStatus: record.status, cycle: sourceKey.split("::").slice(1).join("::"),
+      route: `#task/${encodeURIComponent(task.id)}`
+    };
+  }
+
+  function forecastStorageAvailable() {
+    try {
+      return !stateStorageBlocked && localStorage.getItem(data.config.storageKey) === savedStateRaw;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function describeRecord(key) {
+    if (typeof key !== "string" || !forecastStorageAvailable() || !Object.prototype.hasOwnProperty.call(state.records, key)) return null;
+    return describeTask(key.split("::")[0], key);
+  }
+
+  function getForecast() {
+    refreshDate();
+    const horizonDays = 21;
+    const term = termKey();
+    const termNumber = Number(term.split("-t")[1]);
+    const available = forecastStorageAvailable();
+    const context = {
+      wing: "tas", date: currentIso, role: "ht-tas", roleLabel: "Head Teacher TAS",
+      year: currentDate.getFullYear(), sourceYear: data.config.operatingYear,
+      sourceAsAt: data.config.calendarChecked, calendarChecked: data.config.calendarChecked,
+      sourceStateKey: data.config.storageKey, horizonDays,
+      termKey: term, weekBeginning: weekKey(), schoolWeek: null,
+      mode: !available ? "unavailable" : operatingYearIsCurrent ? "current" : "reference-only",
+      title: "Head Teacher TAS forecast",
+      note: !available
+        ? "Saved TAS progress is unavailable or changed in another tab. Copy any unsaved work, then reload before using the forecast."
+        : !operatingYearIsCurrent
+          ? `The dated calendar is a ${data.config.operatingYear} reference. Refresh it before forecasting ${currentDate.getFullYear()} work.`
+          : `Calendar checked ${data.config.calendarChecked}; confirm listed dates in the live staff calendar. Term ${termNumber} uses the workboard's existing calendar grouping. School week and exact dates for recurring controls are not configured. Past dates without a recorded status need confirmation; they are not assumed to be missed work.`
+    };
+    if (context.mode !== "current") return { entries: [], context };
+
+    const entries = new Map();
+    const add = (task, key, options) => {
+      const descriptor = describeTask(task.id, key);
+      if (!descriptor || descriptor.status === "done") return;
+      const waiting = descriptor.status === "waiting";
+      entries.set(key, {
+        ...descriptor,
+        dueDate: options.scheduledDate || "",
+        forecast: {
+          section: waiting ? "waiting" : options.section,
+          kind: options.kind, reason: options.reason,
+          scheduledDate: options.scheduledDate || "", windowStart: options.windowStart || "", windowEnd: options.windowEnd || "",
+          period: descriptor.cycle, sourceStatus: descriptor.sourceStatus,
+          blocked: waiting, blockerReason: waiting ? descriptor.waitingOn : "",
+          dateConfidence: options.scheduledDate ? "listed" : "undated",
+          requiresConfirmation: options.requiresConfirmation === true
+        }
+      });
+    };
+
+    // Existing open occurrences remain actionable, including an older week, term or event.
+    // A saved occurrence never creates a new due date or implies a fresh event happened.
+    Object.keys(state.records).forEach(key => {
+      const task = data.tasks.find(item => item.id === key.split("::")[0]);
+      if (!task || task.historyOnly || task.procedureOnly) return;
+      add(task, key, {
+        section: "ready", kind: "recorded-follow-up",
+        reason: "Open follow-up recorded in this browser; check the owner system for its current position.",
+        requiresConfirmation: true
+      });
+    });
+
+    data.tasks.forEach(task => {
+      if (task.historyOnly || task.procedureOnly || isClosed(task)) return;
+      const key = recordKey(task);
+      const reviewed = hasReviewedRecord(task);
+      const cycle = taskCycle(task);
+      if (task.dueDate) {
+        if (reviewed && task.milestones?.length && !pendingMilestone(task)) return;
+        // Untouched milestone chains use the next listed reminder, as native Today does.
+        // They must not turn an earlier unchecked milestone into an assertion of missed work.
+        const date = reminderDate(task);
+        if (!date || Number(date.slice(0, 4)) !== data.config.operatingYear || daysUntil(date) > horizonDays) return;
+        const past = date < currentIso;
+        add(task, key, {
+          section: date <= currentIso ? "ready" : "upcoming",
+          kind: past ? reviewed ? "overdue" : "past-date-review" : "dated",
+          reason: past
+            ? reviewed ? "A listed date has passed for this recorded open task; check the current school record." : "Listed date passed — status not confirmed in this browser."
+            : "A listed calendar milestone is within the next 21 days; confirm it in the live staff calendar.",
+          scheduledDate: date, requiresConfirmation: true
+        });
+        return;
+      }
+      if (cycle === "event" || task.id === "vet-handoff") return;
+      const currentPhase = task.phase === `term_${termNumber}` || (task.phase === "annual" && termNumber === 1);
+      if (cycle !== "week" && cycle !== "term" && !currentPhase) return;
+      const endOfTerm = task.id === "term-workshop-close";
+      const weekly = cycle === "week";
+      const weekEnd = parseDate(weekKey());
+      weekEnd.setDate(weekEnd.getDate() + 6);
+      add(task, key, {
+        section: endOfTerm ? "upcoming" : "ready",
+        kind: weekly ? "weekly" : cycle === "term" ? "term-control" : "phase-control",
+        reason: endOfTerm
+          ? "End-of-term routine for this term; the exact local close-down date is not configured."
+          : `${weekly ? "Current weekly routine" : cycle === "term" ? "Current term control" : "Current phase control"}. ${task.timing} No exact due date is configured.`,
+        windowStart: weekly ? weekKey() : "", windowEnd: weekly ? isoDate(weekEnd) : "",
+        requiresConfirmation: true
+      });
+    });
+    return { entries: [...entries.values()], context };
+  }
+
+  function planTaskButton(task) {
+    if (task.historyOnly || task.procedureOnly) return "";
+    return `<button class="button secondary compact" type="button" data-action="track-task" data-task-id="${esc(task.id)}">Add to my work</button>`;
   }
 
   function sourcePill(task) {
@@ -315,7 +492,7 @@
     const task = taskFromRoute();
     if (task) return areaMeta[task.area]?.route || "today";
     const value = (location.hash || "#home").slice(1).split("?")[0];
-    const allowed = ["home", "today", "calendar", "teaching", "faculty", "people", "reference", "ai-admin"];
+    const allowed = ["home", "today", "my-work", "calendar", "teaching", "faculty", "people", "reference", "ai-admin"];
     return allowed.includes(value) ? value : "home";
   }
 
@@ -353,6 +530,7 @@
 
     if (route === "home") renderHome();
     else if (route === "today") renderToday();
+    else if (route === "my-work") routeContent.innerHTML = "";
     else if (route === "calendar") renderCalendar();
     else if (["teaching", "faculty", "people"].includes(route)) renderArea(route);
     else if (route === "ai-admin") {
@@ -458,7 +636,7 @@
   function taskCompletionActions(task) {
     if (task.historyOnly || task.procedureOnly) return "";
     const record = recordFor(task);
-    return `${!isClosed(task) ? `<button class="button primary compact" type="button" data-action="complete-task" data-task-id="${esc(task.id)}" aria-label="Task Complete: ${esc(task.title)}" title="Tick all steps, milestones and completion checks">Task Complete</button>` : ""}
+    return `${planTaskButton(task)}${!isClosed(task) ? `<button class="button primary compact" type="button" data-action="complete-task" data-task-id="${esc(task.id)}" aria-label="Task Complete: ${esc(task.title)}" title="Tick all steps, milestones and completion checks">Task Complete</button>` : ""}
       ${record.status === "completed" ? `<span class="task-complete-label">✓ Task Complete</span>` : ""}
       ${record.status === "completed" && completionUndo.get(recordKey(task))?.after === record ? `<button class="button secondary compact" type="button" data-action="undo-complete-task" data-task-id="${esc(task.id)}" aria-label="Undo completion: ${esc(task.title)}">Undo</button>` : ""}`;
   }
@@ -686,6 +864,7 @@
       <div class="dialog-body">
         <div class="dialog-badges">${priorityPill(task)}${statusPill(task)}${sourcePill(task)}${task.dueDate ? `<span class="pill due">${esc(dueLabel(task))}</span>` : ""}</div>
         <p class="dialog-summary">${esc(task.summary)}</p>
+        ${planTaskButton(task)}
         ${task.applicability ? `<aside class="applicability"><strong>Applies when</strong><span>${esc(task.applicability)}</span></aside>` : ""}
         <div class="fact-grid"><div><span>Timing</span><strong>${esc(task.timing)}</strong></div><div><span>Current cycle</span><strong>${esc(cycleLabel(task))}</strong></div><div><span>Accountable</span><strong>${esc(task.owner)}</strong></div><div><span>Expected verifier</span><strong>${esc(task.verifier)}</strong></div><div><span>Primary start</span><strong>${esc(primarySystemLabel(task))}</strong></div></div>
         ${task.milestones ? `<section class="dialog-section"><h3>Milestones</h3><p class="section-help">${task.historyOnly ? "Captured 2026 sequence for handover and planning. Rebuild it from the live calendar each year." : "Tick each dated hand-off only after it is complete in the owner system."}</p><ol class="milestone-list">${task.milestones.map((item, index) => task.historyOnly ? `<li><time datetime="${esc(item.date)}">${esc(longDate(item.date))}</time><span>${esc(item.label)}</span></li>` : `<li class="${record.milestones?.[index] ? "is-done" : ""}"><label><input type="checkbox" data-task-milestone="${index}" data-task-id="${esc(task.id)}" ${record.milestones?.[index] ? "checked" : ""}><time datetime="${esc(item.date)}">${esc(longDate(item.date))}</time><span>${esc(item.label)}</span></label></li>`).join("")}</ol></section>` : ""}
@@ -725,6 +904,8 @@
     const task = data.tasks.find(item => item.id === form.dataset.taskId);
     if (!task || task.historyOnly || task.procedureOnly) return;
     const values = new FormData(form);
+    const key = recordKey(task);
+    const savedRecord = state.records[key];
     const previous = recordFor(task);
     let status = String(values.get("status") || "not-started");
     if (commit === "verify") status = "verified";
@@ -743,7 +924,7 @@
     if (status === "verified" && (!evidenceRef || !verifier || !sourceChecked || !doneConfirmed)) return formError(error, "Verification needs a safe owner-system reference, verifier, live-source check and Done when confirmation.");
     if (["exception", "not-applicable"].includes(status) && (!exceptionReason || !verifier)) return formError(error, "An exception or not-applicable decision needs a privacy-safe reason and verifier.");
 
-    state.records[recordKey(task)] = {
+    state.records[key] = {
       ...previous,
       status,
       evidenceRef,
@@ -754,7 +935,11 @@
       updatedAt: new Date().toISOString()
     };
     taskStateDirty = true;
-    saveState();
+    if (!saveState()) {
+      if (savedRecord) state.records[key] = savedRecord;
+      else delete state.records[key];
+      return;
+    }
     taskDialog.close();
     toast(status === "verified" ? "Task verified with a safe record reference" : "Progress saved");
   }
@@ -779,6 +964,7 @@
   }
 
   function saveSettings(form) {
+    const previous = { mode: state.mode, guidance: state.guidance, links: { ...state.links } };
     const values = new FormData(form);
     state.mode = String(values.get("mode")) === "fast" ? "fast" : "guided";
     state.guidance = values.get("guidance") === "on";
@@ -788,7 +974,10 @@
       if (value && value !== builtIn) state.links[system.id] = value;
       else delete state.links[system.id];
     });
-    saveState();
+    if (!saveState()) {
+      Object.assign(state, previous);
+      return;
+    }
     settingsStateDirty = true;
     settingsDialog.close();
     toast("Workspace setup saved on this browser");
@@ -851,15 +1040,20 @@
       try {
         const payload = JSON.parse(String(reader.result || ""));
         if (payload.kind !== data.config.backupKind || payload.schemaVersion !== 2 || !payload.state) throw new Error("Unsupported backup");
+        const previous = state;
         const localLinks = { ...state.links };
         state = {
           ...defaultState,
           ...payload.state,
           links: localLinks,
           records: sanitiseRecords(payload.state.records),
-          weekly: safeObject(payload.state.weekly)
+          weekly: safeObject(payload.state.weekly),
+          eventOccurrences: sanitiseEventOccurrences(payload.state.eventOccurrences)
         };
-        saveState();
+        if (!saveState()) {
+          state = previous;
+          return;
+        }
         render();
         toast("Backup restored; local staff links stayed on this browser");
       } catch (_) {
@@ -872,8 +1066,16 @@
   function clearWorkspace() {
     const confirmed = window.confirm("Clear task progress and weekly checks from this browser? Any browser-only link replacements will also be removed.");
     if (!confirmed) return;
-    localStorage.removeItem(data.config.storageKey);
+    try {
+      if (!storageIsCurrent()) return;
+      localStorage.removeItem(data.config.storageKey);
+      savedStateRaw = null;
+    } catch (_) {
+      toast("This browser could not clear the workboard", "error");
+      return;
+    }
     state = freshState();
+    recordsUpdated();
     render();
     toast("Local workboard progress cleared");
   }
@@ -905,18 +1107,23 @@
     const action = actionTarget.dataset.action;
 
     if (action === "start-guided") {
+      const previous = { mode: state.mode, guidance: state.guidance };
       state.mode = "guided";
       state.guidance = true;
-      saveState();
+      if (!saveState()) { Object.assign(state, previous); return; }
       location.hash = "#today";
     } else if (action === "start-fast") {
+      const previous = { mode: state.mode, guidance: state.guidance };
       state.mode = "fast";
       state.guidance = false;
-      saveState();
+      if (!saveState()) { Object.assign(state, previous); return; }
       location.hash = "#calendar";
     } else if (action === "open-task") {
       if (taskDialog.open) taskDialog.close();
       openTask(actionTarget.dataset.taskId);
+    } else if (action === "track-task") {
+      const descriptor = describeTask(actionTarget.dataset.taskId);
+      if (descriptor) window.dispatchEvent(new CustomEvent("wwhs:track-task", { detail: descriptor }));
     } else if (action === "complete-task") {
       completeCalendarTask(actionTarget.dataset.taskId);
     } else if (action === "undo-complete-task") {
@@ -930,7 +1137,7 @@
       settingsDialog.close();
     } else if (action === "toggle-guidance") {
       state.guidance = !state.guidance;
-      saveState();
+      if (!saveState()) { state.guidance = !state.guidance; return; }
       render();
     } else if (action === "toggle-nav") {
       const bar = document.querySelector(".route-bar");
@@ -952,10 +1159,22 @@
       clearWorkspace();
     } else if (action === "reset-occurrence") {
       const task = data.tasks.find(item => item.id === actionTarget.dataset.taskId);
-      if (!task || taskCycle(task) !== "event") return;
-      delete state.records[recordKey(task)];
+      if (!task || task.historyOnly || task.procedureOnly || taskCycle(task) !== "event" || !isClosed(task)) return;
+      const previousToken = state.eventOccurrences[task.id];
+      let token;
+      do {
+        token = `event-${globalThis.crypto?.randomUUID?.() || `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`}`;
+      } while (state.records[`${task.id}::${token}`]);
+      state.eventOccurrences[task.id] = token;
+      const key = recordKey(task);
+      state.records[key] = { status: "not-started", steps: {}, milestones: {}, updatedAt: new Date().toISOString() };
+      if (!saveState()) {
+        delete state.records[key];
+        if (previousToken) state.eventOccurrences[task.id] = previousToken;
+        else delete state.eventOccurrences[task.id];
+        return;
+      }
       taskStateDirty = true;
-      saveState();
       taskDialog.close();
       toast("Next occurrence is ready to begin");
     }
@@ -965,8 +1184,10 @@
     if (event.target.matches("[data-task-step]")) {
       const task = data.tasks.find(item => item.id === event.target.dataset.taskId);
       if (!task || task.historyOnly || task.procedureOnly) return;
+      const key = recordKey(task);
+      const savedRecord = state.records[key];
       const previous = recordFor(task);
-      state.records[recordKey(task)] = {
+      state.records[key] = {
         ...previous,
         status: ["not-started", "completed", "verified"].includes(previous.status) ? "in-progress" : previous.status,
         steps: { ...safeObject(previous.steps), [event.target.dataset.taskStep]: event.target.checked },
@@ -974,14 +1195,21 @@
         updatedAt: new Date().toISOString()
       };
       taskStateDirty = true;
-      saveState();
+      if (!saveState()) {
+        if (savedRecord) state.records[key] = savedRecord;
+        else delete state.records[key];
+        event.target.checked = previous.steps?.[event.target.dataset.taskStep] === true;
+        return;
+      }
     }
 
     if (event.target.matches("[data-task-milestone]")) {
       const task = data.tasks.find(item => item.id === event.target.dataset.taskId);
       if (!task || task.historyOnly || task.procedureOnly) return;
+      const key = recordKey(task);
+      const savedRecord = state.records[key];
       const previous = recordFor(task);
-      state.records[recordKey(task)] = {
+      state.records[key] = {
         ...previous,
         status: ["not-started", "completed", "verified"].includes(previous.status) ? "in-progress" : previous.status,
         milestones: { ...safeObject(previous.milestones), [event.target.dataset.taskMilestone]: event.target.checked },
@@ -989,7 +1217,12 @@
         updatedAt: new Date().toISOString()
       };
       taskStateDirty = true;
-      saveState();
+      if (!saveState()) {
+        if (savedRecord) state.records[key] = savedRecord;
+        else delete state.records[key];
+        event.target.checked = previous.milestones?.[event.target.dataset.taskMilestone] === true;
+        return;
+      }
       const item = event.target.closest("li");
       item?.classList.toggle("is-done", event.target.checked);
     }
@@ -1017,8 +1250,14 @@
     if (event.target.matches("[data-weekly-check]")) {
       const week = weekKey();
       const index = event.target.dataset.weeklyCheck;
+      const previous = state.weekly[week];
       state.weekly[week] = { ...safeObject(state.weekly[week]), [index]: event.target.checked };
-      saveState();
+      if (!saveState()) {
+        if (previous) state.weekly[week] = previous;
+        else delete state.weekly[week];
+        event.target.checked = previous?.[index] === true;
+        return;
+      }
       renderToday();
       const replacement = document.querySelector(`[data-weekly-check="${CSS.escape(index)}"]`);
       const scan = replacement?.closest("details");
@@ -1083,6 +1322,22 @@
     window.scrollTo({ top: 0, left: 0, behavior: "instant" });
     renderRoute();
   });
-  window.addEventListener("focus", () => { if (currentIso !== isoDate(startOfDay(new Date())) && !taskDialog.open && !settingsDialog.open) render(); });
+  window.addEventListener("focus", () => {
+    if (currentIso === isoDate(startOfDay(new Date()))) return;
+    if (!taskDialog.open && !settingsDialog.open) render();
+    else refreshDate();
+    forecastUpdated();
+  });
+  window.addEventListener("storage", event => {
+    if (event.key === data.config.storageKey || event.key === null) forecastUpdated();
+  });
+  window.WWHS_WORKBOARD_ADAPTER = Object.freeze({
+    wing: "tas",
+    getEntries: () => Object.keys(state.records).map(key => describeTask(key.split("::")[0], key)).filter(Boolean),
+    getForecast,
+    describeRecord,
+    describeTask: id => describeTask(id),
+    openTask: id => openTask(id)
+  });
   renderRoute();
 })();
