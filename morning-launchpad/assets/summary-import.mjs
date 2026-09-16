@@ -251,6 +251,7 @@ class SummaryImport extends HTMLElement {
     if(active){const linkLabel=element('label','Work link');const url=element('input',undefined,{type:'url',value:item.url,placeholder:'https://… (optional)','aria-label':`Work link for ${item.title}`,maxlength:'2048'});url.disabled=this.blocked;url.addEventListener('change',()=>{if(url.value&&!safeUrl(url.value)){url.value=item.url;this.say('Use a full https:// link.',true);return;}this.updateItem(item.id,{url:url.value.trim()});});linkLabel.append(url);source.append(linkLabel);}const emailLabel=element('label','Original email link (optional)');const emailUrl=element('input',undefined,{type:'url',value:item.originalEmailUrl,placeholder:'https://…','aria-label':`Original email link for ${item.title}`,maxlength:'2048'});emailUrl.disabled=this.blocked;emailUrl.addEventListener('change',()=>{const value=emailUrl.value.trim();if(value&&!safeUrl(value)){emailUrl.value=item.originalEmailUrl;this.say('Use a full https:// link for the original email.',true);return;}this.updateItem(item.id,{originalEmailUrl:value},true);});emailLabel.append(emailUrl);source.append(emailLabel);article.append(source);
     if(item.help){const help=element('details');help.append(element('summary','ChatGPT can help with this'));const prompt=`${item.help}\n\nTask: [${item.title}] — ${item.action}\nTasks: ${item.instruction||'None added'}\n\nSource:\n${item.source}\n\nLinks:\n${item.links.join('\n')}\n\nCarry out the useful preparation requested above using the tools and access actually available in this session. Produce the concrete deliverable, not just advice about doing it. If input or access is missing, name the exact gap and complete the useful work supported by the supplied material. Respect authorisation already given. Do not send, submit, publish, purchase, delete or change external records without the required authorisation; show the prepared result first where approval is still needed.`;const actions=element('div',undefined,{class:'help-request-actions'});actions.append(button('Copy help request',async event=>{const control=event.currentTarget;try{await navigator.clipboard.writeText(prompt);copyFeedback(control);this.say('Help request copied. Open ChatGPT and paste it into the chat.');}catch{copyFeedback(control,false);const text=help.querySelector('textarea');text?.focus();text?.select();this.say('Copy the selected request with Ctrl + C.');}}),button('Open ChatGPT',()=>this.chatGPTChooser.showModal()));help.append(element('p',item.help),actions,element('textarea',prompt,{rows:'3',readonly:'','aria-label':`Help request for ${item.title}`}));article.append(help);}
     const controls=element('div',undefined,{class:'import-card-controls'});
+    const quickControls=element('div',undefined,{class:'import-card-controls import-card-quick-controls','aria-label':`Quick actions for ${item.title}`});
     if(!item.duplicateOf&&item.status!=='superseded'){
       const group=element('select',undefined,{'aria-label':`Move to section for ${item.title}`});
       const options=[['ready','Today'],['upcoming','Coming up'],['waiting','Waiting'],['later','Later'],['notes','My notes'],['done','Done'],['dismissed','Put aside']];
@@ -263,21 +264,21 @@ class SummaryImport extends HTMLElement {
         const changes={status:['done','dismissed'].includes(target)?target:target==='notes'&&!item.action?'note':'review',sectionOverride:['done','dismissed'].includes(target)?item.sectionOverride:target,pinnedDate:null,preserveDoneOnce:false};
         if(['ready','later','waiting'].includes(target))changes.group=target;
         if(this.updateItem(item.id,changes,true))this.say(`Moved “${item.title}” to ${options.find(x=>x[0]===target)[1]}.`);
-      });controls.append(group);
+      });quickControls.append(group);
     }
     if(item.personal&&['note','review'].includes(item.status))controls.append(button('Edit my note',()=>this.editPersonal(item)));
     if(active){
 
-      const done=button('Mark done',()=>this.setProgress(item,'done'));done.disabled=this.blocked;controls.append(done);
+      const done=button('Mark done',()=>this.setProgress(item,'done'));done.disabled=this.blocked;quickControls.append(done);
       if(item.status==='review'){const dismiss=button('Put aside',()=>{this.updateItem(item.id,{status:'dismissed',pinnedDate:null},true);});dismiss.disabled=this.blocked;controls.append(dismiss);}
     }else if(!item.duplicateOf&&item.status!=='note'){const restore=button('Review again',()=>this.setProgress(item,'review'));restore.disabled=this.blocked;controls.append(restore);}
-    article.append(controls);
+    if(controls.childElementCount)article.append(controls);
     const disclosure=element('details',undefined,{class:'import-card-disclosure'});
     disclosure.open=this.openCards.has(item.id);
     const summary=element('summary',undefined,{class:'import-card-summary'});
     summary.append(element('span',item.action||item.instruction||item.title,{class:'import-card-summary-text'}),element('span','',{class:'import-card-chevron','aria-hidden':'true'}));
     const body=element('div',undefined,{class:'import-card-body'});
-    body.append(...article.childNodes);disclosure.append(summary,body);article.append(disclosure);
+    body.append(...article.childNodes);disclosure.append(summary,body);article.append(disclosure);if(quickControls.childElementCount)article.append(quickControls);
     disclosure.addEventListener('toggle',()=>{if(!disclosure.isConnected)return;if(disclosure.open)this.openCards.add(item.id);else this.openCards.delete(item.id);});
     return article;
   }

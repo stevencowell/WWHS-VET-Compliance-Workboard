@@ -91,3 +91,8 @@ summary-import .import-card-summary:focus-visible{outline:3px solid var(--focus)
 .import-card-body{padding:18px;border-top:1px solid var(--line)}
 :root[data-theme=dark] summary-import .import-card-summary{background:#2b443b;color:#f4f7f1;border-left-color:#86b596}
 @media(max-width:700px){summary-import .import-card-summary{font-size:18px;padding:16px}.import-card-body{padding:12px}}
+
+/* Keep section and completion controls accessible when a note is collapsed. */
+summary-import .import-card-quick-controls{margin:0;padding:10px 18px;align-items:center;border-top:1px solid var(--line);gap:10px}
+.import-card-quick-controls select{max-width:100%;min-height:44px;padding:8px 12px;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:10px;font:inherit}
+.import-card-quick-controls button{margin-left:auto}
