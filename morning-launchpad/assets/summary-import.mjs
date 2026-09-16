@@ -178,7 +178,7 @@ class SummaryImport extends HTMLElement {
     input.addEventListener('change',()=>{const value=type==='date'?(input.value||null):input.value.trim();this.updateItem(item.id,{[key]:value},true);});wrapper.append(input);return wrapper;
   }
   setProgress(item,status){
-    if(this.updateItem(item.id,{status,pinnedDate:null,preserveDoneOnce:false},true)){this.view=status==='done'?'done':item.personal?'notes':'ready';this.renderItems();this.say(status==='done'?`Marked done: ${item.title}. Saved in the Done view.`:`Restored: ${item.title}.`);this.nav.scrollIntoView({behavior:'smooth',block:'start'});}
+    if(this.updateItem(item.id,{status,pinnedDate:null,preserveDoneOnce:false},true)){if(status!=='done'){this.view=item.personal?'notes':'ready';this.renderItems();this.nav.scrollIntoView({behavior:'smooth',block:'start'});}this.say(status==='done'?`Marked done: ${item.title}. Saved in Done; you’re still in this section.`:`Restored: ${item.title}.`);}
   }
   togglePin(item){
     const pinned=isPinned(item);
