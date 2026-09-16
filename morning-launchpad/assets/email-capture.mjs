@@ -1,5 +1,5 @@
-import {suggestEmail} from './email-rules.mjs?v=1';
-import {PRIORITIES,safeUrl,EDITABLE} from './summary-core.mjs?v=9';
+import {suggestEmail} from './email-rules.mjs?v=2';
+import {PRIORITIES,safeUrl,EDITABLE} from './summary-core.mjs?v=10';
 const el=(tag,text,attrs={})=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;for(const[k,v]of Object.entries(attrs))n.setAttribute(k,v);return n;};
 class EmailCapture extends HTMLElement{
  connectedCallback(){if(this.built)return;this.built=true;this.panel=el('details',undefined,{class:'import-input email-panel'});this.panel.append(el('summary','Paste one email — no AI'),el('p','Paste the subject and message below. Simple rules suggest priorities; review them before saving. Your email stays in this browser. Attachments stay in your email app.',{class:'import-help'}));this.append(this.panel);this.inputs={};

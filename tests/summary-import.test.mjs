@@ -164,3 +164,20 @@ test('unreadable older plans leave existing tasks usable and original data untou
  const before={version:2,items:[rich({status:'done'})]};const raw='{broken original';const result=migrateToPins(before,raw,'2026-09-15');
  assert.match(result.warning,/could not be read/);assert.equal(result.inbox.items[0].status,'done');assert.equal(raw,'{broken original');
 });
+
+test('note dates survive imports and backups without treating a refresh as an action', async () => {
+ const {enrich,recordNoteAction,todaySydney}=await import('../morning-launchpad/assets/summary-core.mjs');
+ const incoming=enrich({id:'date-test',taskKey:'date-test',title:'Date test',action:'Follow up'});
+ const created=mergeInbox([], [incoming]).items[0];
+ assert.equal(created.createdOn,todaySydney());
+ assert.equal(created.lastActionOn,null);
+ const edited=recordNoteAction({...created,createdOn:'2026-09-01'},{status:'done'},'2026-09-15');
+ assert.equal(edited.lastActionOn,'2026-09-15');
+ assert.equal(recordNoteAction(edited,{status:'done'},'2026-09-16').lastActionOn,'2026-09-15');
+ const refreshed=mergeInbox([edited],[{...incoming,createdOn:'2026-09-16',lastActionOn:'2026-09-16'}]).items[0];
+ assert.equal(refreshed.createdOn,'2026-09-01');
+ assert.equal(refreshed.lastActionOn,'2026-09-15');
+ assert.equal(validateInbox(JSON.stringify({version:2,items:[refreshed]})).items[0].lastActionOn,'2026-09-15');
+ assert.equal(validateInbox(JSON.stringify({version:2,items:[incoming]})).items[0].createdOn,null);
+ assert.throws(()=>validateInbox(JSON.stringify({version:2,items:[{...incoming,lastActionOn:'bad date'}]})));
+});

@@ -1,4 +1,4 @@
-import {enrich,linksIn,todaySydney,validDate} from './summary-core.mjs?v=9';
+import {enrich,linksIn,todaySydney,validDate} from './summary-core.mjs?v=10';
 const months=['january','february','march','april','may','june','july','august','september','october','november','december'];
 const datePattern='(?:\\d{4}-\\d{2}-\\d{2}|\\d{1,2}/\\d{1,2}/\\d{4}|\\d{1,2}(?:st|nd|rd|th)?\\s+(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\\s+\\d{4})';
 function fullDate(raw){

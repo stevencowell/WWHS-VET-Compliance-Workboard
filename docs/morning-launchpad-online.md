@@ -68,3 +68,5 @@ The welcome panel replaces the decorative sunrise with a read-only list of today
 
 
 Today's lesson cards open Steve's mapped course resources in a new tab. Both Timber classes use Folding Chair; both Construction classes use the Construction supplementary homepage; Metal uses Manufacturing; TLC uses Google Classroom. Duty and unmapped entries still open today's calendar. Engineering uses Hydraulic Digger before 13 October 2026, then Lolly Dispenser. Review this unit schedule for 2027. Term boundary source: https://education.nsw.gov.au/schooling/calendars/2026
+
+Note cards show Last action, falling back to their creation date in Launchpad. Saved edits, pins and status changes record the Sydney date; reading and repeat imports do not. Legacy undated notes remain explicitly unknown until an action occurs. Dates travel with task backups.

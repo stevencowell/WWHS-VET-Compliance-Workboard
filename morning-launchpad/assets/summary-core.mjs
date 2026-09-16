@@ -137,7 +137,7 @@ export function validDate(value) {
   return Number.isFinite(date.getTime()) && date.toISOString().slice(0,10) === value;
 }
 export function enrich(item) {
-  return {pinnedDate:null, personal:false, taskKey:'', priority:'', nextAction:'', dueDate:null, eventDate:null, followUpDate:null,
+  return {createdOn:null, lastActionOn:null, pinnedDate:null, personal:false, taskKey:'', priority:'', nextAction:'', dueDate:null, eventDate:null, followUpDate:null,
     dateNote:'', owner:'', waitingOn:'', instruction:'', help:'', relatedTitles:[], dependsOn:[], dirty:[], planAliases:[],
     reason:'Action to review', score:30, group:'ready', status:'review', selected:false, links:[], url:'', source:'', ...item};
 }
@@ -156,7 +156,7 @@ export function validateInbox(raw) {
       !Array.isArray(x.links) || x.links.length > 30 || x.links.some(url => !safeUrl(url)) || typeof x.url !== 'string' || x.url && !safeUrl(x.url) ||
       !['ready','later','waiting'].includes(x.group) || !['review','added','done','dismissed','superseded','note'].includes(x.status) || typeof x.personal !== 'boolean' ||
       !Object.hasOwn(PRIORITIES,x.priority) || !Object.hasOwn(NEXT_ACTIONS,x.nextAction) ||
-      ['dueDate','eventDate','followUpDate','pinnedDate'].some(key => !validDate(x[key])) ||
+      ['createdOn','lastActionOn','dueDate','eventDate','followUpDate','pinnedDate'].some(key => !validDate(x[key])) ||
       ['dateNote','owner','waitingOn','instruction','help','reason'].some(key => typeof x[key] !== 'string' || x[key].length > 2000) ||
       !Array.isArray(x.relatedTitles) || x.relatedTitles.length > 10 || x.relatedTitles.some(t=>typeof t !== 'string' || t.length > 300) ||
       !Array.isArray(x.dependsOn) || x.dependsOn.length > 20 || x.dependsOn.some(t=>typeof t !== 'string' || !t || t.length > 150 || t === x.taskKey) ||
@@ -183,13 +183,13 @@ export function mergeInbox(existing, incoming) {
       // fields the user has not edited, and never reset progress or local IDs.
       if (!next.taskKey) continue;
       const dirty=old.dirty.length ? old.dirty : !old.taskKey ? ['action','url','group'] : [];
-      const merged={...old,...next,taskKey:old.taskKey||next.taskKey,id:old.id,status:old.status,pinnedDate:old.pinnedDate,dirty,selected:false,planStamp:old.planStamp,planAliases:old.planAliases,preserveDoneOnce:old.preserveDoneOnce};
+      const merged={...old,...next,taskKey:old.taskKey||next.taskKey,id:old.id,createdOn:old.createdOn||next.createdOn,lastActionOn:old.lastActionOn||next.lastActionOn,status:old.status,pinnedDate:old.pinnedDate,dirty,selected:false,planStamp:old.planStamp,planAliases:old.planAliases,preserveDoneOnce:old.preserveDoneOnce};
       aliases.set(next.taskKey,merged.taskKey);
       for (const key of dirty) merged[key]=old[key];
       items[index]=merged; updated++;
     } else {
       if (items.length >= 300) throw new Error('The review list is full. Export a backup before removing old entries.');
-      items.push({...next,id:crypto.randomUUID(),selected:false});added++;
+      items.push({...next,createdOn:next.createdOn||todaySydney(),id:crypto.randomUUID(),selected:false});added++;
     }
   }
   if (rich) for (const item of items) {
@@ -260,6 +260,8 @@ export function consolidateDuplicates(existing) {
     const matches=items.filter(x=>!x.personal&&x.taskKey&&x.status!=='superseded'&&sameSourceAction(x,plain));
     if(matches.length!==1)continue;
     const target=matches[0];
+    target.createdOn=[target.createdOn,plain.createdOn].filter(Boolean).sort()[0]||null;
+    target.lastActionOn=[target.lastActionOn,plain.lastActionOn].filter(Boolean).sort().at(-1)||null;
     const mergedAliases=[...(target.planAliases||[]),...(plain.planAliases||[]),{id:`summary:${plain.id}`,title:`[${plain.title}] — ${plain.action}`}];
     target.planAliases=[...new Map(mergedAliases.map(x=>[x.id+'\n'+x.title,x])).values()];
     for(const key of plain.dirty)if(!target.dirty.includes(key)){target[key]=plain[key];target.dirty=[...target.dirty,key];}
@@ -309,4 +311,10 @@ export function migrateToPins(inbox,rawPlan,today=todaySydney()) {
   if(skipped)warning=`${skipped} older tasks remain in Export older daily plans because the task list is full.`;
   const consolidated=consolidateDuplicates(items);
   return {inbox:{...inbox,items:consolidated.items,pinWorkflowVersion:1},changed:true,warning};
+}
+
+// Reading a card and importing a refreshed summary are not user actions.
+export function recordNoteAction(item, changes, day=todaySydney()) {
+ const changed=Object.entries(changes).some(([key,value])=>item[key]!==value);
+ return changed ? {...item,...changes,lastActionOn:day} : item;
 }

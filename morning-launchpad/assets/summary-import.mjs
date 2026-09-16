@@ -1,6 +1,6 @@
-import './email-capture.mjs?v=1';
-import './launchpad-calendar.mjs?v=5';
-import {INBOX_KEY, LIMIT, parseSummary, validateInbox, mergeInbox, safeUrl, PRIORITIES, NEXT_ACTIONS, EDITABLE, enrich, todaySydney, bucket, rank, nextDate, consolidateDuplicates, LEGACY_PLAN_KEY, isPinned, migrateToPins} from './summary-core.mjs?v=9';
+import './email-capture.mjs?v=2';
+import './launchpad-calendar.mjs?v=6';
+import {INBOX_KEY, LIMIT, parseSummary, validateInbox, mergeInbox, safeUrl, PRIORITIES, NEXT_ACTIONS, EDITABLE, enrich, todaySydney, bucket, rank, nextDate, consolidateDuplicates, LEGACY_PLAN_KEY, isPinned, migrateToPins, recordNoteAction} from './summary-core.mjs?v=10';
 
 function element(tag, text, attributes = {}) {
   const node = document.createElement(tag);
@@ -130,7 +130,7 @@ class SummaryImport extends HTMLElement {
     const values=Object.fromEntries(Object.entries(this.noteInputs).map(([key,input])=>[key,input.value.trim()]));
     if(!values.title){this.noteInputs.title.focus();return;}
     const old=this.inbox.items.find(x=>x.id===this.editingNote);const id=old?.id||crypto.randomUUID();
-    const item=enrich({...old,...values,id,personal:true,taskKey:old?.taskKey||`personal:${id}`,dueDate:values.dueDate||null,status:values.action?'review':'note',reason:'Your own note',dirty:[...new Set([...(old?.dirty||[]),'title','source','action','dueDate'])]});
+    const item=enrich({...old,...values,createdOn:old?old.createdOn:todaySydney(),lastActionOn:old?recordNoteAction(old,{...values,dueDate:values.dueDate||null}).lastActionOn:null,id,personal:true,taskKey:old?.taskKey||`personal:${id}`,dueDate:values.dueDate||null,status:values.action?'review':'note',reason:'Your own note',dirty:[...new Set([...(old?.dirty||[]),'title','source','action','dueDate'])]});
     const items=old?this.inbox.items.map(x=>x.id===id?item:x):[...this.inbox.items,item];
     if(!this.persist({...this.inbox,items}))return;
     this.view='notes';this.noteEditor.open=false;this.editingNote=null;this.noteForm.reset();this.renderItems();this.say(`Saved “${item.title}” in My notes.${item.action?' Its action is also in your task views.':''}`);this.nav.scrollIntoView({behavior:'smooth',block:'start'});
@@ -155,9 +155,11 @@ class SummaryImport extends HTMLElement {
     this.nav.scrollIntoView({behavior:'smooth',block:'start'});
   }
   updateItem(id,changes,rerender=false){
-    const next={...this.inbox,items:this.inbox.items.map(x=>x.id===id?{...x,...changes,dirty:[...new Set([...x.dirty,...Object.keys(changes).filter(k=>EDITABLE.includes(k))])]}:x)};
-    if(this.persist(next)){if(rerender)this.renderItems();this.updateCount();return true;}return false;
+    const next={...this.inbox,items:this.inbox.items.map(x=>x.id===id?{...recordNoteAction(x,changes),dirty:[...new Set([...x.dirty,...Object.keys(changes).filter(k=>EDITABLE.includes(k))])]}:x)};
+    if(this.persist(next)){if(rerender)this.renderItems();else this.refreshActionDates();this.updateCount();return true;}return false;
   }
+  actionDateLabel(item){const date=item.lastActionOn||item.createdOn;return date?`Last action: ${dateLabel(date)}${item.lastActionOn?'':' · Created'}`:'Last action: Date not recorded';}
+  refreshActionDates(){for(const card of this.list.querySelectorAll('article')){const item=this.inbox.items.find(x=>(x.taskKey||x.id)===card.dataset.taskKey);const stamp=card.querySelector('.import-last-action');if(item&&stamp)stamp.textContent=this.actionDateLabel(item);}}
   field(item,key,label,type='text',options){
     const wrapper=element('label',label);let input;
     if(options){input=element('select',undefined,{'aria-label':`${label} for ${item.title}`});for(const[value,text]of Object.entries(options))input.append(element('option',text,{value}));}
@@ -181,7 +183,7 @@ class SummaryImport extends HTMLElement {
     const active=['review','added'].includes(item.status);const dependencies=item.dependsOn.map(key=>this.inbox.items.find(x=>x.taskKey===key));
     const blockedBy=dependencies.some(x=>!x||x.status!=='done');
     const head=element('div',undefined,{class:'import-card-top'});head.append(element('strong',item.title));
-    if(active){const pin=button(isPinned(item)?'Unpin':'Pin for today',()=>this.togglePin(this.inbox.items.find(x=>x.id===item.id)||item),'import-pin');pin.setAttribute('aria-label',`${isPinned(item)?'Unpin':'Pin for today'}: ${item.title}`);pin.setAttribute('aria-pressed',String(isPinned(item)));pin.disabled=this.blocked||(!isPinned(item)&&blockedBy);head.append(pin);}article.append(head);
+    if(active){const pin=button(isPinned(item)?'Unpin':'Pin for today',()=>this.togglePin(this.inbox.items.find(x=>x.id===item.id)||item),'import-pin');pin.setAttribute('aria-label',`${isPinned(item)?'Unpin':'Pin for today'}: ${item.title}`);pin.setAttribute('aria-pressed',String(isPinned(item)));pin.disabled=this.blocked||(!isPinned(item)&&blockedBy);head.append(pin);}article.append(head);article.append(element('p',this.actionDateLabel(item),{class:'import-last-action',title:'Latest saved edit or status change; otherwise the date added to Launchpad. Older notes may not have a recorded date.'}));
     const chips=element('div',undefined,{class:'import-chips'});
     if(item.personal)chips.append(element('span','My note',{class:'import-chip'}));if(item.status==='superseded')chips.append(element('span','Earlier import — inactive',{class:'import-chip'}));if(item.status==='dismissed')chips.append(element('span','Put aside',{class:'import-chip'}));
     chips.append(element('span',PRIORITIES[item.priority],{class:`import-chip priority-${item.priority||'unknown'}`}));if(item.nextAction)chips.append(element('span',NEXT_ACTIONS[item.nextAction],{class:'import-chip'}));
