@@ -21,6 +21,14 @@ export function linksIn(text) {
   return links.slice(0, 20);
 }
 
+export function workingNoteLinks(text) {
+  const labels=new Map();
+  for(const match of text.matchAll(/\[([^\]\n]+)\]\s*\((https:\/\/[^\s]+?)\)/g)) {
+    const url=safeUrl(match[2]);if(url)labels.set(url,match[1]);
+  }
+  return linksIn(text).map(url=>({url,label:labels.get(url)||url}));
+}
+
 const cleanLine = line => line.trim().replace(/^#{1,6}\s+/, '').replace(/^\*\*(.*?)\*\*$/, '$1');
 const isTitle = line => /^(?:Note\s*:\s*\S|Note Fw\S*\s*:|Fw(?:d)?\s*:)/i.test(line) && line.length < 300;
 const sections = /^(?:[\p{Extended_Pictographic}\uFE0F\s]*)(?:Today[’']s Priority Actions|Time-Sensitive Items|Important but Not Urgent|Waiting On|Email Summaries|Follow-Up Tasks and Priorities|Attachments and Links|Items That Can Be Ignored|Assistant Notes|Note Cleanup Suggestions|Tasks ChatGPT Can Help With Now)/u;

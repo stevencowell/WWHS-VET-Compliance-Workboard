@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {parseSummary, safeUrl, linksIn, validateInbox, mergeInbox, prepareTasks, taskSection} from '../morning-launchpad/assets/summary-core.mjs';
+import {parseSummary, safeUrl, linksIn, validateInbox, mergeInbox, prepareTasks, taskSection, workingNoteLinks} from '../morning-launchpad/assets/summary-core.mjs';
 
 test('summary priorities preserve exact titles and action links without duplicate follow-ups', () => {
   const input = `🧭 Today’s Priority Actions\n1. [Note : Assessment's schedule] — Confirm the schedule in [the document](https://example.org/edit?tab=t.0).\n🎯 Important but Not Urgent\n2. [Note : Equipment] — Review the equipment list.\n📋 Follow-Up Tasks and Priorities\n1. [Note : Assessment's schedule] — Confirm the schedule in [the document](https://example.org/edit?tab=t.0).\n⏳ Waiting On\n[Note : Prices] — Waiting on the supplier`;
@@ -251,4 +251,12 @@ test('working notes support long documents up to 200000 characters',()=>{
  const noteText='x'.repeat(200000);
  const restored=validateInbox(JSON.stringify({version:2,items:[{...item,noteText}]}));
  assert.equal(restored.items[0].noteText,noteText);
+});
+
+
+test('working note links preserve markdown labels, line breaks and plain URLs safely',()=>{
+ const url='https://docs.google.com/document/d/example/edit';
+ assert.deepEqual(workingNoteLinks(`[Showcase Action Plan]\n(${url})\n${url}\nhttps://example.org/file.pdf.`),[{url,label:'Showcase Action Plan'},{url:'https://example.org/file.pdf',label:'https://example.org/file.pdf'}]);
+ assert.deepEqual(workingNoteLinks('[Bad](javascript:alert(1)) https://user:password@example.org/'),[]);
+ assert.deepEqual(workingNoteLinks('No links'),[]);
 });
