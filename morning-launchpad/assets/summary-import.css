@@ -77,3 +77,17 @@ summary-import .import-tabs button[aria-pressed="true"]{background:#28699f;color
 :root[data-theme=dark] summary-import .import-tabs button[aria-pressed="true"]{background:#a9cfee;color:#12334e;border-color:#a9cfee}
 
 .import-footer{flex-wrap:wrap}.clear-notes-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}summary-import button.import-danger{color:#a12c2c;border-color:#c98989;background:transparent}summary-import button.import-danger:hover{background:#faeaea}:root[data-theme=dark] summary-import button.import-danger{color:#ffc5c5;border-color:#a96b6b}:root[data-theme=dark] summary-import button.import-danger:hover{background:#4a2929}
+
+/* Show only the action until the note is expanded. */
+summary-import .import-card{padding:0;overflow:hidden}
+summary-import .import-card>.import-card-disclosure{margin:0}
+summary-import .import-card-summary{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:20px;font:600 20px/1.5 Segoe UI,Arial,sans-serif;color:var(--ink);background:var(--accent-soft);cursor:pointer;list-style:none;border-left:5px solid var(--accent);overflow-wrap:anywhere}
+.import-card-summary::-webkit-details-marker{display:none}
+.import-card-summary-text{min-width:0;white-space:pre-wrap}
+.import-card-chevron{width:9px;height:9px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg);flex-shrink:0;margin:0 4px 5px}
+.import-card-disclosure[open]>.import-card-summary .import-card-chevron{transform:rotate(225deg);margin-top:8px}
+summary-import .import-card-summary:hover{filter:brightness(.96)}
+summary-import .import-card-summary:focus-visible{outline:3px solid var(--focus);outline-offset:-3px}
+.import-card-body{padding:18px;border-top:1px solid var(--line)}
+:root[data-theme=dark] summary-import .import-card-summary{background:#2b443b;color:#f4f7f1;border-left-color:#86b596}
+@media(max-width:700px){summary-import .import-card-summary{font-size:18px;padding:16px}.import-card-body{padding:12px}}

@@ -52,7 +52,7 @@ function dateLabel(date) {
 class SummaryImport extends HTMLElement {
   connectedCallback() {
     if(this.started)return;this.started=true;
-    this.view='ready';this.expanded=false;this.legacyRaw=null;this.blocked=false;this.raw=null;
+    this.openCards=new Set();this.view='ready';this.expanded=false;this.legacyRaw=null;this.blocked=false;this.raw=null;
     try {this.raw=localStorage.getItem(INBOX_KEY);this.inbox=validateInbox(this.raw);this.legacyRaw=localStorage.getItem(LEGACY_PLAN_KEY);} catch {this.blocked=true;this.inbox=validateInbox(null);}
     this.build();
     this.onStorage=event=>{if(event.key===INBOX_KEY||event.key===null){this.blocked=true;this.renderItems();this.say('This review list changed in another tab. Reload before making changes.',true);}};
@@ -141,7 +141,7 @@ class SummaryImport extends HTMLElement {
     choices.append(desktop,web);this.chatGPTChooser.append(choices,element('p','If the desktop app does not open, choose Web app or open ChatGPT from your Start menu.',{class:'import-help'}),button('Cancel',()=>this.chatGPTChooser.close()));this.append(this.chatGPTChooser);
   }
   showCalendar(open){this.taskArea.hidden=open;this.calendar.hidden=!open;this.calendarToggle.textContent=open?'Back to tasks':'Calendar';this.calendarToggle.setAttribute('aria-pressed',String(open));if(open)this.calendar.setTasks(this.inbox.items);}
-  openCalendarTask(id){const item=this.inbox.items.find(x=>x.id===id);if(!item)return;this.showCalendar(false);this.view=item.status==='done'?'done':item.personal&&!item.action?'notes':isPinned(item)?'ready':bucket(item);this.expanded=true;this.renderItems();const card=[...this.list.querySelectorAll('article')].find(x=>x.dataset.taskKey===(item.taskKey||item.id));card?.scrollIntoView({behavior:'smooth',block:'center'});}
+  openCalendarTask(id){const item=this.inbox.items.find(x=>x.id===id);if(!item)return;this.openCards.add(item.id);this.showCalendar(false);this.view=item.status==='done'?'done':item.personal&&!item.action?'notes':isPinned(item)?'ready':bucket(item);this.expanded=true;this.renderItems();const card=[...this.list.querySelectorAll('article')].find(x=>x.dataset.taskKey===(item.taskKey||item.id));card?.scrollIntoView({behavior:'smooth',block:'center'});}
   buildNoteEditor(){
     this.noteEditor=element('details',undefined,{class:'import-input'});this.noteEditor.append(element('summary','Write your own note'));
     this.noteForm=element('form');this.noteInputs={};
@@ -226,7 +226,7 @@ class SummaryImport extends HTMLElement {
     if(item.waitingOn)article.append(element('p',`Waiting on: ${item.waitingOn}`,{class:'import-help'}));
     if(item.instruction){const tasks=element('section',undefined,{class:'import-instruction','aria-label':'Tasks'});tasks.append(element('h3','Tasks'),element('p',item.instruction));article.append(tasks);}
     const action=element('textarea',item.action,{class:'import-action',rows:'3',maxlength:'800','aria-label':`Action for ${item.title}`});action.disabled=this.blocked||!active;
-    action.addEventListener('change',()=>{if(!action.value.trim()){action.value=item.action;this.say('Keep a short action, or put the task aside.',true);return;}this.updateItem(item.id,{action:action.value.trim()});});if(item.action)article.append(action);if(item.personal&&item.source)article.append(element('pre',item.source,{class:'import-source'}));
+    action.addEventListener('change',()=>{if(!action.value.trim()){action.value=item.action;this.say('Keep a short action, or put the task aside.',true);return;}if(this.updateItem(item.id,{action:action.value.trim()}))article.querySelector('.import-card-summary-text').textContent=action.value.trim();});if(item.action)article.append(action);if(item.personal&&item.source)article.append(element('pre',item.source,{class:'import-source'}));
     if(!item.personal){
       const search=element('details',undefined,{class:'import-email-search'});
       search.append(element('summary','Email search text'));
@@ -271,7 +271,15 @@ class SummaryImport extends HTMLElement {
       const done=button('Mark done',()=>this.setProgress(item,'done'));done.disabled=this.blocked;controls.append(done);
       if(item.status==='review'){const dismiss=button('Put aside',()=>{this.updateItem(item.id,{status:'dismissed',pinnedDate:null},true);});dismiss.disabled=this.blocked;controls.append(dismiss);}
     }else if(!item.duplicateOf&&item.status!=='note'){const restore=button('Review again',()=>this.setProgress(item,'review'));restore.disabled=this.blocked;controls.append(restore);}
-    article.append(controls);return article;
+    article.append(controls);
+    const disclosure=element('details',undefined,{class:'import-card-disclosure'});
+    disclosure.open=this.openCards.has(item.id);
+    const summary=element('summary',undefined,{class:'import-card-summary'});
+    summary.append(element('span',item.action||item.instruction||item.title,{class:'import-card-summary-text'}),element('span','',{class:'import-card-chevron','aria-hidden':'true'}));
+    const body=element('div',undefined,{class:'import-card-body'});
+    body.append(...article.childNodes);disclosure.append(summary,body);article.append(disclosure);
+    disclosure.addEventListener('toggle',()=>{if(!disclosure.isConnected)return;if(disclosure.open)this.openCards.add(item.id);else this.openCards.delete(item.id);});
+    return article;
   }
   renderItems(){
     const today=todaySydney();const active=this.inbox.items.filter(x=>['review','added'].includes(x.status));
