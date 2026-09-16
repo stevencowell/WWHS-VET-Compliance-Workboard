@@ -1,7 +1,7 @@
 import {emailSearchText} from './email-search.mjs?v=1';
 import './email-capture.mjs?v=4';
 import './launchpad-calendar.mjs?v=9';
-import {INBOX_KEY, LIMIT, parseSummary, validateInbox, mergeInbox, safeUrl, PRIORITIES, NEXT_ACTIONS, EDITABLE, enrich, todaySydney, taskSection, rank, nextDate, consolidateDuplicates, LEGACY_PLAN_KEY, isPinned, migrateToPins, recordNoteAction} from './summary-core.mjs?v=13';
+import {INBOX_KEY, LIMIT, parseSummary, validateInbox, mergeInbox, safeUrl, PRIORITIES, NEXT_ACTIONS, EDITABLE, enrich, todaySydney, taskSection, rank, nextDate, consolidateDuplicates, LEGACY_PLAN_KEY, isPinned, migrateToPins, recordNoteAction} from './summary-core.mjs?v=14';
 
 function element(tag, text, attributes = {}) {
   const node = document.createElement(tag);
@@ -99,7 +99,7 @@ class SummaryImport extends HTMLElement {
     this.briefDate=element('p','',{class:'import-help'});this.briefText=element('pre','',{class:'import-briefing'});
     this.brief.append(this.briefDate,button('Download briefing',()=>download(this.inbox.briefing||'','launchpad-briefing.md','text/markdown')),this.briefText);this.append(this.brief);
     this.nav=element('nav',undefined,{'aria-label':'Task views',class:'import-tabs'});this.tabs={};
-    for(const [key,label]of [['ready','Today'],['upcoming','Coming up'],['waiting','Waiting'],['later','Later'],['notes','My notes'],['done','Done'],['dismissed','Put aside']]){const b=button(label,()=>{this.view=key;this.expanded=false;this.renderItems();});this.tabs[key]={button:b,label};this.nav.append(b);}this.append(this.nav);
+    for(const [key,label]of [['ready','Today'],['upcoming','Soon'],['waiting','Waiting'],['notes','My Notes'],['done','Done']]){const b=button(label,()=>{this.view=key;this.expanded=false;this.renderItems();});this.tabs[key]={button:b,label};this.nav.append(b);}this.append(this.nav);
     this.viewHelp=element('p','',{class:'import-help'});this.list=element('div',undefined,{class:'import-list'});this.append(this.viewHelp,this.list);
     this.earlier=element('details',undefined,{class:'import-other'});this.earlierHeading=element('summary');this.earlierList=element('div',undefined,{class:'import-list'});this.earlier.append(this.earlierHeading,element('p','The AI task file replaces these basic entries. Their text and edits are kept here; restore one only if it contains additional work.',{class:'import-help'}),this.earlierList);this.append(this.earlier);
     const footer=element('div',undefined,{class:'import-footer'});footer.append(element('p','Saved in this browser. Export your task backup to keep progress or move to another computer. Email and Evernote are not changed.',{class:'import-help'}),button('Export task backup',()=>{const raw=this.blocked?this.raw:JSON.stringify(this.inbox,null,2);if(raw===null){this.say('There is no saved task list to export.');return;}download(raw,'launchpad-task-backup.json');}));if(this.legacyRaw!==null)footer.append(button('Export older daily plans',()=>download(this.legacyRaw,'launchpad-older-daily-plans.json')));this.clearNotesButton=button('Clear all notes',()=>this.openClearNotes(),'import-danger');footer.append(this.clearNotesButton);this.append(footer);
@@ -112,7 +112,7 @@ class SummaryImport extends HTMLElement {
   buildClearNotesDialog(){
     this.clearDialog=element('dialog',undefined,{class:'chatgpt-chooser','aria-labelledby':'clear-notes-title'});
     this.clearDialog.append(element('h2','Clear all notes?',{id:'clear-notes-title'}));
-    this.clearDescription=element('p');this.clearDialog.append(this.clearDescription,element('p','This removes saved notes and tasks from every section, including Done, Put aside and Earlier imports, plus the processed briefing. Task dates disappear from Calendar. Imported lessons and diary events stay. Evernote and Outlook are not changed.'),element('p','This cannot be undone here. Export a backup first if you may need these notes again.'));
+    this.clearDescription=element('p');this.clearDialog.append(this.clearDescription,element('p','This removes saved notes and tasks from every section, including Done, My Notes and Earlier imports, plus the processed briefing. Task dates disappear from Calendar. Imported lessons and diary events stay. Evernote and Outlook are not changed.'),element('p','This cannot be undone here. Export a backup first if you may need these notes again.'));
     const actions=element('div',undefined,{class:'clear-notes-actions'});
     const cancel=button('Cancel',()=>this.clearDialog.close());cancel.setAttribute('autofocus','');
     actions.append(cancel,button('Export backup first',()=>download(JSON.stringify(this.inbox,null,2),'launchpad-task-backup.json')),button('Yes, clear all notes',()=>{
@@ -199,6 +199,16 @@ class SummaryImport extends HTMLElement {
     input.value=item[key]||'';input.disabled=this.blocked;
     input.addEventListener('change',()=>{const value=type==='date'?(input.value||null):input.value.trim();this.updateItem(item.id,{[key]:value},true);});wrapper.append(input);return wrapper;
   }
+  deleteNote(item){
+    if(this.blocked)return;
+    const dependents=this.inbox.items.filter(x=>x.dependsOn.includes(item.taskKey));
+    const warning=dependents.length?`\n\n${dependents.length} other task(s) depend on this item and will show a missing prerequisite.`:'';
+    if(!window.confirm(`Delete “${item.title}” from Daily Launchpad?\n\nThis removes this card and its calendar dates. It does not delete anything in Evernote or Outlook. Export a task backup first if you need a copy. Reimporting the source can add it again.${warning}`))return;
+    if(!this.persist({...this.inbox,items:this.inbox.items.filter(x=>x.id!==item.id)}))return;
+    this.openCards.delete(item.id);
+    if(this.editingNote===item.id){this.editingNote=null;this.noteForm.reset();this.noteEditor.open=false;}
+    this.renderItems();this.say(`Deleted “${item.title}” from Daily Launchpad.`);
+  }
   setProgress(item,status){
     if(this.updateItem(item.id,{status:status==='review'&&!item.action?'note':status,pinnedDate:null,preserveDoneOnce:false},true)){if(status!=='done'){this.view=taskSection(this.inbox.items.find(x=>x.id===item.id));this.renderItems();this.nav.scrollIntoView({behavior:'smooth',block:'start'});}this.say(status==='done'?`Marked done: ${item.title}. Saved in Done; you’re still in this section.`:`Restored: ${item.title}.`);}
   }
@@ -254,7 +264,7 @@ class SummaryImport extends HTMLElement {
     const quickControls=element('div',undefined,{class:'import-card-controls import-card-quick-controls','aria-label':`Quick actions for ${item.title}`});
     if(!item.duplicateOf&&item.status!=='superseded'){
       const group=element('select',undefined,{'aria-label':`Move to section for ${item.title}`});
-      const options=[['ready','Today'],['upcoming','Coming up'],['waiting','Waiting'],['later','Later'],['notes','My notes'],['done','Done'],['dismissed','Put aside']];
+      const options=[['ready','Today'],['upcoming','Soon'],['waiting','Waiting'],['notes','My Notes'],['done','Done']];
       for(const[value,label]of options)group.append(element('option',label,{value}));
       const current=taskSection(item);
       group.value=current;group.disabled=this.blocked;
@@ -270,8 +280,9 @@ class SummaryImport extends HTMLElement {
     if(active){
 
       const done=button('Mark done',()=>this.setProgress(item,'done'));done.disabled=this.blocked;quickControls.append(done);
-      if(item.status==='review'){const dismiss=button('Put aside',()=>{this.updateItem(item.id,{status:'dismissed',pinnedDate:null},true);});dismiss.disabled=this.blocked;controls.append(dismiss);}
+
     }else if(!item.duplicateOf&&item.status!=='note'){const restore=button('Review again',()=>this.setProgress(item,'review'));restore.disabled=this.blocked;controls.append(restore);}
+    const remove=button('Delete note',()=>this.deleteNote(item),'import-danger');remove.disabled=this.blocked;quickControls.append(remove);
     if(controls.childElementCount)article.append(controls);
     const disclosure=element('details',undefined,{class:'import-card-disclosure'});
     disclosure.open=this.openCards.has(item.id);
@@ -286,9 +297,9 @@ class SummaryImport extends HTMLElement {
     const today=todaySydney();const active=this.inbox.items.filter(x=>['review','added'].includes(x.status));
     const inView=(x,key)=>taskSection(x,today)===key;
     for(const[key,{button:b,label}]of Object.entries(this.tabs)){b.textContent=`${label} (${this.inbox.items.filter(x=>inView(x,key)).length})`;b.setAttribute('aria-pressed',String(this.view===key));}
-    const sorted=this.inbox.items.filter(x=>inView(x,this.view)).sort((a,b)=>Number(isPinned(b,today))-Number(isPinned(a,today))||(this.view==='upcoming'?nextDate(a).localeCompare(nextDate(b))||rank(b,today)-rank(a,today):rank(b,today)-rank(a,today)));
+    const sorted=this.inbox.items.filter(x=>inView(x,this.view)).sort((a,b)=>Number(isPinned(b,today))-Number(isPinned(a,today))||(this.view==='upcoming'?(nextDate(a)||'9999-12-31').localeCompare(nextDate(b)||'9999-12-31')||rank(b,today)-rank(a,today):rank(b,today)-rank(a,today)));
     this.list.replaceChildren();this.nav.hidden=!this.inbox.items.length;
-    this.viewHelp.textContent={ready:'Pin for today saves a task at the top immediately. Pins reset each day; the tasks stay in your list.',upcoming:'Scheduled dates and items moved here for upcoming work. Add a date when it is known.',waiting:'Replies and prerequisites. Add a follow-up date when you want an item to return to Today.',later:'Useful work you have chosen to leave for later.',notes:'Your own notes and items you have moved here for reference.',done:'Completed tasks are saved here. Review again returns a task to your active work.',dismissed:'Tasks you put aside are saved here. Review again restores them.'}[this.view];
+    this.viewHelp.textContent={ready:'Pin for today saves a task at the top immediately. Pins reset each day; the tasks stay in your list.',upcoming:'Upcoming and later work. Dated tasks appear first; add a date when it is known.',waiting:'Replies and prerequisites. Add a follow-up date when you want an item to return to Today.',later:'Useful work you have chosen to leave for later.',notes:'Your own notes, reference items and previously put-aside work.',done:'Completed tasks are saved here. Review again returns a task to your active work.',dismissed:'Tasks you put aside are saved here. Review again restores them.'}[this.view];
     if(!sorted.length)this.list.append(element('p',this.inbox.items.length?'Nothing in this view.':'Import your processed task file to begin.',{class:'import-empty'}));
     const shown=this.view==='ready'&&!this.expanded?sorted.slice(0,Math.max(5,sorted.filter(x=>isPinned(x,today)).length)):sorted;shown.forEach(x=>this.list.append(this.card(x)));
     if(shown.length<sorted.length)this.list.append(button(`Show ${sorted.length-shown.length} more actions`,()=>{this.expanded=true;this.renderItems();}));

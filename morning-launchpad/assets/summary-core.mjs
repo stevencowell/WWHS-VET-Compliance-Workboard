@@ -211,11 +211,13 @@ export function bucket(item, today=todaySydney()) {
 }
 // One home per item; calendar dates remain independent of task sections.
 export function taskSection(item,today=todaySydney()) {
-  if (['done','dismissed','superseded'].includes(item.status)) return item.status;
-  if (item.sectionOverride) return item.sectionOverride;
+  if (['done','superseded'].includes(item.status)) return item.status;
+  if (item.status==='dismissed') return 'notes';
+  if (item.sectionOverride) return item.sectionOverride==='later'?'upcoming':item.sectionOverride;
   if (item.status==='note' || (item.personal && !item.action)) return 'notes';
   if (isPinned(item,today)) return 'ready';
-  return bucket(item,today);
+  const section=bucket(item,today);
+  return section==='later'?'upcoming':section;
 }
 export function rank(item,today=todaySydney()) {
   return item.score + (item.dueDate && item.dueDate<=today ? 1000 : 0) + (item.followUpDate && item.followUpDate<=today ? 500 : 0);

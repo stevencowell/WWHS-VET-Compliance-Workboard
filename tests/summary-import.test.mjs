@@ -220,10 +220,11 @@ test('each task has one section across dates, pins, personal notes and completio
     [{...base,group:'later',dueDate:'2026-10-01'},'upcoming'],
     [{...base,personal:true,group:'ready'},'ready'],
     [{...base,personal:true,action:'',status:'note'},'notes'],
-    [{...base,sectionOverride:'later',dueDate:today},'later'],
+    [{...base,sectionOverride:'later',dueDate:today},'upcoming'],
     [{...base,status:'done',sectionOverride:'ready',dueDate:today},'done'],
-    [{...base,status:'dismissed',sectionOverride:'waiting'},'dismissed'],
-    [{...base,status:'superseded'},'superseded']
+    [{...base,status:'dismissed',sectionOverride:'waiting'},'notes'],
+    [{...base,status:'superseded'},'superseded'],
+    [{...base,group:'later'},'upcoming']
   ];
   for(const [item,expected] of cases){
     assert.equal(taskSection(item,today),expected);
