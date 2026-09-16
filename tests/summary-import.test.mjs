@@ -194,3 +194,16 @@ test('original email links are optional, safe and preserved with user edits on r
   assert.throws(()=>validateInbox(JSON.stringify({version:2,items:[{...old,originalEmailUrl:bad}]})));
  }
 });
+
+test('manual sections survive refresh and reimport without discarding dates', async()=>{
+ const {enrich,bucket}=await import('../morning-launchpad/assets/summary-core.mjs');
+ const item=enrich({id:'manual',taskKey:'manual',title:'Manual move',action:'Review',dueDate:'2026-09-01',sectionOverride:'later',dirty:['sectionOverride']});
+ assert.equal(bucket(item,'2026-09-16'),'later');
+ const restored=validateInbox(JSON.stringify({version:2,items:[item]})).items[0];
+ assert.equal(restored.sectionOverride,'later');
+ const merged=mergeInbox([restored],[{...item,sectionOverride:'',dirty:[]}]).items[0];
+ assert.equal(merged.sectionOverride,'later');
+ assert.equal(merged.dueDate,'2026-09-01');
+ assert.equal(bucket({...item,sectionOverride:'upcoming',dueDate:null}),'upcoming');
+ assert.throws(()=>validateInbox(JSON.stringify({version:2,items:[{...item,sectionOverride:'unknown'}]})));
+});

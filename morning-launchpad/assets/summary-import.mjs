@@ -1,7 +1,7 @@
 import {emailSearchText} from './email-search.mjs?v=1';
-import './email-capture.mjs?v=3';
-import './launchpad-calendar.mjs?v=8';
-import {INBOX_KEY, LIMIT, parseSummary, validateInbox, mergeInbox, safeUrl, PRIORITIES, NEXT_ACTIONS, EDITABLE, enrich, todaySydney, bucket, rank, nextDate, consolidateDuplicates, LEGACY_PLAN_KEY, isPinned, migrateToPins, recordNoteAction} from './summary-core.mjs?v=11';
+import './email-capture.mjs?v=4';
+import './launchpad-calendar.mjs?v=9';
+import {INBOX_KEY, LIMIT, parseSummary, validateInbox, mergeInbox, safeUrl, PRIORITIES, NEXT_ACTIONS, EDITABLE, enrich, todaySydney, bucket, rank, nextDate, consolidateDuplicates, LEGACY_PLAN_KEY, isPinned, migrateToPins, recordNoteAction} from './summary-core.mjs?v=12';
 
 function element(tag, text, attributes = {}) {
   const node = document.createElement(tag);
@@ -178,12 +178,12 @@ class SummaryImport extends HTMLElement {
     input.addEventListener('change',()=>{const value=type==='date'?(input.value||null):input.value.trim();this.updateItem(item.id,{[key]:value},true);});wrapper.append(input);return wrapper;
   }
   setProgress(item,status){
-    if(this.updateItem(item.id,{status,pinnedDate:null,preserveDoneOnce:false},true)){if(status!=='done'){this.view=item.personal?'notes':'ready';this.renderItems();this.nav.scrollIntoView({behavior:'smooth',block:'start'});}this.say(status==='done'?`Marked done: ${item.title}. Saved in Done; you’re still in this section.`:`Restored: ${item.title}.`);}
+    if(this.updateItem(item.id,{status:status==='review'&&!item.action?'note':status,pinnedDate:null,preserveDoneOnce:false},true)){if(status!=='done'){this.view=item.sectionOverride||(item.personal?'notes':'ready');this.renderItems();this.nav.scrollIntoView({behavior:'smooth',block:'start'});}this.say(status==='done'?`Marked done: ${item.title}. Saved in Done; you’re still in this section.`:`Restored: ${item.title}.`);}
   }
   togglePin(item){
     const pinned=isPinned(item);
     if(!pinned&&item.dependsOn.some(key=>!this.inbox.items.some(x=>x.taskKey===key&&x.status==='done'))){this.say('Complete the prerequisite before pinning this task.');return;}
-    if(this.updateItem(item.id,{pinnedDate:pinned?null:todaySydney(),status:'review'},true)){
+    if(this.updateItem(item.id,{pinnedDate:pinned?null:todaySydney(),status:'review',sectionOverride:''},true)){
       if(!pinned)this.view='ready';this.renderItems();this.say(pinned?`Unpinned: ${item.title}. The task is still in your list.`:`Pinned for today: ${item.title}. Saved at the top of Today.`);this.nav.scrollIntoView({behavior:'smooth',block:'start'});
       const card=[...this.list.querySelectorAll('article')].find(x=>x.dataset.taskKey===(item.taskKey||item.id));card?.querySelector('.import-pin')?.focus({preventScroll:true});
     }
@@ -229,9 +229,23 @@ class SummaryImport extends HTMLElement {
     if(active){const linkLabel=element('label','Work link');const url=element('input',undefined,{type:'url',value:item.url,placeholder:'https://… (optional)','aria-label':`Work link for ${item.title}`,maxlength:'2048'});url.disabled=this.blocked;url.addEventListener('change',()=>{if(url.value&&!safeUrl(url.value)){url.value=item.url;this.say('Use a full https:// link.',true);return;}this.updateItem(item.id,{url:url.value.trim()});});linkLabel.append(url);source.append(linkLabel);}const emailLabel=element('label','Original email link (optional)');const emailUrl=element('input',undefined,{type:'url',value:item.originalEmailUrl,placeholder:'https://…','aria-label':`Original email link for ${item.title}`,maxlength:'2048'});emailUrl.disabled=this.blocked;emailUrl.addEventListener('change',()=>{const value=emailUrl.value.trim();if(value&&!safeUrl(value)){emailUrl.value=item.originalEmailUrl;this.say('Use a full https:// link for the original email.',true);return;}this.updateItem(item.id,{originalEmailUrl:value},true);});emailLabel.append(emailUrl);source.append(emailLabel);article.append(source);
     if(item.help){const help=element('details');help.append(element('summary','ChatGPT can help with this'));const prompt=`${item.help}\n\nTask: [${item.title}] — ${item.action}\nTasks: ${item.instruction||'None added'}\n\nSource:\n${item.source}\n\nLinks:\n${item.links.join('\n')}\n\nPrepare the work here. Do not send messages or make external changes.`;const actions=element('div',undefined,{class:'help-request-actions'});actions.append(button('Copy help request',async event=>{const control=event.currentTarget;try{await navigator.clipboard.writeText(prompt);copyFeedback(control);this.say('Help request copied. Open ChatGPT and paste it into the chat.');}catch{copyFeedback(control,false);const text=help.querySelector('textarea');text?.focus();text?.select();this.say('Copy the selected request with Ctrl + C.');}}),button('Open ChatGPT',()=>this.chatGPTChooser.showModal()));help.append(element('p',item.help),actions,element('textarea',prompt,{rows:'3',readonly:'','aria-label':`Help request for ${item.title}`}));article.append(help);}
     const controls=element('div',undefined,{class:'import-card-controls'});
+    if(!item.duplicateOf&&item.status!=='superseded'){
+      const group=element('select',undefined,{'aria-label':`Move to section for ${item.title}`});
+      const options=[['ready','Today'],['upcoming','Coming up'],['waiting','Waiting'],['later','Later'],['notes','My notes'],['done','Done'],['dismissed','Put aside']];
+      for(const[value,label]of options)group.append(element('option',label,{value}));
+      const current=['done','dismissed'].includes(item.status)?item.status:item.sectionOverride||(item.personal&&!item.action?'notes':isPinned(item)?'ready':bucket(item));
+      group.value=current;group.disabled=this.blocked;
+      group.addEventListener('change',()=>{
+        const target=group.value;
+        if(!item.action&& !['notes','done','dismissed'].includes(target)){group.value=current;this.say('Add a next action using Edit my note before moving this reference note into a task section.',true);return;}
+        const changes={status:['done','dismissed'].includes(target)?target:target==='notes'&&!item.action?'note':'review',sectionOverride:['done','dismissed'].includes(target)?item.sectionOverride:target,pinnedDate:null,preserveDoneOnce:false};
+        if(['ready','later','waiting'].includes(target))changes.group=target;
+        if(this.updateItem(item.id,changes,true))this.say(`Moved “${item.title}” to ${options.find(x=>x[0]===target)[1]}.`);
+      });controls.append(group);
+    }
     if(item.personal&&['note','review'].includes(item.status))controls.append(button('Edit my note',()=>this.editPersonal(item)));
     if(active){
-      if(item.status==='review'){const group=element('select',undefined,{'aria-label':`Review group for ${item.title}`});for(const[value,label]of [['ready','Consider for today'],['later','Later'],['waiting','Waiting on someone']])group.append(element('option',label,{value}));group.value=item.group;group.disabled=this.blocked;group.addEventListener('change',()=>{this.updateItem(item.id,{group:group.value},true);});controls.append(group);}
+
       const done=button('Mark done',()=>this.setProgress(item,'done'));done.disabled=this.blocked;controls.append(done);
       if(item.status==='review'){const dismiss=button('Put aside',()=>{this.updateItem(item.id,{status:'dismissed',pinnedDate:null},true);});dismiss.disabled=this.blocked;controls.append(dismiss);}
     }else if(!item.duplicateOf&&item.status!=='note'){const restore=button('Review again',()=>this.setProgress(item,'review'));restore.disabled=this.blocked;controls.append(restore);}
@@ -239,11 +253,11 @@ class SummaryImport extends HTMLElement {
   }
   renderItems(){
     const today=todaySydney();const active=this.inbox.items.filter(x=>['review','added'].includes(x.status));
-    const inView=(x,key)=>key==='notes'?x.personal&&['note','review','added'].includes(x.status):['done','dismissed'].includes(key)?x.status===key:!['review','added'].includes(x.status)?false:key==='upcoming'?Boolean(nextDate(x)):key==='waiting'?x.group==='waiting':(isPinned(x,today)?'ready':bucket(x,today))===key;
+    const inView=(x,key)=>x.sectionOverride&&['review','added','note'].includes(x.status)?x.sectionOverride===key:key==='notes'?x.personal&&['note','review','added'].includes(x.status):['done','dismissed'].includes(key)?x.status===key:!['review','added'].includes(x.status)?false:key==='upcoming'?Boolean(nextDate(x)):key==='waiting'?x.group==='waiting':(isPinned(x,today)?'ready':bucket(x,today))===key;
     for(const[key,{button:b,label}]of Object.entries(this.tabs)){b.textContent=`${label} (${this.inbox.items.filter(x=>inView(x,key)).length})`;b.setAttribute('aria-pressed',String(this.view===key));}
     const sorted=this.inbox.items.filter(x=>inView(x,this.view)).sort((a,b)=>Number(isPinned(b,today))-Number(isPinned(a,today))||(this.view==='upcoming'?nextDate(a).localeCompare(nextDate(b))||rank(b,today)-rank(a,today):rank(b,today)-rank(a,today)));
     this.list.replaceChildren();this.nav.hidden=!this.inbox.items.length;
-    this.viewHelp.textContent={ready:'Pin for today saves a task at the top immediately. Pins reset each day; the tasks stay in your list.',upcoming:'Deadlines, event dates and scheduled follow-ups. Dates come from the source or your edits.',waiting:'Replies and prerequisites. Add a follow-up date when you want an item to return to Today.',later:'Useful work you have chosen to leave for later.',notes:'Your own notes. Use Edit my note to add details or turn a reference note into an action.',done:'Completed tasks are saved here. Review again returns a task to your active work.',dismissed:'Tasks you put aside are saved here. Review again restores them.'}[this.view];
+    this.viewHelp.textContent={ready:'Pin for today saves a task at the top immediately. Pins reset each day; the tasks stay in your list.',upcoming:'Scheduled dates and items moved here for upcoming work. Add a date when it is known.',waiting:'Replies and prerequisites. Add a follow-up date when you want an item to return to Today.',later:'Useful work you have chosen to leave for later.',notes:'Your own notes and items you have moved here for reference.',done:'Completed tasks are saved here. Review again returns a task to your active work.',dismissed:'Tasks you put aside are saved here. Review again restores them.'}[this.view];
     if(!sorted.length)this.list.append(element('p',this.inbox.items.length?'Nothing in this view.':'Import your processed task file to begin.',{class:'import-empty'}));
     const shown=this.view==='ready'&&!this.expanded?sorted.slice(0,Math.max(5,sorted.filter(x=>isPinned(x,today)).length)):sorted;shown.forEach(x=>this.list.append(this.card(x)));
     if(shown.length<sorted.length)this.list.append(button(`Show ${sorted.length-shown.length} more actions`,()=>{this.expanded=true;this.renderItems();}));
