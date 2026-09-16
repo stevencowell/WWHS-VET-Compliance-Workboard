@@ -1,5 +1,5 @@
 import './email-capture.mjs?v=1';
-import './launchpad-calendar.mjs?v=4';
+import './launchpad-calendar.mjs?v=5';
 import {INBOX_KEY, LIMIT, parseSummary, validateInbox, mergeInbox, safeUrl, PRIORITIES, NEXT_ACTIONS, EDITABLE, enrich, todaySydney, bucket, rank, nextDate, consolidateDuplicates, LEGACY_PLAN_KEY, isPinned, migrateToPins} from './summary-core.mjs?v=9';
 
 function element(tag, text, attributes = {}) {
@@ -48,10 +48,11 @@ class SummaryImport extends HTMLElement {
     this.build();
     this.onStorage=event=>{if(event.key===INBOX_KEY||event.key===null){this.blocked=true;this.renderItems();this.say('This review list changed in another tab. Reload before making changes.',true);}};
     window.addEventListener('storage',this.onStorage);
+    this.openToday=()=>{this.showCalendar(true);this.calendar.openDate(todaySydney(),'day');this.calendar.scrollIntoView({behavior:'smooth',block:'start'});};window.addEventListener('launchpad:open-today',this.openToday);
     this.syncPlans();this.renderItems();this.displayDate=todaySydney();this.dayTimer=setInterval(()=>{const date=todaySydney();if(date!==this.displayDate){this.displayDate=date;this.renderItems();}},30000);
     if(this.blocked)this.say('Your saved review list could not be read. It is untouched. Export a copy before recovering it.',true);
   }
-  disconnectedCallback(){clearInterval(this.dayTimer);window.removeEventListener('storage',this.onStorage);this.started=false;}
+  disconnectedCallback(){window.removeEventListener('launchpad:open-today',this.openToday);clearInterval(this.dayTimer);window.removeEventListener('storage',this.onStorage);this.started=false;}
   persist(next) {
     try {
       if(this.blocked||localStorage.getItem(INBOX_KEY)!==this.raw)throw new Error('The review list changed in another tab. Reload before saving.');

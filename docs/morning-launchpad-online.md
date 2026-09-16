@@ -61,3 +61,7 @@ Update cache identifiers when changing published modules and refresh `docs/morni
 ## ChatGPT help launcher
 
 Each **Copy help request** control has an adjacent **Open ChatGPT** button. Its native dialog offers the web at `https://chatgpt.com/` or an attempted desktop handoff via `chatgpt://`. The desktop protocol is not confirmed by the available official documentation or on Steve’s Windows installation; the dialog retains a web fallback and Start-menu guidance. Requests are copied separately and are never embedded in launch URLs or automatically sent. The popup follows the current theme and supports Escape/Cancel.
+
+## Today’s lessons beside the greeting
+
+The welcome panel replaces the decorative sunrise with a read-only list of today’s imported Sentral lessons and duties. It uses the same calendar storage and timetable classification, sorted by start time, and shows times, class codes, subject names, periods and rooms. Entries and the Open today’s calendar link open Day view. The panel refreshes after calendar saves, browser storage events and Sydney-date rollover (30-second interval); it never writes or duplicates events. Empty and unreadable timetable states are explicit. On narrow screens it stacks below the greeting.
