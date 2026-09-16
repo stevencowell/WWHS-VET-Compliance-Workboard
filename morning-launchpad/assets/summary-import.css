@@ -116,3 +116,5 @@ summary-import .import-heading-actions button:hover{background:#819887;border-co
 .rich-note-editor a{color:var(--accent);text-decoration:underline;cursor:pointer}
 .rich-note-editor p,.rich-note-editor div{margin:0 0 .65em}.rich-note-editor ul,.rich-note-editor ol{padding-left:24px}.rich-note-editor pre{white-space:pre-wrap}
 .note-formatting{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.note-formatting button{font-size:13px;padding:6px 12px}
+
+.note-search{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:18px 0 8px}.note-search label{font-weight:650}.note-search input{flex:1;min-width:180px;padding:12px 14px;min-height:44px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);font:inherit}.note-search button{font-size:14px}@media(max-width:600px){.note-search label{flex-basis:100%}}

@@ -338,3 +338,12 @@ export function recordNoteAction(item, changes, day=todaySydney()) {
  const changed=Object.entries(changes).some(([key,value])=>item[key]!==value);
  return changed ? {...item,...changes,lastActionOn:day} : item;
 }
+
+// Search user-facing card content, never internal IDs or migration metadata.
+export function matchesNoteSearch(item,query){
+ const normal=value=>String(value||'').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+ const terms=normal(query).trim().split(/\s+/).filter(Boolean);
+ const fields=['title','action','noteText','source','instruction','help','reason','owner','waitingOn','dateNote','dueDate','eventDate','followUpDate','url','originalEmailUrl'];
+ const text=normal([...fields.map(key=>item[key]),...(item.links||[]),...(item.relatedTitles||[]),PRIORITIES[item.priority],NEXT_ACTIONS[item.nextAction],...(item.noteHtml||'').matchAll(/href=["']([^"']+)["']/g)].map(value=>Array.isArray(value)?value[1]:value).join(' '));
+ return terms.every(term=>text.includes(term));
+}

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {parseSummary, safeUrl, linksIn, validateInbox, mergeInbox, prepareTasks, taskSection, workingNoteLinks} from '../morning-launchpad/assets/summary-core.mjs';
+import {parseSummary, safeUrl, linksIn, validateInbox, mergeInbox, prepareTasks, taskSection, workingNoteLinks, matchesNoteSearch} from '../morning-launchpad/assets/summary-core.mjs';
 
 test('summary priorities preserve exact titles and action links without duplicate follow-ups', () => {
   const input = `🧭 Today’s Priority Actions\n1. [Note : Assessment's schedule] — Confirm the schedule in [the document](https://example.org/edit?tab=t.0).\n🎯 Important but Not Urgent\n2. [Note : Equipment] — Review the equipment list.\n📋 Follow-Up Tasks and Priorities\n1. [Note : Assessment's schedule] — Confirm the schedule in [the document](https://example.org/edit?tab=t.0).\n⏳ Waiting On\n[Note : Prices] — Waiting on the supplier`;
@@ -269,4 +269,12 @@ test('rich note formatting survives backups and reimports',()=>{
  assert.equal(restored.noteHtml,edited.noteHtml);
  assert.equal(mergeInbox([restored],[item]).items[0].noteHtml,edited.noteHtml);
  assert.throws(()=>validateInbox(JSON.stringify({version:2,items:[{...edited,noteHtml:23}]})));
+});
+
+
+test('note search covers full card content and requires all keywords',()=>{
+ const item={title:'Showcase',action:'Prepare display',noteText:'Draft email to TAS staff',source:'Original email about student projects',instruction:'Check equipment',links:['https://example.org/plan'],noteHtml:'<a href="https://docs.google.com/unique-file">Plan</a>',id:'secret-internal-id'};
+ for(const query of ['SHOWCASE','draft staff','student projects','equipment','unique-file','example.org'])assert.equal(matchesNoteSearch(item,query),true);
+ for(const query of ['draft missing','secret-internal-id'])assert.equal(matchesNoteSearch(item,query),false);
+ assert.equal(matchesNoteSearch(item,''),true);
 });
