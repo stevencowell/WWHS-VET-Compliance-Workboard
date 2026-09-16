@@ -1,7 +1,7 @@
 import {emailSearchText} from './email-search.mjs?v=1';
 import './email-capture.mjs?v=4';
 import './launchpad-calendar.mjs?v=9';
-import {INBOX_KEY, LIMIT, parseSummary, validateInbox, mergeInbox, safeUrl, PRIORITIES, NEXT_ACTIONS, EDITABLE, enrich, todaySydney, bucket, rank, nextDate, consolidateDuplicates, LEGACY_PLAN_KEY, isPinned, migrateToPins, recordNoteAction} from './summary-core.mjs?v=12';
+import {INBOX_KEY, LIMIT, parseSummary, validateInbox, mergeInbox, safeUrl, PRIORITIES, NEXT_ACTIONS, EDITABLE, enrich, todaySydney, taskSection, rank, nextDate, consolidateDuplicates, LEGACY_PLAN_KEY, isPinned, migrateToPins, recordNoteAction} from './summary-core.mjs?v=13';
 
 function element(tag, text, attributes = {}) {
   const node = document.createElement(tag);
@@ -83,7 +83,7 @@ class SummaryImport extends HTMLElement {
     this.calendarToggle=button('Calendar',()=>{if(!this.calendar.hidden)this.showCalendar(false);else window.dispatchEvent(new Event('launchpad:choose-calendar'));});
     const toolbar=element('div',undefined,{class:'import-heading-actions','aria-label':'Add and organise work'});toolbar.append(this.calendarToggle,button('Paste email',()=>{this.showCalendar(false);this.emailCapture.open();},'import-primary'),button('Add my note',()=>this.editPersonal()),button('Import email summary',()=>{this.showCalendar(false);this.inputDetails.open=true;this.file.focus();},'import-primary'));heading.append(copy,toolbar);this.append(heading);
     this.message=element('p','',{role:'status','aria-live':'polite',class:'import-message'});this.append(this.message);this.buildNoteEditor();
-    this.emailCapture=element('email-capture');this.emailCapture.addEventListener('email:save',event=>{try{const data=validateInbox(JSON.stringify({version:2,items:[event.detail.item]}));const merged=mergeInbox(this.inbox.items,data.items);if(!this.persist({...this.inbox,items:merged.items}))return;event.detail.ok=true;const saved=merged.items.find(x=>x.taskKey===data.items[0].taskKey)||data.items[0];this.view=['done','dismissed'].includes(saved.status)?saved.status:bucket(saved);this.expanded=true;this.renderItems();this.say(merged.added?`Saved “${saved.title}”. Confirmed dates appear in Calendar.`:`This email already exists. Your saved edits and progress were kept.`);this.nav.scrollIntoView({behavior:'smooth',block:'start'});}catch(error){event.detail.error=error.message;}});this.append(this.emailCapture);
+    this.emailCapture=element('email-capture');this.emailCapture.addEventListener('email:save',event=>{try{const data=validateInbox(JSON.stringify({version:2,items:[event.detail.item]}));const merged=mergeInbox(this.inbox.items,data.items);if(!this.persist({...this.inbox,items:merged.items}))return;event.detail.ok=true;const saved=merged.items.find(x=>x.taskKey===data.items[0].taskKey)||data.items[0];this.view=taskSection(saved);this.expanded=true;this.renderItems();this.say(merged.added?`Saved “${saved.title}”. Confirmed dates appear in Calendar.`:`This email already exists. Your saved edits and progress were kept.`);this.nav.scrollIntoView({behavior:'smooth',block:'start'});}catch(error){event.detail.error=error.message;}});this.append(this.emailCapture);
     this.inputDetails=element('details',undefined,{class:'import-input'});this.inputDetails.append(element('summary','Import an AI task file or an Evernote export'));
     this.inputDetails.append(element('p','For priorities, dates and follow-ups, upload your Evernote HTML to our chat first and ask for a Launchpad AI task file. Import the returned JSON here. Raw HTML still creates basic review items.'));
     const instructions=element('a','Download the AI processing instructions',{href:'./launchpad-ai-prompt.md?v=ai-help-2',download:'launchpad-ai-prompt.md'});this.inputDetails.append(instructions,element('p','The revised prompt assesses AI help for every actionable task, with a short list of the best places to start.',{class:'import-help'}),element('a','Download the master prompt for Evernote',{href:'./email-note-master-prompt.md?v=1',download:'email-note-master-prompt.md'}));
@@ -141,7 +141,7 @@ class SummaryImport extends HTMLElement {
     choices.append(desktop,web);this.chatGPTChooser.append(choices,element('p','If the desktop app does not open, choose Web app or open ChatGPT from your Start menu.',{class:'import-help'}),button('Cancel',()=>this.chatGPTChooser.close()));this.append(this.chatGPTChooser);
   }
   showCalendar(open){this.taskArea.hidden=open;this.calendar.hidden=!open;this.calendarToggle.textContent=open?'Back to tasks':'Calendar';this.calendarToggle.setAttribute('aria-pressed',String(open));if(open)this.calendar.setTasks(this.inbox.items);}
-  openCalendarTask(id){const item=this.inbox.items.find(x=>x.id===id);if(!item)return;this.openCards.add(item.id);this.showCalendar(false);this.view=item.status==='done'?'done':item.personal&&!item.action?'notes':isPinned(item)?'ready':bucket(item);this.expanded=true;this.renderItems();const card=[...this.list.querySelectorAll('article')].find(x=>x.dataset.taskKey===(item.taskKey||item.id));card?.scrollIntoView({behavior:'smooth',block:'center'});}
+  openCalendarTask(id){const item=this.inbox.items.find(x=>x.id===id);if(!item)return;this.openCards.add(item.id);this.showCalendar(false);this.view=taskSection(item);this.expanded=true;this.renderItems();const card=[...this.list.querySelectorAll('article')].find(x=>x.dataset.taskKey===(item.taskKey||item.id));card?.scrollIntoView({behavior:'smooth',block:'center'});}
   buildNoteEditor(){
     this.noteEditor=element('details',undefined,{class:'import-input'});this.noteEditor.append(element('summary','Write your own note'));
     this.noteForm=element('form');this.noteInputs={};
@@ -165,7 +165,7 @@ class SummaryImport extends HTMLElement {
     const item=enrich({...old,...values,createdOn:old?old.createdOn:todaySydney(),lastActionOn:old?recordNoteAction(old,{...values,dueDate:values.dueDate||null}).lastActionOn:null,id,personal:true,taskKey:old?.taskKey||`personal:${id}`,dueDate:values.dueDate||null,status:values.action?'review':'note',reason:'Your own note',dirty:[...new Set([...(old?.dirty||[]),'title','source','action','dueDate'])]});
     const items=old?this.inbox.items.map(x=>x.id===id?item:x):[...this.inbox.items,item];
     if(!this.persist({...this.inbox,items}))return;
-    this.view='notes';this.noteEditor.open=false;this.editingNote=null;this.noteForm.reset();this.renderItems();this.say(`Saved “${item.title}” in My notes.${item.action?' Its action is also in your task views.':''}`);this.nav.scrollIntoView({behavior:'smooth',block:'start'});
+    this.view=taskSection(item);this.noteEditor.open=false;this.editingNote=null;this.noteForm.reset();this.renderItems();this.say(`Saved “${item.title}” in ${this.tabs[this.view].label}.`);this.nav.scrollIntoView({behavior:'smooth',block:'start'});
   }
   importText(text){try{if(text.trim().startsWith('{'))this.importData(validateInbox(text));else this.importData({items:parseSummary(text)});}catch(error){this.say(error.message,true);}}
   async importFile(file){
@@ -200,7 +200,7 @@ class SummaryImport extends HTMLElement {
     input.addEventListener('change',()=>{const value=type==='date'?(input.value||null):input.value.trim();this.updateItem(item.id,{[key]:value},true);});wrapper.append(input);return wrapper;
   }
   setProgress(item,status){
-    if(this.updateItem(item.id,{status:status==='review'&&!item.action?'note':status,pinnedDate:null,preserveDoneOnce:false},true)){if(status!=='done'){this.view=item.sectionOverride||(item.personal?'notes':'ready');this.renderItems();this.nav.scrollIntoView({behavior:'smooth',block:'start'});}this.say(status==='done'?`Marked done: ${item.title}. Saved in Done; you’re still in this section.`:`Restored: ${item.title}.`);}
+    if(this.updateItem(item.id,{status:status==='review'&&!item.action?'note':status,pinnedDate:null,preserveDoneOnce:false},true)){if(status!=='done'){this.view=taskSection(this.inbox.items.find(x=>x.id===item.id));this.renderItems();this.nav.scrollIntoView({behavior:'smooth',block:'start'});}this.say(status==='done'?`Marked done: ${item.title}. Saved in Done; you’re still in this section.`:`Restored: ${item.title}.`);}
   }
   togglePin(item){
     const pinned=isPinned(item);
@@ -256,7 +256,7 @@ class SummaryImport extends HTMLElement {
       const group=element('select',undefined,{'aria-label':`Move to section for ${item.title}`});
       const options=[['ready','Today'],['upcoming','Coming up'],['waiting','Waiting'],['later','Later'],['notes','My notes'],['done','Done'],['dismissed','Put aside']];
       for(const[value,label]of options)group.append(element('option',label,{value}));
-      const current=['done','dismissed'].includes(item.status)?item.status:item.sectionOverride||(item.personal&&!item.action?'notes':isPinned(item)?'ready':bucket(item));
+      const current=taskSection(item);
       group.value=current;group.disabled=this.blocked;
       group.addEventListener('change',()=>{
         const target=group.value;
@@ -284,7 +284,7 @@ class SummaryImport extends HTMLElement {
   }
   renderItems(){
     const today=todaySydney();const active=this.inbox.items.filter(x=>['review','added'].includes(x.status));
-    const inView=(x,key)=>x.sectionOverride&&['review','added','note'].includes(x.status)?x.sectionOverride===key:key==='notes'?x.personal&&['note','review','added'].includes(x.status):['done','dismissed'].includes(key)?x.status===key:!['review','added'].includes(x.status)?false:key==='upcoming'?Boolean(nextDate(x)):key==='waiting'?x.group==='waiting':(isPinned(x,today)?'ready':bucket(x,today))===key;
+    const inView=(x,key)=>taskSection(x,today)===key;
     for(const[key,{button:b,label}]of Object.entries(this.tabs)){b.textContent=`${label} (${this.inbox.items.filter(x=>inView(x,key)).length})`;b.setAttribute('aria-pressed',String(this.view===key));}
     const sorted=this.inbox.items.filter(x=>inView(x,this.view)).sort((a,b)=>Number(isPinned(b,today))-Number(isPinned(a,today))||(this.view==='upcoming'?nextDate(a).localeCompare(nextDate(b))||rank(b,today)-rank(a,today):rank(b,today)-rank(a,today)));
     this.list.replaceChildren();this.nav.hidden=!this.inbox.items.length;

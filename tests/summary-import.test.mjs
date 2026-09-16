@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {parseSummary, safeUrl, linksIn, validateInbox, mergeInbox, prepareTasks} from '../morning-launchpad/assets/summary-core.mjs';
+import {parseSummary, safeUrl, linksIn, validateInbox, mergeInbox, prepareTasks, taskSection} from '../morning-launchpad/assets/summary-core.mjs';
 
 test('summary priorities preserve exact titles and action links without duplicate follow-ups', () => {
   const input = `🧭 Today’s Priority Actions\n1. [Note : Assessment's schedule] — Confirm the schedule in [the document](https://example.org/edit?tab=t.0).\n🎯 Important but Not Urgent\n2. [Note : Equipment] — Review the equipment list.\n📋 Follow-Up Tasks and Priorities\n1. [Note : Assessment's schedule] — Confirm the schedule in [the document](https://example.org/edit?tab=t.0).\n⏳ Waiting On\n[Note : Prices] — Waiting on the supplier`;
@@ -206,4 +206,27 @@ test('manual sections survive refresh and reimport without discarding dates', as
  assert.equal(merged.dueDate,'2026-09-01');
  assert.equal(bucket({...item,sectionOverride:'upcoming',dueDate:null}),'upcoming');
  assert.throws(()=>validateInbox(JSON.stringify({version:2,items:[{...item,sectionOverride:'unknown'}]})));
+});
+
+
+test('each task has one section across dates, pins, personal notes and completion',()=>{
+  const today='2026-09-16';
+  const base={status:'review',group:'waiting',action:'Follow up',personal:false};
+  const cases=[
+    [{...base,dueDate:'2026-10-01'},'waiting'],
+    [{...base,followUpDate:today},'ready'],
+    [{...base,dueDate:today},'ready'],
+    [{...base,pinnedDate:today,dueDate:'2026-10-01'},'ready'],
+    [{...base,group:'later',dueDate:'2026-10-01'},'upcoming'],
+    [{...base,personal:true,group:'ready'},'ready'],
+    [{...base,personal:true,action:'',status:'note'},'notes'],
+    [{...base,sectionOverride:'later',dueDate:today},'later'],
+    [{...base,status:'done',sectionOverride:'ready',dueDate:today},'done'],
+    [{...base,status:'dismissed',sectionOverride:'waiting'},'dismissed'],
+    [{...base,status:'superseded'},'superseded']
+  ];
+  for(const [item,expected] of cases){
+    assert.equal(taskSection(item,today),expected);
+    assert.equal(['ready','upcoming','waiting','later','notes','done','dismissed','superseded'].filter(key=>taskSection(item,today)===key).length,1);
+  }
 });
