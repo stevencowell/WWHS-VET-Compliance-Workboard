@@ -1,3 +1,4 @@
+import {emailSearchText} from './email-search.mjs?v=1';
 import './email-capture.mjs?v=3';
 import './launchpad-calendar.mjs?v=8';
 import {INBOX_KEY, LIMIT, parseSummary, validateInbox, mergeInbox, safeUrl, PRIORITIES, NEXT_ACTIONS, EDITABLE, enrich, todaySydney, bucket, rank, nextDate, consolidateDuplicates, LEGACY_PLAN_KEY, isPinned, migrateToPins, recordNoteAction} from './summary-core.mjs?v=11';
@@ -196,6 +197,16 @@ class SummaryImport extends HTMLElement {
     if(item.instruction){const tasks=element('section',undefined,{class:'import-instruction','aria-label':'Tasks'});tasks.append(element('h3','Tasks'),element('p',item.instruction));article.append(tasks);}
     const action=element('textarea',item.action,{class:'import-action',rows:'3',maxlength:'800','aria-label':`Action for ${item.title}`});action.disabled=this.blocked||!active;
     action.addEventListener('change',()=>{if(!action.value.trim()){action.value=item.action;this.say('Keep a short action, or put the task aside.',true);return;}this.updateItem(item.id,{action:action.value.trim()});});if(item.action)article.append(action);if(item.personal&&item.source)article.append(element('pre',item.source,{class:'import-source'}));
+    if(!item.personal){
+      const search=element('details',undefined,{class:'import-email-search'});
+      search.append(element('summary','Email search text'));
+      const query=element('input',undefined,{type:'text',value:emailSearchText(item),'aria-label':`Email search text for ${item.title}`,maxlength:'300'});
+      search.append(query,element('p','Uses the email subject when available, otherwise the note title. Adjust it if needed, then paste into Outlook Search.',{class:'import-help'}));
+      const actions=element('div',undefined,{class:'help-request-actions'});
+      const copy=button('Copy email search',async()=>{const text=query.value.trim();if(!text){search.open=true;query.focus();return;}try{await navigator.clipboard.writeText(text);this.say('Email search copied. Open Outlook, paste into Search and press Enter.');}catch{search.open=true;query.focus();query.select();this.say('Automatic copy was blocked. The search text is selected—press Ctrl + C, then paste into Outlook Search.');}});
+      actions.append(copy,element('a','Open Outlook ↗',{href:'https://outlook.cloud.microsoft/mail/',target:'_blank',rel:'noopener noreferrer',class:'import-email-link'}));
+      article.append(actions,search);
+    }
     if(item.originalEmailUrl)article.append(element('a','Open original email ↗',{href:item.originalEmailUrl,target:'_blank',rel:'noopener noreferrer',class:'import-email-link',title:'Open the original email and its attachments in Outlook'}));
     if(item.url)article.append(element('a','Open linked work ↗',{href:item.url,target:'_blank',rel:'noopener noreferrer',class:'import-work-link'}));
     if(item.dependsOn.length)article.append(element('p',`Depends on: ${dependencies.map((x,i)=>x?`${x.action}${x.status==='done'?' ✓':''}`:`Missing task ${item.dependsOn[i]}`).join('; ')}${blockedBy?' — complete the prerequisite first.':''}`,{class:'import-help'}));
