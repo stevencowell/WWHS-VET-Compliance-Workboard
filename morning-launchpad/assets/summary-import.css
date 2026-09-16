@@ -67,3 +67,11 @@ summary-import .import-heading>.import-heading-actions{display:flex;flex:0 1 aut
 .import-email-search input{box-sizing:border-box;width:100%;margin-top:8px;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font:inherit}.import-email-search .import-help{margin:6px 0}.help-request-actions .import-email-link{margin:0}
 
 summary-import button.is-copied{background:#246749;color:#fff;border-color:#246749;box-shadow:0 0 0 3px #24674922}
+
+/* Task section tabs use the same blue family as the timetable cards. */
+summary-import .import-tabs button{background:#edf5fd;color:#17466d;border-color:#b9d3ea}
+summary-import .import-tabs button:hover{background:#dcecff;border-color:#78a9d1}
+summary-import .import-tabs button[aria-pressed="true"]{background:#28699f;color:#fff;border-color:#28699f}
+:root[data-theme=dark] summary-import .import-tabs button{background:#1c3549;color:#e6f2ff;border-color:#3f617e}
+:root[data-theme=dark] summary-import .import-tabs button:hover{background:#274962;border-color:#7caed5}
+:root[data-theme=dark] summary-import .import-tabs button[aria-pressed="true"]{background:#a9cfee;color:#12334e;border-color:#a9cfee}
