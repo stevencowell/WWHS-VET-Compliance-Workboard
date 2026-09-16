@@ -1,4 +1,4 @@
-import {validDate,safeUrl,todaySydney} from './summary-core.mjs?v=10';
+import {validDate,safeUrl,todaySydney} from './summary-core.mjs?v=11';
 export const CALENDAR_KEY='morning-launchpad-calendar:v1';
 export const MAX_CALENDAR_EVENTS=10000;
 const capacityError=count=>`This import would contain ${count.toLocaleString('en-AU')} saved events; the calendar allows ${MAX_CALENDAR_EVENTS.toLocaleString('en-AU')}. Export a shorter date range from the source calendar. Your saved events have not changed.`;

@@ -181,3 +181,16 @@ test('note dates survive imports and backups without treating a refresh as an ac
  assert.equal(validateInbox(JSON.stringify({version:2,items:[incoming]})).items[0].createdOn,null);
  assert.throws(()=>validateInbox(JSON.stringify({version:2,items:[{...incoming,lastActionOn:'bad date'}]})));
 });
+test('original email links are optional, safe and preserved with user edits on reimport', () => {
+ const raw={version:2,items:[{id:'email-link',taskKey:'email-link',title:'Email',action:'Review',source:'Message'}]};
+ const old=validateInbox(JSON.stringify(raw)).items[0];
+ assert.equal(old.originalEmailUrl,'');
+ const url='https://outlook.cloud.microsoft/mail/id/example';
+ const saved={...old,originalEmailUrl:url,dirty:['originalEmailUrl']};
+ const merged=mergeInbox([saved],[old]).items[0];
+ assert.equal(merged.originalEmailUrl,url);
+ assert.equal(validateInbox(JSON.stringify({version:2,items:[merged]})).items[0].originalEmailUrl,url);
+ for(const bad of ['javascript:alert(1)','data:text/html,test','https://user:pass@example.com/']){
+  assert.throws(()=>validateInbox(JSON.stringify({version:2,items:[{...old,originalEmailUrl:bad}]})));
+ }
+});

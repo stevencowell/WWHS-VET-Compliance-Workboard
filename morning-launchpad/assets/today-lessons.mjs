@@ -1,6 +1,6 @@
 import {classLink} from './class-links.mjs?v=1';
-import {CALENDAR_KEY,validateCalendar,calendarCategory,eventsOn} from './calendar-core.mjs?v=6';
-import {todaySydney} from './summary-core.mjs?v=10';
+import {CALENDAR_KEY,validateCalendar,calendarCategory,eventsOn} from './calendar-core.mjs?v=7';
+import {todaySydney} from './summary-core.mjs?v=11';
 const el=(tag,text,attrs={})=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;for(const[k,v]of Object.entries(attrs))n.setAttribute(k,v);return n;};
 const clock=time=>{if(!time)return '';const[h,m]=time.split(':').map(Number);return `${h%12||12}:${String(m).padStart(2,'0')}${h>=12?'pm':'am'}`;};
 class TodayLessons extends HTMLElement{

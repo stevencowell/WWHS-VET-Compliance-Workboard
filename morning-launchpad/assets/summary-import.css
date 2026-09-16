@@ -61,3 +61,5 @@ summary-import .import-heading>.import-heading-actions{display:flex;flex:0 1 aut
 }
 
 .today-lessons-links{display:flex;align-items:center;flex-wrap:wrap;gap:0 18px}.today-lessons-links a{display:inline-block}
+
+.import-email-link{display:inline-block;margin:12px 12px 0 0;padding:9px 13px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--accent);font-size:14px;font-weight:650;text-decoration:none}.import-email-link:hover{text-decoration:underline}
