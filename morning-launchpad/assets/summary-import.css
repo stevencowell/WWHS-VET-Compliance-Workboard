@@ -118,3 +118,15 @@ summary-import .import-heading-actions button:hover{background:#819887;border-co
 .note-formatting{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.note-formatting button{font-size:13px;padding:6px 12px}
 
 .note-search{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:18px 0 8px}.note-search label{font-weight:650}.note-search input{flex:1;min-width:180px;padding:12px 14px;min-height:44px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);font:inherit}.note-search button{font-size:14px}@media(max-width:600px){.note-search label{flex-basis:100%}}
+
+/* Make full-note search a clear visual anchor above the task sections. */
+summary-import .note-search{padding:18px 20px;margin:22px 0 18px;gap:14px;background:#e5eee7;border:2px solid #708877;border-left-width:6px;border-radius:14px}
+summary-import .note-search label{font-size:20px;font-weight:750;color:#243d2e}
+summary-import .note-search input{min-height:56px;font-size:18px;padding:14px 16px;border:2px solid #819b89;background:#fff;color:#193324;box-shadow:0 2px 6px #0000000a}
+summary-import .note-search input::placeholder{color:#53685b;opacity:1}
+summary-import .note-search:focus-within{border-color:#427554;box-shadow:0 0 0 3px #70887730}
+:root[data-theme=dark] summary-import .note-search{background:#29483b;border-color:#86ad91}
+:root[data-theme=dark] summary-import .note-search label{color:#f4faf5}
+:root[data-theme=dark] summary-import .note-search input{background:#162e24;border-color:#96baa0;color:#fff}
+:root[data-theme=dark] summary-import .note-search input::placeholder{color:#c0d5c6}
+@media(max-width:600px){summary-import .note-search{padding:15px;gap:10px}summary-import .note-search input{width:100%;flex-basis:100%;min-width:0;font-size:17px}}
