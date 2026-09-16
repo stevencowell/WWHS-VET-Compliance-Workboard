@@ -105,3 +105,7 @@ summary-import textarea.import-card-summary-text:focus-visible{outline:2px solid
 /* One midpoint green for the four capture toolbar buttons. */
 summary-import .import-heading-actions button{background:#708877;color:#fff;border-color:#708877;font-weight:600}
 summary-import .import-heading-actions button:hover{background:#819887;border-color:#819887}
+
+.import-working-note{margin:20px 0;padding:16px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.import-card .import-working-note label{margin:0;font-size:18px;font-weight:650}
+.import-working-note textarea{display:block;margin-top:10px;min-height:160px;font-weight:400}

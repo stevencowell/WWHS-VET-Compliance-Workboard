@@ -231,3 +231,16 @@ test('each task has one section across dates, pins, personal notes and completio
     assert.equal(['ready','upcoming','waiting','later','notes','done','dismissed','superseded'].filter(key=>taskSection(item,today)===key).length,1);
   }
 });
+
+
+test('working notes survive backups and reimports, including deliberate clearing',()=>{
+  const [item]=parseSummary('Note : Showcase\nPrepare the display');
+  const initial=validateInbox(JSON.stringify({version:2,items:[item]})).items[0];
+  assert.equal(initial.noteText,'');
+  const edited={...initial,noteText:'Draft email\nMorning all,\nhttps://example.org/plan',dirty:['noteText']};
+  const restored=validateInbox(JSON.stringify({version:2,items:[edited]})).items[0];
+  assert.equal(restored.noteText,edited.noteText);
+  assert.equal(mergeInbox([restored],[initial]).items[0].noteText,edited.noteText);
+  assert.equal(mergeInbox([{...restored,noteText:''}],[{...initial,noteText:'Old draft'}]).items[0].noteText,'');
+  assert.throws(()=>validateInbox(JSON.stringify({version:2,items:[{...initial,noteText:'x'.repeat(20001)}]})));
+});

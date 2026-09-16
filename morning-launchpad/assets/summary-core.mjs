@@ -128,7 +128,7 @@ export const PRIORITIES = {
   orange: '🟠 Urgent / Not Important', purple: '🟣 Not Urgent / Not Important',
 };
 export const NEXT_ACTIONS = {'': 'Choose next step', do: '✅ Do Now', date: '⏰ Date', delegate: '👥 Delegate', delay: '⏸ Delay', delete: '🗑 Delete'};
-export const EDITABLE = ['title','source','action','url','originalEmailUrl','priority','nextAction','dueDate','eventDate','followUpDate','dateNote','owner','waitingOn','instruction','group','pinnedDate','sectionOverride'];
+export const EDITABLE = ['title','source','noteText','action','url','originalEmailUrl','priority','nextAction','dueDate','eventDate','followUpDate','dateNote','owner','waitingOn','instruction','group','pinnedDate','sectionOverride'];
 export function todaySydney() { return new Intl.DateTimeFormat('en-CA', {timeZone:'Australia/Sydney',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()); }
 export function validDate(value) {
   if (value === null || value === '') return true;
@@ -138,7 +138,7 @@ export function validDate(value) {
 }
 export function enrich(item) {
   return {sectionOverride:'',createdOn:null, lastActionOn:null, pinnedDate:null, personal:false, taskKey:'', priority:'', nextAction:'', dueDate:null, eventDate:null, followUpDate:null,
-    dateNote:'', owner:'', waitingOn:'', instruction:'', help:'', relatedTitles:[], dependsOn:[], dirty:[], planAliases:[],
+    noteText:'', dateNote:'', owner:'', waitingOn:'', instruction:'', help:'', relatedTitles:[], dependsOn:[], dirty:[], planAliases:[],
     reason:'Action to review', score:30, group:'ready', status:'review', selected:false, links:[], url:'', originalEmailUrl:'', source:'', ...item};
 }
 export function validateInbox(raw) {
@@ -151,7 +151,7 @@ export function validateInbox(raw) {
   const items = value.items.map(enrich);
   for (const x of items) {
     if (typeof x.id !== 'string' || !x.id.trim() || x.id.length > 150 || typeof x.title !== 'string' || !x.title.trim() || x.title.length > 300 ||
-      typeof x.action !== 'string' || (!x.action.trim() && !(x.personal && ['note','done','dismissed'].includes(x.status))) || x.action.length > 800 || typeof x.source !== 'string' || x.source.length > 20000 ||
+      typeof x.action !== 'string' || (!x.action.trim() && !(x.personal && ['note','done','dismissed'].includes(x.status))) || x.action.length > 800 || typeof x.source !== 'string' || x.source.length > 20000 || typeof x.noteText !== 'string' || x.noteText.length > 20000 ||
       typeof x.taskKey !== 'string' || x.taskKey.length > 150 || !Number.isFinite(x.score) ||
       !Array.isArray(x.links) || x.links.length > 30 || x.links.some(url => !safeUrl(url)) || typeof x.url !== 'string' || x.url && !safeUrl(x.url) ||
       typeof x.originalEmailUrl !== 'string' || x.originalEmailUrl && !safeUrl(x.originalEmailUrl) ||

@@ -1,7 +1,7 @@
 import {emailSearchText} from './email-search.mjs?v=1';
 import './email-capture.mjs?v=4';
 import './launchpad-calendar.mjs?v=10';
-import {INBOX_KEY, LIMIT, parseSummary, validateInbox, mergeInbox, safeUrl, PRIORITIES, NEXT_ACTIONS, EDITABLE, enrich, todaySydney, taskSection, rank, nextDate, consolidateDuplicates, LEGACY_PLAN_KEY, isPinned, migrateToPins, recordNoteAction} from './summary-core.mjs?v=14';
+import {INBOX_KEY, LIMIT, parseSummary, validateInbox, mergeInbox, safeUrl, PRIORITIES, NEXT_ACTIONS, EDITABLE, enrich, todaySydney, taskSection, rank, nextDate, consolidateDuplicates, LEGACY_PLAN_KEY, isPinned, migrateToPins, recordNoteAction} from './summary-core.mjs?v=15';
 
 function element(tag, text, attributes = {}) {
   const node = document.createElement(tag);
@@ -256,6 +256,16 @@ class SummaryImport extends HTMLElement {
       grid.append(this.field(item,'priority','Priority','text',PRIORITIES),this.field(item,'nextAction','Next step','text',NEXT_ACTIONS),this.field(item,'dueDate','Deadline','date'),this.field(item,'eventDate','Event date','date'),this.field(item,'followUpDate','Follow-up date','date'),this.field(item,'owner','Responsible person'),this.field(item,'waitingOn','Waiting on'),this.field(item,'instruction','Tasks'),this.field(item,'dateNote','Date or status uncertainty'));
       if(item.action){const actionLabel=element('label','Action');actionLabel.append(action);edit.append(actionLabel);}edit.append(grid);article.append(edit);
     }
+    const notes=element('section',undefined,{class:'import-working-note'});
+    const noteLabel=element('label','Note');
+    const noteText=element('textarea',item.noteText||'',{rows:'7',maxlength:'20000',placeholder:'Paste a draft email, add information or keep document and attachment links here…','aria-label':`Note for ${item.title}`});
+    noteText.disabled=this.blocked;noteLabel.append(noteText);
+    const noteStatus=element('p','',{class:'import-help',role:'status','aria-live':'polite'});
+    let noteTimer, savedNote=item.noteText||'';
+    const saveNote=()=>{clearTimeout(noteTimer);const value=noteText.value;if(value===savedNote)return;if(!this.inbox.items.some(x=>x.id===item.id))return;if(this.updateItem(item.id,{noteText:value})){savedNote=value;noteStatus.textContent='Saved';}else noteStatus.textContent='Not saved — see the message above.';};
+    noteText.addEventListener('input',()=>{noteStatus.textContent='Saving…';clearTimeout(noteTimer);noteTimer=setTimeout(saveNote,500);});
+    noteText.addEventListener('blur',saveNote);
+    notes.append(noteLabel,noteStatus,element('p','Saves automatically in this browser. Paste document links here; files themselves are not uploaded.',{class:'import-help'}));article.append(notes);
     const source=element('details');source.append(element('summary','Source and links'),element('p',item.personal?'Your note title:':'Exact note title for Evernote search:'),element('p',item.title,{class:'import-source-title'}));
     for(const title of item.relatedTitles)source.append(element('p',`Also: ${title}`,{class:'import-source-title'}));
     if(item.source)source.append(element('pre',item.source,{class:'import-source'}));for(const url of item.links)source.append(element('a',url,{href:url,target:'_blank',rel:'noopener noreferrer',class:'import-source-link'}));
