@@ -260,3 +260,13 @@ test('working note links preserve markdown labels, line breaks and plain URLs sa
  assert.deepEqual(workingNoteLinks('[Bad](javascript:alert(1)) https://user:password@example.org/'),[]);
  assert.deepEqual(workingNoteLinks('No links'),[]);
 });
+
+
+test('rich note formatting survives backups and reimports',()=>{
+ const [item]=parseSummary('Note : Showcase\nPrepare a display');
+ const edited={...item,noteText:'Draft plan',noteHtml:'<p><strong>Draft</strong> <a href="https://example.org/plan">plan</a></p>',dirty:['noteText','noteHtml']};
+ const restored=validateInbox(JSON.stringify({version:2,items:[edited]})).items[0];
+ assert.equal(restored.noteHtml,edited.noteHtml);
+ assert.equal(mergeInbox([restored],[item]).items[0].noteHtml,edited.noteHtml);
+ assert.throws(()=>validateInbox(JSON.stringify({version:2,items:[{...edited,noteHtml:23}]})));
+});

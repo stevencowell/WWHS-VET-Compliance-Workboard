@@ -1,7 +1,8 @@
+import {createNoteEditor} from './note-editor.mjs?v=1';
 import {emailSearchText} from './email-search.mjs?v=1';
 import './email-capture.mjs?v=4';
 import './launchpad-calendar.mjs?v=10';
-import {INBOX_KEY, LIMIT, parseSummary, validateInbox, mergeInbox, safeUrl, workingNoteLinks, PRIORITIES, NEXT_ACTIONS, EDITABLE, enrich, todaySydney, taskSection, rank, nextDate, consolidateDuplicates, LEGACY_PLAN_KEY, isPinned, migrateToPins, recordNoteAction} from './summary-core.mjs?v=17';
+import {INBOX_KEY, LIMIT, parseSummary, validateInbox, mergeInbox, safeUrl, workingNoteLinks, PRIORITIES, NEXT_ACTIONS, EDITABLE, enrich, todaySydney, taskSection, rank, nextDate, consolidateDuplicates, LEGACY_PLAN_KEY, isPinned, migrateToPins, recordNoteAction} from './summary-core.mjs?v=18';
 
 function element(tag, text, attributes = {}) {
   const node = document.createElement(tag);
@@ -257,19 +258,7 @@ class SummaryImport extends HTMLElement {
       grid.append(this.field(item,'priority','Priority','text',PRIORITIES),this.field(item,'nextAction','Next step','text',NEXT_ACTIONS),this.field(item,'dueDate','Deadline','date'),this.field(item,'eventDate','Event date','date'),this.field(item,'followUpDate','Follow-up date','date'),this.field(item,'owner','Responsible person'),this.field(item,'waitingOn','Waiting on'),this.field(item,'instruction','Tasks'),this.field(item,'dateNote','Date or status uncertainty'));
       if(item.action){const actionLabel=element('label','Action');actionLabel.append(action);edit.append(actionLabel);}edit.append(grid);article.append(edit);
     }
-    const notes=element('section',undefined,{class:'import-working-note'});
-    const noteLabel=element('label','Note');
-    const noteText=element('textarea',item.noteText||'',{rows:'3',maxlength:'200000',placeholder:'Paste a draft email, add information or keep document and attachment links here…','aria-label':`Note for ${item.title}`});
-    noteText.disabled=this.blocked;noteLabel.append(noteText);
-    const noteStatus=element('p','',{class:'import-help',role:'status','aria-live':'polite'});
-    const noteLinks=element('nav',undefined,{class:'working-note-links','aria-label':`Links in note for ${item.title}`});
-    const updateNoteLinks=()=>{const links=workingNoteLinks(noteText.value);noteLinks.replaceChildren(...links.map(({url,label})=>element('a',`${label} ↗`,{href:url,target:'_blank',rel:'noopener noreferrer',class:'import-source-link'})));noteLinks.hidden=!links.length;};
-    updateNoteLinks();
-    let noteTimer, savedNote=item.noteText||'';
-    const saveNote=()=>{clearTimeout(noteTimer);const value=noteText.value;if(value===savedNote)return;if(!this.inbox.items.some(x=>x.id===item.id))return;if(this.updateItem(item.id,{noteText:value})){savedNote=value;noteStatus.textContent='Saved';}else noteStatus.textContent='Not saved — see the message above.';};
-    noteText.addEventListener('input',()=>{fitNoteText(noteText);updateNoteLinks();noteStatus.textContent='Saving…';clearTimeout(noteTimer);noteTimer=setTimeout(saveNote,500);});
-    noteText.addEventListener('blur',saveNote);
-    notes.append(noteLabel,noteStatus,noteLinks,element('p','Saves automatically in this browser. Paste document links here; files themselves are not uploaded.',{class:'import-help'}));article.append(notes);
+    article.append(createNoteEditor(item,{disabled:this.blocked,save:changes=>this.inbox.items.some(x=>x.id===item.id)&&this.updateItem(item.id,changes)}));
     const source=element('details');source.append(element('summary','Source and links'),element('p',item.personal?'Your note title:':'Exact note title for Evernote search:'),element('p',item.title,{class:'import-source-title'}));
     for(const title of item.relatedTitles)source.append(element('p',`Also: ${title}`,{class:'import-source-title'}));
     if(item.source)source.append(element('pre',item.source,{class:'import-source'}));for(const url of item.links)source.append(element('a',url,{href:url,target:'_blank',rel:'noopener noreferrer',class:'import-source-link'}));
@@ -324,10 +313,10 @@ class SummaryImport extends HTMLElement {
     summary.setAttribute('aria-label',`Expand or collapse ${item.title}`);
     summary.append(frontText,element('span','',{class:'import-card-chevron','aria-hidden':'true'}));
     quickControls.prepend(saveStatus);
-    requestAnimationFrame(()=>{if(frontText.isConnected){resizeText();fitNoteText(noteText);}});
+    requestAnimationFrame(()=>{if(frontText.isConnected){resizeText();}});
     const body=element('div',undefined,{class:'import-card-body'});
     body.append(...article.childNodes);disclosure.append(summary,body);article.append(disclosure);if(quickControls.childElementCount)article.append(quickControls);
-    disclosure.addEventListener('toggle',()=>{if(!disclosure.isConnected)return;if(disclosure.open)fitNoteText(noteText);if(disclosure.open)this.openCards.add(item.id);else this.openCards.delete(item.id);});
+    disclosure.addEventListener('toggle',()=>{if(!disclosure.isConnected)return;if(disclosure.open)this.openCards.add(item.id);else this.openCards.delete(item.id);});
     return article;
   }
   renderItems(){

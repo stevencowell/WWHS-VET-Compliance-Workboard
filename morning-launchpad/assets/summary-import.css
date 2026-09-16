@@ -109,3 +109,10 @@ summary-import .import-heading-actions button:hover{background:#819887;border-co
 .import-working-note{margin:20px 0;padding:16px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
 .import-card .import-working-note label{margin:0;font-size:18px;font-weight:650}
 .import-working-note textarea{display:block;margin-top:10px;min-height:96px;font-weight:400;overflow:hidden;resize:none}
+
+.rich-note-editor{min-height:100px;padding:14px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);font:inherit;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere}
+.rich-note-editor:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.rich-note-editor:empty:before{content:attr(data-placeholder);color:var(--muted);pointer-events:none}
+.rich-note-editor a{color:var(--accent);text-decoration:underline;cursor:pointer}
+.rich-note-editor p,.rich-note-editor div{margin:0 0 .65em}.rich-note-editor ul,.rich-note-editor ol{padding-left:24px}.rich-note-editor pre{white-space:pre-wrap}
+.note-formatting{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.note-formatting button{font-size:13px;padding:6px 12px}
