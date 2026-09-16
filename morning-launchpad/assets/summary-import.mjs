@@ -106,8 +106,32 @@ class SummaryImport extends HTMLElement {
     this.taskArea=element('div',undefined,{class:'task-area'});for(const child of [...this.children])if(child!==heading&&child!==this.message)this.taskArea.append(child);this.append(this.taskArea);
     this.calendar=element('launchpad-calendar');this.calendar.hidden=true;
     this.calendar.addEventListener('calendar:open-task',event=>this.openCalendarTask(event.detail.id));
-    this.calendar.addEventListener('calendar:change-task-date',event=>{const d=event.detail;if(['dueDate','eventDate','followUpDate'].includes(d.key)&&this.inbox.items.some(x=>x.id===d.id))d.ok=this.updateItem(d.id,{[d.key]:d.date},true);});this.append(this.calendar);this.buildChatGPTChooser();this.buildClearNotesDialog();
+    this.calendar.addEventListener('calendar:change-task-date',event=>{const d=event.detail;if(['dueDate','eventDate','followUpDate'].includes(d.key)&&this.inbox.items.some(x=>x.id===d.id))d.ok=this.updateItem(d.id,{[d.key]:d.date},true);});this.append(this.calendar);this.buildChatGPTChooser();this.buildClearNotesDialog();this.buildCardTextEditor();
 
+  }
+  buildCardTextEditor(){
+    this.textDialog=element('dialog',undefined,{class:'chatgpt-chooser','aria-labelledby':'card-text-title'});
+    const form=element('form');form.append(element('h2','Edit card text',{id:'card-text-title'}));
+    const label=element('label','Text shown on the front of this card');
+    this.cardTextInput=element('textarea','',{rows:'6',required:'','aria-label':'Card text'});label.append(this.cardTextInput);form.append(label);
+    this.cardTextError=element('p','',{role:'alert'});form.append(this.cardTextError);
+    const actions=element('div',undefined,{class:'clear-notes-actions'});
+    actions.append(button('Cancel',()=>this.textDialog.close()),element('button','Save text',{type:'submit',class:'import-primary'}));form.append(actions);
+    form.addEventListener('submit',event=>{
+      event.preventDefault();const text=this.cardTextInput.value.trim();
+      if(!text){this.cardTextError.textContent='Enter some text before saving.';this.cardTextInput.focus();return;}
+      if(!this.inbox.items.some(x=>x.id===this.textItemId)){this.cardTextError.textContent='This note is no longer available.';return;}
+      if(!this.updateItem(this.textItemId,{[this.textItemField]:text},true)){this.cardTextError.textContent='Text could not be saved. Close this window to read the message.';return;}
+      this.textDialog.close();this.say('Card text saved.');
+    });
+    this.textDialog.append(form);this.append(this.textDialog);
+  }
+  editCardText(item){
+    const current=this.inbox.items.find(x=>x.id===item.id);if(this.blocked||!current)return;
+    this.textItemId=current.id;this.textItemField=current.action?'action':'instruction';
+    this.cardTextInput.maxLength=this.textItemField==='action'?800:2000;
+    this.cardTextInput.value=current.action||current.instruction||current.title;
+    this.cardTextError.textContent='';this.textDialog.showModal();this.cardTextInput.focus();
   }
   buildClearNotesDialog(){
     this.clearDialog=element('dialog',undefined,{class:'chatgpt-chooser','aria-labelledby':'clear-notes-title'});
@@ -282,6 +306,7 @@ class SummaryImport extends HTMLElement {
       const done=button('Mark done',()=>this.setProgress(item,'done'));done.disabled=this.blocked;quickControls.append(done);
 
     }else if(!item.duplicateOf&&item.status!=='note'){const restore=button('Review again',()=>this.setProgress(item,'review'));restore.disabled=this.blocked;controls.append(restore);}
+    const editText=button('Edit text',()=>this.editCardText(item));editText.disabled=this.blocked;quickControls.append(editText);
     const remove=button('Delete note',()=>this.deleteNote(item),'import-danger');remove.disabled=this.blocked;quickControls.append(remove);
     if(controls.childElementCount)article.append(controls);
     const disclosure=element('details',undefined,{class:'import-card-disclosure'});
