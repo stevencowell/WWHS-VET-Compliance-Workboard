@@ -1,5 +1,5 @@
 import './email-capture.mjs?v=2';
-import './launchpad-calendar.mjs?v=6';
+import './launchpad-calendar.mjs?v=7';
 import {INBOX_KEY, LIMIT, parseSummary, validateInbox, mergeInbox, safeUrl, PRIORITIES, NEXT_ACTIONS, EDITABLE, enrich, todaySydney, bucket, rank, nextDate, consolidateDuplicates, LEGACY_PLAN_KEY, isPinned, migrateToPins, recordNoteAction} from './summary-core.mjs?v=10';
 
 function element(tag, text, attributes = {}) {

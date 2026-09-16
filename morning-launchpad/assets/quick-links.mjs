@@ -43,7 +43,7 @@ function open(){
   a.addEventListener('click',()=>close());nav.append(a);
  }
  if(!cards.length){
-  const links=[['Morning Launchpad',new URL('morning-launchpad/',base).href],['Head Teacher TAS',new URL('head-teacher-tas/',base).href],['VET workboard',new URL('#vet-home',base).href],['Outlook','https://outlook.cloud.microsoft/mail/'],['Sentral','https://waggawagga-h.sentral.com.au/auth/'],['TAS Learning Hub','https://stevencowell.github.io/Main-Page/']];
+  const links=[['Daily Launchpad',new URL('morning-launchpad/',base).href],['Head Teacher TAS',new URL('head-teacher-tas/',base).href],['VET workboard',new URL('#vet-home',base).href],['Outlook','https://outlook.cloud.microsoft/mail/'],['Sentral','https://waggawagga-h.sentral.com.au/auth/'],['TAS Learning Hub','https://stevencowell.github.io/Main-Page/']];
   for(const[name,url]of links){const a=el('a',name+' ↗',{href:url,target:'_blank',rel:'noopener noreferrer'});a.addEventListener('click',()=>close());nav.append(a);}
   nav.append(chooser('Evernote','#quick-evernote'),chooser('ChatGPT','#quick-chatgpt'));
   const calendars=el('button','Calendars ›',{type:'button'});calendars.addEventListener('click',()=>{close();window.dispatchEvent(new Event('launchpad:choose-calendar'));});nav.append(calendars);

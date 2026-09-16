@@ -16,7 +16,7 @@ if (currentPage.includes('summary-import.css')) {
   throw new Error('The online Launchpad includes summary import. Update the maintained online files directly; port summary-import and useSummaryBridge to the local source before replacing this build. See docs/morning-launchpad-online.md.');
 }
 const original = (await readFile(resolve(built, 'index.html'), 'utf8')).replace(/\r\n/g, '\n');
-if (!original.includes('<title>Morning Launchpad</title>')) throw new Error('Unexpected page.');
+if (!/<title>(?:Morning|Daily) Launchpad<\/title>/.test(original)) throw new Error('Unexpected page.');
 const references = [...original.matchAll(/(?:src|href)="([^"]+)"/g)].map(match => match[1]);
 if (references.length !== 4 || references.some(path => !/^\/(?:favicon\.svg|assets\/(?:theme|launchpad)-[a-zA-Z0-9]+\.(?:js|css))$/.test(path))) {
   throw new Error('Unexpected assets; review the build before exporting it.');
