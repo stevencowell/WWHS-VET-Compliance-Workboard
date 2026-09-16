@@ -16,6 +16,6 @@ window.addEventListener('launchpad:choose-calendar',open);
 // Capture before the Head Teacher workboard's delegated system launcher.
 document.addEventListener('click',event=>{
  const trigger=event.target.closest?.('a[href="https://waggawagga-h.sentral.com.au/s-lD94m0/webcal/calendar/17"],[data-action="launch-system"][data-system-id="staff-calendar"]');
- if(trigger){event.preventDefault();event.stopImmediatePropagation();open();}
+ if(trigger&&!dialog.contains(trigger)){event.preventDefault();event.stopImmediatePropagation();open();}
 },true);
 dialog.addEventListener('click',event=>{if(event.target===dialog)dialog.close();});
