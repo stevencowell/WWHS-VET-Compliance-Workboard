@@ -103,5 +103,5 @@ summary-import textarea.import-card-summary-text:focus-visible{outline:2px solid
 .card-save-status{font-size:12px;color:var(--muted)}.card-save-status:empty{display:none}
 
 /* One midpoint green for the four capture toolbar buttons. */
-summary-import .import-heading-actions button{background:#708877;color:#101f19;border-color:#708877;font-weight:600}
+summary-import .import-heading-actions button{background:#708877;color:#fff;border-color:#708877;font-weight:600}
 summary-import .import-heading-actions button:hover{background:#819887;border-color:#819887}
