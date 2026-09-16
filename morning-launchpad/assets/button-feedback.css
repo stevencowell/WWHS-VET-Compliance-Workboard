@@ -1,0 +1,4 @@
+button:not(:disabled),input[type="button"]:not(:disabled),input[type="submit"]:not(:disabled),[role="button"]:not([aria-disabled="true"]){cursor:pointer}
+.button-acknowledged{animation:button-acknowledgement .65s ease-out}
+@keyframes button-acknowledgement{0%,35%{outline:3px solid #6aa38a;outline-offset:3px;filter:brightness(.92)}100%{outline:3px solid transparent;outline-offset:6px}}
+@media(prefers-reduced-motion:reduce){.button-acknowledged{animation:none;outline:3px solid #6aa38a;outline-offset:3px}}
