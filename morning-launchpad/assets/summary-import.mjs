@@ -3,7 +3,7 @@ import {createTaskHelpDialog} from './task-help-dialog.mjs?v=full-register-1';
 import {emailSearchText} from './email-search.mjs?v=1';
 import './email-capture.mjs?v=4';
 import './launchpad-calendar.mjs?v=10';
-import {INBOX_KEY, LIMIT, parseSummary, validateInbox, mergeInbox, safeUrl, workingNoteLinks, matchesNoteSearch, PRIORITIES, NEXT_ACTIONS, EDITABLE, enrich, todaySydney, taskSection, rank, nextDate, consolidateDuplicates, LEGACY_PLAN_KEY, isPinned, migrateToPins, recordNoteAction, WORKSTREAMS, createTrackedWork, mergeWorkboardImports, clearWorkInbox, reconcileForecast, sourceCompleted, normaliseForecastContext} from './summary-core.mjs?v=full-register-1';
+import {INBOX_KEY, LIMIT, parseSummary, validateInbox, mergeInbox, safeUrl, workingNoteLinks, matchesNoteSearch, PRIORITIES, NEXT_ACTIONS, EDITABLE, enrich, todaySydney, taskSection, rank, nextDate, consolidateDuplicates, LEGACY_PLAN_KEY, isPinned, migrateToPins, recordNoteAction, WORKSTREAMS, createTrackedWork, mergeWorkboardImports, clearWorkInbox, reconcileForecast, sourceCompleted, normaliseForecastContext} from './summary-core.mjs?v=external-review-2';
 
 const repositoryRoot=new URL('../../',import.meta.url);
 
@@ -102,7 +102,9 @@ class SummaryImport extends HTMLElement {
       const guard=snapshot.sourceGuard;if(!guard)return false;
       const expected={vet:'wwhs-vet-compliance-workboard:v3',tas:'wwhs-head-teacher-tas-workboard:v2'}[snapshot.context?.wing];
       if(guard.key!==expected||(guard.raw!==null&&typeof guard.raw!=='string'))throw new Error('Invalid forecast source guard.');
-      try{return localStorage.getItem(guard.key)!==guard.raw;}catch{return true;}
+      const checkReview=Object.hasOwn(guard,'reviewRaw');
+      if(checkReview&&(snapshot.context?.wing!=='vet'||(guard.reviewRaw!==null&&typeof guard.reviewRaw!=='string')))throw new Error('Invalid forecast review guard.');
+      try{return localStorage.getItem(guard.key)!==guard.raw||(checkReview&&localStorage.getItem('wwhs-task-register-review:v1')!==guard.reviewRaw);}catch{return true;}
     };
     if(sourceChanged())return {changed:false,deferred:true,sourceChanged:true,added:0,updated:0,retired:0,suppressed:0};
     if(this.contains(document.activeElement))return {changed:false,deferred:true,added:0,updated:0,retired:0,suppressed:0};
@@ -336,7 +338,7 @@ class SummaryImport extends HTMLElement {
     if(item.personal)chips.append(element('span','My note',{class:'import-chip'}));if(item.status==='superseded')chips.append(element('span','Earlier import — inactive',{class:'import-chip'}));if(item.status==='dismissed')chips.append(element('span','Put aside',{class:'import-chip'}));
     chips.append(element('span',PRIORITIES[item.priority],{class:`import-chip priority-${item.priority||'unknown'}`}));if(item.nextAction)chips.append(element('span',NEXT_ACTIONS[item.nextAction],{class:'import-chip'}));
     for(const[key,label]of [['dueDate','Due'],['eventDate','Event'],['followUpDate','Follow up']])if(item[key])chips.append(element('span',`${label}: ${dateLabel(item[key])}`,{class:'import-chip'}));
-    if(isPinned(item))chips.append(element('span','📌 Pinned for today',{class:'import-chip'}));if(item.duplicateOf)chips.append(element('span','Duplicate retained for reference',{class:'import-chip'}));if(item.status==='done'||sourceCompleted(item))chips.append(element('span',sourceCompleted(item)?'✓ Complete in source workboard':'✓ Done',{class:'import-chip'}));article.append(chips);
+    if(isPinned(item))chips.append(element('span','📌 Pinned for today',{class:'import-chip'}));if(item.duplicateOf)chips.append(element('span','Duplicate retained for reference',{class:'import-chip'}));if(item.status==='done'||sourceCompleted(item))chips.append(element('span',sourceCompleted(item)?(item.forecast?.sourceStatus==='completed-externally'?'✓ Completed outside this app':'✓ Complete in source workboard'):'✓ Done',{class:'import-chip'}));article.append(chips);
     article.append(element('p',item.reason,{class:'import-reason'}));
     if(item.dateNote)article.append(element('p',item.dateNote,{class:'import-uncertain'}));
     if(item.waitingOn)article.append(element('p',`Waiting on: ${item.waitingOn}`,{class:'import-help'}));

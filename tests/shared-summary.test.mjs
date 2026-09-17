@@ -190,6 +190,11 @@ test('resolved completion derives Done without rewriting personal status or crea
   const notApplicable=await reconcileForecast(first.inbox,{entries:[],resolved:[descriptor({status:'done',sourceStatus:'not-applicable'})],context:forecastContext()});
   assert.equal(taskSection(notApplicable.inbox.items[0],'2026-09-17'),'done');assert.equal(notApplicable.inbox.items[0].forecast.sourceStatus,'not-applicable');
   const reopened=await reconcileForecast(complete.inbox,{entries:[scheduled()],context:forecastContext()});assert.equal(taskSection(reopened.inbox.items[0],'2026-09-17'),'ready');
+  const external=await reconcileForecast(first.inbox,{entries:[],resolved:[descriptor({status:'review',sourceStatus:'completed-externally'})],context:forecastContext()});
+  assert.equal(external.inbox.items[0].status,'review','External completion never changes personal progress');
+  assert.equal(taskSection(external.inbox.items[0],'2026-09-17'),'done');
+  const unticked=await reconcileForecast(external.inbox,{entries:[scheduled()],context:forecastContext()});
+  assert.equal(taskSection(unticked.inbox.items[0],'2026-09-17'),'ready','Unticking restores the original active task');
   complete.inbox.items[0].progressOverride=true;complete.inbox.items[0].sectionOverride='ready';assert.equal(taskSection(complete.inbox.items[0],'2026-09-17'),'ready');
 });
 
@@ -257,6 +262,13 @@ test('native source changes across reconciliation never commit a stale forecast 
   const result=await pending;assert.equal(result.sourceChanged,true);assert.equal(result.deferred,true);assert.equal(result.changed,false);
   assert.equal(stored.get(INBOX_KEY),undefined);assert.equal(list.inbox.items.length,0);assert.deepEqual(list.inbox.workboardImports,[]);
   assert.equal((await list.syncForecast(snapshot)).sourceChanged,true);
+  stored.set(key,'original native records');
+  const reviewKey='wwhs-task-register-review:v1';
+  const reviewSnapshot={...snapshot,sourceGuard:{...snapshot.sourceGuard,reviewRaw:null}};
+  const pendingReview=list.syncForecast(reviewSnapshot);stored.set(reviewKey,'newer review ticks');
+  assert.equal((await pendingReview).sourceChanged,true);assert.equal(stored.get(INBOX_KEY),undefined);
+  const pendingUntick=list.syncForecast({...reviewSnapshot,sourceGuard:{...reviewSnapshot.sourceGuard,reviewRaw:'newer review ticks'}});stored.delete(reviewKey);
+  assert.equal((await pendingUntick).sourceChanged,true);assert.equal(list.inbox.items.length,0);
   const read=localStorage.getItem;localStorage.getItem=target=>{if(target===key)throw new Error('Access unavailable');return read(target);};
   assert.equal((await list.syncForecast(snapshot)).sourceChanged,true);assert.equal(stored.get(INBOX_KEY),undefined);
 });

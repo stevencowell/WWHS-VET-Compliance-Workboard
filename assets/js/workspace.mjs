@@ -1,7 +1,7 @@
 // One planning surface. Specialist records remain owned by their existing workboards.
-import '../../morning-launchpad/assets/summary-import.mjs?v=full-register-1';
-import {INBOX_KEY, validateInbox, taskSection, todaySydney} from '../../morning-launchpad/assets/summary-core.mjs?v=full-register-1';
-import {createTaskRegister} from './task-register.mjs?v=entry-counts-1';
+import '../../morning-launchpad/assets/summary-import.mjs?v=external-review-2';
+import {INBOX_KEY, validateInbox, taskSection, todaySydney} from '../../morning-launchpad/assets/summary-core.mjs?v=external-review-2';
+import {createTaskRegister} from './task-register.mjs?v=external-review-2';
 
 const base = new URL('../../', import.meta.url);
 const wing = document.body.dataset.workboard || 'launchpad';
@@ -232,6 +232,7 @@ async function refreshScheduledWork() {
     return;
   }
   const sourceGuard = {key: context.sourceStateKey, raw: localStorage.getItem(context.sourceStateKey)};
+  if (wing === 'vet') sourceGuard.reviewRaw = localStorage.getItem('wwhs-task-register-review:v1');
   const resolved = board.inbox.items.filter(item => item.origin?.wing === wing)
     .map(item => {
       const descriptor = adapter.describeRecord?.(item.origin.recordKey);

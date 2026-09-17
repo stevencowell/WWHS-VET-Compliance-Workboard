@@ -49,7 +49,7 @@ export function hasPersonalWork(item) {
 }
 
 export function sourceCompleted(item) {
-  return !!item.forecast&&!item.progressOverride&&['done','completed','verified','not-applicable'].includes(item.forecast.sourceStatus);
+  return !!item.forecast&&!item.progressOverride&&['done','completed','completed-externally','verified','not-applicable'].includes(item.forecast.sourceStatus);
 }
 
 // Forecasts refresh machine metadata only. Reviewed work and native checklists

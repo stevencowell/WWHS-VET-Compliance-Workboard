@@ -48,7 +48,7 @@ function harness(raw = null, options = {}) {
     setTimeout() {}, scrollTo() {}, confirm() { return true; }, open() {}
   };
   const context = {
-    window, document, location: { hash: options.hash || '#my-work' }, history: { replaceState() {} },
+    window, document, location: new URL('https://example.edu/workboard/head-teacher-tas/'+(options.hash || '#my-work')), history: { replaceState() {} },
     URL, URLSearchParams, CSS: { escape: value => value },
     CustomEvent: class { constructor(type, init) { this.type = type; this.detail = init.detail; } },
     localStorage: {
@@ -61,6 +61,7 @@ function harness(raw = null, options = {}) {
   };
   vm.createContext(context);
   vm.runInContext(dataScript, context);
+  vm.runInContext(fs.readFileSync(new URL('../assets/js/task-navigation.js', import.meta.url), 'utf8'), context);
   vm.runInContext(appScript, context);
   function click(action, taskId) {
     const target = { dataset: { action, taskId }, closest(selector) { return selector === '[data-action]' ? this : null; } };
@@ -68,6 +69,14 @@ function harness(raw = null, options = {}) {
   }
   return {
     adapter: window.WWHS_WORKBOARD_ADAPTER, storage, events, nodes, click, context,
+    clickLink(href) {
+      const link={href,target:'',dataset:{},focused:false,
+        matches:selector=>selector==='a[href]',hasAttribute:()=>false,
+        closest:selector=>selector==='a[href]'?link:null,
+        focus(){this.focused=true;}};
+      const event={target:link,button:0,defaultPrevented:false,preventDefault(){this.defaultPrevented=true;}};
+      documentHandlers.get('click')(event);return {link,event};
+    },
     advance(value) { now = value; window.dispatchEvent({ type: 'focus' }); },
     storageEvent() { window.dispatchEvent({ type: 'storage', key }); },
     toast: () => getNode('toast-region').children.map(item => item.textContent).join('\n'),
@@ -88,6 +97,37 @@ test('a clean TAS browser exposes no catalogue tasks; track actions do not chang
   assert.equal(h.storage.has(key), false);
   assert.deepEqual(json(h.adapter.getEntries()), []);
   assert.equal(h.nodes.get('route-content').innerHTML, '');
+});
+
+test('TAS task links open and close over the personal list without changing saved progress', () => {
+  const raw=saved({'class-readiness::2026':{status:'in-progress',steps:{0:true}}}), h=harness(raw);
+  const task=tasks.find(item=>item.id==='class-readiness'), underlying=h.nodes.get('route-content');
+  underlying.innerHTML='Existing filtered list';
+  const {event,link}=h.clickLink('#task/'+task.id);
+  assert.equal(event.defaultPrevented,true);
+  assert.equal(h.context.location.hash,'#my-work');
+  assert.equal(h.nodes.get('task-dialog').open,true);
+  assert.ok(h.nodes.get('task-dialog-content').innerHTML.includes(task.title));
+  assert.equal(underlying.innerHTML,'Existing filtered list');
+  h.click('close-task');
+  assert.equal(h.nodes.get('task-dialog').open,false);
+  assert.equal(h.context.location.hash,'#my-work');
+  assert.equal(link.focused,true);
+  assert.equal(h.storage.get(key),raw);
+});
+
+test('TAS saved occurrence links remain read-only and return to the same list', () => {
+  const recordKey='class-readiness::2025', raw=saved({[recordKey]:completeRecord(tasks.find(item=>item.id==='class-readiness'))}), h=harness(raw);
+  const {event}=h.clickLink('#task/class-readiness?record='+encodeURIComponent(recordKey));
+  assert.equal(event.defaultPrevented,true);
+  const html=h.nodes.get('task-dialog-content').innerHTML;
+  assert.match(html,/Recorded occurrence · read only/);
+  assert.match(html,/<strong>Occurrence:<\/strong> 2025/);
+  assert.match(html,/<strong>Saved status:<\/strong> Task complete/);
+  assert.doesNotMatch(html,/id="task-record-form"|data-task-step=/);
+  h.click('close-task');
+  assert.equal(h.context.location.hash,'#my-work');
+  assert.equal(h.storage.get(key),raw);
 });
 
 test('saved occurrence identities and specialist status survive adapter conversion', () => {

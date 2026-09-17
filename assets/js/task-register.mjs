@@ -1,5 +1,6 @@
 // Full source register and year-specific retrospective review. Official progress
-// remains owned by each workboard; review ticks never verify a source checklist.
+// remains owned by each workboard; review ticks can show external completion,
+// but never verify a source checklist.
 export const REVIEW_KEY = 'wwhs-task-register-review:v1';
 export function readReview(raw) {
   if (!raw) return {version: 1, records: {}};
@@ -108,7 +109,9 @@ export function createTaskRegister({wing, label, getAdapter, getSavedItems = () 
   function save(next,{recover=false}={}) {
     try {
       if (blocked&&!recover || localStorage.getItem(REVIEW_KEY) !== raw) { blocked = true; throw new Error('Review ticks changed in another tab. Reload review ticks before saving.'); }
-      const nextRaw = JSON.stringify(next); readReview(nextRaw); localStorage.setItem(REVIEW_KEY,nextRaw); raw=nextRaw;review=next;blocked=false;return true;
+      const nextRaw = JSON.stringify(next); readReview(nextRaw); localStorage.setItem(REVIEW_KEY,nextRaw); raw=nextRaw;review=next;blocked=false;
+      window.dispatchEvent(new CustomEvent('wwhs:review-updated',{detail:{wing}}));
+      return true;
     } catch(error) { message.textContent=`Could not save: ${error.message}`; return false; }
   }
   const reload = button('Reload review ticks',()=>{load();render();if(!blocked)message.textContent='Review ticks reloaded.';}); backup.append(reload);
@@ -132,7 +135,7 @@ export function createTaskRegister({wing, label, getAdapter, getSavedItems = () 
     counts.textContent=`Showing ${filtered.length} of ${items.length} entries for ${year.value==='all'?'all listed years':year.value}. ${snapshot.roleLabel || ''}${snapshot.roleLabel?'.':''}`;
     breakdown.textContent=`In the selected year / area: ${registerEntrySummary(items) || 'no entries'}.`;
     const datedYearLoaded=snapshot.items.some(item=>item.year===year.value&&registerDate(item));
-    reviewNote.textContent=`${year.value!=='all'&&!datedYearLoaded?'No dated calendar is loaded for this year. Only continuing duties and other explicitly listed controls are shown. ':''}Use the review ticks to record work you have already completed. Each tick belongs to its labelled year; 2026 ticks do not complete 2027 work. These review ticks are separate from the current task list and official checklist verification. Ongoing duties still repeat.`;
+    reviewNote.textContent=`${year.value!=='all'&&!datedYearLoaded?'No dated calendar is loaded for this year. Only continuing duties and other explicitly listed controls are shown. ':''}Use the review ticks to record work you have already completed. Each tick belongs to its labelled year; 2026 ticks do not complete 2027 work. ${wing==='vet'?'The internal VET card will show “Completed outside this app” with a dated note. Untick the review to remove that label. Checklist steps and official verification remain unchanged.':'These review ticks are separate from official checklist verification.'} Ongoing duties still repeat.`;
     list.replaceChildren();
     if (!filtered.length) list.append(node('p','No entries match these filters. Try All entries or All listed years.'));
     for (const item of filtered) {
@@ -157,6 +160,14 @@ export function createTaskRegister({wing, label, getAdapter, getSavedItems = () 
         else {checkbox.checked=!completed;checkbox.disabled=true;}
       });
       control.append(checkbox,node('span',item.procedureOnly?'Reference only':future?'Future work':item.sourceComplete?'Complete in workboard':item.personalDone?'Done in task list':`Reviewed complete · ${item.reviewYear}`));
+      if(item.tick?.completed&&(item.sourceComplete||item.personalDone)){
+        const remove=node('button','Remove review tick',{type:'button','aria-label':`Remove review tick: ${item.title}`});
+        remove.disabled=blocked;
+        remove.addEventListener('click',()=>{
+          if(save({version:1,records:{...review.records,[item.key]:{completed:false,reviewedOn:today}}})) {message.textContent=`Review tick removed: ${item.title}. Its separately recorded completion is unchanged.`;render();}
+        });
+        main.append(remove);
+      }
       row.append(main,control);list.append(row);
     }
   }

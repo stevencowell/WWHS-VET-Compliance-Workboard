@@ -640,8 +640,8 @@
     taskDialogContent.innerHTML = `<header class="dialog-head"><div><p class="eyebrow">Recorded occurrence · read only</p><h2 id="task-dialog-title">${esc(task.title)}</h2></div><button class="dialog-close" type="button" data-action="close-task" aria-label="Close task">×</button></header>
       <div class="dialog-body"><p><strong>Occurrence:</strong> ${esc(validKey ? key.split("::").slice(1).join("::") : "Unavailable")}</p><p><strong>Saved status:</strong> ${esc(!available ? "Unavailable — reload to check saved progress" : record ? statusMeta[record.status]?.label || record.status : "Not reviewed here")}</p>
       <p>This is the saved occurrence, separate from the current cycle. It does not alter the official school record.</p>
-      <section class="dialog-section"><h3>Actions</h3><ol class="action-list">${task.steps.map((step, index) => `<li><div class="history-step"><span class="step-number">${record?.steps?.[index] ? "✓" : index + 1}</span><span>${esc(step)}</span></div></li>`).join("")}</ol></section>
-      ${task.milestones?.length ? `<section class="dialog-section"><h3>Captured calendar milestones</h3><ul>${task.milestones.map((item, index) => `<li>${record?.milestones?.[index] ? "✓ " : ""}${esc(item.date)} · ${esc(item.label)}</li>`).join("")}</ul></section>` : ""}
+      <section class="dialog-section"><h3>Actions</h3><p class="section-help">Source links open current destinations; they do not reconstruct the source as it was at the time.</p><ol class="action-list">${task.steps.map((step, index) => `<li><div class="history-step"><span class="step-number">${record?.steps?.[index] ? "✓" : index + 1}</span><span>${esc(step)}</span></div>${stepGuidance(task, index)}</li>`).join("")}</ol></section>
+      ${task.milestones?.length ? `<section class="dialog-section"><h3>Captured calendar milestones</h3>${guidanceLinks(window.TAS_STEP_GUIDANCE?.forMilestone(task))}<ul>${task.milestones.map((item, index) => `<li>${record?.milestones?.[index] ? "✓ " : ""}${esc(item.date)} · ${esc(item.label)}</li>`).join("")}</ul></section>` : ""}
       <section class="owner-systems"><h3>Open the owner system</h3><div class="system-buttons">${systemButtons(task)}</div><p>${esc(task.privacy)}</p></section>
       <div class="dialog-actions"><button class="button quiet" type="button" data-action="close-task">Close occurrence</button></div></div>`;
     taskDialog.showModal();
@@ -662,7 +662,7 @@
     const available = forecastStorageAvailable();
     const checked = available && safeObject(state.weekly[week])[index] === true;
     lastTaskTrigger = document.activeElement;
-    taskDialogContent.innerHTML = `<header class="dialog-head"><div><p class="eyebrow">Saved weekly scan · read only</p><h2 id="task-dialog-title">${esc(data.weeklyChecks[index])}</h2></div><button class="dialog-close" type="button" data-action="close-task" aria-label="Close task">×</button></header><div class="dialog-body"><p>Week beginning ${esc(week)}.</p><p>${!available ? "Saved progress is unavailable; reload to check it." : checked ? "Ticked in this browser." : "Not ticked in this browser."}</p><p>This is a local review reminder, separate from this week's scan and official school records.</p><button class="button quiet" type="button" data-action="close-task">Close occurrence</button></div>`;
+    taskDialogContent.innerHTML = `<header class="dialog-head"><div><p class="eyebrow">Saved weekly scan · read only</p><h2 id="task-dialog-title">${esc(data.weeklyChecks[index])}</h2></div><button class="dialog-close" type="button" data-action="close-task" aria-label="Close task">×</button></header><div class="dialog-body"><p>Week beginning ${esc(week)}.</p><p>${!available ? "Saved progress is unavailable; reload to check it." : checked ? "Ticked in this browser." : "Not ticked in this browser."}</p><p>This is a local review reminder, separate from this week's scan and official school records. Links open the current source, not a historical copy.</p>${guidanceLinks(window.TAS_STEP_GUIDANCE?.forWeekly(index))}<button class="button quiet" type="button" data-action="close-task">Close occurrence</button></div>`;
     taskDialog.showModal();
   }
 
@@ -763,7 +763,7 @@
       <section class="coming-section"><div class="section-heading"><div><h2>Upcoming dates to check</h2><p>Next listed dates from the calendar checked on 26 August 2026. Confirm them in the live staff calendar.</p></div></div>${upcoming.length ? `<div class="coming-list">${upcoming.map((task, index) => comingRow(task, index + 1, `Listed ${shortDate(reminderDate(task))} · check live calendar`)).join("")}</div>` : `<p class="empty-line">${operatingYearIsCurrent ? "No later dates are listed in this calendar snapshot." : "Refresh the school calendar before using dates for this year."}</p>`}</section>
       ${unreviewedPast.length ? `<details class="standing-panel"><summary>Review past dates (${unreviewedPast.length} not reviewed here)</summary><p>These dates have passed, but this browser has no recorded status. They are not assumed to be missed work. Check the school record before adding a status.</p><div class="coming-list">${unreviewedPast.map((task, index) => comingRow(task, index + 1)).join("")}</div></details>` : ""}
       <details class="standing-panel"><summary>Five-minute weekly scan · ${completedChecks} checks recorded</summary><p>Week beginning ${shortDate(week)}. These ticks are local reminders.</p>
-        <div class="weekly-checks">${data.weeklyChecks.map((label, index) => `<label><input type="checkbox" data-weekly-check="${index}" ${checks[index] ? "checked" : ""}><span>${esc(label)}</span></label>`).join("")}</div>
+        <div class="weekly-checks">${data.weeklyChecks.map((label, index) => `<div class="weekly-check"><label><input type="checkbox" data-weekly-check="${index}" ${checks[index] ? "checked" : ""}><span>${esc(label)}</span></label>${guidanceLinks(window.TAS_STEP_GUIDANCE?.forWeekly(index))}</div>`).join("")}</div>
       </details>
     </div>`;
   }
@@ -993,6 +993,27 @@
     return saved || safeUrl(system.url);
   }
 
+  function guidanceLinks(descriptors) {
+    const links = (descriptors || []).map(item => {
+      if (!item.systemId) return item.hint ? `<p class="step-guidance-note">${esc(item.hint)}</p>` : "";
+      const system = data.systems.find(candidate => candidate.id === item.systemId);
+      if (!system) return "";
+      const url = currentSystemUrl(system);
+      if (!url) return `<div class="step-guide"><button class="button quiet compact" type="button" data-action="open-settings">Set ${esc(system.label)} link</button><small>Add the approved destination in Settings.</small></div>`;
+      // A replacement may be a direct document instead of the default search/portal.
+      // Describe that saved route honestly instead of retaining a misleading default hint.
+      const replaced = url !== safeUrl(system.url);
+      const label = replaced ? `${system.label} · ${destinationLabel(url)}` : item.label;
+      const hint = replaced ? "Uses your saved link from Settings. Confirm the current year and approved version after opening it." : item.hint;
+      return `<div class="step-guide"><a href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(label)} <span aria-hidden="true">↗</span><span class="sr-only"> (opens in a new tab)</span></a>${hint ? `<small>${esc(hint)}</small>` : ""}</div>`;
+    }).join("");
+    return links ? `<div class="step-guidance" aria-label="Helpful sources">${links}</div>` : "";
+  }
+
+  function stepGuidance(task, index) {
+    return guidanceLinks(window.TAS_STEP_GUIDANCE?.forStep(task, index));
+  }
+
   function systemButtons(task) {
     return (task.systemIds || []).map(id => {
       const system = data.systems.find(item => item.id === id);
@@ -1018,12 +1039,12 @@
         ${planTaskButton(task)}
         ${task.applicability ? `<aside class="applicability"><strong>Applies when</strong><span>${esc(task.applicability)}</span></aside>` : ""}
         <div class="fact-grid"><div><span>Timing</span><strong>${esc(task.timing)}</strong></div><div><span>Current cycle</span><strong>${esc(cycleLabel(task))}</strong></div><div><span>Accountable</span><strong>${esc(task.owner)}</strong></div><div><span>Expected verifier</span><strong>${esc(task.verifier)}</strong></div><div><span>Primary start</span><strong>${esc(primarySystemLabel(task))}</strong></div></div>
-        ${task.milestones ? `<section class="dialog-section"><h3>Milestones</h3><p class="section-help">${task.historyOnly ? "Captured 2026 sequence for handover and planning. Rebuild it from the live calendar each year." : "Tick each dated hand-off only after it is complete in the owner system."}</p><ol class="milestone-list">${task.milestones.map((item, index) => task.historyOnly ? `<li><time datetime="${esc(item.date)}">${esc(longDate(item.date))}</time><span>${esc(item.label)}</span></li>` : `<li class="${record.milestones?.[index] ? "is-done" : ""}"><label><input type="checkbox" data-task-milestone="${index}" data-task-id="${esc(task.id)}" ${record.milestones?.[index] ? "checked" : ""}><time datetime="${esc(item.date)}">${esc(longDate(item.date))}</time><span>${esc(item.label)}</span></label></li>`).join("")}</ol></section>` : ""}
-        <section class="dialog-section"><h3>${task.historyOnly ? "Captured process" : task.procedureOnly ? "Follow this procedure" : "Do this"}</h3><ol class="action-list">${task.steps.map((step, index) => task.historyOnly || task.procedureOnly ? `<li><div class="history-step"><span class="step-number">${index + 1}</span><span>${esc(step)}</span></div></li>` : `<li><label><input type="checkbox" data-task-step="${index}" data-task-id="${esc(task.id)}" ${record.steps?.[index] ? "checked" : ""}><span class="step-number">${index + 1}</span><span>${esc(step)}</span></label></li>`).join("")}</ol></section>
+        ${task.milestones ? `<section class="dialog-section"><h3>Milestones</h3><p class="section-help">${task.historyOnly ? "Captured 2026 sequence for handover and planning. Rebuild it from the live calendar each year." : "Tick each dated hand-off only after it is complete in the owner system."}</p>${guidanceLinks(window.TAS_STEP_GUIDANCE?.forMilestone(task))}<ol class="milestone-list">${task.milestones.map((item, index) => task.historyOnly ? `<li><time datetime="${esc(item.date)}">${esc(longDate(item.date))}</time><span>${esc(item.label)}</span></li>` : `<li class="${record.milestones?.[index] ? "is-done" : ""}"><label><input type="checkbox" data-task-milestone="${index}" data-task-id="${esc(task.id)}" ${record.milestones?.[index] ? "checked" : ""}><time datetime="${esc(item.date)}">${esc(longDate(item.date))}</time><span>${esc(item.label)}</span></label></li>`).join("")}</ol></section>` : ""}
+        <section class="dialog-section"><h3>${task.historyOnly ? "Captured process" : task.procedureOnly ? "Follow this procedure" : "Do this"}</h3><p class="section-help">Open the source beside the step. Staff destinations may require sign-in; Drive searches are labelled. ${task.historyOnly ? "Links open current sources, not historical copies." : "Opening a link does not tick the step."}</p><ol class="action-list">${task.steps.map((step, index) => task.historyOnly || task.procedureOnly ? `<li><div class="history-step"><span class="step-number">${index + 1}</span><span>${esc(step)}</span></div>${stepGuidance(task, index)}</li>` : `<li><label><input type="checkbox" data-task-step="${index}" data-task-id="${esc(task.id)}" ${record.steps?.[index] ? "checked" : ""}><span class="step-number">${index + 1}</span><span>${esc(step)}</span></label>${stepGuidance(task, index)}</li>`).join("")}</ol></section>
         <section class="done-when"><span>Done when</span><p>${esc(task.doneWhen)}</p></section>
         <section class="owner-systems"><h3>Open the owner system</h3><div class="system-buttons">${systemButtons(task)}</div><p>${esc(task.privacy)}</p></section>
         <details class="guidance-details" ${guidanceOpen ? "open" : ""}><summary>Explain this in plain English</summary><div><p><strong>Why it matters:</strong> ${esc(task.why)}</p><p><strong>Common trap:</strong> ${esc(task.trap)}</p></div></details>
-        <details class="source-details"><summary>Source and currency</summary><div><p><strong>${esc(task.source)}</strong></p><p>${sourcePill(task)} Current owner-system information overrides an old copied document or folder.</p></div></details>
+        <details class="source-details"><summary>Source and currency</summary><div><p><strong>${esc(task.source)}</strong></p>${guidanceLinks(window.TAS_STEP_GUIDANCE?.forSource(task))}<p>${sourcePill(task)} Current owner-system information overrides an old copied document or folder.</p></div></details>
         ${completionForm(task, record)}
       </div>`;
 
@@ -1246,6 +1267,16 @@
   }
 
   document.addEventListener("click", event => {
+    if (window.WWHS_TASK_NAVIGATION?.handleClick(event, ({ taskId, params, link }) => {
+      const task = data.tasks.find(item => item.id === taskId);
+      if (task) {
+        const savedKey = params.get("record");
+        if (savedKey) openSavedTask(task, savedKey);
+        else openTask(task.id);
+      } else return false;
+      lastTaskTrigger = link;
+      return true;
+    })) return;
     const skipLink = event.target.closest(".skip-link");
     if (skipLink) {
       event.preventDefault();

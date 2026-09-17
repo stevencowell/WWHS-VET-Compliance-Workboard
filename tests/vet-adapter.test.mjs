@@ -6,24 +6,30 @@ import vm from 'node:vm';
 const root = new URL('../', import.meta.url);
 const source = fs.readFileSync(new URL('assets/js/app-v2.js', root), 'utf8');
 const key = 'wwhs-vet-compliance-workboard:v3';
+const reviewKey = 'wwhs-task-register-review:v1';
+const reviewStore = (id, completed = true, reviewedOn = '2026-09-18', year = 2026) => JSON.stringify({version:1,records:{[`vet:${year}:${encodeURIComponent(id)}`]:{completed,reviewedOn}}});
 const state = (records = {}, extra = {}) => ({schemaVersion:3, linkDefaultsVersion:2, records, ...extra});
 
 function harness(saved = null, options = {}) {
   const storage = new Map(saved === null ? [] : [[key, typeof saved === 'string' ? saved : JSON.stringify(saved)]]);
-  const events = [], notices = [], listeners = new Map(), elements = new Map();
+  if(options.reviewRaw !== undefined) storage.set(reviewKey, options.reviewRaw);
+  const events = [], notices = [], listeners = new Map(), windowListeners = new Map(), elements = new Map();
   let writes = 0;
   const TestDate = options.now ? class extends Date {
     constructor(...args){super(...(args.length?args:[options.now]));}
     static now(){return new Date(options.now).getTime();}
   } : Date;
-  const element = () => ({
+  const element = () => {
+    const handlers = new Map();
+    return {
     innerHTML:'', textContent:'', open:false, hidden:false, dataset:{},
     classList:{toggle(){}, remove(){}, contains(){return false;}},
     setAttribute(){}, removeAttribute(){}, focus(){}, remove(){},
     querySelector(){return null;}, querySelectorAll(){return [];},
-    addEventListener(){}, appendChild(child){notices.push(child.textContent);},
-    showModal(){this.open=true;}, close(){this.open=false;}
-  });
+    addEventListener(name, listener){handlers.set(name, listener);}, appendChild(child){notices.push(child.textContent);},
+    showModal(){this.open=true;}, close(){this.open=false;handlers.get('close')?.();}
+    };
+  };
   const get = id => { if(!elements.has(id)) elements.set(id,element()); return elements.get(id); };
   const guidance = element(); guidance.querySelector = () => element();
   const document = {
@@ -34,12 +40,12 @@ function harness(saved = null, options = {}) {
     addEventListener(name, listener){listeners.set(name, listener);}
   };
   const window = {
-    addEventListener(){}, setInterval(){},
-    dispatchEvent(event){events.push(event);return true;}
+    addEventListener(name, listener){windowListeners.set(name, listener);}, setInterval(){},
+    dispatchEvent(event){events.push(event);windowListeners.get(event.type)?.(event);return true;}
   };
   const context = vm.createContext({
     window, document, URLSearchParams, URL, Date: TestDate, console,
-    location:{hash:'#my-work',search:''}, history:{replaceState(){}},
+    location:new URL('https://example.edu/workboard/'+(options.hash || '#my-work')), history:{replaceState(){}},
     CSS:{escape:value=>value}, queueMicrotask:callback=>callback(), setTimeout(){},
     CustomEvent:class { constructor(type, init={}){this.type=type;this.detail=init.detail;} },
     localStorage:{
@@ -47,21 +53,46 @@ function harness(saved = null, options = {}) {
       setItem(name,value){if(options.writeError) throw new Error('quota');writes++;storage.set(name,value);},
       removeItem(name){storage.delete(name);}
     },
-    FileReader:class {readAsText(value){this.result=value;this.onload();}}
+    FileReader:class {readAsText(value){this.result=value;this.onload();}},
+    FormData:class {constructor(form){this.values=form.values;} get(name){return this.values.get(name) ?? null;}}
   });
   for(const file of ['config.js','tasks.js','term1-2027.js','reference.js']) {
     vm.runInContext(fs.readFileSync(new URL('assets/js/data/'+file,root),'utf8'),context);
   }
+  vm.runInContext(fs.readFileSync(new URL('assets/js/vet-step-guidance.js',root),'utf8'),context);
+  vm.runInContext(fs.readFileSync(new URL('assets/js/task-navigation.js',root),'utf8'),context);
   const initialisation = '  syncRoleFilters(); updateGuidanceToggle(); render();\n})();';
   assert.ok(source.includes(initialisation), 'test harness must replace the single final app initialisation');
   vm.runInContext(source.replace(initialisation, `  window.__test = {
     getState:()=>state, saveState, completeTask, undoTaskCompletion, importWorkspace,
     taskCard, focusTask, cycleFocusTask, workflowTaskButtons, openTask, currentView,
-    isClosed, cycleGateState, taskById, createEventOccurrence
+    isClosed, cycleGateState, taskById, createEventOccurrence, getRecord, getStatus,
+    externalReview, externalReviewNote, reviewNotes, stripGeneratedReviewNote,
+    statusPill, taskCompletionActions, completionForm, saveTaskForm,
+    guidanceTarget, guidanceLinks, stepGuidance, sourceGuidance
   };\n})();`),context);
   return {
     adapter:window.WWHS_WORKBOARD_ADAPTER, api:window.__test, data:window.VET_WORKBOARD,
-    storage, events, notices, elements, options, get writes(){return writes;},
+    storage, events, notices, elements, options, context, get writes(){return writes;},
+    clickLink(href){
+      const link={href,target:'',dataset:{},isConnected:true,focused:false,
+        matches:selector=>selector==='a[href]',hasAttribute:()=>false,
+        closest:selector=>selector==='a[href]'?link:null,
+        getClientRects:()=>[{}],focus(){this.focused=true;}};
+      const event={target:link,button:0,defaultPrevented:false,preventDefault(){this.defaultPrevented=true;}};
+      listeners.get('click')(event);return {link,event};
+    },
+    dispatch(type, detail={}){window.dispatchEvent({type,...detail});},
+    changeStep(task, index, checked){
+      const target={dataset:{taskId:task.id,taskStep:String(index)},checked,matches:selector=>selector==='[data-task-step]'};
+      listeners.get('change')({target});return target;
+    },
+    form(task, values={}){
+      const error={textContent:'',hidden:true};
+      const form={dataset:{taskId:task.id}, values:new Map(Object.entries(values)), error,
+        querySelector:selector=>selector==='#task-form-error'?error:null};
+      elements.set('task-record-form',form);return form;
+    },
     click(action,taskId){const target={dataset:{action,taskId}};listeners.get('click')({target:{closest:selector=>selector==='[data-action]'?target:null}});}
   };
 }
@@ -80,6 +111,70 @@ test('VET adapter exposes saved work only and retains stable native routes', () 
   assert.equal(h.writes,0);
 });
 
+test('VET task links close back to the same personal list or year scope without editing records', () => {
+  for(const hash of ['#my-work','#year?year=2026']) {
+    const h=harness(state({'a-02-build-live-calendar':{status:'in-progress',exceptionSummary:'Keep this note'}}),{hash});
+    const before=h.storage.get(key), task=h.api.taskById('a-02-build-live-calendar');
+    const underlying=h.elements.get('route-content');underlying.innerHTML='Existing filtered list';
+    const {event,link}=h.clickLink('#task/'+task.id);
+    assert.equal(event.defaultPrevented,true);
+    assert.equal(h.context.location.hash,hash);
+    assert.equal(h.elements.get('task-dialog').open,true);
+    assert.ok(h.elements.get('task-dialog-content').innerHTML.includes(task.title));
+    assert.equal(underlying.innerHTML,'Existing filtered list');
+    h.click('close-dialog');
+    assert.equal(h.elements.get('task-dialog').open,false);
+    assert.equal(h.context.location.hash,hash);
+    assert.equal(link.focused,true);
+    assert.equal(h.storage.get(key),before);assert.equal(h.writes,0);
+  }
+});
+
+test('VET unknown task links retain the normal navigation fallback', () => {
+  const h=harness(), {event}=h.clickLink('#task/not-in-the-catalogue');
+  assert.equal(event.defaultPrevented,false);
+  assert.equal(h.elements.get('task-dialog').open,false);
+  assert.equal(h.writes,0);
+});
+
+test('VET step resources render beside checks and preserve records across the entire catalogue', () => {
+  const h=harness(state({'a-02-build-live-calendar':{status:'in-progress',stepChecks:{0:true},exceptionSummary:'Keep my calendar note'}}));
+  const before=JSON.stringify(h.api.getState());
+  const all=[...h.data.taskRegister.tasks,...h.data.operatingCycle2027.tasks,...h.data.operatingCycle2027.eventTemplates];
+  for(const task of all) for(let index=0;index<task.actionSteps.length;index++) {
+    const html=h.api.stepGuidance(task,index);
+    assert.ok(html.includes('data-guidance-link')||html.includes('step-guidance-note'),`${task.id} step ${index+1}`);
+    assert.doesNotMatch(html,/href="(?:undefined|null|javascript:|#sources)/i);
+  }
+  const task=h.api.taskById('a-02-build-live-calendar');h.api.openTask(task.id);
+  const html=h.elements.get('task-dialog-content').innerHTML;
+  assert.match(html,/data-task-step="0"[^>]*checked/);
+  assert.match(html,/Keep my calendar note/);
+  assert.match(html,/Useful places for step 1/);
+  assert.match(html,/nesa\/key-dates\/timetable-of-actions/);
+  for(const label of html.matchAll(/<label\b[^>]*>([\s\S]*?)<\/label>/g)) assert.doesNotMatch(label[1],/data-guidance-link/);
+  assert.equal(JSON.stringify(h.api.getState()),before);assert.equal(h.writes,0);
+});
+
+test('VET source and step resources honour approved overrides and label source access honestly', () => {
+  const h=harness(state({}, {links:{'document-library':'https://example.edu/approved-library','wwhs-drive':'https://example.edu/current-folder'}}));
+  const task=h.api.taskById('a-02-build-live-calendar');
+  const step=h.api.stepGuidance(task,0);
+  assert.match(step,/https:\/\/example.edu\/approved-library/);
+  assert.match(step,/approved replacement/);
+  const source=h.api.sourceGuidance(h.data.operatingCycle2027.sourceFamilies['RTO-DOCUMENT-LIBRARY'],{operatingYear:2027},'RTO-DOCUMENT-LIBRARY');
+  assert.match(source,/https:\/\/example.edu\/approved-library/);
+  const local=h.api.guidanceTarget({systemId:'wwhs-drive',label:'Search VET action record',hint:'Drive search for old folder'},task);
+  assert.equal(local.label,'Open VET action record');assert.doesNotMatch(local.hint,/old folder/);
+  assert.equal(h.api.guidanceTarget({route:'javascript:alert(1)'},task),null);
+  assert.equal(h.api.guidanceTarget({systemId:'unknown'},task),null);
+  const original=harness();
+  const search=original.api.guidanceTarget({sourceId:'WWHS-CALENDAR-2026'},task);
+  assert.match(search.label,/Find in Drive/);assert.match(search.hint,/Search/);
+  assert.match(original.api.focusTask(task),/Useful places for step 1/);
+  assert.match(original.api.cycleFocusTask(original.data.operatingCycle2027.tasks[0]),/Useful places for step 1/);
+});
+
 test('full VET register distinguishes core duties, scheduled instances and procedures without saving', () => {
   const h=harness(null,{now:'2026-09-17T01:00:00Z'}), before=JSON.stringify(h.api.getState());
   const {items}=h.adapter.getTaskRegister(), counts={core:0,scheduled:0,procedure:0,event:0};
@@ -91,6 +186,118 @@ test('full VET register distinguishes core duties, scheduled instances and proce
     assert.equal(item.entryKind,'procedure');assert.equal(item.procedureOnly,true);
   }
   assert.equal(JSON.stringify(h.api.getState()),before);assert.equal(h.writes,0);
+});
+
+test('existing 2026 review ticks project external completion without writing native records or closing gates', () => {
+  const initial=harness(), task=initial.data.taskRegister.tasks[0];
+  const native={status:'in-progress',exceptionSummary:'Keep <source> & notes',stepChecks:{0:true},sourceChecked:false,doneWhenConfirmed:false};
+  const h=harness(state({[task.id]:native}),{now:'2026-09-18T01:00:00Z',reviewRaw:reviewStore(task.id)});
+  const raw=h.storage.get(key), before=JSON.stringify(h.api.getState()), descriptor=h.adapter.describeTask(task.id);
+  assert.equal(descriptor.sourceStatus,'completed-externally');assert.equal(descriptor.taskHelp.sourceStatus,'completed-externally');
+  assert.equal(descriptor.status,'review');assert.equal(h.api.getStatus(task),'in-progress');assert.equal(h.api.isClosed(task),false);
+  assert.match(descriptor.notes,/Keep <source> & notes\n\nRecorded as completed outside this app for 2026 during the review on 18 September 2026/);
+  assert.match(h.api.statusPill(task),/Completed outside this app/);assert.match(h.api.taskCompletionActions(task),/Completed outside this app/);
+  const item=h.adapter.getTaskRegister().items.find(item=>item.id===task.id);
+  assert.equal(item.complete,false);assert.equal(item.externallyReviewed,true);assert.equal(item.reviewedOn,'2026-09-18');
+  h.api.openTask(task.id);
+  const html=h.elements.get('task-dialog-content').innerHTML;
+  assert.match(html,/<option value="completed-externally" selected>Completed outside this app/);
+  assert.match(html,/Keep &lt;source&gt; &amp; notes/);assert.doesNotMatch(html,/name="sourceChecked" type="checkbox" checked/);
+  assert.equal(h.storage.get(key),raw);assert.equal(JSON.stringify(h.api.getState()),before);assert.equal(h.writes,0);
+  const reloaded=harness(raw,{now:'2026-09-18T01:00:00Z',reviewRaw:h.storage.get(reviewKey)});
+  assert.equal(reloaded.adapter.describeTask(task.id).sourceStatus,'completed-externally');
+  h.storage.set(reviewKey,reviewStore(task.id,false));
+  assert.equal(h.adapter.describeTask(task.id).sourceStatus,'in-progress');assert.equal(h.adapter.describeTask(task.id).notes,native.exceptionSummary);
+  assert.equal(JSON.stringify(h.api.getState()),before);assert.equal(h.writes,0);
+});
+
+test('a review tick alone does not create a saved entry and removing or restoring it reversibly changes the forecast', () => {
+  const initial=harness(null,{now:'2026-09-18T01:00:00Z'});
+  const entry=initial.adapter.getForecast().entries.find(entry=>entry.forecast.kind!=='prerequisite');
+  assert.ok(entry,'test needs a dated current forecast item');
+  const h=harness(null,{now:'2026-09-18T01:00:00Z',reviewRaw:reviewStore(entry.taskId)});
+  // Review ticks cannot complete work before its date, so use a date already reached.
+  h.options.now='2026-12-30T01:00:00Z';h.storage.set(reviewKey,reviewStore(entry.taskId,true,'2026-12-30'));h.adapter.getForecast();
+  const task=h.api.taskById(entry.taskId);
+  assert.ok(h.api.externalReview(task));assert.equal(h.adapter.getEntries().length,0);
+  assert.ok(!h.adapter.getForecast().entries.some(item=>item.taskId===task.id));
+  h.storage.delete(reviewKey);assert.equal(h.api.externalReview(task),null);
+  h.storage.set(reviewKey,reviewStore(task.id,true,'2026-12-30'));assert.ok(h.api.externalReview(task));
+  assert.equal(h.writes,0);assert.deepEqual(Object.keys(h.api.getState().records),[]);
+});
+
+test('external review strictly rejects invalid, future, wrong-year and procedure ticks', () => {
+  const h=harness(null,{now:'2026-09-18T01:00:00Z'}), task=h.data.taskRegister.tasks[0];
+  for(const raw of ['{broken','null','[]',JSON.stringify({version:2,records:{}}),reviewStore(task.id,false),reviewStore(task.id,'true'),reviewStore(task.id,true,'2026-02-30'),reviewStore(task.id,true,'2026-09-19'),reviewStore(task.id,true,'2026-09-18',2027)]) {
+    h.storage.set(reviewKey,raw);assert.equal(h.api.externalReview(task),null,raw);
+  }
+  const future=h.data.operatingCycle2027.tasks[0];h.storage.set(reviewKey,reviewStore(future.id,true,'2026-09-18',2027));
+  assert.equal(h.api.externalReview(future),null);
+  h.storage.set(reviewKey,reviewStore(task.id));
+  assert.equal(h.api.externalReview({...task,windowStart:'2026-10-01'}),null);
+  assert.equal(h.api.externalReview({...task,windowEnd:'2026-10-01'}),null);
+  assert.equal(h.api.externalReview({...task,dueDate:'2026-10-01'}),null);
+  assert.equal(h.api.externalReview({...task,procedureOnly:true}),null);
+  assert.equal(h.api.externalReview({...task,occurrenceTemplate:true}),null);
+  assert.ok(h.api.externalReview(task));
+  h.options.readError=true;assert.equal(h.api.externalReview(task),null);assert.equal(h.writes,0);
+});
+
+test('native complete, verified and not-applicable records take priority over external reviews', () => {
+  const h=harness(null,{now:'2026-09-18T01:00:00Z'}), task=h.data.taskRegister.tasks[0];
+  h.storage.set(reviewKey,reviewStore(task.id));
+  for(const status of ['completed','verified','not-applicable']) {
+    h.api.getState().records[task.id]={status,exceptionSummary:'Native note',stepChecks:{0:true}};
+    assert.equal(h.api.externalReview(task),null);assert.equal(h.adapter.describeTask(task.id).sourceStatus,status);
+    assert.doesNotMatch(h.api.statusPill(task),/outside this app/);assert.equal(h.adapter.describeTask(task.id).notes,'Native note');
+    assert.equal(h.adapter.getTaskRegister().items.find(item=>item.id===task.id).complete,true);
+  }
+  assert.equal(h.writes,0);
+});
+
+test('saving external completion form preserves native status, checks and manual notes only', () => {
+  const initial=harness(), task=initial.data.taskRegister.tasks[0];
+  const h=harness(state({[task.id]:{status:'in-progress',exceptionSummary:'Existing note',stepChecks:{0:true}}}),{now:'2026-09-18T01:00:00Z',reviewRaw:reviewStore(task.id)});
+  h.api.openTask(task.id);const note=h.api.externalReviewNote(task);
+  const form=h.form(task,{status:'completed-externally',exceptionSummary:`Existing note\n\nAdditional note <kept>\n\n${note}`});
+  h.api.saveTaskForm(form,'save');
+  const record=JSON.parse(h.storage.get(key)).records[task.id];
+  assert.equal(record.status,'in-progress');assert.equal(record.exceptionSummary,'Existing note\n\nAdditional note <kept>');
+  assert.deepEqual(record.stepChecks,{'0':true});assert.equal(record.sourceChecked,false);assert.equal(record.doneWhenConfirmed,false);
+  assert.equal(record.evidenceRef,'');assert.equal(record.verifier,'');assert.equal(record.independentVerifierConfirmed,false);
+  assert.equal(h.writes,1);assert.equal(h.adapter.describeTask(task.id).sourceStatus,'completed-externally');
+  h.storage.set(reviewKey,reviewStore(task.id,false));
+  assert.equal(h.adapter.describeTask(task.id).notes,record.exceptionSummary);assert.equal(h.adapter.describeTask(task.id).sourceStatus,'in-progress');
+  assert.equal(h.api.stripGeneratedReviewNote(`Original\n\n\nSpacing\n\n${note}\n\nAfter`,note),'Original\n\n\nSpacing\n\nAfter');
+  assert.equal(h.api.stripGeneratedReviewNote(`Edited ${note}`,note),`Edited ${note}`);
+  assert.equal(h.api.stripGeneratedReviewNote(`${note}\n\n${note}`,note),note);
+});
+
+test('review updates refresh the views and protect an open draft against stale save and checklist changes', () => {
+  const h=harness(null,{now:'2026-09-18T01:00:00Z'}), task=h.data.taskRegister.tasks[0];
+  h.storage.set(reviewKey,reviewStore(task.id));h.api.openTask(task.id);
+  const form=h.form(task,{status:'completed-externally',exceptionSummary:`Unsaved draft\n\n${h.api.externalReviewNote(task)}`});
+  const html=h.elements.get('task-dialog-content').innerHTML;
+  h.storage.set(reviewKey,reviewStore(task.id,false));h.dispatch('storage',{key:reviewKey});
+  assert.equal(h.elements.get('task-dialog-content').innerHTML,html);assert.match(form.error.textContent,/draft is still here/);
+  assert.ok(h.events.some(event=>event.type==='wwhs:records-updated'));assert.ok(h.events.some(event=>event.type==='wwhs:forecast-updated'));
+  h.api.saveTaskForm(form,'save');assert.equal(h.writes,0);assert.equal(h.api.getState().records[task.id],undefined);
+  assert.equal(h.changeStep(task,0,true).checked,false);assert.equal(h.writes,0);
+  assert.match(form.values.get('exceptionSummary'),/^Unsaved draft/);
+  h.dispatch('wwhs:review-updated');assert.equal(h.writes,0);
+  h.api.openTask(task.id);const reopened=h.form(task,{status:'not-started',exceptionSummary:'Recovered draft'});
+  h.api.saveTaskForm(reopened,'save');assert.equal(h.writes,1);assert.equal(h.api.getRecord(task.id).exceptionSummary,'Recovered draft');
+});
+
+test('an old recurring review does not complete a later follow-up when that date arrives', () => {
+  const h=harness(null,{now:'2026-09-18T01:00:00Z'}), task=h.data.taskRegister.tasks.find(task=>task.phase==='continuous');
+  assert.ok(task);h.storage.set(reviewKey,reviewStore(task.id));assert.ok(h.api.externalReview(task));
+  h.api.getState().records[task.id]={status:'waiting',reviewDate:'2026-09-25',waitingForRole:'VET Coordinator',stepChecks:{}};
+  assert.equal(h.api.externalReview(task),null);
+  h.options.now='2026-09-25T01:00:00Z';h.adapter.getForecast();
+  assert.equal(h.api.externalReview(task),null);assert.equal(h.adapter.describeTask(task.id).sourceStatus,'waiting');
+  h.storage.set(reviewKey,reviewStore(task.id,true,'2026-09-25'));assert.ok(h.api.externalReview(task));
+  assert.equal(h.adapter.describeTask(task.id).status,'waiting');assert.equal(h.writes,0);
 });
 
 test('saved notes, waiting owner and chase date project without changing native records', () => {

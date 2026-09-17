@@ -12,6 +12,7 @@
     "lln-robot": "https://waggawaggarto90333.lln.training/login",
     "wwhs-drive": workDriveSearch('type:folder "WWHS VET"'),
     "sentral": "https://waggawagga-h.sentral.com.au/dashboard/",
+    "staff-calendar": "https://waggawagga-h.sentral.com.au/s-lD94m0/webcal/calendar/17",
     "finance-system": "https://selfservice.det.nsw.edu.au/irj/portal",
     "head-teacher-guide": workDriveSearch('"Head Teacher Information For TAS Faculty Wagga Wagga High School"')
   };
