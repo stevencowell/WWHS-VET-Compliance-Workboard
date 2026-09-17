@@ -2,11 +2,13 @@ import {createLocalVault} from './security/local-vault.mjs';
 import {createPrivateStorage} from './security/private-storage.mjs';
 import {sampleDataset} from './sample.mjs';
 import {FINANCE_PROMPT_TOPICS,buildFinancePrompt,buildSafeFinanceSummary} from './prompts.mjs';
+import {validateBudgetPlan} from './budget-plan.mjs';
+import {setupBudgetPlanUi} from './budget-plan-ui.mjs';
 
 if(window.self!==window.top)throw new Error('Open Finance Studio directly to use this workspace.');
 
 const $=id=>document.getElementById(id);
-let vault,storage,engine,sample=false,starting=false,gateState='',fatalSaveError=null,engineAttempted=false,resetting=false;
+let vault,storage,engine,budgetUi,sample=false,starting=false,gateState='',fatalSaveError=null,engineAttempted=false,resetting=false;
 const rejectedWrites=new Map();
 const planningKey='finance_studio_planning_inputs_v1';
 const topicForView={overview:'spending',transactions:'categories',budget:'budget',statements:'statements',tax:'tax',planning:'savings',categories:'categories','ai-insights':'subscriptions',tools:'spending',assistant:'spending'};
@@ -48,12 +50,12 @@ async function openWorkspace(isSample=false) {
   if(engineAttempted)throw new Error('Reload Finance Studio before opening another workspace.');
   sample=isSample;
   storage=sample?memoryStorage():await createPrivateStorage(vault,{onStatus:reportStatus,autoFlushMs:300});
-  window.FINANCE_STORAGE={getItem:k=>storage.getItem(k),setItem:(k,v)=>{try{storage.setItem(k,v);rejectedWrites.delete(k);}catch(error){rejectedWrites.set(k,v);throw error;}},removeItem:k=>storage.removeItem(k),atomic:fn=>{try{return storage.atomic?storage.atomic(fn):fn();}catch(error){fatalSaveError=error;reportStatus({state:'error',error:error.message});throw error;}},onError:error=>{fatalSaveError=error;reportStatus({state:'error',error:error.message});}};
+  window.FINANCE_STORAGE={privateWorkspace:!sample,validateBudgetPlan,getItem:k=>storage.getItem(k),setItem:(k,v)=>{try{storage.setItem(k,v);rejectedWrites.delete(k);}catch(error){rejectedWrites.set(k,v);throw error;}},removeItem:k=>storage.removeItem(k),atomic:fn=>{const rejectedBefore=new Map(rejectedWrites);try{return storage.atomic?storage.atomic(fn):fn();}catch(error){rejectedWrites.clear();for(const [key,value] of rejectedBefore)rejectedWrites.set(key,value);fatalSaveError=error;reportStatus({state:'error',error:error.message});throw error;}},onError:error=>{fatalSaveError=error;reportStatus({state:'error',error:error.message});}};
   engineAttempted=true;
   await loadScript('./vendor/chart.js/chart.umd.js');
   await loadScript('./classification-config.js');
   await loadScript('./transfer-classification.js');
-  await loadScript('./main.js');
+  await loadScript('./main.js?v=budget-plan-1');
   engine=window.FinanceEngine;
   window.addEventListener('finance-ai-help',event=>openPrompt(event.detail?.topic||'spending'));
   window.addEventListener('finance-data-changed',updateCoverage);
@@ -67,13 +69,14 @@ async function openWorkspace(isSample=false) {
     $('openAssistant').textContent=view==='assistant'?'AI help':'AI help with this view';
   };
   const renderAll=engine.App.renderAll.bind(engine.App);
-  engine.App.renderAll=()=>{renderAll();updateCoverage();};
+  engine.App.renderAll=()=>{renderAll();updateCoverage();budgetUi?.refresh();};
   $('financeGate').hidden=true;$('financeWorkspace').hidden=false;
   $('workspaceMode').textContent=sample?'Sample workspace':'Private Finance';
   $('sampleNotice').hidden=!sample;
   $('downloadEncryptedBackup').hidden=sample;
   $('lockFinance').textContent=sample?'Leave sample workspace':'Lock Finance';
   if(sample)await engine.start({dataset:sampleDataset()});else await engine.start();
+  budgetUi=setupBudgetPlanUi({engine,storage,sample});
   document.title='Finance Studio · Your private workspace';
   // Keep the approved overview hierarchy: figures first, then a useful next step.
   const cards=$('summaryCards'),brief=document.querySelector('.overview-brief-grid');

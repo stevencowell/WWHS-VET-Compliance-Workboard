@@ -12,6 +12,7 @@ const MAX_IMPORT_FILES = 100;
 const STORAGE_KEYS = {
   budgetItems: "finance_studio_budget_items_v3",
   budgetMeta: "finance_studio_budget_meta_v1",
+  budgetPlan: "finance_studio_budget_plan_v1",
   scenarios: "finance_studio_planning_scenarios_v3",
   subcategoryRules: "finance_studio_subcategory_rules_v3",
   merchantReviewHidden: "finance_studio_merchant_review_hidden_v1",
@@ -845,6 +846,7 @@ function normalizeFinanceStudioBackupPayload(payload = {}) {
     localState: {
       budgetItems: normalizeBudgetItems(localState.budget_items || localState.budgetItems || dataset.budget_summary || []),
       budgetMeta: normalizeBudgetMetaSnapshot(localState.budget_meta || localState.budgetMeta || {}, dataset),
+      budgetPlan: localState.budget_plan == null ? null : validateStoredBudgetPlan(localState.budget_plan),
       subcategoryRules: normalizeSubcategoryRuleRows(
         localState.subcategory_rules || localState.subcategoryRules || []
       ),
@@ -2438,6 +2440,140 @@ function buildBudgetItemKey(category, item) {
   return `${normalizeLabel(category)}|${normalizeLabel(item)}`;
 }
 
+function assertBudgetImportRecord(value, allowed, label) {
+  if (!value || Array.isArray(value) || typeof value !== "object") throw new Error(`${label} must be an object.`);
+  const prototype = Object.getPrototypeOf(value);
+  if (prototype !== null && (Object.getPrototypeOf(prototype) !== null || Object.getOwnPropertyDescriptor(prototype, "constructor")?.value?.name !== "Object")) {
+    throw new Error(`${label} must be a plain object.`);
+  }
+  for (const key of Reflect.ownKeys(value)) {
+    const descriptor = Object.getOwnPropertyDescriptor(value, key);
+    if (typeof key !== "string" || !allowed.includes(key) || !descriptor?.enumerable || !Object.hasOwn(descriptor, "value")) {
+      throw new Error(`${label} contains an unsupported field.`);
+    }
+  }
+}
+
+function budgetImportText(value, label, maxLength, { optional = false } = {}) {
+  if (value === undefined && optional) return "";
+  if (typeof value !== "string" || value.length > maxLength || /[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(value)) {
+    throw new Error(`${label} must be text of no more than ${maxLength} characters.`);
+  }
+  const result = value.trim();
+  if (!optional && !result) throw new Error(`${label} is required.`);
+  return result;
+}
+
+function budgetImportOptions(options, allowPlan = false) {
+  assertBudgetImportRecord(options, allowPlan ? ["mode", "planKey", "planValue"] : ["mode"], "Budget import options");
+  const mode = options.mode === undefined ? "merge" : options.mode;
+  if (mode !== "merge" && mode !== "replace") throw new Error("Choose merge or replace for the budget import.");
+  return mode;
+}
+
+function previewBudgetImport(lines, options = {}) {
+  const mode = budgetImportOptions(options);
+  if (!Array.isArray(lines) || lines.length > 1000) throw new Error("Choose no more than 1,000 budget lines.");
+  if (mode === "replace" && lines.length === 0) throw new Error("Select at least one budget line before replacing the budget.");
+  const existing = structuredClone(AppState.budgetItems);
+  const existingByKey = new Map(existing.map(item => [buildBudgetItemKey(item.category, item.item), item]));
+  const incoming = new Map();
+  const warnings = [];
+  for (const line of lines) {
+    assertBudgetImportRecord(line, ["id", "category", "item", "annual_budget", "basis", "notes"], "Budget line");
+    const category = budgetImportText(line.category, "Budget category", 160);
+    const item = budgetImportText(line.item, "Budget item", 240);
+    const sourceId = budgetImportText(line.id, "Budget line ID", 160, { optional: true });
+    const notes = budgetImportText(line.notes, "Budget notes", 4000, { optional: true });
+    if (line.basis !== undefined && !["register", "historical-estimate", "needs-review"].includes(line.basis)) {
+      throw new Error("Unsupported fallback amounts cannot become approved budget targets.");
+    }
+    if (typeof line.annual_budget !== "number" || !Number.isFinite(line.annual_budget) || line.annual_budget < 0 || line.annual_budget > 1e9) {
+      throw new Error("Each annual budget must be a finite number between 0 and 1,000,000,000.");
+    }
+    const normal = normalizeBudgetCategoryItem(category, item);
+    if (normalizeLabel(category) === "transfers" || normal.category === "Transfers") {
+      throw new Error("Transfers belong in the payment plan, not expense budget targets.");
+    }
+    if (!isOfficialCategory(normal.category) || (normal.category === "Uncategorized" && normalizeLabel(category) !== "uncategorized" && normalizeLabel(category) !== "uncategorised")) {
+      throw new Error(`Review the budget category for ${item} before importing it.`);
+    }
+    const key = buildBudgetItemKey(normal.category, normal.item);
+    if (incoming.has(key)) throw new Error(`Select only one target for ${normal.category} > ${normal.item}.`);
+    const previous = existingByKey.get(key);
+    const amount = Number(line.annual_budget.toFixed(2));
+    if (category !== normal.category || item !== normal.item) warnings.push(`${category} > ${item} maps to ${normal.category} > ${normal.item}.`);
+    if (amount !== line.annual_budget) warnings.push(`${normal.category} > ${normal.item} is rounded to the nearest cent.`);
+    if (line.basis === "historical-estimate" || line.basis === "needs-review") warnings.push(`${normal.category} > ${normal.item} is a selected estimate; confirm that the annual target still suits you.`);
+    incoming.set(key, {
+      id: previous?.id || sourceId || `budget_import_${encodeURIComponent(key)}`,
+      category: normal.category, item: normal.item, annual_budget: amount, notes,
+      seeded_actual: previous?.seeded_actual ?? 0,
+    });
+  }
+  const preserved = mode === "merge" ? existing.filter(item => !incoming.has(buildBudgetItemKey(item.category, item.item))) : [];
+  const items = [...preserved, ...incoming.values()];
+  // IDs are UI identities only; category/item controls replacement. Keep them unique
+  // even when a source file reused an ID for another category.
+  const usedIds = new Set(preserved.map(item => item.id));
+  for (const item of incoming.values()) {
+    const baseId = item.id;
+    let suffix = 1;
+    while (usedIds.has(item.id)) item.id = `${baseId}_${suffix++}`;
+    usedIds.add(item.id);
+  }
+  return {
+    items, importedCount: incoming.size,
+    replacedCount: mode === "replace" ? existing.length : [...incoming.keys()].filter(key => existingByKey.has(key)).length,
+    preservedCount: preserved.length, warnings,
+  };
+}
+
+function validateStoredBudgetPlan(value) {
+  const validate = getFinanceStorage()?.validateBudgetPlan;
+  if (typeof validate !== "function") throw new Error("Reload Finance Studio before importing or restoring a payment plan.");
+  const clean = validate(value);
+  // Defence in depth: the shell validator owns the versioned schema, while this
+  // boundary also limits the serialized value before it enters private storage.
+  if (!clean || clean.type !== "finance-studio-budget-plan" || clean.version !== 1) throw new Error("This payment plan format is not supported.");
+  importTextBytes(JSON.stringify(clean), 2 * 1024 * 1024);
+  return clean;
+}
+
+function importBudgetOnly(lines, options = {}) {
+  const mode = budgetImportOptions(options, true);
+  const preview = previewBudgetImport(lines, { mode });
+  const hasPlan = Object.hasOwn(options, "planValue");
+  if (Object.hasOwn(options, "planKey") && options.planKey !== STORAGE_KEYS.budgetPlan) throw new Error("Only the Finance payment-plan key can be imported.");
+  if (Object.hasOwn(options, "planKey") && !hasPlan) throw new Error("Choose a payment plan to save with this key.");
+  const plan = hasPlan ? validateStoredBudgetPlan(options.planValue) : null;
+  const storage = getFinanceStorage();
+  if (storageWritesSuppressed || financeMutationDepth || storage?.privateWorkspace !== true || typeof storage?.atomic !== "function" || typeof storage?.getItem !== "function" || typeof storage?.setItem !== "function") {
+    throw new Error("Unlock your private Finance workspace before importing a budget. Sample mode cannot save it.");
+  }
+  // The real private adapter rejects reads after it is closed/locked.
+  storage.getItem(STORAGE_KEYS.budgetItems);
+  if (!lines.length && !hasPlan) return preview;
+  const nextItems = structuredClone(preview.items);
+  const meta = { version: BUDGET_BASELINE_VERSION, signature: buildBudgetDataSignature(AppState.transactions) };
+  try {
+    storage.atomic(() => {
+      if (lines.length) {
+        saveStorage(STORAGE_KEYS.budgetItems, nextItems);
+        saveStorage(STORAGE_KEYS.budgetMeta, meta);
+      }
+      if (hasPlan) saveStorage(STORAGE_KEYS.budgetPlan, plan);
+    });
+  } catch (error) {
+    storage.onError?.(error);
+    throw error;
+  }
+  // Do not repaint or rebuild a dataset inside the transaction: unrelated records
+  // and the displayed budget must remain untouched if the atomic commit fails.
+  if (lines.length) AppState.budgetItems = nextItems;
+  return preview;
+}
+
 function getRecentBudgetScope(transactions = [], monthLimit = 12) {
   const months = [...new Set(transactions.map((tx) => tx.month).filter(Boolean))].sort();
   if (!months.length) {
@@ -2842,6 +2978,10 @@ function buildFinanceStudioBackupPayload() {
     dataset,
     local_state: {
       budget_items: budgetItems,
+      budget_plan: (() => {
+        const plan = loadStorage(STORAGE_KEYS.budgetPlan, null);
+        return plan === null ? null : validateStoredBudgetPlan(plan);
+      })(),
       budget_meta: {
         version: BUDGET_BASELINE_VERSION,
         signature: buildBudgetDataSignature(AppState.transactions || []),
@@ -4371,6 +4511,9 @@ function parseBankCsvTransactions(text, fallbackAccount = "Imported CSV") {
     if (!date) continue;
 
     const description = String(row[2] || "").trim().replace(/^"(.*)"$/, "$1");
+    // Bank statements can include balance-only memos, such as available redraw.
+    // A genuinely recorded numeric zero remains a transaction.
+    if (String(row[4] ?? "").trim() === "") continue;
     const amount = toNumber(String(row[4]).replace(/[^0-9.-]/g, ""), NaN);
     if (!Number.isFinite(amount)) continue;
     const balance = toNumber(String(row[5] || "").replace(/[^0-9.-]/g, ""), 0);
@@ -15640,6 +15783,7 @@ const App = {
       saveStorage(STORAGE_KEYS.scenarios, normalized.localState.scenarios);
       saveStorage(STORAGE_KEYS.budgetItems, normalized.localState.budgetItems);
       saveStorage(STORAGE_KEYS.budgetMeta, normalized.localState.budgetMeta);
+      saveStorage(STORAGE_KEYS.budgetPlan, normalized.localState.budgetPlan);
       saveStorage(STORAGE_KEYS.taxSettings, normalized.localState.taxSnapshot.settings);
       saveStorage(STORAGE_KEYS.taxManualExpenses, normalized.localState.taxSnapshot.manual_expenses);
       saveStorage(STORAGE_KEYS.taxRules, normalized.localState.taxSnapshot.rules);
@@ -16117,8 +16261,11 @@ const FinanceEngine = Object.freeze({
   buildBackup: buildFinanceStudioBackupPayload,
   restoreBackup: (payload, options) => App.restoreBackupPayload(payload, options),
   applyDataset: (dataset, options) => App.applyDataset(dataset, options),
+  previewBudgetImport,
+  importBudgetOnly,
   // Controller hooks support the new shell without duplicating financial logic.
   ThemeController,
+  BudgetController,
   TaxController,
   PlanningController,
   AssistantController,
@@ -16136,6 +16283,8 @@ if (typeof module === "object" && module.exports) {
     generateBaselineBudgetFromActuals,
     parseBankCsvTransactions,
     dedupeTransactions,
+    previewBudgetImport,
+    importBudgetOnly,
     normalizeTransactionSetToOfficialTaxonomy,
     buildClassificationDiagnostics,
     buildAnnualBudgetSuggestions,

@@ -93,6 +93,50 @@ label,body[data-theme="dark"] label { color:var(--text); font-size:12px; }
 .summary-choice { display:flex!important; align-items:flex-start; gap:10px; margin:10px 0; }
 .summary-choice input { width:18px!important; min-height:18px!important; margin:1px 0; flex-shrink:0; }
 #financePrompt { min-height:320px; line-height:1.65; font-size:13px; }
+
+.plan-title { font-size:17px; font-weight:600; margin:8px 0; }
+.plan-warning { border-left:3px solid var(--accent); background:var(--accent-soft); padding:13px 16px; color:var(--text); font-size:13px; line-height:1.65; border-radius:0 10px 10px 0; }
+.plan-status:empty { display:none; }
+.plan-controls { display:flex; flex-wrap:wrap; gap:16px; margin:22px 0; }
+.plan-controls label,.plan-dialog>label { display:grid; gap:7px; }
+.plan-controls .control { min-width:150px; }
+.plan-totals { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; margin:15px 0; }
+.plan-total { border:1px solid var(--border); border-radius:13px; padding:20px; background:var(--surface-strong); display:grid; gap:8px; }
+.plan-total>span { font-size:13px; }
+.plan-total>strong { font-size:27px; font-weight:600; }
+.plan-total>small { color:var(--muted); font-size:12px; }
+.plan-details { border-top:1px solid var(--border); margin-top:20px; padding-top:14px; }
+.plan-details>summary { font-size:13px; font-weight:600; padding:5px 0; }
+.plan-details>div { margin-top:14px; }
+.plan-table { min-width:690px; }
+.plan-table td { vertical-align:top; white-space:normal; }
+.plan-table .helper { margin:8px 0 0; font-size:12px; }
+.plan-table td:last-child { min-width:120px; }
+.plan-dialog { width:1000px; max-width:calc(100vw - 32px); max-height:calc(100dvh - 40px); overflow:auto; overscroll-behavior:contain; box-sizing:border-box; color:var(--text); background:var(--surface); border:1px solid var(--border); border-radius:18px; padding:28px; box-shadow:var(--shadow-md); }
+.plan-dialog::backdrop { background:#14252bc9; }
+.plan-dialog h2 { margin:0; font-size:23px; }
+.plan-dialog h3 { margin:24px 0 14px; font-size:17px; }
+.plan-dialog .card-header { align-items:center; }
+.plan-dialog .plan-table td:last-child { min-width:300px; }
+.plan-dialog .plan-table td:nth-child(2) { min-width:160px; }
+.plan-amount { width:130px; }
+.plan-line-select { width:20px; height:20px; accent-color:var(--brand); }
+.plan-dialog>label { margin:18px 0; }
+.plan-check { display:flex!important; align-items:flex-start; gap:10px; line-height:1.6; }
+.plan-check[hidden] { display:none!important; }
+.plan-check input { flex:0 0 auto; width:18px!important; height:18px!important; min-height:18px!important; margin:2px 0 0; accent-color:var(--brand); }
+#planForecast>.table-wrap { max-height:420px; }
+#planForecast .data-table th { position:sticky; top:0; z-index:1; }
+.plan-preview { padding:14px; background:var(--brand-soft); border-radius:10px; font-size:13px; }
+.plan-review-footer { display:flex; justify-content:flex-end; padding-top:10px; }
+@media(max-width:650px) {
+  .plan-totals { grid-template-columns:1fr; }
+  .plan-total { padding:16px; }
+  .plan-total>strong { font-size:25px; }
+  .plan-dialog { padding:18px; max-width:calc(100vw - 20px); max-height:calc(100dvh - 20px); }
+  .plan-dialog h2 { font-size:19px; }
+  .plan-review-footer .btn { width:100%; }
+}
 .contextual-ai { flex-shrink:0; }
 #backupStatus { flex-basis:100%; }
 @media(max-width:760px) { .data-options { position:fixed; left:18px; right:18px; width:auto; max-width:none; max-height:65vh; overflow:auto; } }
