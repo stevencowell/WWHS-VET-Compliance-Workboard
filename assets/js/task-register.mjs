@@ -14,8 +14,20 @@ export function readReview(raw) {
 }
 export function reviewKey(wing, item, year) { return `${wing}:${year}:${encodeURIComponent(item.recordKey || item.id)}`; }
 export function registerDate(item) { return item.schedule?.endDate || item.schedule?.startDate || ''; }
+export function registerEntryKind(item) {
+  if (item.procedureOnly) return 'procedure';
+  return ['core','scheduled','event'].includes(item.entryKind) ? item.entryKind : 'core';
+}
+export function registerEntryCounts(items) {
+  return items.reduce((counts,item) => { counts[registerEntryKind(item)]++; return counts; }, {core:0,scheduled:0,procedure:0,event:0});
+}
+const entryLabels = {core:['core duty','core duties'],scheduled:['scheduled occurrence','scheduled occurrences'],procedure:['procedure guide','procedure guides'],event:['saved event','saved events']};
+export function registerEntrySummary(items) {
+  return Object.entries(registerEntryCounts(items)).filter(([,count])=>count).map(([kind,count])=>`${count} ${entryLabels[kind][count===1?0:1]}`).join(' · ');
+}
 export function matchesRegisterView(item, view, today) {
   const date = registerDate(item), kind = item.schedule?.kind;
+  if (['core','scheduled','event'].includes(view)) return registerEntryKind(item) === view;
   if (view === 'open') return !item.reviewComplete && !item.procedureOnly;
   if (view === 'past') return !item.reviewComplete && !item.procedureOnly && ((date && date < today) || item.historyOnly || /^\d{4}$/.test(item.year) && Number(item.year) < Number(today.slice(0, 4)));
   if (view === 'focus') return item.inFocus && !item.reviewComplete;
@@ -35,7 +47,7 @@ const node = (tag, text, attrs = {}) => {
 };
 const sydneyToday = () => new Intl.DateTimeFormat('en-CA', {timeZone:'Australia/Sydney'}).format(new Date());
 const button = (text, action) => { const result = node('button', text, {type:'button'}); result.addEventListener('click', action); return result; };
-const views = {all:'All tasks',open:'Not yet reviewed complete',past:'Past dates to review',focus:'Current focus',later:'Later dates',recurring:'Recurring duties',trigger:'Triggered or undated',gaps:'Needs checking',complete:'Completed / reviewed',reference:'Procedure guides'};
+const views = {all:'All entries',core:'Core duties',scheduled:'Scheduled occurrences',event:'Saved events',reference:'Procedure guides',open:'Not yet reviewed complete',past:'Past dates to review',focus:'Current focus',later:'Later dates',recurring:'Recurring duties',trigger:'Triggered or undated',gaps:'Needs checking',complete:'Completed / reviewed'};
 
 export function createTaskRegister({wing, label, getAdapter, getSavedItems = () => []}) {
   const panel = node('details', undefined, {class:'workspace-register'});
@@ -56,10 +68,12 @@ export function createTaskRegister({wing, label, getAdapter, getSavedItems = () 
   const search = node('input', undefined, {type:'search','aria-label':`Search full ${label} register`,placeholder:'Find a task, role or timing…'});
   for (const [text, control] of [['Year',year],['Term / area',area],['Show',view],['Search all listed tasks',search]]) { const wrapper = node('label', text); wrapper.append(control); filters.append(wrapper); }
   const counts = node('p','',{class:'register-counts',role:'status','aria-live':'polite'});
+  const breakdown = node('p','',{class:'register-counts','aria-label':'Entry types in the selected year and area'});
+  const countNote = node('p',wing==='vet' ? '2026 lists core duties once, including duties that repeat. The 2027 plan expands repeat work into scheduled occurrences. Procedure guides are reference instructions; saved events are separate items started in this browser. The two annual totals are not a like-for-like count of responsibilities.' : 'Core duties are listed once, including duties that repeat. Scheduled occurrences are individual planned repetitions; procedure guides are reference instructions.',{class:'register-review-note'});
   const message = node('p','',{class:'register-message',role:'status','aria-live':'polite'});
   const reviewNote = node('p','',{class:'register-review-note'});
   const list = node('div',undefined,{class:'register-list'});
-  body.append(filters, counts, reviewNote, message, list);
+  body.append(filters, counts, breakdown, countNote, reviewNote, message, list);
   const backup = node('details',undefined,{class:'register-backup'});
   backup.append(node('summary','Back up or restore review ticks'));
   const exportButton = button('Back up review ticks', () => {
@@ -115,17 +129,18 @@ export function createTaskRegister({wing, label, getAdapter, getSavedItems = () 
     const filtered=items.filter(item=>matchesRegisterView(item,view.value,today)&&(!query||[item.title,item.area,item.owner,item.schedule?.label,...(item.gaps||[])].join(' ').toLocaleLowerCase('en-AU').includes(query)));
     for (const option of view.options) option.textContent=`${views[option.value]} (${items.filter(item=>matchesRegisterView(item,option.value,today)).length})`;
     summary.textContent=`Full ${label} task register · all dates`;
-    counts.textContent=`Showing ${filtered.length} of ${items.length} loaded entries for ${year.value==='all'?'all listed years':year.value}. ${items.filter(item=>!item.procedureOnly&&!item.reviewComplete).length} not yet reviewed complete. ${snapshot.roleLabel || ''}${snapshot.roleLabel?'.':''}`;
+    counts.textContent=`Showing ${filtered.length} of ${items.length} entries for ${year.value==='all'?'all listed years':year.value}. ${snapshot.roleLabel || ''}${snapshot.roleLabel?'.':''}`;
+    breakdown.textContent=`In the selected year / area: ${registerEntrySummary(items) || 'no entries'}.`;
     const datedYearLoaded=snapshot.items.some(item=>item.year===year.value&&registerDate(item));
     reviewNote.textContent=`${year.value!=='all'&&!datedYearLoaded?'No dated calendar is loaded for this year. Only continuing duties and other explicitly listed controls are shown. ':''}Use the review ticks to record work you have already completed. Each tick belongs to its labelled year; 2026 ticks do not complete 2027 work. These review ticks are separate from the current task list and official checklist verification. Ongoing duties still repeat.`;
     list.replaceChildren();
-    if (!filtered.length) list.append(node('p','No tasks match these filters. Try All tasks or All listed years.'));
+    if (!filtered.length) list.append(node('p','No entries match these filters. Try All entries or All listed years.'));
     for (const item of filtered) {
       const row=node('article',undefined,{class:`register-row${item.reviewComplete?' is-reviewed':''}`,'data-register-id':item.id});
       const main=node('div',undefined,{class:'register-row-main'});
       const title=node('a',item.title,{href:item.route});
       main.append(node('h3'));main.firstChild.append(title);
-      main.append(node('p',[item.year==='ongoing'?`Ongoing duty · review ${item.reviewYear}`:item.year,item.area,item.owner].filter(Boolean).join(' · '),{class:'register-meta'}));
+      main.append(node('p',[item.year==='ongoing'?`Ongoing duty · review ${item.reviewYear}`:item.year,entryLabels[registerEntryKind(item)][0],item.area,item.owner].filter(Boolean).join(' · '),{class:'register-meta'}));
       main.append(node('p',item.schedule?.label || 'Timing needs checking',{class:'register-timing'}));
       const date=registerDate(item), past=date&&date<today;
       const status=item.sourceComplete?`Workboard status: ${item.status}`:item.personalDone?'Done in your saved task list':item.tick?.completed?`Reviewed complete for ${item.reviewYear} · ${item.tick.reviewedOn}`:past?'Past date — review the record':item.historyOnly?'Historical record — review completion':item.inFocus?'Included in the current forecast':item.procedureOnly?'Procedure guide':item.schedule?.kind==='trigger'?'Bring forward when the trigger occurs':'Outside the current forecast';

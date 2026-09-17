@@ -516,6 +516,7 @@
         area: areaMeta[task.area]?.label || "Core work", owner: task.owner || "Owner to confirm",
         status, complete: !reference && ["completed", "verified", "not-applicable"].includes(status),
         historyOnly: task.historyOnly === true, procedureOnly: task.procedureOnly === true,
+        entryKind: task.procedureOnly ? "procedure" : olderOccurrence ? taskCycle(task) === "event" ? "event" : "scheduled" : "core",
         schedule, inFocus: focus.has(key), focusReason: focus.get(key) || "",
         sourceIds: [...(task.systemIds || [])], gaps
       });
@@ -538,6 +539,7 @@
         year: olderOccurrence ? week.slice(0, 4) : "ongoing", route: `#today?weekly=${index}&week=${encodeURIComponent(week)}`,
         area: "Weekly review", owner: "Head Teacher TAS", status: !available ? "unavailable" : checked ? "completed" : "not-reviewed",
         complete: checked, historyOnly: false, procedureOnly: false,
+        entryKind: olderOccurrence ? "scheduled" : "core",
         schedule: { kind: "recurring", label: `Weekly scan · week beginning ${week}`, startDate: week },
         inFocus: false, focusReason: "", sourceIds: ["staff-calendar", "nesa-actions", "tas-drive"],
         gaps: !available ? ["Saved weekly progress is unavailable; reload before relying on its status."] : []

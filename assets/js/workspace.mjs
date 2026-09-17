@@ -1,7 +1,7 @@
 // One planning surface. Specialist records remain owned by their existing workboards.
 import '../../morning-launchpad/assets/summary-import.mjs?v=full-register-1';
 import {INBOX_KEY, validateInbox, taskSection, todaySydney} from '../../morning-launchpad/assets/summary-core.mjs?v=full-register-1';
-import {createTaskRegister} from './task-register.mjs?v=full-register-1';
+import {createTaskRegister} from './task-register.mjs?v=entry-counts-1';
 
 const base = new URL('../../', import.meta.url);
 const wing = document.body.dataset.workboard || 'launchpad';

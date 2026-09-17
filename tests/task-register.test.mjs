@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {readReview,reviewKey,matchesRegisterView} from '../assets/js/task-register.mjs';
+import {readReview,reviewKey,matchesRegisterView,registerEntryKind,registerEntryCounts,registerEntrySummary} from '../assets/js/task-register.mjs';
 assert.deepEqual(readReview(null),{version:1,records:{}});
 assert.throws(()=>readReview('{"version":2,"records":{}}'));
 assert.throws(()=>readReview('{"version":1,"records":{"vet:2026:a":{"completed":"yes","reviewedOn":"2026-09-17"}}}'));
@@ -13,4 +13,11 @@ assert.equal(matchesRegisterView({...item,schedule:{kind:'trigger'}},'trigger','
 assert.equal(matchesRegisterView({...item,schedule:{kind:'date',endDate:'2026-12-01'}},'later','2026-09-17'),true);
 assert.equal(matchesRegisterView({...item,schedule:{kind:'window',startDate:'2027-02-01',endDate:'2027-02-05'}},'past','2026-09-17'),false);
 assert.equal(matchesRegisterView({...item,procedureOnly:true},'past','2026-09-17'),false);
+const mixed=[item,{...item,id:'week-1',entryKind:'scheduled'},{...item,id:'week-2',entryKind:'scheduled'},{...item,id:'event',entryKind:'event'},{...item,id:'guide',entryKind:'event',procedureOnly:true}];
+assert.deepEqual(registerEntryCounts(mixed),{core:1,scheduled:2,procedure:1,event:1});
+assert.equal(registerEntrySummary(mixed),'1 core duty · 2 scheduled occurrences · 1 procedure guide · 1 saved event');
+assert.equal(registerEntryKind({entryKind:'unknown'}),'core');
+assert.equal(matchesRegisterView(mixed[4],'event','2026-09-17'),false);
+assert.equal(matchesRegisterView(mixed[4],'reference','2026-09-17'),true);
+assert.equal(matchesRegisterView(mixed[1],'scheduled','2026-09-17'),true);
 console.log('PASS full-register filtering, year separation and invalid review recovery');

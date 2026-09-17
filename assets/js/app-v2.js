@@ -492,6 +492,8 @@
     const items = definitions.filter(forecastRoleMatches).map(task => {
       const record = getRecord(task.id), focus = focused.get(task.id);
       const template = task.occurrenceTemplate === true;
+      const procedureOnly = template || task.procedureOnly === true;
+      const entryKind = procedureOnly ? "procedure" : task.occurrenceOf ? "event" : is2027Task(task) ? "scheduled" : "core";
       const year = is2027Task(task) ? "2027" : "2026";
       const start = safeIsoDate(task.windowStart), end = safeIsoDate(task.windowEnd), due = safeIsoDate(task.dueDate);
       const timing = String(task.timing || "").trim(), trigger = String(task.trigger || "").trim();
@@ -520,7 +522,7 @@
         route: "#task/" + encodeURIComponent(task.id),
         area: template ? "Event procedure" : task.term ? `Term ${task.term}` : phaseMeta[task.phase]?.short || "Annual setup",
         owner: assignedRole(task), status: template ? "Procedure - start when needed" : statusMeta[getStatus(task)]?.label || "Not started",
-        complete, historyOnly: task.historyOnly === true, procedureOnly: template || task.procedureOnly === true,
+        complete, historyOnly: task.historyOnly === true, procedureOnly, entryKind,
         schedule, inFocus: focused.has(task.id), focusReason, sourceIds: [...(task.sourceIds || [])], gaps
       };
     });

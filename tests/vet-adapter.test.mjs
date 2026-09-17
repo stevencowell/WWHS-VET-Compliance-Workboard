@@ -80,6 +80,19 @@ test('VET adapter exposes saved work only and retains stable native routes', () 
   assert.equal(h.writes,0);
 });
 
+test('full VET register distinguishes core duties, scheduled instances and procedures without saving', () => {
+  const h=harness(null,{now:'2026-09-17T01:00:00Z'}), before=JSON.stringify(h.api.getState());
+  const {items}=h.adapter.getTaskRegister(), counts={core:0,scheduled:0,procedure:0,event:0};
+  for(const item of items)counts[item.entryKind]++;
+  assert.deepEqual(counts,{core:61,scheduled:176,procedure:9,event:0});
+  assert.equal(items.find(item=>item.id==='t2-09-review-stage6-entry-cutoff').entryKind,'core');
+  for(const template of h.data.operatingCycle2027.eventTemplates){
+    const item=items.find(item=>item.id===template.id);
+    assert.equal(item.entryKind,'procedure');assert.equal(item.procedureOnly,true);
+  }
+  assert.equal(JSON.stringify(h.api.getState()),before);assert.equal(h.writes,0);
+});
+
 test('saved notes, waiting owner and chase date project without changing native records', () => {
   const initial=harness(), task=initial.data.taskRegister.tasks[0];
   const record={status:'waiting',waitingForRole:'VET Coordinator',reviewDate:'2027-03-10',escalationDate:'2027-03-12',exceptionSummary:'Confirm source with coordinator',stepChecks:{0:true}};
@@ -114,6 +127,15 @@ test('separate event occurrences keep separate planning identities', () => {
   const entries=h.adapter.getEntries();assert.equal(entries.length,2);
   assert.notEqual(entries[0].recordKey,entries[1].recordKey);
   for(const entry of entries){assert.equal(entry.taskId,entry.recordKey);assert.equal(entry.cycle,'2027');assert.ok(entry.route.includes(entry.taskId));}
+  const {items}=h.adapter.getTaskRegister();
+  assert.equal(items.filter(item=>item.entryKind==='event').length,2);
+  for(const occurrence of occurrences){
+    const item=items.find(item=>item.id===occurrence.id);
+    assert.equal(item.entryKind,'event');assert.equal(item.recordKey,occurrence.id);
+    assert.equal(item.procedureOnly,false);assert.equal(h.api.taskById(item.id).occurrenceOf,template.id);
+  }
+  assert.equal(items.find(item=>item.id===template.id).entryKind,'procedure');
+  assert.equal(h.writes,0);
 });
 
 test('Add to my work emits a descriptor without writing or completing native work', () => {
