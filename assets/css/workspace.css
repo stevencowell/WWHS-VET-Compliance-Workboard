@@ -181,4 +181,7 @@
   .workspace-flow span { font-size:12px; }
   .shared-workspace[data-workboard] .dash-access { padding:20px; }
 }
+.workspace-source-access { margin:12px 0 24px; padding:16px 20px; border:1px solid var(--line); border-radius:12px; background:var(--surface); color:var(--muted); }
+.workspace-source-access a { color:var(--area-link,var(--ink)); font-weight:700; text-underline-offset:3px; }
+.workspace-source-access span { display:block; margin-top:5px; font-size:14px; }
 @media print { .workspace-header,.workspace-flow,.workspace-specialist>summary { display:none; } .workspace-welcome { background:none;color:#000; } .workspace-welcome h1,.workspace-welcome p { color:#000!important; } }

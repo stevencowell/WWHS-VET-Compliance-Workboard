@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en-AU" data-wing="both">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'; object-src 'none'">
+  <meta name="description" content="A source register for the 2026 VET and TAS workboard, with a checking plan for 2027.">
+  <title>Task sources · WWHS VET and TAS</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="./styles.css">
+  <script type="module" src="./app.mjs"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Skip to task sources</a>
+  <header class="site-header">
+    <a class="brand" href="../#home"><span class="brand-mark" aria-hidden="true">W</span><span>WWHS <small>Task sources</small></span></a>
+    <nav aria-label="Workboard sections">
+      <a href="../morning-launchpad/">Launchpad</a>
+      <a href="../#vet-home">VET</a>
+      <a href="../head-teacher-tas/#home">TAS</a>
+    </nav>
+  </header>
+  <main id="main-content" tabindex="-1">
+    <header class="intro">
+      <p class="eyebrow">VET &amp; TAS · Source register</p>
+      <h1>Where the tasks come from</h1>
+      <p class="lead">The 2026 work in a useful order, the source behind each task, and where to check for 2027.</p>
+      <p class="snapshot">Audit snapshot · checked 17 September 2026</p>
+      <div id="metrics" class="metrics" aria-label="Audit coverage"></div>
+    </header>
+    <aside class="scope-note" aria-label="About this source check">
+      <strong>A map of the work currently loaded</strong>
+      <p>126 entries: 61 VET tasks, 60 TAS tasks and 5 TAS weekly review controls. This does not establish that every school obligation is included. A specific citation shows a task’s origin or date; older guidance and document versions may still need checking.</p>
+      <p>Task titles and timing reflect the existing workboard. <a href="#findings" data-view-link="findings">Corrections and gaps</a> are recorded separately and have not yet been applied to the task definitions.</p>
+    </aside>
+    <div class="view-tabs" role="tablist" aria-label="Source register views">
+      <button type="button" id="tab-tasks" role="tab" aria-controls="panel-tasks" aria-selected="true" tabindex="0" data-view="tasks">2026 tasks</button>
+      <button type="button" id="tab-sources" role="tab" aria-controls="panel-sources" aria-selected="false" tabindex="-1" data-view="sources">Sources</button>
+      <button type="button" id="tab-watch" role="tab" aria-controls="panel-watch" aria-selected="false" tabindex="-1" data-view="watch">2027 checks</button>
+      <button type="button" id="tab-findings" role="tab" aria-controls="panel-findings" aria-selected="false" tabindex="-1" data-view="findings">Corrections and gaps</button>
+    </div>
+    <div class="filter-bar" aria-label="Register filters">
+      <label for="wing">Section<select id="wing"><option value="">VET and TAS</option><option value="VET">VET</option><option value="TAS">TAS</option></select></label>
+      <label for="period" data-task-filter>Period or trigger<select id="period"><option value="">All periods</option></select></label>
+      <label for="status" data-task-filter>Source evidence<select id="status"><option value="">All evidence</option><option value="specific-citation">Specific source found</option><option value="broad-source-only">Precise citation needed</option><option value="inferred-local-control">Local review control</option><option value="review-needed">Has a review finding</option></select></label>
+      <label class="search-field" for="search">Search<input id="search" type="search" placeholder="Task, source or keyword" autocomplete="off"></label>
+      <button type="button" class="reset-button" id="reset">Reset filters</button>
+    </div>
+    <p id="result-count" class="result-count" role="status" aria-live="polite">Loading the source register…</p>
+    <p id="error" class="error" role="alert" hidden></p>
+    <section id="panel-tasks" role="tabpanel" aria-labelledby="tab-tasks" tabindex="0">
+      <p class="view-note">Start with annual setup, then work through Terms 1–4. Within each term, dated tasks come first; tasks needing a timing check follow. Ongoing, weekly and event-triggered work sit at the end.</p>
+      <div id="task-list"></div>
+    </section>
+    <section id="panel-sources" role="tabpanel" aria-labelledby="tab-sources" tabindex="0" hidden>
+      <h2>Source inventory</h2>
+      <p class="view-note">These records include named documents, calendars, portals and document families awaiting originals. The total is not a count of fully verified documents. Links may require school sign-in.</p>
+      <div id="source-totals" class="source-totals"></div>
+      <div id="source-list" class="card-list"></div>
+    </section>
+    <section id="panel-watch" role="tabpanel" aria-labelledby="tab-watch" tabindex="0" hidden>
+      <h2>Where and when to check for 2027</h2>
+      <p class="view-note">Use this checklist to find new editions and changed requirements. The checking intervals are recommendations, not promised release dates. This page does not run automatic checks.</p>
+      <div id="watch-list" class="card-list"></div>
+      <h2>2027 information already published</h2>
+      <p class="view-note">Available at the audit date. These notices remain visible for either section because some need a whole-school handover. Check the stated scope before treating one as your task.</p>
+      <div id="published-list" class="card-list"></div>
+    </section>
+    <section id="panel-findings" role="tabpanel" aria-labelledby="tab-findings" tabindex="0" hidden>
+      <h2>Corrections and coverage gaps</h2>
+      <p class="view-note">Review these findings before updating the workboard or carrying tasks into 2027. A confirmed wording error is different from a possible missing duty or a date that still needs confirmation.</p>
+      <p class="view-note">A gap in the checklist is not proof that the work itself was missed.</p>
+      <div id="finding-selection" class="selection-note" hidden></div>
+      <div id="finding-list" class="card-list"></div>
+    </section>
+    <noscript><p class="error">JavaScript is needed to display and filter this register. You can still return to the VET or TAS section using the links above.</p></noscript>
+    <footer>Source register · 2026 audit snapshot. Your task completion marks remain in the workboard.</footer>
+  </main>
+</body>
+</html>

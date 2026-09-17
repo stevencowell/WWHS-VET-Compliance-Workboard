@@ -73,7 +73,9 @@ if (wing !== 'launchpad') {
   board = el('summary-import', undefined, {'data-workstream': wing, 'data-scope': wing, id: 'shared-work'});
   fullRegister = createTaskRegister({wing,label,getAdapter:()=>window.WWHS_WORKBOARD_ADAPTER,getSavedItems:()=>board.inbox?.items||[]});
   const scopeNote = el('p','The task count below is your current focus, not everything left this year. Open the full register for past dates, later work and triggered duties.',{class:'workspace-focus-note'});
-  host.append(welcome, flow(), scopeNote, fullRegister.element, forecastPanel);
+  const sourceAccess = el('p',undefined,{class:'workspace-source-access'});
+  sourceAccess.append(el('a','Task sources & 2027 checks →',{href:new URL(`task-sources/?wing=${wing}`,base).href}),el('span',' The ordered 2026 list, its source evidence and where to check for 2027.'));
+  host.append(welcome, flow(), scopeNote, fullRegister.element, sourceAccess, forecastPanel);
   specialist = el('details', undefined, {class: 'workspace-specialist'});
   specialistSummary = el('summary', `${label} tools, dates and recorded progress`);
   specialist.append(specialistSummary);

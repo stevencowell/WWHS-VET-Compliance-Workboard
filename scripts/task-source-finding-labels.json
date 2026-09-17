@@ -1,0 +1,102 @@
+{
+  "VET-1": {
+    "title": "Separate intended competencies from assessment outcomes",
+    "issue": "Material mismatch: the app says to wait for completed assessment evidence and enter authorised outcomes. Entering intended competencies and submitting assessment outcomes are different tasks. Correct this before carrying the task into 2027."
+  },
+  "VET-2": {
+    "title": "Check each external provider’s deadline",
+    "issue": "Scope mismatch: the app extends this date to TAFE, Virtual VET and other external delivery. The cited row does not establish one common deadline for all external providers. Obtain separate current provider or EVET instructions."
+  },
+  "VET-3": {
+    "title": "Show when Year 9 entries open",
+    "issue": "The source describes student entry and USI requirements, not general Year 9 VET course entry. The task appears only in Term 4. Consider a reminder when the entry window opens as well as a final check."
+  },
+  "VET-4": {
+    "title": "Resolve the conflicting USI instructions",
+    "issue": "The current date is supported, but the local USI upload instruction is recorded as conflicting with RTO guidance. Resolve the difference using the current controlled instruction."
+  },
+  "VET-5": {
+    "title": "Check trainer and post-audit surveys",
+    "issue": "Section H3 of the freshly read guide describes a trainer survey in Term 4 and a post-audit survey in Terms 2 or 3 after each audit. Neither is explicitly named in the task list. Confirm current RTO requirements and whether the general validation and improvement tasks adequately cover them."
+  },
+  "VET-6": {
+    "title": "Give Year 12 placement its own dates",
+    "issue": "The school calendar confirms Year 12 placement from 18–29 May 2026. The register includes general placement planning and checks but no separate dated Year 12 placement task. Consider adding a dated occurrence linked to its source so it is not hidden among undated duties."
+  },
+  "VET-7": {
+    "title": "Keep outdated guidance out of 2027",
+    "issue": "The freshly read school guide includes outdated COVID waivers, old QMS and Evidence Central trial wording, and potentially superseded USI, privacy and signature instructions. Use it as a source index and local history. Do not import all older instructions as 2027 obligations."
+  },
+  "VET-8": {
+    "title": "Confirm the Term 3 meeting date",
+    "issue": "Date discrepancy: the app says 25 August 2026, while an annotation in the freshly read school copy of the Term 3 guide says 26 August. The RTO activity confirms attendance and follow-up, but the applicable invitation must establish the local session date."
+  },
+  "VET-9": {
+    "title": "Check coverage of the Term 1 VSO visit",
+    "issue": "Table 2, row 2 of the Term 1 guide explicitly lists a Term 1 VET Support Officer visit. No separately named visit task was found among the 61 duties. Confirm whether a dated occurrence belongs in the calendar."
+  },
+  "VET-10": {
+    "title": "Make staff placement training explicit",
+    "issue": "Table 2, row 16 of the Term 1 guide explicitly requires staff organising or supervising placements to complete the mandatory Workplace Learning Policy and Procedure e-learning. The general preparation task does not name this staff training check. Make it explicit after confirming the current course or module."
+  },
+  "VET-11": {
+    "title": "Prompt teacher training applications and induction",
+    "issue": "The Term 1 guide distinguishes Semester 1 teacher training applications in table 1, row 7 and New VET Teacher Induction in table 2, row 5. The current readiness task checks status but does not explicitly prompt these actions. Confirm and record their actual application and induction windows."
+  },
+  "VET-12": {
+    "title": "Check the available 2027 course information",
+    "issue": "The 2026 Term 2 and Term 3 guides already direct staff to download 2027 VET Course Descriptors and VET General Information for subject selection, and to obtain Authority to Deliver before advertising. This is a specific source of 2027 information to check now, separate from the unpublished 2027 NESA annual dates."
+  },
+  "VET-13": {
+    "title": "Keep guide versions and delegation clear",
+    "issue": "All three guides describe a range of activities and ask schools to check and modify exact calendars. They do not define one coordinator’s role or prove delegation. Term 1 is V1, December 2025; Term 3 is V1, June 2026. No version footer was found in the Term 2 export. Local annotations are not treated as proof of current completion."
+  },
+  "VET-14": {
+    "title": "Complete the remaining source checks",
+    "issue": "The current Term 4 guide, precise NESA-check procedure, retained local working calendar, formal delegation, rollover and retention rules, and latest notices remain outstanding. The three recovered school copies substantially improve source tracing, but do not establish that they match the latest controlled versions or that every source is covered."
+  },
+  "TAS-F01": {
+    "title": "Distinguish source tracing from current policy",
+    "issue": "Exact citations are now available for many local duties, but a freshly read guide is not a fully current controlled-policy audit."
+  },
+  "TAS-F02": {
+    "title": "Keep Year 10 handover and submission separate",
+    "issue": "Year 10 external NESA deadline differs from internal school handover."
+  },
+  "TAS-F03": {
+    "title": "Show Principal certification handovers",
+    "issue": "Principal Year 11 and Year 10 results certification need explicit local handover coverage."
+  },
+  "TAS-F04": {
+    "title": "Start 2027 preparation during 2026",
+    "issue": "2027 preparation starts during 2026."
+  },
+  "TAS-F05": {
+    "title": "Fill the earlier Term 3 calendar gaps",
+    "issue": "Term 3 historical calendar coverage is not start-to-finish in the current TAS catalogue."
+  },
+  "TAS-F06": {
+    "title": "Show the duties within each task",
+    "issue": "Several obligations are bundled beneath broad tasks, so the number of rows is not the number of individual obligations."
+  },
+  "TAS-F07": {
+    "title": "Confirm which local duties belong here",
+    "issue": "Potential local guide duties require an explicit inclusion and ownership decision rather than automatic creation."
+  },
+  "TAS-F08": {
+    "title": "Verify the original sharing review",
+    "issue": "The original permission-audit record was not independently available for this part of the review."
+  },
+  "TAS-F09": {
+    "title": "Correct the Staff Calendar shortcut",
+    "issue": "The app’s Staff Calendar shortcut opens the wrong calendar."
+  },
+  "TAS-F10": {
+    "title": "Resolve the two Year 10 handover dates",
+    "issue": "Year 10 internal grade handover has two potentially conflicting entries."
+  },
+  "TAS-F11": {
+    "title": "Confirm the Year 10 Enrichment end date",
+    "issue": "The Year 10 Enrichment end date needs reconciliation."
+  }
+}
