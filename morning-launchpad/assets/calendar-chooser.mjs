@@ -2,7 +2,7 @@ const el=(tag,text,attrs={})=>{const n=document.createElement(tag);if(text)n.tex
 const dialog=el('dialog',null,{class:'calendar-choice','aria-labelledby':'calendar-choice-title'});
 dialog.append(el('h2','Which calendar?',{id:'calendar-choice-title'}),el('p','Choose the calendar you need.'));
 const choices=el('div',null,{class:'calendar-choice-options'});
-const onLaunchpad=()=>!!document.querySelector('summary-import');
+const onLaunchpad=()=>!!document.querySelector('summary-import')&&(!document.body.dataset.workboard||location.hash==='#my-work');
 const local=el('a',null,{href:new URL('../#calendar',import.meta.url).href,target:'_blank',rel:'noopener noreferrer'});
 local.append(el('strong','Launchpad calendar'),el('span','Your lessons, task dates and imported diary entries.'));
 local.addEventListener('click',event=>{if(onLaunchpad()){event.preventDefault();dialog.close();window.dispatchEvent(new Event('launchpad:open-calendar'));}else dialog.close();});

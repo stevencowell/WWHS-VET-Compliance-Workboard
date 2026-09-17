@@ -10,7 +10,7 @@ const results=[],runtimeErrors=[];
 let browser;
 async function check(name,fn){if(process.env.WORKSPACE_TEST_MATCH&&!name.includes(process.env.WORKSPACE_TEST_MATCH))return;try{await fn();results.push({name,passed:true});console.log('PASS '+name);}catch(error){results.push({name,passed:false,error:error.message});console.log('FAIL '+name+'\n'+error.message);}}
 async function context(){const c=await browser.newContext({viewport:{width:1440,height:1000},timezoneId:'Australia/Sydney'});await c.route('**/*',route=>new URL(route.request().url()).origin===base?route.continue():route.abort());c.on('page',p=>{p.setDefaultTimeout(6500);p.on('pageerror',error=>runtimeErrors.push({url:p.url(),message:error.message}));});return c;}
-async function go(page,route){await page.goto(base+route,{waitUntil:'domcontentloaded'});await page.waitForFunction(()=>document.querySelector('summary-import')?.started&&document.querySelector('.workspace-header'));}
+async function go(page,route){if(page.url()===base+route)await page.reload({waitUntil:'domcontentloaded'});else await page.goto(base+route,{waitUntil:'domcontentloaded'});await page.waitForFunction(()=>document.querySelector('.workspace-header'));if(route.startsWith('/morning-launchpad/')||new URL(base+route).hash==='#my-work')await page.waitForFunction(()=>document.querySelector('summary-import')?.started);else await page.waitForFunction(()=>window.WWHS_WORKBOARD_ADAPTER&&document.querySelector('#route-content h1'));}
 async function inbox(page){return page.evaluate(key=>JSON.parse(localStorage.getItem(key)||'{"items":[]}'),inboxKey);}
 async function sourceState(page,key){return page.evaluate(key=>JSON.parse(localStorage.getItem(key)||'{"records":{}}').records,key);}
 async function findCard(page,title){const board=page.locator('summary-import');await board.getByRole('navigation',{name:'Work area',exact:true}).getByRole('button',{name:/^All work \(/}).click();await board.getByRole('searchbox',{name:'Search notes',exact:true}).fill(title);const card=board.locator('article.import-card').filter({has:page.locator('.import-card-top strong',{hasText:title})});await card.waitFor();if(await card.locator('.import-card-disclosure').getAttribute('open')===null)await card.locator('.import-card-chevron').click();return card;}
@@ -48,7 +48,7 @@ async function waitItem(page,title,predicate){await page.waitForFunction(({key,t
    let card=await findCard(p,t.title);await card.getByRole('textbox',{name:'Note for '+t.title,exact:true}).fill('Synthetic shared working note from VET.');await waitItem(p,t.title,{key:'noteText',value:'Synthetic shared working note from VET.'});
    await card.getByRole('button',{name:'Pin for today: '+t.title,exact:true}).click();assert.ok((await storedItem(p,t.title)).pinnedDate);
    card=await findCard(p,t.title);const before=JSON.stringify(await sourceState(p,vetKey));await card.getByRole('button',{name:'Mark done',exact:true}).click();await waitItem(p,t.title,{key:'status',value:'done'});assert.equal(JSON.stringify(await sourceState(p,vetKey)),before);
-   await p.getByRole('navigation',{name:'Workspace areas',exact:true}).getByRole('link',{name:'TAS',exact:true}).click();await p.waitForFunction(()=>document.querySelector('summary-import')?.started);card=await findCard(p,t.title);assert.equal(await card.getByRole('textbox',{name:'Note for '+t.title,exact:true}).innerText(),'Synthetic shared working note from VET.');
+   await p.getByRole('navigation',{name:'Workspace areas',exact:true}).getByRole('link',{name:'TAS',exact:true}).click();await p.waitForURL(base+'/head-teacher-tas/#home');await p.getByRole('link',{name:'My work (personal)',exact:true}).click();await p.waitForFunction(()=>document.querySelector('summary-import')?.started);card=await findCard(p,t.title);assert.equal(await card.getByRole('textbox',{name:'Note for '+t.title,exact:true}).innerText(),'Synthetic shared working note from VET.');
    await card.getByRole('textbox',{name:'Note for '+t.title,exact:true}).fill('Synthetic shared note revised in TAS.');await waitItem(p,t.title,{key:'noteText',value:'Synthetic shared note revised in TAS.'});
    await p.getByRole('navigation',{name:'Workspace areas',exact:true}).getByRole('link',{name:'Launchpad',exact:true}).click();await p.waitForFunction(()=>document.querySelector('summary-import')?.started);card=await findCard(p,t.title);assert.equal(await card.getByRole('textbox',{name:'Note for '+t.title,exact:true}).innerText(),'Synthetic shared note revised in TAS.');
    const tracked=await storedItem(p,t.title);assert.equal(tracked.status,'done');assert.equal(tracked.origin.wing,'vet');assert.equal((await inbox(p)).items.filter(x=>x.origin?.recordKey===t.id).length,1);
@@ -75,7 +75,7 @@ async function waitItem(page,title,predicate){await page.waitForFunction(({key,t
   const c=await context(),p=await c.newPage();
   try{await go(p,'/#my-work');const t=await nativeTask(p,'vet');await go(p,'/#task/'+t.id);await p.locator('#task-dialog [data-action="track-work-task"]').click();await waitItem(p,t.title);
    const card=await findCard(p,t.title);p.once('dialog',dialog=>dialog.accept());await card.getByRole('button',{name:'Delete note',exact:true}).click();assert.equal((await inbox(p)).items.filter(i=>i.origin?.recordKey===t.id).length,0);
-   await go(p,'/#task/'+t.id);await p.locator('#task-dialog [data-task-step]').first().check();assert.equal((await sourceState(p,vetKey))[t.id].stepChecks[0],true);await p.reload();await p.waitForFunction(()=>document.querySelector('summary-import')?.started);assert.equal((await inbox(p)).items.filter(i=>i.origin?.recordKey===t.id).length,0);
+   await go(p,'/#task/'+t.id);await p.locator('#task-dialog [data-task-step]').first().check();assert.equal((await sourceState(p,vetKey))[t.id].stepChecks[0],true);await p.reload();await p.waitForFunction(()=>window.WWHS_WORKBOARD_ADAPTER&&document.querySelector('.workspace-header'));assert.equal((await inbox(p)).items.filter(i=>i.origin?.recordKey===t.id).length,0);await go(p,'/#my-work');assert.equal((await inbox(p)).items.filter(i=>i.origin?.recordKey===t.id).length,0);
   }finally{await c.close();}
  });
  await check('older daily-plan migration preserves originals, pins and completion without resurrection',async()=>{
@@ -115,7 +115,7 @@ async function waitItem(page,title,predicate){await page.waitForFunction(({key,t
  await check('malformed shared and native data is preserved without silent reset',async()=>{
   for(const [wing,key,prefix] of [['vet',vetKey,'/'],['tas',tasKey,'/head-teacher-tas/']]){
    const c=await context(),p=await c.newPage();
-   try{await go(p,prefix+'#my-work');const t=await nativeTask(p,wing);await p.evaluate(({key,inboxKey})=>{localStorage.setItem(key,'{synthetic broken native');localStorage.setItem(inboxKey,'{synthetic broken shared');},{key,inboxKey});await p.reload();await go(p,prefix+'#task/'+t.id);assert.equal(await p.evaluate(()=>document.querySelector('summary-import').blocked),true);
+   try{await go(p,prefix+'#my-work');const t=await nativeTask(p,wing);await p.evaluate(({key,inboxKey})=>{localStorage.setItem(key,'{synthetic broken native');localStorage.setItem(inboxKey,'{synthetic broken shared');},{key,inboxKey});await go(p,prefix+'#my-work');assert.equal(await p.evaluate(()=>document.querySelector('summary-import').blocked),true);await go(p,prefix+'#task/'+t.id);
     const checkbox=p.locator('#task-dialog input[type="checkbox"]').first();await checkbox.click();assert.equal(await p.evaluate(key=>localStorage.getItem(key),key),'{synthetic broken native');assert.equal(await p.evaluate(key=>localStorage.getItem(key),inboxKey),'{synthetic broken shared');
    }finally{await c.close();}
   }
@@ -128,6 +128,6 @@ async function waitItem(page,title,predicate){await page.waitForFunction(({key,t
  });
  await browser.close();
  const errors=runtimeErrors.filter((error,index,all)=>all.findIndex(x=>x.url===error.url&&x.message===error.message)===index);
- console.log(JSON.stringify({passed:results.filter(r=>r.passed).length,failed:results.filter(r=>!r.passed).length,results,runtimeErrors:errors},null,2));
+ const report={passed:results.filter(r=>r.passed).length,failed:results.filter(r=>!r.passed).length,results,runtimeErrors:errors};fs.writeFileSync(path.join(outputs,'workspace-browser-results.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));
  if(results.some(r=>!r.passed)||errors.length)process.exitCode=1;
 })().catch(async error=>{console.error(error.stack);if(browser)await browser.close();process.exitCode=1;});

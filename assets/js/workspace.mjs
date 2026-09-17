@@ -5,6 +5,7 @@ import {taskSection} from '../../morning-launchpad/assets/summary-core.mjs?v=tas
 const base = new URL('../../', import.meta.url);
 const wing = document.body.dataset.workboard || 'launchpad';
 const label = wing === 'launchpad' ? 'Launchpad' : wing.toUpperCase();
+const staffTitle = document.title;
 const el = (tag, text, attrs = {}) => {
   const node = document.createElement(tag);
   if (text !== undefined) node.textContent = text;
@@ -14,14 +15,21 @@ const el = (tag, text, attrs = {}) => {
 
 document.body.classList.add('shared-workspace');
 const shell = el('header', undefined, {class: 'workspace-header'});
-const home = el('a', undefined, {class: 'workspace-brand', href: new URL('morning-launchpad/', base).href});
-home.append(el('span', '◒', {'aria-hidden': 'true', class: 'workspace-mark'}), el('span', 'Daily Launchpad'));
+const home = el('a', undefined, {class: 'workspace-brand', href: new URL(wing === 'launchpad' ? 'morning-launchpad/' : './#home', base).href});
+home.append(el('span', '◒', {'aria-hidden': 'true', class: 'workspace-mark'}), el('span', wing === 'launchpad' ? 'Daily Launchpad' : 'WWHS workboards'));
 const nav = el('nav', undefined, {'aria-label': 'Workspace areas', class: 'workspace-areas'});
-for (const [key, text, path] of [['launchpad', 'Launchpad', 'morning-launchpad/'], ['vet', 'VET', './#my-work'], ['tas', 'TAS', 'head-teacher-tas/#my-work']]) {
-  const link = el('a', text, {href: new URL(path, base).href});
-  if (key === wing) link.setAttribute('aria-current', 'page');
+for (const [key, text, path] of [['home', 'Home', './#home'], ['launchpad', 'Launchpad', 'morning-launchpad/'], ['vet', 'VET', './#vet-home'], ['tas', 'TAS', 'head-teacher-tas/#home']]) {
+  const link = el('a', text, {href: new URL(path, base).href, 'data-area': key});
   nav.append(link);
 }
+function updateAreaNavigation() {
+  const current = wing === 'vet' && (!location.hash || location.hash === '#home') ? 'home' : wing;
+  for (const link of nav.querySelectorAll('a')) {
+    if (link.dataset.area === current) link.setAttribute('aria-current', 'page');
+    else link.removeAttribute('aria-current');
+  }
+}
+updateAreaNavigation();
 const theme = el('button', 'Dark appearance', {type: 'button', class: 'workspace-theme'});
 function updateTheme() {
   const dark = document.documentElement.dataset.theme === 'dark';
@@ -59,7 +67,8 @@ if (wing !== 'launchpad') {
   refreshForecast.addEventListener('click', () => enqueue(refreshScheduledWork));
   forecastPanel.append(forecastHeading, forecastNote, forecastCount, refreshForecast);
   board = el('summary-import', undefined, {'data-workstream': wing, id: 'shared-work'});
-  host.append(welcome, flow(), forecastPanel, board);
+  // Staff routes do not initialise or migrate the personal work list.
+  host.append(welcome, flow(), forecastPanel);
   specialist = el('details', undefined, {class: 'workspace-specialist'});
   specialistSummary = el('summary', `${label} tools, dates and recorded progress`);
   specialist.append(specialistSummary);
@@ -67,14 +76,14 @@ if (wing !== 'launchpad') {
   const route = document.getElementById('route-content');
   specialist.append(dashboard, route); main.append(host, specialist);
   const routeNav = document.querySelector('.route-nav');
-  const workLink = el('a', 'My work', {href: '#my-work', class: 'workspace-my-work'});
-  routeNav.prepend(workLink);
+  const workLink = el('a', 'My work (personal)', {href: '#my-work', class: 'workspace-my-work'});
+  routeNav.append(workLink);
   const topbar = document.querySelector('.topbar');
   if (wing === 'vet') topbar.append(el('button', 'Workspace setup', {type: 'button', 'data-action': 'open-settings', class: 'workspace-setup'}));
-  // The original tool navigation remains complete; the shared header replaces wing switching.
+  // Keep staff destinations separate from the optional personal workspace.
   for (const link of routeNav.querySelectorAll('a')) {
     if (link.getAttribute('href') === '#today') link.textContent = `${label} follow-ups`;
-    if (link.getAttribute('href') === '#home') link.textContent = `${label} overview`;
+    if (wing === 'tas' && link.getAttribute('href') === '#home') link.textContent = 'TAS wing';
   }
 } else {
   await customElements.whenDefined('summary-import');
@@ -93,19 +102,25 @@ if (wing !== 'launchpad') {
   board.setWorkstream('personal');
 }
 
+function ensureBoard() {
+  if (wing !== 'launchpad' && !board.isConnected) host.append(board);
+}
 function routeChanged() {
+  updateAreaNavigation();
   if (wing === 'launchpad') return;
   const hash = location.hash || '#home';
-  const planning = ['#home', '#my-work'].includes(hash);
+  const planning = hash === '#my-work';
+  if (planning) ensureBoard();
   host.hidden = !planning;
-  specialist.hidden = hash === '#my-work';
+  specialist.hidden = planning;
   specialist.classList.toggle('is-route', !planning);
   specialist.open = !planning;
   document.body.classList.toggle('workspace-planning', planning);
-  document.title = `${label} · Daily Launchpad`;
+  if (planning) document.title = `My work (personal) · ${label}`;
+  else if (wing === 'tas') document.title = staffTitle;
   document.querySelector('.workspace-my-work').setAttribute('aria-current', planning ? 'page' : 'false');
 }
-window.addEventListener('hashchange', routeChanged);
+window.addEventListener('hashchange', () => { routeChanged(); enqueue(refreshScheduledWork); });
 routeChanged();
 
 // Serialise imports and clicks, including the async stable identity calculation.
@@ -113,7 +128,7 @@ let pending = Promise.resolve();
 function enqueue(operation) {
   pending = pending.then(operation).catch(error => {
     if (forecastPanel) { forecastPanel.dataset.state = 'paused'; forecastPanel.dataset.ready = 'false'; forecastHeading.textContent = 'Schedule refresh paused'; forecastNote.textContent = error.message; }
-    board.say(error.message, true);
+    if (board.started) board.say(error.message, true);
   });
   return pending;
 }
@@ -131,6 +146,8 @@ function reveal(item) {
 }
 window.addEventListener('wwhs:track-task', event => {
   const descriptor = event.detail;
+  // Adding a task is an explicit request to open the personal workspace.
+  if (wing !== 'launchpad') { location.hash = '#my-work'; routeChanged(); }
   enqueue(async () => {
     const item = await board.trackWork(descriptor);
     reveal(item);
@@ -155,7 +172,7 @@ async function bringRecordedWork({closedOnly = false} = {}) {
 let forecastDeferred = false;
 async function refreshScheduledWork() {
   const adapter = window.WWHS_WORKBOARD_ADAPTER;
-  if (!adapter || wing === 'launchpad') return;
+  if (!adapter || wing === 'launchpad' || location.hash !== '#my-work' || !board.started) return;
   if (board.blocked) {
     forecastHeading.textContent = 'Schedule refresh paused';
     forecastNote.textContent = 'Reload saved work below before refreshing. Any text you are editing stays on this page.';

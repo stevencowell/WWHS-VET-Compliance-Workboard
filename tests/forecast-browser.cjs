@@ -13,14 +13,14 @@ async function setup(date='2026-09-17T00:00:00Z'){
   const p=await c.newPage();p.setDefaultTimeout(8000);p.on('pageerror',e=>errors.push(e.message));
   await p.clock.setFixedTime(new Date(date));return {c,p};
 }
-async function go(p,route){if(p.url()===base+route)await p.reload();else await p.goto(base+route);await p.waitForFunction(()=>document.querySelector('summary-import')?.started);if(!route.startsWith('/morning-launchpad/'))await p.waitForFunction(()=>document.querySelector('.workspace-forecast')?.dataset.ready==='true'||['unavailable','reference-only','paused'].includes(document.querySelector('.workspace-forecast')?.dataset.state));}
+async function go(p,route){if(p.url()===base+route)await p.reload();else await p.goto(base+route);await p.waitForFunction(()=>document.querySelector('.workspace-header'));const launchpad=route.startsWith('/morning-launchpad/'),personal=new URL(base+route).hash==='#my-work';if(launchpad||personal)await p.waitForFunction(()=>document.querySelector('summary-import')?.started);else await p.waitForFunction(()=>window.WWHS_WORKBOARD_ADAPTER&&document.querySelector('#route-content h1'));if(personal)await p.waitForFunction(()=>document.querySelector('.workspace-forecast')?.dataset.ready==='true'||['unavailable','reference-only','paused'].includes(document.querySelector('.workspace-forecast')?.dataset.state));}
 async function state(p){return p.evaluate(k=>JSON.parse(localStorage.getItem(k)||'{"items":[]}'),key);}
 async function snapshot(p){return p.evaluate(()=>window.WWHS_WORKBOARD_ADAPTER.getForecast());}
 async function refresh(p){await p.getByRole('button',{name:'Refresh schedule',exact:true}).click();await p.waitForTimeout(150);}
 
 (async()=>{
   browser=await chromium.launch({headless:true});fs.mkdirSync(outputs,{recursive:true});
-  await check('blank VET opens with assigned schedule cards; future cycle browsing cannot make 2027 current',async()=>{
+  await check('VET My work opens with assigned schedule cards; future cycle browsing cannot make 2027 current',async()=>{
     const {c,p}=await setup();try{
       await go(p,'/#my-work');const s=await snapshot(p),saved=await state(p);
       assert.equal(s.context.date,'2026-09-17');assert.equal(s.context.mode,'current');assert.ok(s.entries.length>0);
@@ -102,5 +102,5 @@ async function refresh(p){await p.getByRole('button',{name:'Refresh schedule',ex
       await p.setViewportSize({width:390,height:844});await go(p,'/head-teacher-tas/#my-work');await p.getByRole('button',{name:'Dark appearance',exact:true}).click();assert.ok(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));await p.screenshot({path:path.join(outputs,'forecast-tas-mobile-dark.png'),fullPage:true});
     }finally{await c.close();}
   });
-  await browser.close();console.log(JSON.stringify({results,errors},null,2));if(errors.length||results.some(r=>!r.passed))process.exitCode=1;
+  await browser.close();fs.writeFileSync(path.join(outputs,'forecast-browser-results.json'),JSON.stringify({results,errors},null,2));console.log(JSON.stringify({results,errors},null,2));if(errors.length||results.some(r=>!r.passed))process.exitCode=1;
 })().catch(async e=>{console.error(e);if(browser)await browser.close();process.exitCode=1;});
