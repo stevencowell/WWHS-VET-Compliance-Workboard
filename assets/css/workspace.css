@@ -85,6 +85,7 @@
 :root[data-theme=dark] .shared-workspace[data-workboard] :is(.task-card h3,.system-card h3,.source-card h3) { color:var(--ink); }
 :root[data-theme=dark] .shared-workspace[data-workboard] .source-boundary { background:var(--surface-soft); border-color:var(--line); color:var(--ink); }
 :root[data-theme=dark] .shared-workspace[data-workboard] :is(.retired-panel,.handover-panel) { background:var(--surface-soft); border-color:var(--line); color:var(--ink); }
+:root[data-theme=dark] .shared-workspace[data-workboard] .standing-panel { background:var(--surface-soft); border-color:var(--line); color:var(--ink); }
 :root[data-theme=dark] .shared-workspace[data-workboard] :is(.retired-panel,.handover-panel) :is(h2,h3,p,small,summary) { color:var(--ink); }
 :root[data-theme=dark] .shared-workspace[data-workboard] :is(.button.secondary,.button.quiet,.text-button,.dialog-close) { background:var(--surface-soft); color:var(--ink); border-color:var(--line); }
 /* The retained specialist screens predate themes. Give their panels and form
