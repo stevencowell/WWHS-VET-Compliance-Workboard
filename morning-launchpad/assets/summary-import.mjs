@@ -60,7 +60,7 @@ class SummaryImport extends HTMLElement {
     this.openCards=new Set();this.view='ready';this.expanded=false;this.legacyRaw=null;this.blocked=false;this.raw=null;
     this.workstream=Object.hasOwn(WORKSTREAMS,this.dataset.workstream)?this.dataset.workstream:'all';
     this.draftInputs=new Map();this.captureDraft=event=>{const field=event.target;if(field.matches?.('textarea:not([readonly]),input:not([type="file"]):not([type="checkbox"]),[contenteditable="true"]')){this.draftInputs.delete(field);this.draftInputs.set(field,field.getAttribute('aria-label')||field.closest('label')?.childNodes[0]?.textContent||field.id||'Draft text');}};this.addEventListener('input',this.captureDraft);
-    try {this.raw=localStorage.getItem(INBOX_KEY);this.inbox=validateInbox(this.raw);this.legacyRaw=localStorage.getItem(LEGACY_PLAN_KEY);} catch {this.blocked=true;this.inbox=validateInbox(null);}
+    try {this.raw=localStorage.getItem(INBOX_KEY);this.inbox=validateInbox(this.raw);if(!this.scope)this.legacyRaw=localStorage.getItem(LEGACY_PLAN_KEY);} catch {this.blocked=true;this.inbox=validateInbox(null);}
     this.build();this.resizeNotes=()=>this.querySelectorAll('.import-working-note textarea').forEach(fitNoteText);window.addEventListener('resize',this.resizeNotes);
     this.onStorage=event=>{if(event.key===INBOX_KEY||event.key===null){this.blocked=true;this.updateCount();this.reloadButton.hidden=false;this.say('Your shared work list changed in another tab. Reload saved work before saving here. Text you are editing is still on this page.',true);}};
     window.addEventListener('storage',this.onStorage);
@@ -131,6 +131,7 @@ class SummaryImport extends HTMLElement {
     }
   }
   setWorkstream(key){
+    if(this.scope && key!==this.scope)return false;
     if(key!=='all'&&!Object.hasOwn(WORKSTREAMS,key))throw new Error('Unknown work area.');
     if(this.blocked){this.say('Reload saved work before changing views. Your draft text is still here.',true);return false;}
     this.workstream=key;this.expanded=false;this.renderItems();return true;
@@ -144,7 +145,7 @@ class SummaryImport extends HTMLElement {
   }
   say(message,error=false){this.message.textContent=message;this.message.classList.toggle('import-error',error);this.message.setAttribute('role',error?'alert':'status');this.fileMessage.textContent=message;this.fileMessage.classList.toggle('import-error',error);if(error)this.inputDetails.open=true;}
   syncPlans(){
-    if(this.blocked)return;
+    if(this.blocked||this.scope)return;
     const migration=migrateToPins(this.inbox,this.legacyRaw);
     const result=consolidateDuplicates(migration.inbox.items);
     if((migration.changed||result.changed)&&this.persist({...migration.inbox,items:result.items})){this.renderItems();if(migration.warning)this.say(migration.warning);}
@@ -191,6 +192,23 @@ class SummaryImport extends HTMLElement {
     this.calendar.addEventListener('calendar:open-task',event=>this.openCalendarTask(event.detail.id));
     this.calendar.addEventListener('calendar:change-task-date',event=>{const d=event.detail;if(['dueDate','eventDate','followUpDate'].includes(d.key)&&this.inbox.items.some(x=>x.id===d.id))d.ok=this.updateItem(d.id,{[d.key]:d.date},true);});this.append(this.calendar);this.buildChatGPTChooser();this.buildClearNotesDialog();this.taskHelpDialog=createTaskHelpDialog(this);
 
+    this.headingCopy=copy;this.headingToolbar=toolbar;this.globalFooter=footer;
+    this.scopedNoteButton=button('Add a note',()=>this.editPersonal());this.scopedNoteButton.hidden=true;heading.append(this.scopedNoteButton);
+    this.scopeNote=element('p','',{class:'import-help'});this.scopeNote.hidden=true;this.taskArea.append(this.scopeNote);
+
+  }
+  setScope(scope){
+    this.scope=['vet','tas'].includes(scope)?scope:null;
+    if(this.scope){this.dataset.scope=this.scope;this.workstream=this.scope;}else delete this.dataset.scope;
+    this.headingToolbar.hidden=!!this.scope;this.scopedNoteButton.hidden=!this.scope;
+    this.streamNav.hidden=!!this.scope;this.inputDetails.hidden=!!this.scope;this.globalFooter.hidden=!!this.scope;
+    this.scopeNote.hidden=!this.scope;
+    this.scopeNote.textContent=this.scope?'Saved in this browser and shared with the same tasks in Launchpad. Scheduled work uses the dates and progress recorded in this workboard.':'';
+    this.headingCopy.querySelector('h2').textContent=this.scope?`${WORKSTREAMS[this.scope]} task list`:'Bring your work into focus.';
+    this.headingCopy.querySelector('.import-intro').textContent=this.scope?`Your ${WORKSTREAMS[this.scope]} duties, follow-ups and notes. Completed tasks stay in Done.`:'Scheduled duties appear automatically. Pin your priorities and keep notes with each task.';
+    this.setAttribute('aria-label',this.scope?`${WORKSTREAMS[this.scope]} tasks and notes`:'Your shared tasks and notes');
+    this.noteEditor.hidden=!!(this.scope&&this.editingNote&&this.inbox.items.find(x=>x.id===this.editingNote)?.workstream!==this.scope);
+    this.showCalendar(false);this.renderItems();
   }
   buildClearNotesDialog(){
     this.clearDialog=element('dialog',undefined,{class:'chatgpt-chooser','aria-labelledby':'clear-notes-title'});
@@ -223,7 +241,7 @@ class SummaryImport extends HTMLElement {
     web.addEventListener('click',()=>this.chatGPTChooser.close());
     choices.append(desktop,web);this.chatGPTChooser.append(choices,element('p','If the desktop app does not open, choose Web app or open ChatGPT from your Start menu.',{class:'import-help'}),button('Cancel',()=>this.chatGPTChooser.close()));this.append(this.chatGPTChooser);
   }
-  showCalendar(open){this.taskArea.hidden=open;this.calendar.hidden=!open;this.calendarToggle.textContent=open?'Back to tasks':'Calendar';this.calendarToggle.setAttribute('aria-pressed',String(open));if(open)this.calendar.setTasks(this.inbox.items);}
+  showCalendar(open){if(this.scope)open=false;this.taskArea.hidden=open;this.calendar.hidden=!open;this.calendarToggle.textContent=open?'Back to tasks':'Calendar';this.calendarToggle.setAttribute('aria-pressed',String(open));if(open)this.calendar.setTasks(this.inbox.items);}
   openCalendarTask(id){const item=this.inbox.items.find(x=>x.id===id);if(!item)return;this.openCards.add(item.id);this.showCalendar(false);this.workstream=item.workstream;this.searchInput.value='';this.view=taskSection(item);this.expanded=true;this.renderItems();const card=[...this.list.querySelectorAll('article')].find(x=>x.dataset.taskKey===(item.taskKey||item.id));card?.scrollIntoView({behavior:'smooth',block:'center'});}
   buildNoteEditor(){
     this.noteEditor=element('details',undefined,{class:'import-input'});this.noteEditor.append(element('summary','Write your own note'));
@@ -342,7 +360,7 @@ class SummaryImport extends HTMLElement {
     }
     if(item.originalEmailUrl)article.append(element('a','Open original email ↗',{href:item.originalEmailUrl,target:'_blank',rel:'noopener noreferrer',class:'import-email-link',title:'Open the original email and its attachments in Outlook'}));
     if(item.url)article.append(element('a','Open linked work ↗',{href:item.url,target:'_blank',rel:'noopener noreferrer',class:'import-work-link'}));
-    if(item.dependsOn.length)article.append(element('p',`Depends on: ${dependencies.map((x,i)=>x?`${x.action}${x.status==='done'?' ✓':''}`:`Missing task ${item.dependsOn[i]}`).join('; ')}${blockedBy?' — complete the prerequisite first.':''}`,{class:'import-help'}));
+    if(item.dependsOn.length)article.append(element('p',`Depends on: ${dependencies.map((x,i)=>x?`${this.scope&&x.workstream!==this.scope?'Task in another work area':x.action}${x.status==='done'?' ✓':''}`:`Missing prerequisite`).join('; ')}${blockedBy?' — complete the prerequisite first.':''}`,{class:'import-help'}));
     if(active){
       const edit=element('details');edit.append(element('summary','Edit priority, dates and tasks'));const grid=element('div',undefined,{class:'import-fields'});
       grid.append(this.field(item,'priority','Priority','text',PRIORITIES),this.field(item,'nextAction','Next step','text',NEXT_ACTIONS),this.field(item,'dueDate','Deadline','date'),this.field(item,'eventDate','Event date','date'),this.field(item,'followUpDate','Follow-up date','date'),this.field(item,'owner','Responsible person'),this.field(item,'waitingOn','Waiting on'),this.field(item,'instruction','Tasks'),this.field(item,'dateNote','Date or status uncertainty'));
@@ -357,7 +375,7 @@ class SummaryImport extends HTMLElement {
     const controls=element('div',undefined,{class:'import-card-controls'});
     const quickControls=element('div',undefined,{class:'import-card-controls import-card-quick-controls','aria-label':`Quick actions for ${item.title}`});
     if(item.origin||item.help){const ai=button('Prepare with AI',()=>this.taskHelpDialog.open(item.id),'import-ai-help');ai.setAttribute('aria-label',`Prepare with AI: ${item.title}`);ai.addEventListener('pointerdown',event=>event.preventDefault());quickControls.append(ai);}
-    const stream=element('select',undefined,{'aria-label':`Work area for ${item.title}`});for(const[value,label]of Object.entries(WORKSTREAMS))stream.append(element('option',label,{value}));stream.value=item.workstream;stream.disabled=this.blocked;stream.addEventListener('change',()=>{if(this.updateItem(item.id,{workstream:stream.value},true))this.say(`“${item.title}” is in ${WORKSTREAMS[stream.value]}. Its source task and progress are unchanged.`);});quickControls.append(stream);
+    if(!this.scope){const stream=element('select',undefined,{'aria-label':`Work area for ${item.title}`});for(const[value,label]of Object.entries(WORKSTREAMS))stream.append(element('option',label,{value}));stream.value=item.workstream;stream.disabled=this.blocked;stream.addEventListener('change',()=>{if(this.updateItem(item.id,{workstream:stream.value},true))this.say(`“${item.title}” is in ${WORKSTREAMS[stream.value]}. Its source task and progress are unchanged.`);});quickControls.append(stream);}
     if(!item.duplicateOf&&item.status!=='superseded'){
       const group=element('select',undefined,{'aria-label':`Move to section for ${item.title}`});
       const options=[['ready','Today'],['upcoming','Soon'],['waiting','Waiting'],['notes','My Notes'],['done','Done']];
@@ -425,9 +443,10 @@ class SummaryImport extends HTMLElement {
     return section;
   }
   renderItems(){
+    if(this.scope)this.workstream=this.scope;
     const query=this.searchInput.value.trim();this.clearSearch.hidden=!query;
     const today=todaySydney();const visible=this.inbox.items.filter(x=>this.workstream==='all'||x.workstream===this.workstream);
-    for(const[key,control]of Object.entries(this.streamButtons)){control.setAttribute('aria-pressed',String(this.workstream===key));control.textContent=`${key==='all'?'All work':WORKSTREAMS[key]} (${this.inbox.items.filter(x=>key==='all'?taskSection(x,today)!=='done':x.workstream===key).length})`;}
+    for(const[key,control]of Object.entries(this.streamButtons)){control.setAttribute('aria-pressed',String(this.workstream===key));control.textContent=`${key==='all'?'All work':WORKSTREAMS[key]} (${this.inbox.items.filter(x=>(key==='all'||x.workstream===key)&&taskSection(x,today)!=='done').length})`;}
     const inView=(x,key)=>taskSection(x,today)===key;
     for(const[key,{button:b,label}]of Object.entries(this.tabs)){b.textContent=`${label} (${visible.filter(x=>inView(x,key)).length})`;b.setAttribute('aria-pressed',String(!query&&this.view===key));}
     const sorted=visible.filter(x=>query?matchesNoteSearch(x,query):inView(x,this.view)).sort((a,b)=>Number(isPinned(b,today))-Number(isPinned(a,today))||(this.view==='upcoming'?(nextDate(a)||'9999-12-31').localeCompare(nextDate(b)||'9999-12-31')||rank(b,today)-rank(a,today):rank(b,today)-rank(a,today)));
@@ -439,8 +458,8 @@ class SummaryImport extends HTMLElement {
     if(shown.length<sorted.length)this.list.append(button(`Show ${sorted.length-shown.length} more actions`,()=>{this.expanded=true;this.renderItems();}));
     const earlier=visible.filter(x=>x.status==='superseded');
     this.earlierList.replaceChildren(...earlier.map(x=>this.card(x)));this.earlierHeading.textContent=`Earlier imports (${earlier.length})`;this.earlier.hidden=!!query||!earlier.length;
-    this.brief.hidden=!this.inbox.briefing;this.briefText.textContent=this.inbox.briefing||'';this.briefDate.textContent=this.inbox.reviewDate?`Prepared ${dateLabel(this.inbox.reviewDate)}. The briefing is a snapshot; task cards retain your later edits.`:'';
-    this.calendar?.setTasks(this.inbox.items);this.updateCount();
+    this.brief.hidden=!!this.scope||!this.inbox.briefing;this.briefText.textContent=this.scope?'':this.inbox.briefing||'';this.briefDate.textContent=!this.scope&&this.inbox.reviewDate?`Prepared ${dateLabel(this.inbox.reviewDate)}. The briefing is a snapshot; task cards retain your later edits.`:'';
+    this.calendar?.setTasks(this.scope?visible:this.inbox.items);this.updateCount();
   }
   updateCount(){
     this.clearNotesButton.disabled=this.blocked||this.reading||(!this.inbox.items.length&&!this.inbox.briefing);

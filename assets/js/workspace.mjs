@@ -1,6 +1,6 @@
 // One planning surface. Specialist records remain owned by their existing workboards.
-import '../../morning-launchpad/assets/summary-import.mjs?v=work-count-1';
-import {taskSection} from '../../morning-launchpad/assets/summary-core.mjs?v=task-help-1';
+import '../../morning-launchpad/assets/summary-import.mjs?v=wing-tasks-1';
+import {INBOX_KEY, validateInbox, taskSection, todaySydney} from '../../morning-launchpad/assets/summary-core.mjs?v=task-help-1';
 
 const base = new URL('../../', import.meta.url);
 const wing = document.body.dataset.workboard || 'launchpad';
@@ -69,7 +69,7 @@ if (wing !== 'launchpad') {
   const refreshForecast = el('button', 'Refresh schedule', {type: 'button', class: 'workspace-setup'});
   refreshForecast.addEventListener('click', () => enqueue(refreshScheduledWork));
   forecastPanel.append(forecastHeading, forecastNote, forecastCount, refreshForecast);
-  board = el('summary-import', undefined, {'data-workstream': wing, id: 'shared-work'});
+  board = el('summary-import', undefined, {'data-workstream': wing, 'data-scope': wing, id: 'shared-work'});
   // Staff routes do not initialise or migrate the personal work list.
   host.append(welcome, flow(), forecastPanel);
   specialist = el('details', undefined, {class: 'workspace-specialist'});
@@ -77,10 +77,13 @@ if (wing !== 'launchpad') {
   specialist.append(specialistSummary);
   const dashboard = document.getElementById('dashboard-access');
   const route = document.getElementById('route-content');
-  specialist.append(dashboard, route); main.append(host, specialist);
+  specialist.append(route); main.append(dashboard, host, specialist);
   const routeNav = document.querySelector('.route-nav');
   const workLink = el('a', 'My work (personal)', {href: '#my-work', class: 'workspace-my-work'});
   routeNav.append(workLink);
+  const taskLink = el('a', `${label} tasks`, {href: wing === 'vet' ? '#vet-home' : '#home', class: 'workspace-task-link'});
+  taskLink.addEventListener('click', () => setTimeout(() => board.scrollIntoView({behavior: 'smooth', block: 'start'}), 0));
+  routeNav.append(taskLink);
   const topbar = document.querySelector('.topbar');
   if (wing === 'vet') topbar.append(el('button', 'Workspace setup', {type: 'button', 'data-action': 'open-settings', class: 'workspace-setup'}));
   // Keep staff destinations separate from the optional personal workspace.
@@ -108,13 +111,37 @@ if (wing !== 'launchpad') {
 function ensureBoard() {
   if (wing !== 'launchpad' && !board.isConnected) host.append(board);
 }
+function updateVetTaskCount() {
+  if (wing === 'launchpad') return;
+  const link = document.querySelector('.workspace-task-link');
+  if (!link) return;
+  // Show only a count on staff pages; never initialise or modify personal cards.
+  try {
+    const items = validateInbox(localStorage.getItem(INBOX_KEY)).items;
+    const today = todaySydney();
+    const count = items.filter(item => item.workstream === wing && taskSection(item, today) !== 'done').length;
+    link.textContent = `${label} tasks (${count})`;
+    link.title = `Unfinished ${label} tasks saved in this browser. Completed tasks remain in Done.`;
+  } catch {
+    link.textContent = `${label} tasks`;
+    link.title = 'The saved task count is unavailable. Open your personal work list to review it.';
+  }
+}
 function routeChanged() {
   updateAreaNavigation();
+  updateVetTaskCount();
   if (wing === 'launchpad') return;
   const hash = location.hash || '#home';
   const planning = hash === '#my-work';
-  if (planning) ensureBoard();
-  host.hidden = !planning;
+  const wingHome = hash === (wing === 'vet' ? '#vet-home' : '#home');
+  if (planning || wingHome) {
+    board.scope = wingHome ? wing : null;
+    ensureBoard();
+    board.setScope(wingHome ? wing : null);
+  }
+  host.hidden = !planning && !wingHome;
+  host.classList.toggle('workspace-wing-list', wingHome);
+  document.getElementById('dashboard-access').hidden = planning;
   specialist.hidden = planning;
   specialist.classList.toggle('is-route', !planning);
   specialist.open = !planning;
@@ -175,7 +202,7 @@ async function bringRecordedWork({closedOnly = false} = {}) {
 let forecastDeferred = false;
 async function refreshScheduledWork() {
   const adapter = window.WWHS_WORKBOARD_ADAPTER;
-  if (!adapter || wing === 'launchpad' || location.hash !== '#my-work' || !board.started) return;
+  if (!adapter || wing === 'launchpad' || host.hidden || !board.started) return;
   if (board.blocked) {
     forecastHeading.textContent = 'Schedule refresh paused';
     forecastNote.textContent = 'Reload saved work below before refreshing. Any text you are editing stays on this page.';
@@ -231,13 +258,15 @@ async function refreshScheduledWork() {
 window.addEventListener('wwhs:records-updated', () => enqueue(refreshScheduledWork));
 window.addEventListener('wwhs:forecast-updated', () => enqueue(refreshScheduledWork));
 window.addEventListener('wwhs:work-reloaded', () => enqueue(refreshScheduledWork));
+window.addEventListener('wwhs:work-saved', updateVetTaskCount);
+window.addEventListener('wwhs:work-reloaded', updateVetTaskCount);
 board.addEventListener('focusout', () => { if (forecastDeferred) setTimeout(() => enqueue(refreshScheduledWork), 0); });
 window.addEventListener('focus', () => enqueue(refreshScheduledWork));
 document.addEventListener('visibilitychange', () => { if (!document.hidden) enqueue(refreshScheduledWork); });
 let scheduleDay = new Date().toLocaleDateString('en-CA', {timeZone: 'Australia/Sydney'});
 if (wing !== 'launchpad') setInterval(() => {
   const next = new Date().toLocaleDateString('en-CA', {timeZone: 'Australia/Sydney'});
-  if (next !== scheduleDay) { scheduleDay = next; enqueue(refreshScheduledWork); }
+  if (next !== scheduleDay) { scheduleDay = next; updateVetTaskCount(); enqueue(refreshScheduledWork); }
 }, 30000);
 window.addEventListener('launchpad:open-calendar', () => {
   if (wing !== 'launchpad') { location.hash = '#my-work'; routeChanged(); board.showCalendar(true); }
@@ -246,6 +275,7 @@ window.addEventListener('storage', event => {
   if (event.key === 'morning-launchpad-theme') { document.documentElement.dataset.theme = event.newValue === 'dark' ? 'dark' : 'light'; updateTheme(); }
 });
 window.addEventListener('storage', event => {
+  if (event.key === INBOX_KEY || event.key === null) updateVetTaskCount();
   if (wing !== 'launchpad' && event.key !== 'morning-launchpad-theme') enqueue(refreshScheduledWork);
 });
 enqueue(refreshScheduledWork);

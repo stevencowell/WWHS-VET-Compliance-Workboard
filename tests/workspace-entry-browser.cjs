@@ -42,14 +42,17 @@ async function setup({seedPersonal=false}={}){
   return {context,page};
 }
 async function go(page,route){await page.goto(base+route,{waitUntil:'domcontentloaded'});await page.locator('.workspace-header').waitFor();}
-async function staffReady(page){await page.locator('#route-content h1').waitFor();assert.equal(await page.locator('.workspace-home').isVisible(),false);}
+function isWingHome(page){const url=new URL(page.url());return url.hash==='#vet-home'||url.pathname.includes('head-teacher-tas')&&url.hash==='#home';}
+async function staffReady(page){await page.locator('#route-content h1').waitFor();await page.locator('.workspace-home').waitFor({state:isWingHome(page)?'visible':'hidden'});}
 async function personalReady(page){await page.waitForFunction(()=>document.querySelector('summary-import')?.started&&document.querySelector('.workspace-forecast')?.dataset.ready==='true');assert.equal(new URL(page.url()).hash,'#my-work');}
 async function access(page){return page.evaluate(()=>window.__personalStorageAccess);}
 async function stored(page,key=personalKeys[0]){return page.evaluate(key=>window.__readStored(key),key);}
 async function inbox(page){return JSON.parse(await stored(page)||'{"items":[]}');}
 async function assertUntouchedStaff(page){
-  assert.equal(await page.locator('summary-import').count(),0,'Staff entry must not connect the personal component');
-  assert.deepEqual(await access(page),[],'Staff page must not read, write or clear personal task/routine storage');
+  if(isWingHome(page))assert.ok(await page.locator('summary-import[data-scope]').isVisible(),'Wing home shows only its own tasks');
+  else assert.equal(await page.locator('summary-import:visible').count(),0,'Other staff routes keep the task component hidden');
+  const unexpected = (await access(page)).filter(entry => !(entry.key === personalKeys[0] && (entry.operation === 'getItem'||entry.operation === 'setItem'&&['#vet-home','#home'].includes(entry.hash))));
+  assert.deepEqual(unexpected,[],'Only wing homes can refresh scheduled tasks; staff pages never read personal routines');
 }
 async function openPersonal(page){await page.locator('.workspace-my-work').click();await personalReady(page);}
 async function nativeTask(page,wing){
@@ -168,7 +171,7 @@ async function nativeTask(page,wing){
       await page.locator('.route-nav').getByRole('link',{name:'Calendar ↗',exact:true}).click();await page.locator('.calendar-choice[open]').waitFor();
       const popupPromise=page.waitForEvent('popup');await page.locator('.calendar-choice').getByRole('link',{name:/^Launchpad calendar/}).click();const popup=await popupPromise;
       await popup.waitForURL(base+'/morning-launchpad/#calendar');await popup.locator('.workspace-header').waitFor();
-      assert.equal(new URL(page.url()).hash,'#home','Staff page stays on the TAS wing');assert.equal(await page.locator('.workspace-home').isVisible(),false);
+      assert.equal(new URL(page.url()).hash,'#home','Staff page stays on the TAS wing');assert.equal(await page.locator('summary-import[data-scope="tas"]').isVisible(),true);
       assert.equal(context.pages().length,2);await popup.close();
       return {staffRoute:'/head-teacher-tas/#home',newTab:'/morning-launchpad/#calendar'};
     }finally{await context.close();}
