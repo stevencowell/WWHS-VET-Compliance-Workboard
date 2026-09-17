@@ -1,0 +1,176 @@
+import {createLocalVault} from './security/local-vault.mjs';
+import {createPrivateStorage} from './security/private-storage.mjs';
+import {sampleDataset} from './sample.mjs';
+import {FINANCE_PROMPT_TOPICS,buildFinancePrompt,buildSafeFinanceSummary} from './prompts.mjs';
+
+if(window.self!==window.top)throw new Error('Open Finance Studio directly to use this workspace.');
+
+const $=id=>document.getElementById(id);
+let vault,storage,engine,sample=false,starting=false,gateState='',fatalSaveError=null,engineAttempted=false,resetting=false;
+const rejectedWrites=new Map();
+const planningKey='finance_studio_planning_inputs_v1';
+const topicForView={overview:'spending',transactions:'categories',budget:'budget',statements:'statements',tax:'tax',planning:'savings',categories:'categories','ai-insights':'subscriptions',tools:'spending',assistant:'spending'};
+
+function reportStatus(status) {
+  if(fatalSaveError&&status.state==='saved')status={state:'error',error:fatalSaveError.message};
+  const labels={saved:'Saved in this browser',unsaved:'Changes waiting to save…',saving:'Saving encrypted records…',error:'Not saved — download a recovery backup',conflict:'Another tab has newer records — download a recovery backup',closed:'Locked'};
+  $('saveStatus').textContent=sample?'Sample only · not saved':labels[status.state]||status.state;
+  $('saveStatus').dataset.error=String(['error','conflict'].includes(status.state));
+  $('downloadEncryptedBackup').textContent=['error','conflict'].includes(status.state)?'Download recovery backup':'Download encrypted backup';
+  $('saveProblem').hidden=!['error','conflict'].includes(status.state);
+  if(status.error)$('saveProblemMessage').textContent=status.error;
+}
+function memoryStorage() {
+  const values=new Map();
+  return {getItem:k=>values.get(k)??null,setItem:(k,v)=>values.set(k,String(v)),removeItem:k=>values.delete(k),clear:()=>values.clear(),status:()=>({state:'saved',dirty:false}),flush:async()=>{},close:()=>values.clear()};
+}
+function loadScript(src) { return new Promise((resolve,reject)=>{const script=document.createElement('script');script.src=src;script.onload=resolve;script.onerror=()=>reject(new Error('A Finance Studio file could not be loaded. Reload and try again.'));document.head.append(script);}); }
+function download(text,name) {
+  const url=URL.createObjectURL(new Blob([text],{type:'application/json'}));
+  const a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),15000);
+}
+function stamp(){return new Date().toISOString().slice(0,10);}
+function setStarting(value){starting=value;for(const id of ['unlockFinance','trySample','restoreVault'])$(id).disabled=value||resetting;}
+
+async function showGate() {
+  const gate=await vault.getGate(); gateState=gate.state;
+  const setup=gateState==='needs-password';
+  $('gateTitle').textContent=setup?'Make this your private workspace.':'Welcome back.';
+  $('gateDescription').textContent=setup?'Choose a password or passphrase of at least 12 characters. Your imported records will be encrypted in this browser.':'Enter your password to unlock the records saved in this browser.';
+  $('vaultPassword').minLength=setup?12:1;
+  $('vaultPassword').autocomplete=setup?'new-password':'current-password';
+  $('confirmPassword').minLength=12;$('confirmPassword').required=setup;$('confirmPassword').disabled=!setup;
+  $('confirmPasswordLabel').hidden=!setup;$('unlockFinance').textContent=setup?'Create private workspace':'Unlock Finance';
+  $('vaultForm').hidden=false;
+}
+
+async function openWorkspace(isSample=false) {
+  if(engineAttempted)throw new Error('Reload Finance Studio before opening another workspace.');
+  sample=isSample;
+  storage=sample?memoryStorage():await createPrivateStorage(vault,{onStatus:reportStatus,autoFlushMs:300});
+  window.FINANCE_STORAGE={getItem:k=>storage.getItem(k),setItem:(k,v)=>{try{storage.setItem(k,v);rejectedWrites.delete(k);}catch(error){rejectedWrites.set(k,v);throw error;}},removeItem:k=>storage.removeItem(k),atomic:fn=>{try{return storage.atomic?storage.atomic(fn):fn();}catch(error){fatalSaveError=error;reportStatus({state:'error',error:error.message});throw error;}},onError:error=>{fatalSaveError=error;reportStatus({state:'error',error:error.message});}};
+  engineAttempted=true;
+  await loadScript('./vendor/chart.js/chart.umd.js');
+  await loadScript('./classification-config.js');
+  await loadScript('./transfer-classification.js');
+  await loadScript('./main.js');
+  engine=window.FinanceEngine;
+  window.addEventListener('finance-ai-help',event=>openPrompt(event.detail?.topic||'spending'));
+  window.addEventListener('finance-data-changed',updateCoverage);
+  const navigate=engine.App.navigate.bind(engine.App);
+  engine.App.navigate=view=>{
+    if(!document.getElementById(`${view}-view`))view='overview';
+    navigate(view);
+    const tab=['overview','transactions','budget','planning','tools'].includes(view)?view:'tools';
+    document.querySelectorAll('.nav-btn').forEach(button=>{button.classList.toggle('active',button.dataset.view===tab); if(button.dataset.view===tab)button.setAttribute('aria-current','page');else button.removeAttribute('aria-current');});
+    if(location.hash!==`#${view}`)history.replaceState(null,'',`#${view}`);
+    $('openAssistant').textContent=view==='assistant'?'AI help':'AI help with this view';
+  };
+  const renderAll=engine.App.renderAll.bind(engine.App);
+  engine.App.renderAll=()=>{renderAll();updateCoverage();};
+  $('financeGate').hidden=true;$('financeWorkspace').hidden=false;
+  $('workspaceMode').textContent=sample?'Sample workspace':'Private Finance';
+  $('sampleNotice').hidden=!sample;
+  $('downloadEncryptedBackup').hidden=sample;
+  $('lockFinance').textContent=sample?'Leave sample workspace':'Lock Finance';
+  if(sample)await engine.start({dataset:sampleDataset()});else await engine.start();
+  document.title='Finance Studio · Your private workspace';
+  // Keep the approved overview hierarchy: figures first, then a useful next step.
+  const cards=$('summaryCards'),brief=document.querySelector('.overview-brief-grid');
+  brief.before(cards);
+  const moreFigures=document.createElement('button');moreFigures.id='summaryCardToggle';moreFigures.className='btn btn-ghost';moreFigures.textContent='Show spending breakdown';moreFigures.setAttribute('aria-expanded','false');moreFigures.setAttribute('aria-controls','summaryCards');
+  moreFigures.addEventListener('click',()=>{const expanded=cards.classList.toggle('show-extra');moreFigures.setAttribute('aria-expanded',String(expanded));moreFigures.textContent=expanded?'Hide spending breakdown':'Show spending breakdown';});cards.after(moreFigures);
+  const parsedPlanning=JSON.parse(storage.getItem(planningKey)||'{}');
+  const savedPlanning=parsedPlanning&&typeof parsedPlanning==='object'&&!Array.isArray(parsedPlanning)?parsedPlanning:{};
+  for(const [id,value] of Object.entries(savedPlanning)){const field=$(id);if(field?.closest('#planning-view')&&['INPUT','SELECT'].includes(field.tagName))field.value=String(value);}
+  engine.PlanningController.render();
+  $('planning-view').addEventListener('input',()=>{
+    const values={};document.querySelectorAll('#planning-view input[id],#planning-view select[id]').forEach(field=>{values[field.id]=field.value;});
+    try{window.FINANCE_STORAGE.setItem(planningKey,JSON.stringify(values));}catch(error){fatalSaveError=error;reportStatus({state:'error',error:error.message});}
+  });
+  document.querySelectorAll('[data-go]').forEach(button=>button.addEventListener('click',()=>engine.App.navigate(button.dataset.go)));
+  document.querySelectorAll('.view').forEach(view=>{
+    if(['assistant-view','tools-view'].includes(view.id))return;
+    const action=document.createElement('button');action.className='btn btn-ghost contextual-ai';action.textContent='AI help for this task';
+    action.addEventListener('click',()=>openPrompt(topicForView[view.id.replace('-view','')]));
+    const target=view.querySelector('.card-header');if(target)target.append(action);
+  });
+  // Capturing prevents the retained legacy assistant button handler from opening an online chat.
+  $('openAssistant').addEventListener('click',event=>{event.stopImmediatePropagation();openPrompt(topicForView[engine.AppState.activeView]);},true);
+  // Demo is deliberately isolated. Real records must go into the encrypted workspace.
+  if(sample)['importCsv','importData','restoreBackup','backupApp','exportData'].forEach(id=>{$(id).disabled=true;$(id).title='Leave the sample workspace to import or save your own records.';});
+  renderPrompt();engine.App.navigate(location.hash.slice(1)||'overview');
+  reportStatus(storage.status());updateCoverage();
+  if(!sample){await storage.flush();navigator.storage?.persist?.().catch(()=>{});}
+}
+function updateCoverage(){
+  if(!engine)return;
+  const dates=engine.AppState.transactions.map(tx=>tx.date instanceof Date?tx.date.toISOString().slice(0,10):String(tx.date||'').slice(0,10)).filter(d=>/^\d{4}-\d{2}-\d{2}$/.test(d)).sort();
+  $('generatedTime').textContent=dates.length?`Records: ${dates[0]} to ${dates.at(-1)} · ${dates.length} transactions`:'No statements imported yet';
+  $('emptyNotice').hidden=sample||dates.length>0;
+  if($('includePromptSummary').checked)renderPrompt();
+}
+function openPrompt(topic){$('promptTopic').value=topic||'spending';$('includePromptSummary').checked=false;renderPrompt();engine.App.navigate('assistant');$('financePrompt').focus();}
+function renderPrompt(){
+  $('financePrompt').value=buildFinancePrompt($('promptTopic').value,{includeSummary:$('includePromptSummary').checked,summary:engine?buildSafeFinanceSummary(engine.AppState.transactions):undefined});
+  $('promptStatus').textContent='';
+}
+$('promptTopic').replaceChildren(...FINANCE_PROMPT_TOPICS.map(topic=>{const option=document.createElement('option');option.value=topic.id;option.textContent=topic.label;return option;}));
+const summaryChoice=document.createElement('label');summaryChoice.className='summary-choice';summaryChoice.innerHTML='<input type="checkbox" id="includePromptSummary"> Include a brief totals summary (no account names or individual transactions)';
+$('financePrompt').closest('label').before(summaryChoice);
+$('promptTopic').addEventListener('change',renderPrompt);$('includePromptSummary').addEventListener('change',renderPrompt);
+$('copyFinancePrompt').addEventListener('click',async()=>{try{await navigator.clipboard.writeText($('financePrompt').value);$('promptStatus').textContent='Copied. Review what you share with your chosen assistant.';}catch{$('financePrompt').focus();$('financePrompt').select();$('promptStatus').textContent='Press Ctrl+C to copy the selected prompt.';}});
+
+const problem=document.createElement('div');problem.id='saveProblem';problem.className='local-note';problem.hidden=true;
+problem.innerHTML='<strong>Your latest edits need attention.</strong> <span id="saveProblemMessage"></span><div class="inline-actions"><button class="btn btn-secondary" id="retrySave">Try saving again</button><button class="btn btn-secondary" id="reloadSaved">Reload saved records</button></div>';
+document.querySelector('.workspace-status').after(problem);
+$('retrySave').addEventListener('click',async()=>{try{for(const [k,v] of rejectedWrites)window.FINANCE_STORAGE.setItem(k,v);await storage.flush();fatalSaveError=null;reportStatus(storage.status());}catch(error){reportStatus({state:error.code==='conflict'?'conflict':'error',error:error.message});}});
+$('reloadSaved').addEventListener('click',()=>{if(confirm('Reload the saved records? Any unsaved edits in this tab will be discarded. Download a recovery backup first.')){resetting=true;fatalSaveError=null;$('financeWorkspace').hidden=true;storage.close({discardUnsaved:true});vault.lock();location.reload();}});
+
+$('vaultForm').addEventListener('submit',async event=>{
+  event.preventDefault();if(starting||resetting)return;
+  if(gateState==='needs-password'&&$('vaultPassword').value!==$('confirmPassword').value){$('gateMessage').textContent='The two passwords do not match.';return;}
+  setStarting(true);$('gateMessage').textContent='Unlocking your workspace…';
+  try{if(gateState==='needs-password')await vault.setup($('vaultPassword').value);else await vault.unlock($('vaultPassword').value);$('vaultPassword').value='';$('confirmPassword').value='';await openWorkspace();}
+  catch(error){if(engineAttempted)restartAfterFailedStart();else $('gateMessage').textContent=error.message;}
+  finally{setStarting(false);}
+});
+$('trySample').addEventListener('click',async()=>{if(starting||resetting)return;setStarting(true);try{await openWorkspace(true);}catch(error){if(engineAttempted)restartAfterFailedStart();else $('gateMessage').textContent=error.message;}finally{setStarting(false);}});
+$('downloadEncryptedBackup').addEventListener('click',async()=>{
+  const button=$('downloadEncryptedBackup');button.disabled=true;
+  try{let text,recovery=false;try{await storage.flush();if(fatalSaveError)throw fatalSaveError;text=await vault.exportBackup();}catch{recovery=true;text=await vault.exportRecovery(collectRecoveryValues());}
+    download(text,`finance-${recovery?'recovery':'encrypted-backup'}-${stamp()}.json`);
+    $('backupStatus').textContent=recovery?'Recovery backup downloaded. It includes the current working records; keep its password.':'Encrypted backup downloaded. Keep this file and your password somewhere safe.';
+  }catch(error){$('backupStatus').textContent=error.message;}finally{button.disabled=false;}
+});
+const backupStatus=document.createElement('span');backupStatus.id='backupStatus';backupStatus.setAttribute('role','status');document.querySelector('.workspace-status').append(backupStatus);
+$('lockFinance').addEventListener('click',async()=>{try{await storage.flush();if(fatalSaveError)throw fatalSaveError;storage.close();vault?.lock();resetting=true;$('financeWorkspace').hidden=true;location.replace(location.pathname);}catch(error){reportStatus({state:'error',error:error.message+' Download a recovery backup before reloading.'});}});
+$('restoreVault').addEventListener('click',async()=>{
+  if(starting||resetting)return;
+  const file=$('restoreVaultFile').files[0];if(!file){$('restoreVaultMessage').textContent='Choose an encrypted Finance Studio backup first.';return;}
+  if(!vault)return;
+  setStarting(true);
+  try{if(file.size>48*1024*1024)throw new Error('This backup is too large.');let current;try{current=await vault.getGate();}catch{current={state:'damaged'};}let replace=false;if(current.state!=='needs-password'){replace=confirm('Replace this browser’s saved Finance records with this backup? Keep a backup of your current records first.');if(!replace)return;}
+    await vault.restoreBackup(await file.text(),$('restoreVaultPassword').value,{replaceExisting:replace});$('restoreVaultPassword').value='';await openWorkspace();
+  }catch(error){if(engineAttempted)restartAfterFailedStart();else $('restoreVaultMessage').textContent=error.message;}finally{setStarting(false);}
+});
+function collectRecoveryValues(){
+  const values=JSON.parse(storage.exportRecovery()).values, backup=engine.buildBackup();
+  const fields={budget_items:'budgetItems',budget_meta:'budgetMeta',subcategory_rules:'subcategoryRules',merchant_review_hidden:'merchantReviewHidden',scenarios:'scenarios',tax_settings:'taxSettings',tax_manual_expenses:'taxManualExpenses',tax_rules:'taxRules',tax_overrides:'taxOverrides',theme:'theme',assistant_mode:'assistantMode',assistant_web_lookup:'assistantWebLookup',global_account_scope:'globalAccountScope'};
+  values[engine.storageKeys.datasetSnapshot]=JSON.stringify(backup.dataset);
+  for(const [field,key] of Object.entries(fields))if(Object.hasOwn(backup.local_state,field))values[engine.storageKeys[key]]=JSON.stringify(backup.local_state[field]);
+  for(const [key,value] of rejectedWrites)values[key]=value;
+  const planning={};document.querySelectorAll('#planning-view input[id],#planning-view select[id]').forEach(field=>{planning[field.id]=field.value;});values[planningKey]=JSON.stringify(planning);
+  return values;
+}
+function restartAfterFailedStart(){
+  // A partially initialised engine cannot safely be reused across an unlock attempt.
+  // Reload purges its references and plaintext DOM. The saved encrypted vault stays intact.
+  resetting=true;setStarting(true);try{sessionStorage.setItem('finance_ui_start_error','1');}catch{}
+  fatalSaveError=null;storage?.close({discardUnsaved:true});vault?.lock();$('financeWorkspace').hidden=true;location.replace(location.pathname);
+}
+window.addEventListener('hashchange',()=>{if(engine)engine.App.navigate(location.hash.slice(1));});
+window.addEventListener('beforeunload',event=>{if(!sample&&!resetting&&(fatalSaveError||storage?.status().dirty)){event.preventDefault();event.returnValue='';}});
+// A back/forward cache entry must never restore an already-unlocked financial screen.
+window.addEventListener('pageshow',event=>{if(event.persisted)location.reload();});
+try{vault=await createLocalVault();await showGate();try{if(sessionStorage.getItem('finance_ui_start_error')){sessionStorage.removeItem('finance_ui_start_error');$('gateMessage').textContent='Finance could not finish opening. The page has been safely reset; your saved encrypted records are unchanged. Try again, or keep a copy of your backup if this continues.';}}catch{}}catch(error){$('gateTitle').textContent='Private storage is unavailable.';$('gateDescription').textContent=error.message;$('gateMessage').textContent='You can still explore the separate sample workspace, or restore an encrypted backup below.';}

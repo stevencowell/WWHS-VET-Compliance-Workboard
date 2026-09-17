@@ -427,7 +427,7 @@ class SummaryImport extends HTMLElement {
   renderItems(){
     const query=this.searchInput.value.trim();this.clearSearch.hidden=!query;
     const today=todaySydney();const visible=this.inbox.items.filter(x=>this.workstream==='all'||x.workstream===this.workstream);
-    for(const[key,control]of Object.entries(this.streamButtons)){control.setAttribute('aria-pressed',String(this.workstream===key));control.textContent=`${key==='all'?'All work':WORKSTREAMS[key]} (${this.inbox.items.filter(x=>key==='all'||x.workstream===key).length})`;}
+    for(const[key,control]of Object.entries(this.streamButtons)){control.setAttribute('aria-pressed',String(this.workstream===key));control.textContent=`${key==='all'?'All work':WORKSTREAMS[key]} (${this.inbox.items.filter(x=>key==='all'?taskSection(x,today)!=='done':x.workstream===key).length})`;}
     const inView=(x,key)=>taskSection(x,today)===key;
     for(const[key,{button:b,label}]of Object.entries(this.tabs)){b.textContent=`${label} (${visible.filter(x=>inView(x,key)).length})`;b.setAttribute('aria-pressed',String(!query&&this.view===key));}
     const sorted=visible.filter(x=>query?matchesNoteSearch(x,query):inView(x,this.view)).sort((a,b)=>Number(isPinned(b,today))-Number(isPinned(a,today))||(this.view==='upcoming'?(nextDate(a)||'9999-12-31').localeCompare(nextDate(b)||'9999-12-31')||rank(b,today)-rank(a,today):rank(b,today)-rank(a,today)));

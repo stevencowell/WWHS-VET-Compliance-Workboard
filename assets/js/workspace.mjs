@@ -1,5 +1,5 @@
 // One planning surface. Specialist records remain owned by their existing workboards.
-import '../../morning-launchpad/assets/summary-import.mjs?v=task-help-1';
+import '../../morning-launchpad/assets/summary-import.mjs?v=work-count-1';
 import {taskSection} from '../../morning-launchpad/assets/summary-core.mjs?v=task-help-1';
 
 const base = new URL('../../', import.meta.url);
@@ -21,6 +21,9 @@ const nav = el('nav', undefined, {'aria-label': 'Workspace areas', class: 'works
 for (const [key, text, path] of [['home', 'Home', './#home'], ['launchpad', 'Launchpad', 'morning-launchpad/'], ['vet', 'VET', './#vet-home'], ['tas', 'TAS', 'head-teacher-tas/#home']]) {
   const link = el('a', text, {href: new URL(path, base).href, 'data-area': key});
   nav.append(link);
+}
+if (wing === 'launchpad') {
+  nav.append(el('a', 'Finance', {href: new URL('finance/', base).href, 'data-area': 'finance'}));
 }
 function updateAreaNavigation() {
   const current = wing === 'vet' && (!location.hash || location.hash === '#home') ? 'home' : wing;
