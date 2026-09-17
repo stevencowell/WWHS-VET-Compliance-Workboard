@@ -1,5 +1,5 @@
 // Local text processing only. No network requests or embedded personal records.
-import {normaliseTaskHelpContext} from '../../assets/js/task-help.mjs?v=task-help-1';
+import {normaliseTaskHelpContext} from '../../assets/js/task-help.mjs?v=full-register-1';
 export const INBOX_KEY = 'morning-launchpad-summary:v1';
 export const LEGACY_PLAN_KEY = 'morning-launchpad-routine:v1';
 export const LIMIT = 1000000;

@@ -1,0 +1,16 @@
+import assert from 'node:assert/strict';
+import {readReview,reviewKey,matchesRegisterView} from '../assets/js/task-register.mjs';
+assert.deepEqual(readReview(null),{version:1,records:{}});
+assert.throws(()=>readReview('{"version":2,"records":{}}'));
+assert.throws(()=>readReview('{"version":1,"records":{"vet:2026:a":{"completed":"yes","reviewedOn":"2026-09-17"}}}'));
+const item={id:'annual-duty',year:'2026',reviewComplete:false,schedule:{kind:'date',endDate:'2026-03-01'}};
+assert.notEqual(reviewKey('vet',item,2026),reviewKey('vet',item,2027));
+assert.notEqual(reviewKey('vet',item,2026),reviewKey('tas',item,2026));
+assert.notEqual(reviewKey('tas',{id:'weekly-scan-0',recordKey:'weekly-scan-0::2026-09-14'},2026),reviewKey('tas',{id:'weekly-scan-0',recordKey:'weekly-scan-0::2026-09-21'},2026));
+assert.equal(matchesRegisterView(item,'past','2026-09-17'),true);
+assert.equal(matchesRegisterView({...item,reviewComplete:true},'past','2026-09-17'),false);
+assert.equal(matchesRegisterView({...item,schedule:{kind:'trigger'}},'trigger','2026-09-17'),true);
+assert.equal(matchesRegisterView({...item,schedule:{kind:'date',endDate:'2026-12-01'}},'later','2026-09-17'),true);
+assert.equal(matchesRegisterView({...item,schedule:{kind:'window',startDate:'2027-02-01',endDate:'2027-02-05'}},'past','2026-09-17'),false);
+assert.equal(matchesRegisterView({...item,procedureOnly:true},'past','2026-09-17'),false);
+console.log('PASS full-register filtering, year separation and invalid review recovery');

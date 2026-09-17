@@ -466,6 +466,105 @@
     return { entries: [...entries.values()], context };
   }
 
+  // A catalogue view, not another forecast: future dates, event procedures and
+  // saved older occurrences must remain discoverable without creating records.
+  function getTaskRegister() {
+    refreshDate();
+    const available = forecastStorageAvailable();
+    const focus = new Map(getForecast().entries.map(entry => [entry.recordKey, entry.forecast.reason]));
+    const items = [];
+    const sourceGaps = {
+      "critical-gap": "The current source or local process still needs confirmation.",
+      "verify-live": "Confirm the current owner-system instruction and applicability.",
+      mixed: "Confirm the controlling version where current and legacy sources are mixed."
+    };
+    const repeatGaps = new Set(["annual-plan-alignment", "annual-rosters-rhythm", "class-readiness", "technology-rotations", "program-currency", "assessment-governance", "reporting-assurance", "capability-training"]);
+    const dateGaps = new Set(["faculty-publications", "whs-inspection", "stocktake-disposal", "ag-farm-audit", "term-workshop-close"]);
+    const occurrenceYear = key => key.split("::")[1]?.match(/^\d{4}(?=$|[-])/i)?.[0] || "ongoing";
+    const scheduleFor = task => {
+      const dates = [task.dueDate, ...(task.milestones || []).map(item => item.date)].filter(date => /^\d{4}-\d{2}-\d{2}$/.test(date || "")).sort();
+      if (dates.length) return { kind: dates[0] === dates.at(-1) ? "date" : "window", label: task.timing, startDate: dates[0], endDate: dates.at(-1) };
+      return { kind: taskCycle(task) === "event" || task.id === "vet-handoff" ? "trigger" : task.timing ? "recurring" : "undated", label: task.timing || "No date or review rule recorded" };
+    };
+    const addTask = (task, key, olderOccurrence = false) => {
+      const record = available ? state.records[key] : null;
+      const reference = task.historyOnly || task.procedureOnly;
+      const status = reference ? task.historyOnly ? "reference" : "procedure" : !available ? "unavailable" : record?.status || "not-reviewed";
+      const period = key.split("::").slice(1).join("::");
+      const schedule = scheduleFor(task);
+      if (olderOccurrence) schedule.label = `Recorded occurrence: ${period}. ${task.timing || "No separate due date recorded."}`;
+      if (olderOccurrence && task.dueDate && occurrenceYear(key) !== task.dueDate.slice(0, 4)) {
+        delete schedule.startDate;
+        delete schedule.endDate;
+        schedule.kind = "undated";
+        schedule.label = `Recorded occurrence: ${period}. The captured calendar dates belong to ${task.dueDate.slice(0, 4)}; no separate date is confirmed for this occurrence.`;
+      }
+      const gaps = [];
+      if (!task.historyOnly && sourceGaps[task.sourceState]) gaps.push(sourceGaps[task.sourceState]);
+      if (!reference && dateGaps.has(task.id)) gaps.push("The timing rule is recorded; the exact local date still needs confirmation.");
+      if (!reference && repeatGaps.has(task.id)) gaps.push("Additional term or change-trigger reviews are described but are not separately scheduled.");
+      if (!reference && !task.timing && !task.dueDate) gaps.push("No date or review rule recorded.");
+      if (!reference && !available) gaps.push("Saved progress is unavailable or changed in another tab; reload before relying on its status.");
+      if (task.id === "t2-year7-report-chain") gaps.push("The captured report chain has no confirmed office hand-off date.");
+      if (task.id === "t4-year11-report-chain") gaps.push("Confirm the local 16 October hand-off reaches the authorised NESA submitter for 21 October; check faculty applicability.");
+      items.push({
+        id: olderOccurrence ? key : task.id,
+        title: olderOccurrence ? `${task.title} — ${period}` : task.title,
+        year: olderOccurrence ? occurrenceYear(key) : task.dueDate ? task.dueDate.slice(0, 4) : "ongoing",
+        recordKey: reference ? "" : key,
+        route: `#task/${encodeURIComponent(task.id)}${olderOccurrence || (!reference && key !== recordKey(task)) ? `?record=${encodeURIComponent(key)}` : ""}`,
+        area: areaMeta[task.area]?.label || "Core work", owner: task.owner || "Owner to confirm",
+        status, complete: !reference && ["completed", "verified", "not-applicable"].includes(status),
+        historyOnly: task.historyOnly === true, procedureOnly: task.procedureOnly === true,
+        schedule, inFocus: focus.has(key), focusReason: focus.get(key) || "",
+        sourceIds: [...(task.systemIds || [])], gaps
+      });
+    };
+    data.tasks.forEach(task => {
+      // A dated 2026 row must never inherit a new year's native record.
+      const key = task.dueDate ? `${task.id}::${task.dueDate.slice(0, 4)}` : recordKey(task);
+      addTask(task, key);
+      if (!available || task.historyOnly || task.procedureOnly) return;
+      Object.keys(state.records).filter(savedKey => savedKey.split("::")[0] === task.id && savedKey !== key)
+        .sort().forEach(savedKey => addTask(task, savedKey, true));
+    });
+    const currentWeek = weekKey();
+    const addWeekly = (label, index, week, olderOccurrence = false) => {
+      const checked = available && safeObject(state.weekly[week])[index] === true;
+      items.push({
+        id: `weekly-scan-${index}${olderOccurrence ? `::${week}` : ""}`,
+        recordKey: `weekly-scan-${index}::${week}`,
+        title: `${label}${olderOccurrence ? ` — week beginning ${week}` : ""}`,
+        year: olderOccurrence ? week.slice(0, 4) : "ongoing", route: `#today?weekly=${index}&week=${encodeURIComponent(week)}`,
+        area: "Weekly review", owner: "Head Teacher TAS", status: !available ? "unavailable" : checked ? "completed" : "not-reviewed",
+        complete: checked, historyOnly: false, procedureOnly: false,
+        schedule: { kind: "recurring", label: `Weekly scan · week beginning ${week}`, startDate: week },
+        inFocus: false, focusReason: "", sourceIds: ["staff-calendar", "nesa-actions", "tas-drive"],
+        gaps: !available ? ["Saved weekly progress is unavailable; reload before relying on its status."] : []
+      });
+    };
+    data.weeklyChecks.forEach((label, index) => {
+      addWeekly(label, index, currentWeek);
+      if (available) Object.keys(state.weekly).filter(week => week !== currentWeek && /^\d{4}-\d{2}-\d{2}$/.test(week) && Object.prototype.hasOwnProperty.call(safeObject(state.weekly[week]), index))
+        .sort().forEach(week => addWeekly(label, index, week, true));
+    });
+    return {
+      wing: "tas", currentYear: currentDate.getFullYear(), roleLabel: "Head Teacher TAS — all defined duties",
+      sourceNote: `School calendar: ${data.config.operatingYear}, last checked ${data.config.calendarChecked}. NESA hand-off checks added from the May 2026 timetable on 17 September 2026. Ongoing rules are shown across years; future dates have not been invented.`,
+      items,
+      coverageNotes: [
+        "This register includes every task defined in the workboard, its saved occurrences and the five weekly scan controls. It is not proof that every school obligation has been captured.",
+        "The live staff calendar, Head Teacher guide and current local procedures still need reconciliation with this saved catalogue. Confirm each duty's owner and applicability.",
+        "Event procedures rely on staff recognising the event. A described trigger is not an automatic notification from a school system.",
+        "Some annual records also describe term reviews or change triggers. Closing that record does not schedule each later review.",
+        "NESA dates are school deadlines. Confirm applicable courses and each faculty hand-off with the authorised submitting or certifying role; this catalogue does not give the Head Teacher that authority.",
+        "The five weekly scans are available on Today; they are not generated by the 21-day forecast.",
+        "Historical calendar rows and protected procedures are retained as reference; protected cases stay in their authorised systems.",
+        `No new ${data.config.operatingYear + 1} school calendar has been verified or rolled forward. There is no TAS role filter hiding catalogue duties.`
+      ]
+    };
+  }
+
   function planTaskButton(task) {
     if (task.historyOnly || task.procedureOnly) return "";
     return `<button class="button secondary compact" type="button" data-action="track-task" data-task-id="${esc(task.id)}">Add to my work</button>`;
@@ -511,7 +610,7 @@
   function taskFromRoute() {
     if (!location.hash.startsWith("#task/")) return null;
     try {
-      const id = decodeURIComponent(location.hash.slice(6));
+      const id = decodeURIComponent(location.hash.slice(6).split("?")[0]);
       return data.tasks.find(task => task.id === id) || null;
     } catch (_) {
       return null;
@@ -520,11 +619,49 @@
 
   function renderRoute() {
     const task = taskFromRoute();
+    const params = new URLSearchParams(location.hash.split("?")[1] || "");
+    const savedKey = params.get("record");
     if (taskDialog.open) taskDialog.close();
     if (task) history.replaceState(null, "", `#${areaMeta[task.area]?.route || "today"}`);
     render();
-    if (task) openTask(task.id);
+    if (task && savedKey) openSavedTask(task, savedKey);
+    else if (task) openTask(task.id);
+    else if (currentRoute() === "today" && params.has("weekly")) revealWeeklyScan(params);
     else document.getElementById("main-content")?.focus({ preventScroll: true });
+  }
+
+  function openSavedTask(task, key) {
+    const validKey = key.split("::")[0] === task.id;
+    const available = validKey && forecastStorageAvailable();
+    const record = available ? state.records[key] : null;
+    lastTaskTrigger = document.activeElement;
+    taskDialogContent.innerHTML = `<header class="dialog-head"><div><p class="eyebrow">Recorded occurrence · read only</p><h2 id="task-dialog-title">${esc(task.title)}</h2></div><button class="dialog-close" type="button" data-action="close-task" aria-label="Close task">×</button></header>
+      <div class="dialog-body"><p><strong>Occurrence:</strong> ${esc(validKey ? key.split("::").slice(1).join("::") : "Unavailable")}</p><p><strong>Saved status:</strong> ${esc(!available ? "Unavailable — reload to check saved progress" : record ? statusMeta[record.status]?.label || record.status : "Not reviewed here")}</p>
+      <p>This is the saved occurrence, separate from the current cycle. It does not alter the official school record.</p>
+      <section class="dialog-section"><h3>Actions</h3><ol class="action-list">${task.steps.map((step, index) => `<li><div class="history-step"><span class="step-number">${record?.steps?.[index] ? "✓" : index + 1}</span><span>${esc(step)}</span></div></li>`).join("")}</ol></section>
+      ${task.milestones?.length ? `<section class="dialog-section"><h3>Captured calendar milestones</h3><ul>${task.milestones.map((item, index) => `<li>${record?.milestones?.[index] ? "✓ " : ""}${esc(item.date)} · ${esc(item.label)}</li>`).join("")}</ul></section>` : ""}
+      <section class="owner-systems"><h3>Open the owner system</h3><div class="system-buttons">${systemButtons(task)}</div><p>${esc(task.privacy)}</p></section>
+      <div class="dialog-actions"><button class="button quiet" type="button" data-action="close-task">Close occurrence</button></div></div>`;
+    taskDialog.showModal();
+  }
+
+  function revealWeeklyScan(params) {
+    const index = Number(params.get("weekly"));
+    const week = params.get("week") || weekKey();
+    if (!Number.isInteger(index) || index < 0 || index >= data.weeklyChecks.length || !/^\d{4}-\d{2}-\d{2}$/.test(week)) return;
+    if (week === weekKey()) {
+      const check = document.querySelector(`[data-weekly-check="${index}"]`);
+      const panel = check?.closest("details");
+      if (panel) panel.open = true;
+      check?.scrollIntoView({ block: "center" });
+      check?.focus({ preventScroll: true });
+      return;
+    }
+    const available = forecastStorageAvailable();
+    const checked = available && safeObject(state.weekly[week])[index] === true;
+    lastTaskTrigger = document.activeElement;
+    taskDialogContent.innerHTML = `<header class="dialog-head"><div><p class="eyebrow">Saved weekly scan · read only</p><h2 id="task-dialog-title">${esc(data.weeklyChecks[index])}</h2></div><button class="dialog-close" type="button" data-action="close-task" aria-label="Close task">×</button></header><div class="dialog-body"><p>Week beginning ${esc(week)}.</p><p>${!available ? "Saved progress is unavailable; reload to check it." : checked ? "Ticked in this browser." : "Not ticked in this browser."}</p><p>This is a local review reminder, separate from this week's scan and official school records.</p><button class="button quiet" type="button" data-action="close-task">Close occurrence</button></div>`;
+    taskDialog.showModal();
   }
 
   function render() {
@@ -1347,6 +1484,7 @@
     wing: "tas",
     getEntries: () => Object.keys(state.records).map(key => describeTask(key.split("::")[0], key)).filter(Boolean),
     getForecast,
+    getTaskRegister,
     describeRecord,
     describeTask: id => describeTask(id),
     getHelpContext: key => {

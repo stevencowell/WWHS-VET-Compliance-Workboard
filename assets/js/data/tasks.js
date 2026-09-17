@@ -538,6 +538,33 @@
     },
 
     {
+      "id": "t2-09-review-stage6-entry-cutoff",
+      "title": "Review the recorded 2026 Stage 6 VET entry cut-off check",
+      "phase": "term_2",
+      "operatingYear": 2026,
+      "historyOnly": true,
+      "timing": "Historical control date: 30 June 2026; review the official recorded result without assuming it was missed",
+      "trigger": "Retrospective review of 2026 Preliminary and HSC VET course entries",
+      "dueDate": "2026-06-30",
+      "dueAuthority": "NESA ACE Rule 14.2.1 paragraph 12(a), footnote 6; verified 17 September 2026",
+      "roles": { "accountable": ["Principal or authorised delegate", "VET Coordinator"], "doer": ["Authorised NESA staff", "VET Coordinator"], "verifier": ["Principal or authorised delegate"] },
+      "priority": "critical",
+      "dependencies": [],
+      "actionSteps": [
+        "Check NESA ACE Rule 14.2 and the applicable 2026 Schools Online instructions for Preliminary and HSC VET entries.",
+        "Find the authorised school record of the entry cut-off check and confirm the recorded result for 30 June 2026. A missing local tick is not evidence that the action was missed.",
+        "Confirm the recorded review covered course exclusions and whether any course changes could meet the new course requirements, including mandatory work placement where applicable.",
+        "If the result or an entry cannot be confirmed, assign the discrepancy to the authorised NESA delegate with a review date and approved correction route; do not make or backdate an entry from this workboard."
+      ],
+      "doneWhen": "The applicable official 2026 check and result have been reviewed, with any uncertainty formally owned in the authorised system. This retrospective review does not authorise a late course entry.",
+      "evidencePointerType": "official-2026-entry-check-reference-and-exception-location",
+      "systems": ["NESA Schools Online", "Approved school records"],
+      "sourceIds": ["NESA-VET-ENTRIES", "NESA-TOA-2026"],
+      "liveVerification": { "required": true, "check": "Verify the applicable 2026 source and official recorded result; refer any correction or uncertainty to the authorised NESA delegate." },
+      "guidance": { "why": "The 2026 register previously mentioned checking late-entry cut-offs within enrolment changes but had no separate 30 June review control.", "commonTrap": "Treating an empty browser checklist as proof of a missed deadline, or using a historical review to authorise a late entry." },
+      "applicability": { "cohorts": ["2026 Preliminary and HSC VET course entries"], "conditions": "Retrospective source and record check; keep 2027 progress separate" }
+    },
+    {
       "id": "t3-01-year11-work-placement",
       "title": "Run and reconcile the Year 11 workplace-learning block",
       "phase": "term_3",
@@ -717,6 +744,32 @@
       "applicability": { "cohorts": ["HSC VET cohorts"], "conditions": "Courses with HSC assessment/exam obligations" }
     },
 
+    {
+      "id": "t3-10-principal-hsc-certification",
+      "title": "Confirm the VET handover for Principal HSC results certification",
+      "phase": "term_3",
+      "operatingYear": 2026,
+      "timing": "Principal HSC results certification due 18 September 2026; check the official recorded state before assuming further action is needed",
+      "trigger": "NESA Principal certification of HSC results data action",
+      "dueDate": "2026-09-18",
+      "dueAuthority": "NESA 2026 Timetable of Actions, May workbook, Complete timetable row 92 and Term 3 row 24; checked 17 September 2026",
+      "roles": { "accountable": ["Principal or authorised delegate"], "doer": ["Authorised NESA staff", "VET Coordinator"], "verifier": ["Principal or authorised delegate"] },
+      "priority": "critical",
+      "dependencies": [],
+      "actionSteps": [
+        "Open the current NESA timetable and the Principal certification of HSC results data action in Schools Online; confirm the applicable due date and whether certification is already recorded.",
+        "Confirm that the VET estimated exam marks and applicable VET-related HSC data have been submitted and checked through the authorised school process, referring to the existing VET estimates record.",
+        "Confirm the Principal or authorised delegate has the checked VET information needed for the school-wide certification. The VET Coordinator does not certify other faculty data or act as Principal through this task.",
+        "Retain only a privacy-safe reference to the official certification or handover result. If anything is unresolved, alert the authorised NESA delegate and Principal promptly and record an owner and review date."
+      ],
+      "doneWhen": "The official Principal certification state and VET handover are confirmed, or any unresolved action has been explicitly escalated to its authorised owner before the live deadline. A missing browser tick does not imply certification was missed.",
+      "evidencePointerType": "official-principal-certification-and-vet-handover-reference",
+      "systems": ["NESA Schools Online", "Approved school records"],
+      "sourceIds": ["NESA-TOA-2026", "NESA-HSC-ESTIMATES-2026"],
+      "liveVerification": { "required": true, "check": "Check the current NESA due date, official certification state and authorised Principal/NESA delegation; keep all student results in Schools Online." },
+      "guidance": { "why": "Submitting VET exam estimates and the Principal's subsequent certification are distinct controls.", "commonTrap": "Assuming that submitting estimates completes the school-wide Principal certification, or assuming an empty local record means it has not been done." },
+      "applicability": { "cohorts": ["2026 HSC VET examination entrants"], "conditions": "VET contribution to the Principal's school-wide HSC results certification" }
+    },
     {
       "id": "t4-01-year11-final-outcomes",
       "title": "Finalise Year 11 outcomes and placement hours",

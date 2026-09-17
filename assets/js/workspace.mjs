@@ -1,6 +1,7 @@
 // One planning surface. Specialist records remain owned by their existing workboards.
-import '../../morning-launchpad/assets/summary-import.mjs?v=wing-tasks-1';
-import {INBOX_KEY, validateInbox, taskSection, todaySydney} from '../../morning-launchpad/assets/summary-core.mjs?v=task-help-1';
+import '../../morning-launchpad/assets/summary-import.mjs?v=full-register-1';
+import {INBOX_KEY, validateInbox, taskSection, todaySydney} from '../../morning-launchpad/assets/summary-core.mjs?v=full-register-1';
+import {createTaskRegister} from './task-register.mjs?v=full-register-1';
 
 const base = new URL('../../', import.meta.url);
 const wing = document.body.dataset.workboard || 'launchpad';
@@ -48,7 +49,7 @@ theme.addEventListener('click', () => {
 });
 updateTheme(); shell.append(home, nav, theme); document.body.prepend(shell);
 
-let board, host, specialist, specialistSummary, forecastPanel, forecastHeading, forecastNote, forecastCount;
+let board, host, specialist, specialistSummary, forecastPanel, forecastHeading, forecastNote, forecastCount, fullRegister;
 const flow = () => {
   const strip = el('ol', undefined, {class: 'workspace-flow', 'aria-label': 'Your daily workflow'});
   for (const [heading, copy] of [['Review', 'Today, Soon or Waiting'], ['Choose', 'Pin what matters today'], ['Work & note', 'Open the task, then record your next step']]) {
@@ -70,8 +71,9 @@ if (wing !== 'launchpad') {
   refreshForecast.addEventListener('click', () => enqueue(refreshScheduledWork));
   forecastPanel.append(forecastHeading, forecastNote, forecastCount, refreshForecast);
   board = el('summary-import', undefined, {'data-workstream': wing, 'data-scope': wing, id: 'shared-work'});
-  // Staff routes do not initialise or migrate the personal work list.
-  host.append(welcome, flow(), forecastPanel);
+  fullRegister = createTaskRegister({wing,label,getAdapter:()=>window.WWHS_WORKBOARD_ADAPTER,getSavedItems:()=>board.inbox?.items||[]});
+  const scopeNote = el('p','The task count below is your current focus, not everything left this year. Open the full register for past dates, later work and triggered duties.',{class:'workspace-focus-note'});
+  host.append(welcome, flow(), scopeNote, fullRegister.element, forecastPanel);
   specialist = el('details', undefined, {class: 'workspace-specialist'});
   specialistSummary = el('summary', `${label} tools, dates and recorded progress`);
   specialist.append(specialistSummary);
@@ -84,6 +86,9 @@ if (wing !== 'launchpad') {
   const taskLink = el('a', `${label} tasks`, {href: wing === 'vet' ? '#vet-home' : '#home', class: 'workspace-task-link'});
   taskLink.addEventListener('click', () => setTimeout(() => board.scrollIntoView({behavior: 'smooth', block: 'start'}), 0));
   routeNav.append(taskLink);
+  const registerLink = el('button', `All ${label} tasks`, {type:'button',class:'workspace-register-link'});
+  registerLink.addEventListener('click',()=>{location.hash=wing==='vet'?'#vet-home':'#home';routeChanged();fullRegister.open('all');});
+  routeNav.append(registerLink);
   const topbar = document.querySelector('.topbar');
   if (wing === 'vet') topbar.append(el('button', 'Workspace setup', {type: 'button', 'data-action': 'open-settings', class: 'workspace-setup'}));
   // Keep staff destinations separate from the optional personal workspace.
@@ -115,7 +120,7 @@ function updateVetTaskCount() {
   if (wing === 'launchpad') return;
   const link = document.querySelector('.workspace-task-link');
   if (!link) return;
-  // Show only a count on staff pages; never initialise or modify personal cards.
+  // Count unfinished saved cards, independently of the complete source register.
   try {
     const items = validateInbox(localStorage.getItem(INBOX_KEY)).items;
     const today = todaySydney();
@@ -141,6 +146,7 @@ function routeChanged() {
   }
   host.hidden = !planning && !wingHome;
   host.classList.toggle('workspace-wing-list', wingHome);
+  if (planning || wingHome) fullRegister.refresh();
   document.getElementById('dashboard-access').hidden = planning;
   specialist.hidden = planning;
   specialist.classList.toggle('is-route', !planning);
@@ -260,6 +266,7 @@ window.addEventListener('wwhs:forecast-updated', () => enqueue(refreshScheduledW
 window.addEventListener('wwhs:work-reloaded', () => enqueue(refreshScheduledWork));
 window.addEventListener('wwhs:work-saved', updateVetTaskCount);
 window.addEventListener('wwhs:work-reloaded', updateVetTaskCount);
+for (const eventName of ['wwhs:records-updated','wwhs:forecast-updated','wwhs:work-saved','wwhs:work-reloaded']) window.addEventListener(eventName,()=>fullRegister?.refresh());
 board.addEventListener('focusout', () => { if (forecastDeferred) setTimeout(() => enqueue(refreshScheduledWork), 0); });
 window.addEventListener('focus', () => enqueue(refreshScheduledWork));
 document.addEventListener('visibilitychange', () => { if (!document.hidden) enqueue(refreshScheduledWork); });

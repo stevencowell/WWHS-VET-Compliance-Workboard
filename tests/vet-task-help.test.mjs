@@ -14,15 +14,16 @@ const originals = data.taskRegister.tasks;
 const scheduled = data.operatingCycle2027.tasks;
 const templates = data.operatingCycle2027.eventTemplates;
 const all = [...originals, ...scheduled, ...templates];
+const actionable = all.filter(task => !task.historyOnly && !task.procedureOnly);
 const find = id => all.find(task => task.id === id);
 const text = help => [help.deliverable, ...help.instructions, ...help.requiredInputs, ...help.reviewChecks].join('\n');
 
 test('all actual VET catalogue tasks and event templates have bounded, explicit preparation profiles', () => {
   assert.ok(originals.length >= 59 && scheduled.length >= 176 && templates.length >= 9);
-  const missing = all.filter(task => !getVetTaskHelp(task)).map(task => task.id);
+  const missing = actionable.filter(task => !getVetTaskHelp(task)).map(task => task.id);
   assert.deepEqual(missing, [], 'Every actionable native task needs an explicit help profile');
   const families = new Set();
-  for (const task of all) {
+  for (const task of actionable) {
     const help = getVetTaskHelp(task);
     families.add(help.profileId);
     assert.deepEqual(Object.keys(help).sort(), ['profileId', 'label', 'summary', 'deliverable', 'instructions', 'requiredInputs', 'reviewChecks'].sort());
@@ -108,6 +109,16 @@ test('reporting, competency outcomes and HSC estimates preserve distinct authori
   assert.match(text(estimates), /Only authorised staff submit/);
 });
 
+test('Principal certification has a distinct handover brief and historical reviews remain read-only', () => {
+  const help = getVetTaskHelp(find('t3-10-principal-hsc-certification'));
+  assert.equal(help.profileId, 'principal-hsc-certification');
+  assert.notEqual(help.profileId, getVetTaskHelp(find('t3-05-hsc-estimates')).profileId);
+  assert.match(text(help), /one does not prove the other is complete/);
+  assert.match(text(help), /whether certification is already recorded/);
+  assert.match(text(help), /Do not calculate marks, certify other faculty data, perform the Principal role or submit the certification/);
+  assert.equal(getVetTaskHelp(find('t2-09-review-stage6-entry-cutoff')), null);
+});
+
 test('source and calendar preparation keep currency, missing authority and local dates explicit', () => {
   const source = getVetTaskHelp(find('a-01-confirm-authority-set'));
   const calendar = getVetTaskHelp(find('a-02-build-live-calendar'));
@@ -128,7 +139,7 @@ test('incident help prioritises formal urgent response and minimises sensitive d
 });
 
 test('every profile retains draft, privacy, source and official-record boundaries', () => {
-  for (const task of all) {
+  for (const task of actionable) {
     const content = text(getVetTaskHelp(task));
     assert.match(content, /sources you can actually read/);
     assert.match(content, /An unrecorded task is not proof of unfinished work/);

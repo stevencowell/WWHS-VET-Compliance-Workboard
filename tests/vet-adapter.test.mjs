@@ -177,7 +177,9 @@ test('VET forecast automatically projects current-year dates without importing t
   assert.equal(forecast.context.date,'2026-09-17');assert.equal(forecast.context.year,2026);
   assert.equal(forecast.context.sourceYear,2026);assert.equal(forecast.context.sourceAsAt,'2026-08-26');
   assert.equal(forecast.context.sourceStateKey,key);assert.equal(forecast.context.horizonDays,21);
-  assert.equal(forecast.entries.filter(entry=>entry.forecast.kind!=='prerequisite').length,8);
+  assert.equal(forecast.entries.filter(entry=>entry.forecast.kind!=='prerequisite').length,9);
+  assert.equal(forecast.entries.find(entry=>entry.taskId==='t3-10-principal-hsc-certification')?.dueDate,'2026-09-18');
+  assert.ok(!forecast.entries.some(entry=>entry.taskId==='t2-09-review-stage6-entry-cutoff'),'Historical cutoff review stays outside current forecast');
   assert.ok(forecast.entries.every(entry=>entry.cycle==='2026'));
   assert.ok(!forecast.entries.some(entry=>entry.taskId==='a-08-publish-local-handbook'));
   assert.ok(!forecast.entries.some(entry=>entry.taskId==='t4-01-year11-final-outcomes'));

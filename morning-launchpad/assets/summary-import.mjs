@@ -1,9 +1,9 @@
 import {createNoteEditor} from './note-editor.mjs?v=1';
-import {createTaskHelpDialog} from './task-help-dialog.mjs?v=task-help-1';
+import {createTaskHelpDialog} from './task-help-dialog.mjs?v=full-register-1';
 import {emailSearchText} from './email-search.mjs?v=1';
 import './email-capture.mjs?v=4';
 import './launchpad-calendar.mjs?v=10';
-import {INBOX_KEY, LIMIT, parseSummary, validateInbox, mergeInbox, safeUrl, workingNoteLinks, matchesNoteSearch, PRIORITIES, NEXT_ACTIONS, EDITABLE, enrich, todaySydney, taskSection, rank, nextDate, consolidateDuplicates, LEGACY_PLAN_KEY, isPinned, migrateToPins, recordNoteAction, WORKSTREAMS, createTrackedWork, mergeWorkboardImports, clearWorkInbox, reconcileForecast, sourceCompleted, normaliseForecastContext} from './summary-core.mjs?v=task-help-1';
+import {INBOX_KEY, LIMIT, parseSummary, validateInbox, mergeInbox, safeUrl, workingNoteLinks, matchesNoteSearch, PRIORITIES, NEXT_ACTIONS, EDITABLE, enrich, todaySydney, taskSection, rank, nextDate, consolidateDuplicates, LEGACY_PLAN_KEY, isPinned, migrateToPins, recordNoteAction, WORKSTREAMS, createTrackedWork, mergeWorkboardImports, clearWorkInbox, reconcileForecast, sourceCompleted, normaliseForecastContext} from './summary-core.mjs?v=full-register-1';
 
 const repositoryRoot=new URL('../../',import.meta.url);
 

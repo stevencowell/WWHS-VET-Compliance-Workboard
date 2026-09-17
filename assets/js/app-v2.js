@@ -346,8 +346,8 @@
     const assignedKeys = { "Head Teacher VET": "htvet", "VET Coordinator": "coordinator", "VET Coordinator Assistant": "assistant", "Trainer/assessor": "trainer", "Principal or delegate": "principal", "Workplace learning coordinator": "workplace", "Authorised NESA staff": "nesa" };
     return assignedKeys[assigned] === state.role;
   }
-  function getForecast() {
-    refreshBoardDate();
+  function getForecast({ refreshDate = true } = {}) {
+    if (refreshDate) refreshBoardDate();
     const date = boardTodayIso, year = Number(date.slice(0, 4)), horizonDays = 21;
     const end = new Date(`${date}T12:00:00Z`); end.setUTCDate(end.getUTCDate() + horizonDays);
     const throughDate = end.toISOString().slice(0, 10);
@@ -472,6 +472,60 @@
     entries.sort((a, b) => Number(b.forecast.kind === "prerequisite") - Number(a.forecast.kind === "prerequisite") || Number(b.forecast.kind === "follow-up") - Number(a.forecast.kind === "follow-up") || String(a.forecast.scheduledDate || "9999").localeCompare(String(b.forecast.scheduledDate || "9999")) || a.title.localeCompare(b.title));
     return { entries, context };
   }
+  function getTaskRegister() {
+    // Read the complete definition set without creating reminders or saving a
+    // route, occurrence or progress record. Templates are visible procedures.
+    const forecast = getForecast({ refreshDate: false });
+    const focused = new Map(forecast.entries.map(entry => [entry.taskId, entry.forecast]));
+    const definitions = [...allTasks, ...eventTemplates];
+    const coverageNotes = [
+      `All ${tasks.length} actions in the ${register.asAt} reference register, ${cycleTasks.length} separate 2027 planning instances and ${eventTemplates.length} event procedures are available here, together with saved event occurrences. This is the loaded register, not certification that every current school requirement is covered.`,
+      "The current task list is a focus view. Later dates, recurring duties and event-triggered work remain in this register even when they are outside its 21-day window.",
+      "2026 recurring and event duties have written timing rules but do not create fresh reminders automatically. Open the action and record its next review date, or add it to your current tasks when the trigger occurs.",
+      "2027 weekly windows are planning controls, not official NESA, RTO or school deadlines. The 2027 NESA timetable, current RTO guidance and complete WWHS calendar still need confirmation.",
+      "School-specific delivery, delegations, evidence destinations, reporting and placement dates need checking in the authorised systems. New source notices and events are not detected automatically.",
+      "Coverage review added a separate historical 30 June 2026 Stage 6 VET entry cut-off check. Review its official recorded result; a missing local tick does not mean the deadline was missed. 2027 has its own separate control.",
+      "The 2026 Principal HSC results certification handover is now a separate dated action. The equivalent 2027 certification action and date still need to be added when the current NESA source is confirmed; submitting VET estimates alone does not establish Principal certification."
+    ];
+    if (state.role !== "all") coverageNotes.push(`Filtered to ${forecast.context.roleLabel}. Choose All roles in the VET role selector to see responsibilities held by other staff.`);
+    if (forecast.context.mode === "unavailable") coverageNotes.push(forecast.context.note);
+    const items = definitions.filter(forecastRoleMatches).map(task => {
+      const record = getRecord(task.id), focus = focused.get(task.id);
+      const template = task.occurrenceTemplate === true;
+      const year = is2027Task(task) ? "2027" : "2026";
+      const start = safeIsoDate(task.windowStart), end = safeIsoDate(task.windowEnd), due = safeIsoDate(task.dueDate);
+      const timing = String(task.timing || "").trim(), trigger = String(task.trigger || "").trim();
+      const followDates = [safeIsoDate(record.reviewDate), safeIsoDate(record.escalationDate)].filter(Boolean).sort();
+      const followDate = followDates[0] || "";
+      const repeating = !template && (task.phase === "continuous" || /\bweekly\b|\bongoing\b|\beach term\b|\bevery term\b|\bannually\b|\bat least once per term\b/i.test(timing));
+      let schedule;
+      if (followDate) schedule = { kind: "date", label: `Recorded follow-up: ${shortDate(followDate)}${timing ? ` · ${timing}` : ""}`, startDate: followDate, endDate: followDate };
+      else if (start || end) schedule = { kind: "window", label: `${year} planning window: ${timing || [start, end].filter(Boolean).join(" to ")}${due ? ` · source date ${shortDate(due)}` : ""}`, ...(start ? { startDate: start } : {}), ...(end || due ? { endDate: end || due } : {}) };
+      else if (due) schedule = { kind: "date", label: `Source date: ${shortDate(due)}${timing ? ` · ${timing}` : ""}`, startDate: due, endDate: due };
+      else if (repeating) schedule = { kind: "recurring", label: timing || trigger };
+      else if (trigger || timing) schedule = { kind: "trigger", label: [timing, trigger && trigger !== timing ? `When: ${trigger}` : ""].filter(Boolean).join(" · ") };
+      else schedule = { kind: "undated", label: "Timing or trigger needs confirmation" };
+      const complete = !template && isTaskComplete(task);
+      const gaps = [];
+      if (schedule.kind === "undated") gaps.push("No date, review rule or trigger is recorded.");
+      if (task.liveVerification?.required && !record.sourceChecked) gaps.push("Current source not confirmed in this browser.");
+      if (!(task.sourceIds || []).length || (task.sourceIds || []).some(id => !sourceFor(id, task))) gaps.push("A source reference needs checking.");
+      if (year === "2027" && (task.sourceIds || []).includes("NESA-TOA") && !record.sourceChecked) gaps.push("Confirm the exact 2027 NESA action and date; the planning window is not its deadline.");
+      if (year === "2026" && ["t1-01-usi-verification", "t2-04-finalise-usi-exceptions"].includes(task.id)) gaps.push("Resolve the local USI procedure conflict against current RTO instructions.");
+      if (year === "2026" && task.phase === "term_4") gaps.push("Current Term 4 RTO guidance and local dates need reconciliation.");
+      let focusReason = focus?.reason || (complete ? "This task is complete in the native VET record." : template ? "Procedure to use when the event occurs; a new occurrence is not started automatically." : task.historyOnly ? "Historical reference; excluded from current reminders." : task.procedureOnly ? "Procedure reference; excluded from current reminders." : year !== String(forecast.context.year) ? "Outside the current operating year; still available to plan ahead or review." : schedule.kind === "recurring" ? "Recurring duty: use the written review rule and record the next review date." : schedule.kind === "trigger" ? "Open when the stated trigger applies; this event is not detected automatically." : "Outside the current focus window or waiting for its recorded review date.");
+      if (forecast.context.mode === "unavailable" && !complete && !template) focusReason = "Current focus is unavailable; the full saved definition remains visible.";
+      return {
+        id: task.id, recordKey: task.id, title: task.title, year,
+        route: "#task/" + encodeURIComponent(task.id),
+        area: template ? "Event procedure" : task.term ? `Term ${task.term}` : phaseMeta[task.phase]?.short || "Annual setup",
+        owner: assignedRole(task), status: template ? "Procedure - start when needed" : statusMeta[getStatus(task)]?.label || "Not started",
+        complete, historyOnly: task.historyOnly === true, procedureOnly: template || task.procedureOnly === true,
+        schedule, inFocus: focused.has(task.id), focusReason, sourceIds: [...(task.sourceIds || [])], gaps
+      };
+    });
+    return { wing: "vet", currentYear: Number(localIsoDate(new Date()).slice(0, 4)), roleLabel: forecast.context.roleLabel, sourceNote: `Saved 2026 reference: ${register.asAt}. Separate 2027 planning controls require current-source checking. Progress is saved in this browser.`, items, coverageNotes };
+  }
   window.WWHS_WORKBOARD_ADAPTER = {
     wing: "vet",
     getEntries: () => allTasks.filter(hasRecord).map(task => describeWorkTask(task.id)),
@@ -483,6 +537,7 @@
       return describeWorkTask(key)?.taskHelp || null;
     },
     getForecast,
+    getTaskRegister,
     openTask: id => openTask(id)
   };
   function dependencyState(task) {
@@ -1201,9 +1256,13 @@
     if (view === "task") {
       let id = ""; try { id = decodeURIComponent(location.hash.slice(6)); } catch (_) {}
       const targetTask = taskById(id);
-      history.replaceState(null, "", targetTask && is2027Task(targetTask) ? "#cycle-2027" : "#today");
+      const template = eventTemplates.find(item => item.id === id);
+      const templateWorkflow = template && data.workflows.find(workflow => cycle2027.interruptWorkflows.includes(workflow.id) && workflow.taskIds.includes(template.canonicalTaskId));
+      history.replaceState(null, "", templateWorkflow ? "#workflows" : targetTask && is2027Task(targetTask) ? "#cycle-2027" : "#today");
       render();
-      if (targetTask) queueMicrotask(() => openTask(id)); else toast("That task was not found. Use search to find the current task.", "error");
+      if (targetTask) queueMicrotask(() => openTask(id));
+      else if (templateWorkflow) queueMicrotask(() => openWorkflow(templateWorkflow.id, "2027-cycle"));
+      else toast("That task was not found. Use search to find the current task.", "error");
     }
     if (view === "today") renderToday(); if (isCycleView(view)) renderCycle2027(); if (view === "year") renderYear(); if (view === "workflows") renderWorkflows(); if (view === "systems") renderSystems(); if (view === "issues") renderIssues();
     if (["today", "reference"].includes(view) || (isCycleView(view) && state.cycle2027Mode === "guided")) route.querySelector(".page")?.insertAdjacentHTML("beforeend", completedTasksPanel());

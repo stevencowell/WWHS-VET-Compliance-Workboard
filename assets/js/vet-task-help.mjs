@@ -200,6 +200,15 @@ define('hsc-estimates', ['t3-05-hsc-estimates'], 'Prepare HSC estimate administr
   ['Current NESA/RTO estimate instructions and live timetable entry.', 'School-approved process and an anonymous evidence/decision-reference index.'],
   ['The responsible teacher and authorised verifier confirm actual estimates.', 'Only authorised staff submit and verify the official completion trail.']);
 
+define('principal-hsc-certification', ['t3-10-principal-hsc-certification'], 'Prepare the Principal certification handover',
+  'Check the VET contribution to the separate school-wide HSC certification action.',
+  'A concise VET handover checklist with the current certification deadline, official status reference, confirmed submissions, unresolved questions and responsible roles.',
+  ['Distinguish submitting and verifying VET estimated exam marks from the Principal certification of HSC results data; one does not prove the other is complete.',
+   'Use only the current task-year timetable and supplied official status references. Check whether certification is already recorded before describing any further action as outstanding.',
+   'Identify what the authorised NESA delegate and Principal still need to confirm. Do not calculate marks, certify other faculty data, perform the Principal role or submit the certification.'],
+  ['Current NESA timetable entry for Principal certification and the actual task year.', 'Approved de-identified VET submission, handover and certification status references; confirmed Principal and NESA delegation.'],
+  ['The authorised Principal or delegate confirms the school-wide certification in Schools Online.', 'The VET Coordinator checks the VET handover and escalates unresolved questions; this prepared brief is not certification or evidence that a deadline was missed.']);
+
 define('course-promotion', ['t3-08-next-year-promotion'], 'Draft approved-course promotion',
   'Check what can accurately be promised before writing the promotion.',
   'An approval-to-claim checklist and draft course-promotion wording with unresolved claims highlighted.',

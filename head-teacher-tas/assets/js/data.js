@@ -588,22 +588,22 @@
       id: "t4-year11-report-chain",
       title: "Run the Year 11 report checking chain",
       summary: "Check Year 11 reports and grades across the Head Teacher, office and issue milestones.",
-      area: "teaching", phase: "term_4", priority: "high", dueDate: "2026-10-16", timing: "HT 16 Oct · office 23 Oct · issue 6 Nov",
+      area: "teaching", phase: "term_4", priority: "high", dueDate: "2026-10-16", timing: "HT/DP hand-off 16 Oct · NESA grades submission 21 Oct · report office 23 Oct · issue 6 Nov",
       milestones: [
         { date: "2026-10-16", label: "Year 11 reports due to Head Teacher; grades/Life Skills to DP" },
         { date: "2026-10-23", label: "Year 11 reports due to office" },
         { date: "2026-11-06", label: "Year 11 reports issued" }
       ],
-      owner: "Head Teacher TAS", verifier: "Reporting coordinator / authorised data role", systemIds: ["sentral", "staff-calendar"],
-      source: "2026 Staff School Calendar + Guide B14–B15/C21A", sourceState: "calendar-current",
+      owner: "Head Teacher TAS", verifier: "Reporting coordinator / authorised data role", systemIds: ["sentral", "staff-calendar", "nesa-actions"],
+      source: "2026 Staff School Calendar + Guide B14–B15/C21A + NESA 2026 timetable of actions (May edition, checked 17 September 2026)", sourceState: "calendar-current",
       steps: [
         "Confirm the current Year 11 TAS classes, reporting owners and applicable grade requirements.",
         "Check evidence, marks/grades and comments using the approved schedule and reporting guidance.",
-        "Confirm the separate 16 October grade/Life Skills hand-off with the authorised Deputy role.",
+        "Confirm the separate 16 October grade/Life Skills hand-off with the authorised Deputy role, then confirm applicable Year 11 data reaches the authorised NESA submitter for the 21 October deadline. The Head Teacher is not assumed to be that submitter.",
         "Close corrections before the 23 October office deadline and confirm issue on 6 November."
       ],
       doneWhen: "Reports and applicable grades are checked, submitted through the correct routes and confirmed at the release milestone.",
-      why: "The reporting and grade hand-offs have different destinations even though they share a date.",
+      why: "The school reporting chain and NESA submission have different destinations and dates. The verified NESA deadline is 21 October; confirm the school's internal 16 October hand-off and current faculty applicability.",
       trap: "Treating a protected grade folder or old process note as the current submission route.",
       privacy: "No student names, marks, grades or Life Skills information belongs here."
     },
@@ -749,6 +749,64 @@
       why: "Analysis only matters when it changes a teaching, program or assessment decision.",
       trap: "Publishing result extracts or producing a long analysis with no owned action.",
       privacy: "Only aggregated insights and action references belong in this workboard."
+    },
+    {
+      id: "t2-hsc-practical-options-handoff",
+      title: "Review the TAS hand-off for HSC practical exam options",
+      summary: "Retain the past NESA options deadline for review without assuming TAS owned the official submission.",
+      area: "teaching", phase: "term_2", historyOnly: true, priority: "high", dueDate: "2026-05-22", timing: "NESA submission deadline 22 May 2026; school preparation dates depend on applicable courses",
+      applicability: "Only for delivered HSC practical courses requiring an options entry; confirm course scope and the school's authorised submitting role.",
+      owner: "Head Teacher TAS coordinates applicable course-teacher hand-offs", verifier: "Principal or authorised school/NESA submitting role", systemIds: ["nesa-actions", "sentral", "program-register"],
+      source: "NESA 2026 timetable of actions, May edition: Complete HSC practical exam options; checked 17 September 2026", sourceState: "verify-live",
+      steps: [
+        "Confirm which delivered HSC practical courses required an options entry in the 2026 timetable.",
+        "Check the protected owner-system record and confirm the course-teacher information reached the authorised submitter.",
+        "Confirm the actual submission or an authorised not-applicable decision; do not infer completion from the date passing.",
+        "Carry any unresolved issue to the authorised school/NESA role and record only an appropriate safe reference."
+      ],
+      doneWhen: "The authorised school role has confirmed the applicable faculty hand-off and submission position, or confirmed that no TAS contribution was required.",
+      why: "The full register needs a visible historical checkpoint for an applicable practical-exam hand-off that the earlier calendar snapshot did not separately list.",
+      trap: "Treating every TAS course as a practical exam course or treating a local review tick as a NESA submission.",
+      privacy: "Student entries, options and declarations remain in authorised school/NESA systems."
+    },
+    {
+      id: "t3-hsc-results-certification-handoff",
+      title: "Confirm the TAS hand-off for HSC results certification",
+      summary: "Confirm relevant faculty data and corrections have reached the authorised school role before the Principal's certification deadline.",
+      area: "teaching", phase: "term_3", priority: "high", dueDate: "2026-09-18", timing: "NESA Principal certification deadline 18 September 2026; confirm the earlier local TAS hand-off",
+      applicability: "Only where TAS has relevant HSC data or corrections to supply. Principal certification remains with the Principal or authorised school role.",
+      owner: "Head Teacher TAS coordinates applicable faculty data hand-offs", verifier: "Principal or authorised school/NESA certifying role", systemIds: ["nesa-actions", "sentral", "vet-workboard"],
+      source: "NESA 2026 timetable of actions, May edition: Principal certification of HSC results data; checked 17 September 2026", sourceState: "verify-live",
+      steps: [
+        "Confirm applicable TAS HSC courses and the authorised role responsible for school results certification.",
+        "Check that required faculty data and corrections from the relevant submission process have reached that role; keep VET-specific data with the VET workflow.",
+        "Confirm the hand-off is accepted and any discrepancies are owned before the 18 September NESA certification deadline.",
+        "Record a safe confirmation reference or an authorised not-applicable decision; the Head Teacher does not certify on the Principal's behalf through this workboard."
+      ],
+      doneWhen: "The authorised certifying role has accepted the applicable TAS contribution and every identified discrepancy is resolved or formally owned.",
+      why: "The 15 September data submission and the 18 September Principal certification are distinct school controls.",
+      trap: "Assuming the earlier data hand-off proves Principal certification, or assigning the Principal's authority to the Head Teacher.",
+      privacy: "Student data, grades and certification evidence remain in authorised school/NESA systems."
+    },
+    {
+      id: "hsc-practical-certification-handoff",
+      title: "Confirm the TAS hand-off for HSC practical certification",
+      summary: "Check the applicable practical-course declaration and certification process at its current course-specific submission point.",
+      area: "teaching", phase: "triggered", priority: "high", timing: "For each applicable HSC practical course, before its current submission and certification dates; confirm the course-specific timetable",
+      applicability: "Only for delivered courses with a NESA practical exam or project certification requirement. Use the relevant course's live instructions and authorised school role.",
+      owner: "Course teacher; Head Teacher TAS coordinates the faculty hand-off", verifier: "Principal or authorised school/NESA certifying role", systemIds: ["nesa-actions", "program-register", "sentral"],
+      source: "NESA 2026 timetable of actions, May edition: practical Student Declaration and non-certification instructions; checked 17 September 2026", sourceState: "verify-live",
+      steps: [
+        "Identify delivered practical courses and confirm each current submission and certification date in the live NESA course instructions.",
+        "Obtain the current course-specific declaration and practical certification instructions through the authorised Schools Online route.",
+        "Confirm the required course-teacher and student declaration hand-offs and raise any inability to certify with the authorised school role.",
+        "Use the current NESA non-certification route and timing if applicable; do not invent a common deadline for all practical courses.",
+        "Confirm the authorised school role has accepted the hand-off and record only a safe status reference."
+      ],
+      doneWhen: "The current course-specific requirements and dates are confirmed and the authorised school role has accepted the applicable declaration/certification hand-off or is managing the relevant exception.",
+      why: "Course-specific practical certification cannot be covered by one generic calendar date or by the faculty's internal assessment schedule alone.",
+      trap: "Assuming all practical courses share a date, or completing a local checklist as a substitute for official declarations and certification.",
+      privacy: "Projects, declarations, student identities and certification exceptions stay in authorised school/NESA systems."
     },
     {
       id: "source-sharing-review",

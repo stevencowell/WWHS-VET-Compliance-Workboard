@@ -1,4 +1,4 @@
-import {getTaskHelpProfile, buildTaskHelpPrompt} from '../../assets/js/task-help.mjs?v=task-help-1';
+import {getTaskHelpProfile, buildTaskHelpPrompt} from '../../assets/js/task-help.mjs?v=full-register-1';
 import {INBOX_KEY, todaySydney} from './summary-core.mjs?v=task-help-1';
 
 const node=(tag,text,attrs={})=>{const el=document.createElement(tag);if(text!==undefined)el.textContent=text;for(const[key,value]of Object.entries(attrs))el.setAttribute(key,value);return el;};

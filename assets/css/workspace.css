@@ -55,6 +55,44 @@
 .workspace-wing-list { margin:28px 0; display:flex; flex-direction:column; }
 .workspace-wing-list>.workspace-welcome,.workspace-wing-list>.workspace-flow { display:none; }
 .workspace-wing-list>summary-import { order:0; scroll-margin-top:20px; }
+.workspace-focus-note { color:var(--muted); font-size:14px; line-height:1.6; margin:0 0 12px; }
+.workspace-wing-list>.workspace-focus-note { order:-3; }
+.workspace-wing-list>.workspace-register { order:-2; }
+.workspace-register { background:var(--surface); border:1px solid var(--line); border-radius:16px; margin-bottom:22px; scroll-margin-top:20px; }
+.workspace-register>summary { cursor:pointer; color:var(--accent); font-size:16px; font-weight:650; padding:20px 24px; }
+.workspace-register>section { padding:0 24px 24px; }
+.workspace-register h2 { font-size:25px; margin:8px 0 12px; }
+.workspace-register p { line-height:1.55; }
+.register-source,.register-meta,.register-review-note { color:var(--muted); font-size:13px; }
+.register-coverage { background:var(--surface-soft); border:1px solid var(--line); border-radius:10px; padding:14px 16px; margin:16px 0; }
+.register-coverage>summary,.register-gap>summary,.register-backup>summary { cursor:pointer; font-weight:600; }
+.register-coverage li,.register-gap li { margin:8px 0; line-height:1.5; }
+.register-filters { display:grid; grid-template-columns:120px minmax(140px,.8fr) minmax(205px,1.1fr) minmax(190px,1fr); gap:14px; margin:22px 0 14px; }
+.register-filters label { display:flex; flex-direction:column; gap:7px; font-size:13px; font-weight:600; }
+.register-filters :is(input,select),.register-backup button { background:var(--surface); border:1px solid var(--line); border-radius:9px; padding:11px; color:var(--ink); font:inherit; width:100%; }
+.register-counts { font-weight:600; }
+.register-message:empty { display:none; }
+.register-message { padding:12px; background:var(--accent-soft); border-radius:8px; }
+.register-list { display:grid; gap:12px; }
+.register-row { display:grid; grid-template-columns:minmax(0,1fr) 170px; gap:20px; border:1px solid var(--line); border-radius:12px; padding:18px; }
+.register-row h3 { font-size:16px; line-height:1.45; margin:0 0 7px; }
+.register-row h3 a { color:var(--ink); text-underline-offset:3px; }
+.register-row p { margin:5px 0; }
+.register-row.is-reviewed { background:var(--surface-soft); }
+.register-timing,.register-status { font-size:14px; }
+.register-status { color:var(--accent); }
+.register-tick { display:flex; align-items:flex-start; gap:9px; font-size:13px; line-height:1.5; cursor:pointer; }
+.register-tick input { width:20px; height:20px; margin:0; flex:none; accent-color:var(--accent); }
+.register-gap { margin-top:10px; font-size:13px; color:var(--muted); }
+.register-backup { margin-top:22px; font-size:13px; }
+.register-backup button { width:auto; margin:8px 8px 8px 0; cursor:pointer; }
+@media(max-width:850px) {
+  .workspace-register>summary { padding:17px; }
+  .workspace-register>section { padding:0 16px 20px; }
+  .register-filters { grid-template-columns:1fr; }
+  .register-row { grid-template-columns:1fr; gap:14px; padding:15px; }
+  .register-backup input { max-width:100%; }
+}
 .workspace-wing-list>.workspace-forecast { order:1; margin-top:16px; }
 .workspace-specialist>summary { padding:18px 20px; background:var(--surface); border:1px solid var(--line); border-radius:14px; cursor:pointer; font-weight:600; margin-bottom:20px; }
 .workspace-specialist.is-route { margin:0; }

@@ -12,7 +12,7 @@ const help = id => getTasTaskHelp(tasks.find(task => task.id === id));
 const text = profile => JSON.stringify(profile);
 
 test('every native actionable TAS task has a complete explicit preparation brief', () => {
-  assert.equal(actionable.length, 41);
+  assert.equal(actionable.length, 43);
   for (const task of actionable) {
     const result = getTasTaskHelp(task);
     assert.ok(result, task.id);
@@ -59,6 +59,17 @@ test('related reporting tasks retain their distinct controlled hand-offs', () =>
     assert.match(text(help(id)), /Do not generate student reports, marks or judgements/);
     assert.match(text(help(id)), /no report extracts/);
   }
+});
+
+test('NESA certification briefs preserve course-specific timing and the authorised school role', () => {
+  const results = help('t3-hsc-results-certification-handoff');
+  const practical = help('hsc-practical-certification-handoff');
+  assert.equal(results.profileId, 'tas-authorised-handoff');
+  assert.match(text(results), /without assuming the Head Teacher is the certifying role/);
+  assert.equal(practical.profileId, 'tas-authorised-handoff');
+  assert.match(text(practical), /do not invent a common deadline/);
+  assert.match(text(practical), /do not.*certify for the Principal/);
+  assert.equal(help('t2-hsc-practical-options-handoff'), null);
 });
 
 test('resource and safety work prepares administrative checks without fabricating authority or safe-operation decisions', () => {
