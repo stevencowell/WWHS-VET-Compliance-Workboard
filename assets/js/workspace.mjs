@@ -1,6 +1,6 @@
 // One planning surface. Specialist records remain owned by their existing workboards.
-import '../../morning-launchpad/assets/summary-import.mjs?v=alignment-1';
-import {taskSection} from '../../morning-launchpad/assets/summary-core.mjs?v=alignment-1';
+import '../../morning-launchpad/assets/summary-import.mjs?v=task-help-1';
+import {taskSection} from '../../morning-launchpad/assets/summary-core.mjs?v=task-help-1';
 
 const base = new URL('../../', import.meta.url);
 const wing = document.body.dataset.workboard || 'launchpad';
@@ -178,7 +178,14 @@ async function refreshScheduledWork() {
   }
   const sourceGuard = {key: context.sourceStateKey, raw: localStorage.getItem(context.sourceStateKey)};
   const resolved = board.inbox.items.filter(item => item.origin?.wing === wing)
-    .map(item => adapter.describeRecord?.(item.origin.recordKey)).filter(Boolean);
+    .map(item => {
+      const descriptor = adapter.describeRecord?.(item.origin.recordKey);
+      if (descriptor) return descriptor;
+      // An older manually added card may have no saved native checklist yet.
+      // Enrich that exact occurrence without inventing a native progress record.
+      const taskHelp = adapter.getHelpContext?.(item.origin.recordKey);
+      return taskHelp ? {...item.origin, taskHelp, sourceStatus: taskHelp.sourceStatus} : null;
+    }).filter(Boolean);
   const result = await board.syncForecast({...snapshot, resolved, sourceGuard});
   if (result.sourceChanged) {
     const unavailable = {...context, mode: 'unavailable', note: 'The source workboard changed during this refresh. Your saved cards are kept; copy any unsaved text, then reload the page.'};

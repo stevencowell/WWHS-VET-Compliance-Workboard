@@ -341,6 +341,18 @@
       waitingOn: ["waiting", "exception"].includes(record.status) ? record.exceptionReason || task.owner || "" : "",
       status: closed ? "done" : ["waiting", "exception"].includes(record.status) ? "waiting" : "review",
       sourceStatus: record.status, cycle: sourceKey.split("::").slice(1).join("::"),
+      taskHelp: {
+        version: 1, wing: "tas", taskId: task.id, canonicalTaskId: task.id,
+        title: task.title, recordKey: sourceKey, cycle: sourceKey.split("::").slice(1).join("::"),
+        asOf: currentIso, sourceAsAt: data.config.calendarChecked,
+        sourceStatus: record.status, nextStep: closed ? task.doneWhen : nextStep || task.doneWhen,
+        objective: task.doneWhen, steps: task.steps || [],
+        roles: [`Owner: ${task.owner || "To confirm"}`, `Verifier: ${task.verifier || "To confirm"}`],
+        sources: [task.source, task.privacy].filter(Boolean),
+        // Use the catalogue's approved routes, never a locally overridden URL.
+        links: (task.systemIds || []).map(id => data.systems.find(system => system.id === id)).filter(Boolean)
+          .filter(system => /^https:\/\//.test(system.url || "")).map(system => ({ label: system.label, url: system.url }))
+      },
       route: `#task/${encodeURIComponent(task.id)}`
     };
   }
@@ -1337,6 +1349,13 @@
     getForecast,
     describeRecord,
     describeTask: id => describeTask(id),
+    getHelpContext: key => {
+      if (typeof key !== "string" || !forecastStorageAvailable()) return null;
+      refreshDate();
+      const task = data.tasks.find(item => item.id === key.split("::")[0]);
+      if (!task || (!Object.prototype.hasOwnProperty.call(state.records, key) && recordKey(task) !== key)) return null;
+      return describeTask(task.id, key)?.taskHelp || null;
+    },
     openTask: id => openTask(id)
   });
   renderRoute();

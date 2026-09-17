@@ -318,6 +318,19 @@
       waitingOn: record.waitingForRole || "",
       status: isTaskComplete(task) ? "done" : ["waiting", "exception"].includes(sourceStatus) ? "waiting" : "review",
       sourceStatus,
+      taskHelp: {
+        version: 1, wing: "vet", taskId: task.id, canonicalTaskId: task.canonicalTaskId || task.id,
+        title: task.title, recordKey: task.id, cycle: is2027Task(task) ? "2027" : "2026",
+        asOf: boardTodayIso, sourceAsAt: is2027Task(task) ? "2027 planning framework; current sources require checking" : register.asAt,
+        sourceStatus, nextStep: nextStep || task.doneWhen || task.title, objective: task.doneWhen || task.title,
+        steps: task.actionSteps || [],
+        roles: Object.entries(task.roles || {}).map(([role, values]) => `${role}: ${values.join(" / ")}`),
+        sources: (task.sourceIds || []).map(id => sourceFor(id, task)).filter(Boolean).map(source => `${source.title}${source.note ? " — " + source.note : ""}`),
+        // Static source routes only. Private saved links and evidence references are never copied.
+        links: [...(task.sourceIds || []).map(id => sourceFor(id, task)).filter(Boolean).map(source => ({ label: source.title, url: source.url })),
+          ...taskSystems(task).map(system => ({ label: system.label, url: system.url }))]
+          .filter((link, index, links) => /^https:\/\//.test(link.url || "") && links.findIndex(other => other.url === link.url) === index)
+      },
       cycle: is2027Task(task) ? "2027" : "2026",
       route: "#task/" + encodeURIComponent(task.id)
     };
@@ -464,6 +477,11 @@
     getEntries: () => allTasks.filter(hasRecord).map(task => describeWorkTask(task.id)),
     describeTask: describeWorkTask,
     describeRecord: describeWorkTask,
+    getHelpContext: key => {
+      refreshBoardDate();
+      try { if (!storageReadable || localStorage.getItem(data.config.storageKey) !== loadedStorageRaw) return null; } catch (_) { return null; }
+      return describeWorkTask(key)?.taskHelp || null;
+    },
     getForecast,
     openTask: id => openTask(id)
   };

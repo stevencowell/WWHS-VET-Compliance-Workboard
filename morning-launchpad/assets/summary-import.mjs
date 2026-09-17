@@ -1,8 +1,9 @@
 import {createNoteEditor} from './note-editor.mjs?v=1';
+import {createTaskHelpDialog} from './task-help-dialog.mjs?v=task-help-1';
 import {emailSearchText} from './email-search.mjs?v=1';
 import './email-capture.mjs?v=4';
 import './launchpad-calendar.mjs?v=10';
-import {INBOX_KEY, LIMIT, parseSummary, validateInbox, mergeInbox, safeUrl, workingNoteLinks, matchesNoteSearch, PRIORITIES, NEXT_ACTIONS, EDITABLE, enrich, todaySydney, taskSection, rank, nextDate, consolidateDuplicates, LEGACY_PLAN_KEY, isPinned, migrateToPins, recordNoteAction, WORKSTREAMS, createTrackedWork, mergeWorkboardImports, clearWorkInbox, reconcileForecast, sourceCompleted, normaliseForecastContext} from './summary-core.mjs?v=alignment-1';
+import {INBOX_KEY, LIMIT, parseSummary, validateInbox, mergeInbox, safeUrl, workingNoteLinks, matchesNoteSearch, PRIORITIES, NEXT_ACTIONS, EDITABLE, enrich, todaySydney, taskSection, rank, nextDate, consolidateDuplicates, LEGACY_PLAN_KEY, isPinned, migrateToPins, recordNoteAction, WORKSTREAMS, createTrackedWork, mergeWorkboardImports, clearWorkInbox, reconcileForecast, sourceCompleted, normaliseForecastContext} from './summary-core.mjs?v=task-help-1';
 
 const repositoryRoot=new URL('../../',import.meta.url);
 
@@ -58,7 +59,7 @@ class SummaryImport extends HTMLElement {
     if(this.started)return;this.started=true;
     this.openCards=new Set();this.view='ready';this.expanded=false;this.legacyRaw=null;this.blocked=false;this.raw=null;
     this.workstream=Object.hasOwn(WORKSTREAMS,this.dataset.workstream)?this.dataset.workstream:'all';
-    this.draftInputs=new Map();this.captureDraft=event=>{const field=event.target;if(field.matches?.('textarea,input:not([type="file"]),[contenteditable="true"]'))this.draftInputs.set(field,field.getAttribute('aria-label')||field.closest('label')?.childNodes[0]?.textContent||field.id||'Draft text');};this.addEventListener('input',this.captureDraft);
+    this.draftInputs=new Map();this.captureDraft=event=>{const field=event.target;if(field.matches?.('textarea:not([readonly]),input:not([type="file"]):not([type="checkbox"]),[contenteditable="true"]')){this.draftInputs.delete(field);this.draftInputs.set(field,field.getAttribute('aria-label')||field.closest('label')?.childNodes[0]?.textContent||field.id||'Draft text');}};this.addEventListener('input',this.captureDraft);
     try {this.raw=localStorage.getItem(INBOX_KEY);this.inbox=validateInbox(this.raw);this.legacyRaw=localStorage.getItem(LEGACY_PLAN_KEY);} catch {this.blocked=true;this.inbox=validateInbox(null);}
     this.build();this.resizeNotes=()=>this.querySelectorAll('.import-working-note textarea').forEach(fitNoteText);window.addEventListener('resize',this.resizeNotes);
     this.onStorage=event=>{if(event.key===INBOX_KEY||event.key===null){this.blocked=true;this.updateCount();this.reloadButton.hidden=false;this.say('Your shared work list changed in another tab. Reload saved work before saving here. Text you are editing is still on this page.',true);}};
@@ -83,8 +84,9 @@ class SummaryImport extends HTMLElement {
     if(!item&&this.inbox.items.length>=300)throw new Error('Your work list has reached 300 items. Export a task backup and remove unneeded cards before adding more. The original VET/TAS records are unchanged.');
     const identity=`${candidate.origin.wing}:${candidate.origin.recordKey}`;
     const imports=this.inbox.workboardImports||[];
-    if(!item||!imports.includes(identity)){
-      const items=item?this.inbox.items:[...this.inbox.items,candidate];
+    const refreshHelp=item&&candidate.taskHelp&&JSON.stringify(item.taskHelp)!==JSON.stringify(candidate.taskHelp);
+    if(!item||!imports.includes(identity)||refreshHelp){
+      const items=item?this.inbox.items.map(existing=>refreshHelp&&existing.id===item.id?{...existing,taskHelp:candidate.taskHelp}:existing):[...this.inbox.items,candidate];
       const workboardImports=mergeWorkboardImports(imports,[identity]);
       if(!this.persist({...this.inbox,items,workboardImports}))throw new Error('The shared work list could not be saved.');
       item=this.inbox.items.find(x=>x.id===(item?.id||candidate.id));
@@ -187,7 +189,7 @@ class SummaryImport extends HTMLElement {
     this.calendar=element('launchpad-calendar');this.calendar.hidden=true;
     this.calendar.addEventListener('calendar:minimise',()=>{this.showCalendar(false);this.calendarToggle.focus({preventScroll:true});this.calendarToggle.scrollIntoView({behavior:'smooth',block:'nearest'});});
     this.calendar.addEventListener('calendar:open-task',event=>this.openCalendarTask(event.detail.id));
-    this.calendar.addEventListener('calendar:change-task-date',event=>{const d=event.detail;if(['dueDate','eventDate','followUpDate'].includes(d.key)&&this.inbox.items.some(x=>x.id===d.id))d.ok=this.updateItem(d.id,{[d.key]:d.date},true);});this.append(this.calendar);this.buildChatGPTChooser();this.buildClearNotesDialog();
+    this.calendar.addEventListener('calendar:change-task-date',event=>{const d=event.detail;if(['dueDate','eventDate','followUpDate'].includes(d.key)&&this.inbox.items.some(x=>x.id===d.id))d.ok=this.updateItem(d.id,{[d.key]:d.date},true);});this.append(this.calendar);this.buildChatGPTChooser();this.buildClearNotesDialog();this.taskHelpDialog=createTaskHelpDialog(this);
 
   }
   buildClearNotesDialog(){
@@ -279,6 +281,7 @@ class SummaryImport extends HTMLElement {
     if(options){input=element('select',undefined,{'aria-label':`${label} for ${item.title}`});for(const[value,text]of Object.entries(options))input.append(element('option',text,{value}));}
     else input=element('input',undefined,{type,'aria-label':`${label} for ${item.title}`,maxlength:'2000'});
     input.value=item[key]||'';input.disabled=this.blocked;
+    input.dataset.helpField=key;
     input.addEventListener('change',()=>{const value=type==='date'?(input.value||null):input.value.trim();this.updateItem(item.id,{[key]:value},true);});wrapper.append(input);return wrapper;
   }
   deleteNote(item){
@@ -321,6 +324,7 @@ class SummaryImport extends HTMLElement {
     if(item.waitingOn)article.append(element('p',`Waiting on: ${item.waitingOn}`,{class:'import-help'}));
     if(item.instruction){const tasks=element('section',undefined,{class:'import-instruction','aria-label':'Tasks'});tasks.append(element('h3','Tasks'),element('p',item.instruction));article.append(tasks);}
     const action=element('textarea',item.action,{class:'import-action',rows:'3',maxlength:'800','aria-label':`Action for ${item.title}`});action.disabled=this.blocked||!active;
+    action.dataset.helpField='action';
     action.addEventListener('change',()=>{if(!action.value.trim()){action.value=item.action;this.say('Keep a short action, or put the task aside.',true);return;}if(this.updateItem(item.id,{action:action.value.trim()}))article.querySelector('.import-card-summary-text').value=action.value.trim();});if(item.personal&&item.source)article.append(element('pre',item.source,{class:'import-source'}));
     if(item.origin){
       const sourceLink=new URL(item.origin.wing==='tas'?'head-teacher-tas/':'./',repositoryRoot);sourceLink.hash=item.origin.route;
@@ -349,9 +353,10 @@ class SummaryImport extends HTMLElement {
     for(const title of item.relatedTitles)source.append(element('p',`Also: ${title}`,{class:'import-source-title'}));
     if(item.source)source.append(element('pre',item.source,{class:'import-source'}));for(const url of item.links)source.append(element('a',url,{href:url,target:'_blank',rel:'noopener noreferrer',class:'import-source-link'}));
     if(active){const linkLabel=element('label','Work link');const url=element('input',undefined,{type:'url',value:item.url,placeholder:'https://… (optional)','aria-label':`Work link for ${item.title}`,maxlength:'2048'});url.disabled=this.blocked;url.addEventListener('change',()=>{if(url.value&&!safeUrl(url.value)){url.value=item.url;this.say('Use a full https:// link.',true);return;}this.updateItem(item.id,{url:url.value.trim()});});linkLabel.append(url);source.append(linkLabel);}const emailLabel=element('label','Original email link (optional)');const emailUrl=element('input',undefined,{type:'url',value:item.originalEmailUrl,placeholder:'https://…','aria-label':`Original email link for ${item.title}`,maxlength:'2048'});emailUrl.disabled=this.blocked;emailUrl.addEventListener('change',()=>{const value=emailUrl.value.trim();if(value&&!safeUrl(value)){emailUrl.value=item.originalEmailUrl;this.say('Use a full https:// link for the original email.',true);return;}this.updateItem(item.id,{originalEmailUrl:value},true);});emailLabel.append(emailUrl);source.append(emailLabel);article.append(source);
-    if(item.help){const help=element('details');help.append(element('summary','ChatGPT can help with this'));const prompt=`${item.help}\n\nTask: [${item.title}] — ${item.action}\nTasks: ${item.instruction||'None added'}\n\nSource:\n${item.source}\n\nLinks:\n${item.links.join('\n')}\n\nCarry out the useful preparation requested above using the tools and access actually available in this session. Produce the concrete deliverable, not just advice about doing it. If input or access is missing, name the exact gap and complete the useful work supported by the supplied material. Respect authorisation already given. Do not send, submit, publish, purchase, delete or change external records without the required authorisation; show the prepared result first where approval is still needed.`;const actions=element('div',undefined,{class:'help-request-actions'});actions.append(button('Copy help request',async event=>{const control=event.currentTarget;try{await navigator.clipboard.writeText(prompt);copyFeedback(control);this.say('Help request copied. Open ChatGPT and paste it into the chat.');}catch{copyFeedback(control,false);const text=help.querySelector('textarea');text?.focus();text?.select();this.say('Copy the selected request with Ctrl + C.');}}),button('Open ChatGPT',()=>this.chatGPTChooser.showModal()));help.append(element('p',item.help),actions,element('textarea',prompt,{rows:'3',readonly:'','aria-label':`Help request for ${item.title}`}));article.append(help);}
+    if(item.help){const help=element('details');help.append(element('summary','ChatGPT can help with this'),element('p',item.help),button('Prepare help request',()=>this.taskHelpDialog.open(item.id)));article.append(help);}
     const controls=element('div',undefined,{class:'import-card-controls'});
     const quickControls=element('div',undefined,{class:'import-card-controls import-card-quick-controls','aria-label':`Quick actions for ${item.title}`});
+    if(item.origin||item.help){const ai=button('Prepare with AI',()=>this.taskHelpDialog.open(item.id),'import-ai-help');ai.setAttribute('aria-label',`Prepare with AI: ${item.title}`);ai.addEventListener('pointerdown',event=>event.preventDefault());quickControls.append(ai);}
     const stream=element('select',undefined,{'aria-label':`Work area for ${item.title}`});for(const[value,label]of Object.entries(WORKSTREAMS))stream.append(element('option',label,{value}));stream.value=item.workstream;stream.disabled=this.blocked;stream.addEventListener('change',()=>{if(this.updateItem(item.id,{workstream:stream.value},true))this.say(`“${item.title}” is in ${WORKSTREAMS[stream.value]}. Its source task and progress are unchanged.`);});quickControls.append(stream);
     if(!item.duplicateOf&&item.status!=='superseded'){
       const group=element('select',undefined,{'aria-label':`Move to section for ${item.title}`});
@@ -380,6 +385,7 @@ class SummaryImport extends HTMLElement {
     disclosure.open=this.openCards.has(item.id);
     const summary=element('summary',undefined,{class:'import-card-summary'});
     const frontText=element('textarea',item.action||item.instruction||item.title,{class:'import-card-summary-text',rows:'2',maxlength:item.action?'800':'2000','aria-label':`Edit card text for ${item.title}`});
+    frontText.dataset.helpField=item.action?'action':'instruction';
     frontText.disabled=this.blocked;
     const saveStatus=element('span','',{class:'card-save-status',role:'status','aria-live':'polite'});
     let saveTimer, savedText=frontText.value.trim();

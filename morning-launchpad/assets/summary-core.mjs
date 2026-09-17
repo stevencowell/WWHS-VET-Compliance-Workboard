@@ -1,4 +1,5 @@
 // Local text processing only. No network requests or embedded personal records.
+import {normaliseTaskHelpContext} from '../../assets/js/task-help.mjs?v=task-help-1';
 export const INBOX_KEY = 'morning-launchpad-summary:v1';
 export const LEGACY_PLAN_KEY = 'morning-launchpad-routine:v1';
 export const LIMIT = 1000000;
@@ -70,7 +71,10 @@ export async function reconcileForecast(inbox,{entries=[],resolved=[],context:in
   const items=inbox.items.map(original=>{
     if(original.origin?.wing!==context.wing)return original;
     const key=identity(original.origin),scheduledEntry=scheduled.get(key),source=sources.get(key);seen.add(key);
-    if(!scheduledEntry&&!original.forecast)return original;
+    if(!scheduledEntry&&!original.forecast){
+      if(source?.taskHelp&&JSON.stringify(source.taskHelp)!==JSON.stringify(original.taskHelp)){updated++;return {...original,taskHelp:normaliseTaskHelpContext(source.taskHelp)};}
+      return original;
+    }
     const sourceStatus=source?.forecast?.sourceStatus??source?.sourceStatus??source?.status??original.forecast?.sourceStatus??'review';
     let forecast;
     if(scheduledEntry){
@@ -83,7 +87,7 @@ export async function reconcileForecast(inbox,{entries=[],resolved=[],context:in
         reason:hasPersonalWork(original)?'Outside the current forecast. Your own work and notes are kept here.':'No longer in the current forecast. Kept with your notes and history.'},context,{managed:previous.managed,active:false});
       if(previous.active)retired++;
     }
-    const refreshed={...original,forecast};
+    const refreshed={...original,forecast,taskHelp:source?.taskHelp?normaliseTaskHelpContext(source.taskHelp):original.taskHelp};
     if(original.forecast?.managed&&source){
       for(const field of ['title','action','dueDate','waitingOn']){
         if(original.dirty.includes(field)||!Object.hasOwn(source,field))continue;
@@ -132,7 +136,7 @@ export async function createTrackedWork(descriptor) {
   const action=String(descriptor.action||'Review the task and choose the next action.').trim();
   const noteText=String(descriptor.notes||'');
   const taskKey=await workboardTaskKey(wing,recordKey);
-  const item=enrich({id:crypto.randomUUID(),taskKey,title,action,noteText,workstream:wing,origin,
+  const item=enrich({id:crypto.randomUUID(),taskKey,title,action,noteText,workstream:wing,origin,taskHelp:normaliseTaskHelpContext(descriptor.taskHelp??null),
     createdOn:todaySydney(),status:['done','completed','verified'].includes(descriptor.status)?'done':'review',
     group:['waiting','blocked'].includes(descriptor.status)?'waiting':'ready',
     waitingOn:String(descriptor.waitingOn||''),dueDate:descriptor.dueDate&&validDate(descriptor.dueDate)?descriptor.dueDate:null,
@@ -282,7 +286,7 @@ export function validDate(value) {
   return Number.isFinite(date.getTime()) && date.toISOString().slice(0,10) === value;
 }
 export function enrich(item) {
-  return {workstream:'personal',origin:null,forecast:null,progressOverride:false,sectionOverride:'',createdOn:null, lastActionOn:null, pinnedDate:null, personal:false, taskKey:'', priority:'', nextAction:'', dueDate:null, eventDate:null, followUpDate:null,
+  return {workstream:'personal',origin:null,forecast:null,taskHelp:null,progressOverride:false,sectionOverride:'',createdOn:null, lastActionOn:null, pinnedDate:null, personal:false, taskKey:'', priority:'', nextAction:'', dueDate:null, eventDate:null, followUpDate:null,
     noteHtml:'', noteText:'', dateNote:'', owner:'', waitingOn:'', instruction:'', help:'', relatedTitles:[], dependsOn:[], dirty:[], planAliases:[],
     reason:'Action to review', score:30, group:'ready', status:'review', selected:false, links:[], url:'', originalEmailUrl:'', source:'', ...item};
 }
@@ -299,6 +303,8 @@ export function validateInbox(raw) {
   for(const[wing,context]of Object.entries(value.forecastContexts||{})){if(!['vet','tas'].includes(wing)||context?.wing!==wing)throw new Error('Invalid workboard forecast contexts');forecastContexts[wing]=normaliseForecastContext(context);}
   const items = value.items.map(enrich);
   for (const x of items) {
+    x.taskHelp=normaliseTaskHelpContext(x.taskHelp);
+    if(x.taskHelp&&(!x.origin||['wing','taskId','recordKey','cycle'].some(key=>x.taskHelp[key]!==x.origin[key])))throw new Error('AI help does not match its source task.');
     if (typeof x.id !== 'string' || !x.id.trim() || x.id.length > 150 || typeof x.title !== 'string' || !x.title.trim() || x.title.length > 300 ||
       typeof x.action !== 'string' || (!x.action.trim() && !(x.personal && ['note','done','dismissed'].includes(x.status))) || x.action.length > 800 || typeof x.source !== 'string' || x.source.length > 20000 || typeof x.noteText !== 'string' || x.noteText.length > 200000 || typeof x.noteHtml !== 'string' || x.noteHtml.length > 1000000 ||
       typeof x.taskKey !== 'string' || x.taskKey.length > 150 || !Number.isFinite(x.score) || !Object.hasOwn(WORKSTREAMS,x.workstream) || !validWorkOrigin(x.origin) || !validForecast(x.forecast) || (x.forecast&&!x.origin) || typeof x.progressOverride!=='boolean' ||
@@ -335,7 +341,7 @@ export function mergeInbox(existing, incoming) {
       const dirty=old.dirty.length ? old.dirty : !old.taskKey ? ['action','url','group'] : [];
       // Classification and source identity belong to the saved card. Older
       // exports and AI refreshes must never detach work from its native task.
-      const merged={...old,...next,workstream:old.workstream,origin:old.origin||next.origin,forecast:old.forecast||next.forecast,progressOverride:old.progressOverride,taskKey:old.taskKey||next.taskKey,id:old.id,createdOn:old.createdOn||next.createdOn,lastActionOn:old.lastActionOn||next.lastActionOn,status:old.status,pinnedDate:old.pinnedDate,dirty,selected:false,planStamp:old.planStamp,planAliases:old.planAliases,preserveDoneOnce:old.preserveDoneOnce};
+      const merged={...old,...next,workstream:old.workstream,origin:old.origin||next.origin,forecast:old.forecast||next.forecast,taskHelp:old.taskHelp||(old.origin&&JSON.stringify(old.origin)!==JSON.stringify(next.origin)?null:next.taskHelp),progressOverride:old.progressOverride,taskKey:old.taskKey||next.taskKey,id:old.id,createdOn:old.createdOn||next.createdOn,lastActionOn:old.lastActionOn||next.lastActionOn,status:old.status,pinnedDate:old.pinnedDate,dirty,selected:false,planStamp:old.planStamp,planAliases:old.planAliases,preserveDoneOnce:old.preserveDoneOnce};
       aliases.set(next.taskKey,merged.taskKey);
       for (const key of dirty) merged[key]=old[key];
       items[index]=merged; updated++;

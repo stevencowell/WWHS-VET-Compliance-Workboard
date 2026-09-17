@@ -130,3 +130,16 @@ summary-import .import-heading-actions button:hover{background:#819887;border-co
 .note-formatting{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.note-formatting button{font-size:13px;padding:6px 12px}
 
 .note-search{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:18px 0 8px}.note-search label{font-weight:650}.note-search input{flex:1;min-width:180px;padding:12px 14px;min-height:44px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);font:inherit}.note-search button{font-size:14px}@media(max-width:600px){.note-search label{flex-basis:100%}}
+
+/* One review-and-copy surface for imported and scheduled task help. */
+summary-import .import-card-quick-controls .import-ai-help{margin-left:0;border-color:var(--accent);color:var(--accent);font-weight:650}
+summary-import .task-help-dialog{box-sizing:border-box;width:min(760px,calc(100vw - 28px));max-height:calc(100dvh - 32px);overflow:auto;padding:26px;border:1px solid var(--line);border-radius:18px;background:var(--surface);color:var(--ink);box-shadow:0 20px 80px #0004}
+.task-help-dialog::backdrop{background:#10221acc}
+summary-import .task-help-dialog h2{margin:0 0 8px}.task-help-task{font-weight:650;font-size:18px;line-height:1.4;padding-right:56px}
+.task-help-dialog p,.task-help-dialog li{line-height:1.55;overflow-wrap:anywhere}.task-help-dialog details{margin:16px 0}.task-help-dialog li+li{margin-top:8px}
+summary-import .task-help-close{float:right;min-height:44px}.task-help-note-choice{display:flex;gap:10px;align-items:center;font-weight:650;margin-top:20px}
+summary-import .task-help-note-choice input{width:20px;height:20px;margin:0;accent-color:var(--accent)}
+.task-help-state{padding:12px 14px;border-left:3px solid var(--accent);background:var(--surface-soft,var(--surface));font-size:14px}.task-help-state:empty{display:none}
+summary-import .task-help-dialog textarea{box-sizing:border-box;width:100%;max-width:100%;margin-top:8px;padding:14px;resize:vertical;min-height:200px;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:10px;font:14px/1.55 system-ui,sans-serif;white-space:pre-wrap}
+.task-help-dialog .help-request-actions{position:sticky;bottom:-26px;background:var(--surface);padding:14px 0;margin-bottom:-12px}
+@media(max-width:600px){summary-import .task-help-dialog{padding:18px;width:calc(100vw - 16px);max-height:calc(100dvh - 16px)}.task-help-dialog .help-request-actions{bottom:-18px}.task-help-dialog .help-request-actions button{flex:1;min-height:44px}.task-help-task{padding-right:0;clear:both}summary-import .import-card-quick-controls{gap:8px}}
