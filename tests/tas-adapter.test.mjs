@@ -6,6 +6,8 @@ import vm from 'node:vm';
 const dataScript = fs.readFileSync(new URL('../head-teacher-tas/assets/js/data.js', import.meta.url), 'utf8');
 const appScript = fs.readFileSync(new URL('../head-teacher-tas/assets/js/app.js', import.meta.url), 'utf8');
 const key = 'wwhs-head-teacher-tas-workboard:v2';
+const reviewKey = 'wwhs-task-register-review:v1';
+const reviewStore = (recordKey, completed = true, reviewedOn = '2026-09-17', year = 2026) => JSON.stringify({version:1,records:{[`tas:${year}:${encodeURIComponent(recordKey)}`]:{completed,reviewedOn}}});
 const json = value => JSON.parse(JSON.stringify(value));
 const sampleData = { window: {} };
 vm.runInNewContext(dataScript, sampleData);
@@ -20,6 +22,7 @@ const saved = (records = {}, extra = {}) => JSON.stringify({ schemaVersion: 2, l
 function harness(raw = null, options = {}) {
   let now = options.now || '2026-09-17T03:00:00Z';
   const storage = new Map(raw === null ? [] : [[key, raw]]);
+  if (options.reviewRaw !== undefined) storage.set(reviewKey,options.reviewRaw);
   const documentHandlers = new Map(), windowHandlers = new Map(), nodes = new Map(), events = [];
   function element() {
     const handlers = new Map();
@@ -61,6 +64,7 @@ function harness(raw = null, options = {}) {
   };
   vm.createContext(context);
   vm.runInContext(dataScript, context);
+  vm.runInContext(fs.readFileSync(new URL('../assets/js/task-review.js', import.meta.url), 'utf8'), context);
   vm.runInContext(fs.readFileSync(new URL('../assets/js/task-navigation.js', import.meta.url), 'utf8'), context);
   vm.runInContext(appScript, context);
   function click(action, taskId) {
@@ -79,6 +83,7 @@ function harness(raw = null, options = {}) {
     },
     advance(value) { now = value; window.dispatchEvent({ type: 'focus' }); },
     storageEvent() { window.dispatchEvent({ type: 'storage', key }); },
+    reviewEvent() { window.dispatchEvent({ type: 'storage', key:reviewKey }); },
     toast: () => getNode('toast-region').children.map(item => item.textContent).join('\n'),
     restore(payload) { documentHandlers.get('change')({ target: { id: 'backup-file', matches: () => false, files: [{ text: JSON.stringify(payload) }] } }); }
   };
@@ -355,6 +360,64 @@ test('unreadable, malformed and externally changed native storage never yields a
   assert.deepEqual(json(h.adapter.getForecast().entries), []);
   assert.equal(h.adapter.describeRecord('class-readiness::2026'), null);
   assert.ok(h.events.some(event => event.type === 'wwhs:forecast-updated'));
+});
+
+test('overall review completes every TAS step and restores earlier progress when unticked', () => {
+  const recordKey='class-readiness::2026', original={status:'in-progress',steps:{0:true},exceptionReason:'Keep <my> notes',evidenceRef:'ref-123',verifier:'Existing initials'};
+  const raw=saved({[recordKey]:original}), h=harness(raw,{reviewRaw:reviewStore(recordKey)});
+  const task=tasks.find(item=>item.id==='class-readiness');
+  assert.equal(h.adapter.describeTask(task.id).status,'done');
+  assert.equal(h.adapter.getTaskRegister().items.find(item=>item.recordKey===recordKey).complete,true);
+  h.adapter.openTask(task.id);
+  const html=h.nodes.get('task-dialog-content').innerHTML;
+  assert.equal([...html.matchAll(/<input[^>]*data-task-step=[^>]*checked disabled/g)].length,task.steps.length);
+  assert.match(html,/Keep &lt;my&gt; notes/);assert.match(html,/Reviewed complete for 2026 on 2026-09-17/);
+  assert.equal(h.storage.get(key),raw);
+  h.click('close-task');h.storage.set(reviewKey,reviewStore(recordKey,false));h.reviewEvent();h.adapter.openTask(task.id);
+  const reopened=h.nodes.get('task-dialog-content').innerHTML;
+  assert.equal([...reopened.matchAll(/<input[^>]*data-task-step=[^>]*checked/g)].length,1);
+  assert.doesNotMatch(reopened,/Reviewed complete for 2026/);
+  assert.equal(h.storage.get(key),raw);
+  assert.equal(h.adapter.describeTask(task.id).sourceStatus,'in-progress');
+});
+
+test('TAS reviews stay with their occurrence and year, including historical records and weekly scans', () => {
+  const h=harness(null,{reviewRaw:reviewStore('faculty-meeting-control::2026-09-14')});
+  assert.equal(h.adapter.describeTask('faculty-meeting-control').status,'done');
+  h.advance('2026-09-21T03:00:00Z');
+  assert.notEqual(h.adapter.describeTask('faculty-meeting-control').status,'done');
+  const old=h.adapter.getTaskRegister().items.find(item=>item.recordKey==='faculty-meeting-control::2026-09-14');
+  assert.equal(old.complete,true);h.clickLink(old.route);
+  assert.match(h.nodes.get('task-dialog-content').innerHTML,/Reviewed complete for 2026/);
+  const yearly=harness(null,{now:'2027-02-02T03:00:00Z',reviewRaw:reviewStore('class-readiness::2026')});
+  assert.notEqual(yearly.adapter.describeTask('class-readiness').status,'done');
+  const weekly=harness(null,{hash:'#today',reviewRaw:reviewStore('weekly-scan-0::2026-09-14')});
+  assert.match(weekly.nodes.get('route-content').innerHTML,/data-weekly-check="0" checked/);
+  assert.equal(weekly.adapter.getTaskRegister().items.find(item=>item.id==='weekly-scan-0').complete,true);
+  weekly.advance('2026-09-21T03:00:00Z');
+  assert.equal(weekly.adapter.getTaskRegister().items.find(item=>item.id==='weekly-scan-0').complete,false);
+  assert.equal(weekly.adapter.getTaskRegister().items.find(item=>item.recordKey==='weekly-scan-0::2026-09-14').complete,true);
+  assert.equal(weekly.storage.get(key),undefined);
+});
+
+test('TAS milestone sign-off covers the historical sequence without writing evidence or original dates', () => {
+  const task=tasks.find(item=>item.milestones?.length && !item.procedureOnly);
+  const h=harness(null,{now:'2026-12-30T03:00:00Z',reviewRaw:reviewStore(task.historyOnly ? task.id : task.id+'::2026',true,'2026-12-30')});
+  const item=h.adapter.getTaskRegister().items.find(item=>item.id===task.id);
+  assert.equal(item.complete,true);h.adapter.openTask(task.id);
+  const html=h.nodes.get('task-dialog-content').innerHTML;
+  assert.match(html,/Reviewed complete for 2026/);
+  assert.equal(h.storage.get(key),undefined);
+});
+
+test('TAS rejects invalid, future and wrong-year reviews; native completion keeps its provenance', () => {
+  for (const reviewRaw of ['bad',reviewStore('class-readiness::2026',true,'2026-02-30'),reviewStore('class-readiness::2026',true,'2026-09-18'),reviewStore('class-readiness::2026',true,'2026-09-17',2027)]) {
+    const h=harness(null,{reviewRaw});
+    assert.notEqual(h.adapter.describeTask('class-readiness').status,'done');
+    assert.doesNotThrow(()=>h.adapter.getTaskRegister());
+  }
+  const h=harness(saved({'class-readiness::2026':completeRecord(tasks.find(item=>item.id==='class-readiness'))}),{reviewRaw:reviewStore('class-readiness::2026')});
+  assert.equal(h.adapter.describeTask('class-readiness').sourceStatus,'completed');
 });
 
 test('native changes emit forecast updates only after a successful save', () => {

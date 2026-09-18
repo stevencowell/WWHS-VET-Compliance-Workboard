@@ -187,18 +187,22 @@
       result[task.id] = record;
     });
     let changed;
+    const dependencyComplete = id => {
+      const dependency = taskById(id);
+      return Boolean(dependency) && (["completed","verified","not-applicable"].includes(result[id]?.status) || Boolean(externalReview(dependency,result)));
+    };
     do {
       changed = false;
       allTasks.forEach(task => {
         const record = result[task.id];
         if (!record || !["verified", "not-applicable"].includes(record.status)) return;
-        const unresolved = (task.dependencies || []).filter(id => !taskById(id) || !["verified", "not-applicable"].includes(result[id]?.status));
+        const unresolved = (task.dependencies || []).filter(id => !dependencyComplete(id));
         const missing = (task.dependencies || []).some(id => !taskById(id)) || (task.hardDependencies || []).some(id => !taskById(id));
-        const hardOpen = (task.hardDependencies || []).some(id => !taskById(id) || !["verified", "not-applicable"].includes(result[id]?.status));
+        const hardOpen = (task.hardDependencies || []).some(id => !dependencyComplete(id));
         const hasOpenDependency = task.dependencyMode !== "follow-up" && unresolved.length > 0;
         const authorisedVerifiedBypass = record.status === "verified" && record.dependencyExceptionConfirmed === true && record.exceptionSummary;
         if ((hardOpen || hasOpenDependency) && (missing || hardOpen || !authorisedVerifiedBypass)) { record.status = "in-progress"; changed = true; }
-        const earlierGateOpen = is2027Task(task) && task.gate && task.lane !== "interrupt" && cycleTasks.some(item => item.gate && item.gate < task.gate && !["verified", "not-applicable"].includes(result[item.id]?.status));
+        const earlierGateOpen = is2027Task(task) && task.gate && task.lane !== "interrupt" && cycleTasks.some(item => item.gate && item.gate < task.gate && !dependencyComplete(item.id));
         if (earlierGateOpen) { record.status = "in-progress"; changed = true; }
       });
     } while (changed);
@@ -296,8 +300,8 @@
   function getRecord(id) { return state.records[id] || { status: "not-started", stepChecks: {}, history: [] }; }
   function hasRecord(task) { return Object.prototype.hasOwnProperty.call(state.records, task.id); }
   function getStatus(task) { return getRecord(task.id).status || "not-started"; }
-  function isClosed(task) { return ["verified", "not-applicable"].includes(getStatus(task)); }
-  function isNativeTaskComplete(task) { return getStatus(task) === "completed" || isClosed(task); }
+  function isClosed(task) { return isNativeTaskComplete(task) || Boolean(externalReview(task)); }
+  function isNativeTaskComplete(task) { return ["completed", "verified", "not-applicable"].includes(getStatus(task)); }
   function isTaskComplete(task) { return isNativeTaskComplete(task) || Boolean(externalReview(task)); }
   function strictReviewDate(value) {
     if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return "";
@@ -320,21 +324,21 @@
     reviewCache = { raw, readable: true, records };
     return reviewCache;
   }
-  function externalReview(task) {
-    if (!task || task.occurrenceTemplate || task.procedureOnly || isNativeTaskComplete(task)) return null;
+  function externalReview(task, records = state.records) {
+    if (!task || task.occurrenceTemplate || task.procedureOnly || ["completed","verified","not-applicable"].includes(records[task.id]?.status)) return null;
     const year = is2027Task(task) ? 2027 : 2026;
     if (year > Number(boardTodayIso.slice(0, 4))) return null;
-    const record = getRecord(task.id);
+    const record = records[task.id] || {};
     const followDate = [strictReviewDate(record.reviewDate), strictReviewDate(record.escalationDate)].filter(Boolean).sort()[0];
     const scheduledDate = strictReviewDate(task.windowEnd) || strictReviewDate(task.dueDate) || strictReviewDate(task.windowStart);
     const taskDate = [followDate, scheduledDate].filter(Boolean).sort().at(-1);
     if (strictReviewDate(task.windowStart) > boardTodayIso || taskDate > boardTodayIso) return null;
-    const tick = readReviewState().records[`vet:${year}:${encodeURIComponent(task.id)}`];
-    return tick?.completed === true && tick.reviewedOn >= `${year}-01-01` && tick.reviewedOn <= boardTodayIso && (!taskDate || tick.reviewedOn >= taskDate) ? { year, reviewedOn: tick.reviewedOn } : null;
+    return window.WWHS_TASK_REVIEW.resolve(window.WWHS_TASK_REVIEW.read().records, 'vet', task.id, year, boardTodayIso, taskDate)
+      || window.WWHS_TASK_REVIEW.savedCompletion('vet', task.id, year, boardTodayIso, taskDate);
   }
   function externalReviewNote(task) {
     const review = externalReview(task);
-    return review ? `Recorded as completed outside this app for ${review.year} during the review on ${longDate(review.reviewedOn)}. The app’s checklist was not used to record this work.` : "";
+    return window.WWHS_TASK_REVIEW.note(review);
   }
   function reviewNotes(task, record = getRecord(task.id)) {
     return [record.exceptionSummary || "", externalReviewNote(task)].filter(Boolean).join("\n\n");
@@ -369,14 +373,14 @@
     const task = taskById(id);
     if (!task) return null;
     const record = getRecord(id), nativeStatus = getStatus(task), sourceStatus = externalReview(task) ? EXTERNAL_REVIEW_STATUS : nativeStatus;
-    const nextStep = (task.actionSteps || []).find((_, index) => !record.stepChecks?.[index]);
+    const nextStep = !isTaskComplete(task) && (task.actionSteps || []).find((_, index) => !record.stepChecks?.[index]);
     return {
       wing: "vet", taskId: task.id, recordKey: task.id, title: task.title,
       action: nextStep || task.doneWhen || task.title,
       notes: reviewNotes(task, record),
       dueDate: record.reviewDate || task.dueDate || task.windowEnd || null,
       waitingOn: record.waitingForRole || "",
-      status: isNativeTaskComplete(task) ? "done" : ["waiting", "exception"].includes(nativeStatus) ? "waiting" : "review",
+      status: isTaskComplete(task) ? "done" : ["waiting", "exception"].includes(nativeStatus) ? "waiting" : "review",
       sourceStatus,
       taskHelp: {
         version: 1, wing: "vet", taskId: task.id, canonicalTaskId: task.canonicalTaskId || task.id,
@@ -491,7 +495,6 @@
         if (visited.has(prerequisite.id) || isClosed(prerequisite) || prerequisiteYear !== year || prerequisite.historyOnly || prerequisite.procedureOnly || prerequisite.occurrenceTemplate) continue;
         if (prerequisite.phase === "event_driven" && !hasRecord(prerequisite)) continue;
         if (prerequisite.windowStart && prerequisite.windowStart > date) continue;
-        if (isTaskComplete(prerequisite)) { otherOwners.add(`${verifierRole(prerequisite)} to ${externalReview(prerequisite) ? "check the official record for work completed outside this app" : "verify the completed checklist"}`); continue; }
         if (isTaskReady(prerequisite) && earlier2027GatesComplete(prerequisite)) {
           if (isWaitingParked(prerequisite)) { otherOwners.add(getRecord(prerequisite.id).waitingForRole || assignedRole(prerequisite)); continue; }
           if (forecastRoleMatches(prerequisite)) return prerequisite;
@@ -567,7 +570,7 @@
       else if (repeating) schedule = { kind: "recurring", label: timing || trigger };
       else if (trigger || timing) schedule = { kind: "trigger", label: [timing, trigger && trigger !== timing ? `When: ${trigger}` : ""].filter(Boolean).join(" · ") };
       else schedule = { kind: "undated", label: "Timing or trigger needs confirmation" };
-      const complete = !template && isNativeTaskComplete(task), review = externalReview(task);
+      const complete = !template && isTaskComplete(task), review = externalReview(task);
       const gaps = [];
       if (schedule.kind === "undated") gaps.push("No date, review rule or trigger is recorded.");
       if (task.liveVerification?.required && !record.sourceChecked) gaps.push("Current source not confirmed in this browser.");
@@ -581,7 +584,7 @@
         id: task.id, recordKey: task.id, title: task.title, year,
         route: "#task/" + encodeURIComponent(task.id),
         area: template ? "Event procedure" : task.term ? `Term ${task.term}` : phaseMeta[task.phase]?.short || "Annual setup",
-        owner: assignedRole(task), status: template ? "Procedure - start when needed" : review ? "Completed outside this app" : statusMeta[getStatus(task)]?.label || "Not started",
+        owner: assignedRole(task), status: template ? "Procedure - start when needed" : review ? "Task complete · overall sign-off" : statusMeta[getStatus(task)]?.label || "Not started",
         complete, externallyReviewed: Boolean(review), reviewedOn: review?.reviewedOn || "", historyOnly: task.historyOnly === true, procedureOnly, entryKind,
         schedule, inFocus: focused.has(task.id), focusReason, sourceIds: [...(task.sourceIds || [])], gaps
       };
@@ -776,7 +779,7 @@
     if (/where|if |applicable|course specific|scheduled|proposed/i.test(condition)) return "if applicable";
     return "required";
   }
-  function statusPill(task) { if (externalReview(task)) return `<span class="status-pill status-completed">Completed outside this app</span>`; if (!hasRecord(task)) return `<span class="status-pill status-neutral">Not reviewed here</span>`; const meta = statusMeta[getStatus(task)] || statusMeta["not-started"]; return `<span class="status-pill ${meta.className}">${esc(meta.label)}</span>`; }
+  function statusPill(task) { if (externalReview(task)) return `<span class="status-pill status-completed">Task complete · overall sign-off</span>`; if (!hasRecord(task)) return `<span class="status-pill status-neutral">Not reviewed here</span>`; const meta = statusMeta[getStatus(task)] || statusMeta["not-started"]; return `<span class="status-pill ${meta.className}">${esc(meta.label)}</span>`; }
 
   function completionBlockReason(task) {
     if (task.historyOnly || task.procedureOnly) return "This entry is read-only.";
@@ -784,8 +787,8 @@
   }
 
   function taskCompletionActions(task) {
-    if (externalReview(task)) return `<span class="task-complete-label">✓ Completed outside this app</span>`;
-    if (!task || task.historyOnly || task.procedureOnly || isClosed(task)) return "";
+    if (externalReview(task)) return `<span class="task-complete-label">✓ Task complete · overall sign-off</span>`;
+    if (!task || task.historyOnly || task.procedureOnly || ["verified", "not-applicable"].includes(getStatus(task))) return "";
     if (getStatus(task) === "completed") return `<span class="task-complete-label">✓ Task Complete</span>${completionUndo.get(task.id)?.after === getRecord(task.id) ? `<button class="button secondary compact" type="button" data-action="undo-complete-task" data-task-id="${esc(task.id)}" aria-label="Undo completion: ${esc(task.title)}">Undo</button>` : ""}`;
     const reason = completionBlockReason(task);
     return `<button class="button compact complete-task-button" type="button" data-action="complete-task" data-task-id="${esc(task.id)}" aria-label="Task Complete: ${esc(task.title)}" title="${esc(reason || "Tick every action step and your source and result checks. Verification stays separate.")}" ${reason ? "disabled" : ""}>Task Complete</button>`;
@@ -1015,7 +1018,7 @@
     const selectedTasks = termTasks.filter(task => state.selected2027Week === 0 ? !task.week : task.week === state.selected2027Week).filter(roleMatches).sort((a, b) => a.order - b.order);
     const week = term.weeks[state.selected2027Week - 1], selectedLabel = state.selected2027Week === 0 ? "2027 setup and activation" : `${term.label} Week ${state.selected2027Week} · ${week?.theme || "current control point"}`;
     const selectedReady = ready.find(task => (task.term === term.number || (term.number === 1 && !task.term)) && (state.selected2027Week === 0 ? !task.week : task.week === state.selected2027Week));
-    route.innerHTML = `<section class="page term-one-page cycle-2027-page"><header class="page-heading"><div><p class="eyebrow">RUN 2027 · ${esc(term.label.toUpperCase())} · ${term.weeks.length} CONTROL POINTS</p><h1>2027 full-year operating cycle</h1><p>One dependency-gated sequence across four terms, separately tracked weekly controls and a visible interrupt lane.</p></div><button class="button quiet compact" type="button" data-action="set-cycle-mode" data-mode="guided">Use one-step view</button></header>${cycleBoundaryNotice()}${cycleTermStrip()}<div class="stats term-stats" aria-label="2027 ${esc(term.label)} summary"><div class="stat is-urgent"><span>Ready now</span><strong>${ready.filter(task => task.term === term.number || (term.number === 1 && !task.term)).length}</strong><small>time and dependency cleared</small></div><div class="stat"><span>Verified / N/A</span><strong>${closed}/${termTasks.length}</strong><small>independent instances</small></div><div class="stat"><span>Waiting / exception</span><strong>${waiting}</strong><small>requires chase owner</small></div><div class="stat is-next"><span>Current gate</span><strong>${currentCycleGate(term.number)}/${cycle2027.gates.length}</strong><small>source-controlled</small></div></div>${cycleSourcePanel()}${cycleGateStrip()}${cycleWeekStrip()}<section class="phase-intro term-selection"><div><p class="eyebrow">Selected control point</p><h2>${esc(selectedLabel)}</h2><p>${state.selected2027Week === 0 ? "Clear the source, people, delivery and activation gates before Week 1 opens." : "Tasks retain their own prerequisites and opening window. Future work stays visible but cannot close early."}</p></div>${selectedReady ? `<button class="button" type="button" data-action="open-task" data-task-id="${esc(selectedReady.id)}">Open ready action in this control point</button>` : ""}</section><div class="task-list term-task-list">${selectedTasks.length ? selectedTasks.map(task => taskCard(task)).join("") : `<div class="empty-state"><h2>No work for this role in the selected control point.</h2><p>Switch role or choose another week.</p></div>`}</div>${cycleInterruptPanel()}</section>`;
+    route.innerHTML = `<section class="page term-one-page cycle-2027-page"><header class="page-heading"><div><p class="eyebrow">RUN 2027 · ${esc(term.label.toUpperCase())} · ${term.weeks.length} CONTROL POINTS</p><h1>2027 full-year operating cycle</h1><p>One dependency-gated sequence across four terms, separately tracked weekly controls and a visible interrupt lane.</p></div><button class="button quiet compact" type="button" data-action="set-cycle-mode" data-mode="guided">Use one-step view</button></header>${cycleBoundaryNotice()}${cycleTermStrip()}<div class="stats term-stats" aria-label="2027 ${esc(term.label)} summary"><div class="stat is-urgent"><span>Ready now</span><strong>${ready.filter(task => task.term === term.number || (term.number === 1 && !task.term)).length}</strong><small>time and dependency cleared</small></div><div class="stat"><span>Complete / N/A</span><strong>${closed}/${termTasks.length}</strong><small>independent instances</small></div><div class="stat"><span>Waiting / exception</span><strong>${waiting}</strong><small>requires chase owner</small></div><div class="stat is-next"><span>Current gate</span><strong>${currentCycleGate(term.number)}/${cycle2027.gates.length}</strong><small>source-controlled</small></div></div>${cycleSourcePanel()}${cycleGateStrip()}${cycleWeekStrip()}<section class="phase-intro term-selection"><div><p class="eyebrow">Selected control point</p><h2>${esc(selectedLabel)}</h2><p>${state.selected2027Week === 0 ? "Clear the source, people, delivery and activation gates before Week 1 opens." : "Tasks retain their own prerequisites and opening window. Future work stays visible but cannot close early."}</p></div>${selectedReady ? `<button class="button" type="button" data-action="open-task" data-task-id="${esc(selectedReady.id)}">Open ready action in this control point</button>` : ""}</section><div class="task-list term-task-list">${selectedTasks.length ? selectedTasks.map(task => taskCard(task)).join("") : `<div class="empty-state"><h2>No work for this role in the selected control point.</h2><p>Switch role or choose another week.</p></div>`}</div>${cycleInterruptPanel()}</section>`;
   }
   function renderCycle2027() { state.activeCycle = "2027"; if (state.cycle2027Mode === "full") renderCycleFull(); else renderCycleGuided(); }
 
@@ -1024,7 +1027,7 @@
     const selected = state.selectedPhase in phaseMeta ? state.selectedPhase : "term_3";
     const phaseTasks = tasks.filter(task => task.phase === selected && roleMatches(task)).filter(task => !state.yearSearch || taskSearchText(task).includes(state.yearSearch.toLowerCase()));
     const done = phaseTasks.filter(isClosed).length;
-    route.innerHTML = `<section class="page"><header class="page-heading"><div><p class="eyebrow">One phase at a time</p><h1>Year plan</h1><p>The ${tasks.length}-action register stays underneath. This page opens only one part of the year so new staff can see the sequence without facing the whole minefield.</p></div><div class="date-block"><strong>${done}/${phaseTasks.length} closed</strong><span>${esc(phaseMeta[selected].short)}</span></div></header><nav class="phase-nav" aria-label="Annual workflow phases">${register.phaseOrder.map(phase => `<button type="button" class="phase-button ${phase === selected ? "is-current" : ""}" data-action="select-phase" data-phase="${phase}"><span>${esc(phaseMeta[phase].short)}</span><small>${tasks.filter(task => task.phase === phase).length}</small></button>`).join("")}</nav><section class="phase-intro"><div><p class="eyebrow">${esc(phaseMeta[selected].short)}</p><h2>${esc(phaseMeta[selected].title)}</h2><p>${esc(phaseMeta[selected].description)}</p></div><label class="search-field"><span>Find in this phase</span><input id="year-search" type="search" value="${esc(state.yearSearch)}" placeholder="e.g. USI, trainer, reports"></label></section><div class="phase-status-line"><span>${phaseTasks.length} actions in sequence</span><span>${done} verified or not applicable</span><span>${phaseTasks.filter(historicalUnconfirmed).length} earlier milestones need status confirmation</span></div><div class="task-list year-task-list">${phaseTasks.length ? phaseTasks.map(task => taskCard(task, { compact: true })).join("") : `<div class="empty-state"><h2>No matching work in this phase.</h2><p>Clear the search or choose another role.</p></div>`}</div></section>`;
+    route.innerHTML = `<section class="page"><header class="page-heading"><div><p class="eyebrow">One phase at a time</p><h1>Year plan</h1><p>The ${tasks.length}-action register stays underneath. This page opens only one part of the year so new staff can see the sequence without facing the whole minefield.</p></div><div class="date-block"><strong>${done}/${phaseTasks.length} closed</strong><span>${esc(phaseMeta[selected].short)}</span></div></header><nav class="phase-nav" aria-label="Annual workflow phases">${register.phaseOrder.map(phase => `<button type="button" class="phase-button ${phase === selected ? "is-current" : ""}" data-action="select-phase" data-phase="${phase}"><span>${esc(phaseMeta[phase].short)}</span><small>${tasks.filter(task => task.phase === phase).length}</small></button>`).join("")}</nav><section class="phase-intro"><div><p class="eyebrow">${esc(phaseMeta[selected].short)}</p><h2>${esc(phaseMeta[selected].title)}</h2><p>${esc(phaseMeta[selected].description)}</p></div><label class="search-field"><span>Find in this phase</span><input id="year-search" type="search" value="${esc(state.yearSearch)}" placeholder="e.g. USI, trainer, reports"></label></section><div class="phase-status-line"><span>${phaseTasks.length} actions in sequence</span><span>${done} complete or not applicable</span><span>${phaseTasks.filter(historicalUnconfirmed).length} earlier milestones need status confirmation</span></div><div class="task-list year-task-list">${phaseTasks.length ? phaseTasks.map(task => taskCard(task, { compact: true })).join("") : `<div class="empty-state"><h2>No matching work in this phase.</h2><p>Clear the search or choose another role.</p></div>`}</div></section>`;
   }
   function taskSearchText(task) { return [task.title, task.timing, task.trigger, task.dueAuthority, ...(task.actionSteps || []), ...(task.systems || [])].join(" ").toLowerCase(); }
 
@@ -1153,10 +1156,11 @@
   function openTask(id) {
     const task = taskById(id); if (!task) return;
     activeWorkflow = null;
-    const record = getRecord(task.id), systems = taskSystems(task), sources = (task.sourceIds || []).map(idValue => ({ id: idValue, item: sourceFor(idValue, task) }));
+    const review = externalReview(task);
+    const record = window.WWHS_TASK_REVIEW.project(getRecord(task.id), review, task.actionSteps || [], 'stepChecks'), systems = taskSystems(task), sources = (task.sourceIds || []).map(idValue => ({ id: idValue, item: sourceFor(idValue, task) }));
     const dependencies = (task.dependencies || []).map(dependencyId => taskById(dependencyId) || { id: dependencyId, title: `Missing prerequisite configuration: ${dependencyId}`, missing: true });
     const guidanceOpen = state.guidance || state.experience === "guided";
-    taskDialogContent.innerHTML = `<header class="dialog-head"><div><p class="eyebrow">${esc(phaseMeta[task.phase]?.short || task.phase)} · ${esc(applicabilityLabel(task))}</p><h2 id="task-dialog-title">${esc(task.title)}</h2></div><button class="dialog-close" type="button" data-action="close-dialog" aria-label="Close task">×</button></header><div class="dialog-body"><div class="task-facts"><div class="fact"><span>When</span><strong>${esc(task.dueDate ? longDate(task.dueDate) : task.timing)}</strong></div><div class="fact"><span>Accountable</span><strong>${esc(accountableRole(task))}</strong></div><div class="fact"><span>Doer</span><strong>${esc(assignedRole(task))}</strong></div><div class="fact"><span>Expected verifier</span><strong>${esc(verifierRole(task))}</strong></div></div>${authorityPanel(task)}<div class="task-card-actions">${statusPill(task)}${trackTaskButton(task)}</div>${dependencies.length ? dependencyPanel(dependencies, task.dependencyMode) : ""}<section class="dialog-section"><h3>Do this</h3><ol class="step-list">${(task.actionSteps || []).map((step, index) => `<li><label><input type="checkbox" data-task-step="${index}" data-task-id="${esc(task.id)}" ${record.stepChecks?.[index] ? "checked" : ""}><span class="step-number">${index + 1}</span><span>${esc(step)}</span></label>${stepGuidance(task, index)}</li>`).join("")}</ol></section><section class="done-when"><span>Done when</span><p>${esc(task.doneWhen)}</p></section>${ownerSystemsPanel(task, systems)}<details class="guidance-details" ${guidanceOpen ? "open" : ""}><summary>Explain this in plain English</summary><div class="guidance-box"><p><strong>Why it matters:</strong> ${esc(task.guidance?.why || "This action supports the authorised annual VET process.")}</p><p><strong>Common trap:</strong> ${esc(task.guidance?.commonTrap || "Treating the workboard as the official record.")}</p><p><strong>Applies to:</strong> ${esc(task.applicability?.conditions || "Confirm locally")}</p></div></details><details class="source-details"><summary>Show mapped sources</summary><div class="source-mini-list">${sources.map(({ id: sourceId, item }) => item ? `<div><strong>${esc(item.title)}</strong><span>${esc(item.note)}</span>${sourceGuidance(item, task, sourceId)}</div>` : `<p><strong>${esc(sourceId)}</strong><span>Controlled or local source—confirm the current authorised version.</span></p>`).join("")}</div></details>${completionForm(task, record)}${historyPanel(record)}</div>`;
+    taskDialogContent.innerHTML = `<header class="dialog-head"><div><p class="eyebrow">${esc(phaseMeta[task.phase]?.short || task.phase)} · ${esc(applicabilityLabel(task))}</p><h2 id="task-dialog-title">${esc(task.title)}</h2></div><button class="dialog-close" type="button" data-action="close-dialog" aria-label="Close task">×</button></header><div class="dialog-body"><div class="task-facts"><div class="fact"><span>When</span><strong>${esc(task.dueDate ? longDate(task.dueDate) : task.timing)}</strong></div><div class="fact"><span>Accountable</span><strong>${esc(accountableRole(task))}</strong></div><div class="fact"><span>Doer</span><strong>${esc(assignedRole(task))}</strong></div><div class="fact"><span>Expected verifier</span><strong>${esc(verifierRole(task))}</strong></div></div>${authorityPanel(task)}<div class="task-card-actions">${statusPill(task)}${trackTaskButton(task)}</div>${dependencies.length ? dependencyPanel(dependencies, task.dependencyMode) : ""}<section class="dialog-section"><h3>Do this</h3>${review ? `<p>All applicable steps completed through the overall sign-off. Untick the review to restore the earlier checklist.</p>` : ""}<ol class="step-list">${(task.actionSteps || []).map((step, index) => `<li><label><input type="checkbox" data-task-step="${index}" data-task-id="${esc(task.id)}" ${record.stepChecks?.[index] ? "checked" : ""} ${review ? "disabled" : ""}><span class="step-number">${index + 1}</span><span>${esc(step)}</span></label>${stepGuidance(task, index)}</li>`).join("")}</ol></section><section class="done-when"><span>Done when</span><p>${esc(task.doneWhen)}</p></section>${ownerSystemsPanel(task, systems)}<details class="guidance-details" ${guidanceOpen ? "open" : ""}><summary>Explain this in plain English</summary><div class="guidance-box"><p><strong>Why it matters:</strong> ${esc(task.guidance?.why || "This action supports the authorised annual VET process.")}</p><p><strong>Common trap:</strong> ${esc(task.guidance?.commonTrap || "Treating the workboard as the official record.")}</p><p><strong>Applies to:</strong> ${esc(task.applicability?.conditions || "Confirm locally")}</p></div></details><details class="source-details"><summary>Show mapped sources</summary><div class="source-mini-list">${sources.map(({ id: sourceId, item }) => item ? `<div><strong>${esc(item.title)}</strong><span>${esc(item.note)}</span>${sourceGuidance(item, task, sourceId)}</div>` : `<p><strong>${esc(sourceId)}</strong><span>Controlled or local source—confirm the current authorised version.</span></p>`).join("")}</div></details>${completionForm(task, record)}${historyPanel(record)}</div>`;
     const reviewState = readReviewState();
     taskFormReviewSnapshot = { taskId: task.id, raw: reviewState.raw, readable: reviewState.readable, note: externalReviewNote(task) };
     if (!taskDialog.open) taskDialog.showModal();
@@ -1174,7 +1178,7 @@
     const open = dependencies.filter(task => task.missing || !isClosed(task));
     const followUp = mode === "follow-up";
     const missing = dependencies.filter(task => task.missing).length;
-    return `<section class="dependency-panel ${open.length && !followUp ? "has-open" : "is-clear"}"><strong>${missing ? "Configuration error — this task is locked" : followUp ? "Respond now — these controls are concurrent follow-ups" : open.length ? `${open.length} prerequisite${open.length === 1 ? "" : "s"} not yet verified` : "Prerequisites recorded as closed"}</strong><ul>${dependencies.map(task => `<li><span>${esc(task.title)}</span><span>${task.missing ? `<span class="status-pill status-exception">Missing</span>` : statusPill(task)}${task.missing ? "" : `<button class="text-button" type="button" data-action="open-task" data-task-id="${esc(task.id)}">Open</button>`}</span></li>`).join("")}</ul></section>`;
+    return `<section class="dependency-panel ${open.length && !followUp ? "has-open" : "is-clear"}"><strong>${missing ? "Configuration error — this task is locked" : followUp ? "Respond now — these controls are concurrent follow-ups" : open.length ? `${open.length} prerequisite${open.length === 1 ? "" : "s"} not yet complete` : "Prerequisites complete"}</strong><ul>${dependencies.map(task => `<li><span>${esc(task.title)}</span><span>${task.missing ? `<span class="status-pill status-exception">Missing</span>` : statusPill(task)}${task.missing ? "" : `<button class="text-button" type="button" data-action="open-task" data-task-id="${esc(task.id)}">Open</button>`}</span></li>`).join("")}</ul></section>`;
   }
   function allowedHandoffStates(current) {
     const transitions = {
@@ -1187,10 +1191,11 @@
     return transitions[current] || transitions.none;
   }
   function completionForm(task, record) {
+    if (externalReview(task)) return `<section class="completion-panel"><h3>Task complete · overall sign-off</h3><p>All applicable steps are covered by this sign-off. Untick Reviewed complete in the full register to restore the earlier checklist. A completion recorded in your task list is reopened there.</p><form id="task-record-form" data-task-id="${esc(task.id)}"><div class="form-grid"><label class="check-line"><input type="checkbox" checked disabled><span>Applicable source checks covered by the overall sign-off.</span></label><label class="check-line"><input type="checkbox" checked disabled><span>Done when result confirmed through the overall sign-off.</span></label><label><span>Existing verifier role or initials</span><input name="verifier" value="${esc(record.verifier || '')}"></label><label><span>Existing official-record reference</span><input name="evidenceRef" value="${esc(record.evidenceRef || '')}"></label><label class="span-two"><span>Existing notes and completion record</span><textarea name="exceptionSummary" rows="5">${esc(reviewNotes(task,record))}</textarea></label></div><p>No evidence, verifier identity or date of the original work is invented by this sign-off.</p><p class="form-error" id="task-form-error" role="alert" hidden></p><div class="dialog-actions"><button class="button secondary" type="submit" name="commit" value="save">Save notes</button><button class="button quiet" type="button" data-action="close-dialog">Close</button></div></form></section>`;
     const dependency = openDependenciesForCompletion(task), ordinaryOpen = dependency.open;
     const roleOptionList = (selected, emptyLabel) => `<option value="">${esc(emptyLabel)}</option>${workRoles.map(role => `<option value="${esc(role)}" ${selected === role ? "selected" : ""}>${esc(role)}</option>`).join("")}`;
     const currentHandoffState = record.handoffState || "none", review = externalReview(task);
-    return `<section class="completion-panel"><div class="section-heading"><div><h3>Record progress safely</h3><p>Use a location, record ID or dated sign-off reference—never paste the evidence itself.</p></div></div><form id="task-record-form" data-task-id="${esc(task.id)}"><div class="form-grid"><label><span>Status</span><select name="status">${review ? `<option value="${EXTERNAL_REVIEW_STATUS}" selected>Completed outside this app</option>` : ""}${Object.entries(statusMeta).map(([value, meta]) => `<option value="${value}" ${!review && record.status === value ? "selected" : ""}>${esc(meta.label)}</option>`).join("")}</select>${review ? `<small>Recorded through the task register review. Untick that review to remove this label; checklist and verification remain separate.</small>` : ""}</label><label><span>Working role</span><select name="assignment">${roleOptionList(state.assignments[task.id], "Use source role")}</select></label><label class="span-two"><span>Privacy-safe official-record reference</span><input name="evidenceRef" type="text" value="${esc(record.evidenceRef || "")}" placeholder="e.g. VET Hub status checked; team action register item 14"><small>Do not enter a learner, USI, host, incident, assessment or credential detail.</small></label><label><span>Verifier role or initials</span><input name="verifier" type="text" value="${esc(record.verifier || "")}" placeholder="Expected: ${esc(verifierRole(task))}"></label><label><span>Waiting for role/system</span><select name="waitingForRole">${roleOptionList(record.waitingForRole || "", "Not waiting")}</select></label><label><span>Chase / review date</span><input name="reviewDate" type="date" value="${esc(record.reviewDate || "")}"><small>A waiting or exception task resurfaces on this date.</small></label><label><span>Escalation date${task.priority === "critical" ? " (required for critical waiting/exception work)" : ""}</span><input name="escalationDate" type="date" value="${esc(record.escalationDate || "")}"></label><label><span>Hand-off to</span><select name="handoffTo">${roleOptionList(record.handoffTo || "", "No hand-off")}</select></label><label><span>Browser-local hand-off state</span><select name="handoffState">${allowedHandoffStates(currentHandoffState).map(([value, label]) => `<option value="${value}" ${currentHandoffState === value ? "selected" : ""}>${esc(label)}</option>`).join("")}</select><small>Save each hand-off stage before moving to the next.</small></label><label class="check-line span-two"><input name="sourceChecked" type="checkbox" ${record.sourceChecked ? "checked" : ""}><span>I checked the current live source/date before recording completion.</span></label><label class="check-line span-two"><input name="doneWhenConfirmed" type="checkbox" ${record.doneWhenConfirmed ? "checked" : ""}><span>I confirmed the stated “Done when” result in the owner system.</span></label>${task.independentVerificationRequired ? `<label class="check-line span-two"><input name="independentVerifierConfirmed" type="checkbox" ${record.independentVerifierConfirmed ? "checked" : ""}><span>A different authorised person independently checked this closure.</span></label>` : ""}${ordinaryOpen.length ? `<label class="check-line span-two"><input name="dependencyExceptionConfirmed" type="checkbox" ${record.dependencyExceptionConfirmed ? "checked" : ""}><span>An authorised verifier confirmed an owned official-system exception for the ${ordinaryOpen.length} open prerequisite${ordinaryOpen.length === 1 ? "" : "s"}. Hard sequence gates cannot be bypassed.</span></label>` : ""}<label class="span-two"><span>Exception or not-applicable reason (if used)</span><textarea name="exceptionSummary" rows="2" placeholder="Privacy-safe summary only">${esc(reviewNotes(task, record))}</textarea>${review ? `<small>The dated review note is shown automatically while the review tick is set.</small>` : ""}</label></div><p class="form-error" id="task-form-error" role="alert" hidden></p><div class="dialog-actions"><button class="button secondary" type="submit" name="commit" value="save">Save progress</button><button class="button" type="submit" name="commit" value="verify">Verify and close</button><button class="button quiet" type="button" data-action="close-dialog">Close</button></div></form></section>`;
+    return `<section class="completion-panel"><div class="section-heading"><div><h3>Record progress safely</h3><p>Use a location, record ID or dated sign-off reference—never paste the evidence itself.</p></div></div><form id="task-record-form" data-task-id="${esc(task.id)}"><div class="form-grid"><label><span>Status</span><select name="status">${review ? `<option value="${EXTERNAL_REVIEW_STATUS}" selected>Task complete · overall sign-off</option>` : ""}${Object.entries(statusMeta).map(([value, meta]) => `<option value="${value}" ${!review && record.status === value ? "selected" : ""}>${esc(meta.label)}</option>`).join("")}</select>${review ? `<small>Recorded through the task register review. Untick that review to remove this label; checklist and verification remain separate.</small>` : ""}</label><label><span>Working role</span><select name="assignment">${roleOptionList(state.assignments[task.id], "Use source role")}</select></label><label class="span-two"><span>Privacy-safe official-record reference</span><input name="evidenceRef" type="text" value="${esc(record.evidenceRef || "")}" placeholder="e.g. VET Hub status checked; team action register item 14"><small>Do not enter a learner, USI, host, incident, assessment or credential detail.</small></label><label><span>Verifier role or initials</span><input name="verifier" type="text" value="${esc(record.verifier || "")}" placeholder="Expected: ${esc(verifierRole(task))}"></label><label><span>Waiting for role/system</span><select name="waitingForRole">${roleOptionList(record.waitingForRole || "", "Not waiting")}</select></label><label><span>Chase / review date</span><input name="reviewDate" type="date" value="${esc(record.reviewDate || "")}"><small>A waiting or exception task resurfaces on this date.</small></label><label><span>Escalation date${task.priority === "critical" ? " (required for critical waiting/exception work)" : ""}</span><input name="escalationDate" type="date" value="${esc(record.escalationDate || "")}"></label><label><span>Hand-off to</span><select name="handoffTo">${roleOptionList(record.handoffTo || "", "No hand-off")}</select></label><label><span>Browser-local hand-off state</span><select name="handoffState">${allowedHandoffStates(currentHandoffState).map(([value, label]) => `<option value="${value}" ${currentHandoffState === value ? "selected" : ""}>${esc(label)}</option>`).join("")}</select><small>Save each hand-off stage before moving to the next.</small></label><label class="check-line span-two"><input name="sourceChecked" type="checkbox" ${record.sourceChecked ? "checked" : ""}><span>I checked the current live source/date before recording completion.</span></label><label class="check-line span-two"><input name="doneWhenConfirmed" type="checkbox" ${record.doneWhenConfirmed ? "checked" : ""}><span>I confirmed the stated “Done when” result in the owner system.</span></label>${task.independentVerificationRequired ? `<label class="check-line span-two"><input name="independentVerifierConfirmed" type="checkbox" ${record.independentVerifierConfirmed ? "checked" : ""}><span>A different authorised person independently checked this closure.</span></label>` : ""}${ordinaryOpen.length ? `<label class="check-line span-two"><input name="dependencyExceptionConfirmed" type="checkbox" ${record.dependencyExceptionConfirmed ? "checked" : ""}><span>An authorised verifier confirmed an owned official-system exception for the ${ordinaryOpen.length} open prerequisite${ordinaryOpen.length === 1 ? "" : "s"}. Hard sequence gates cannot be bypassed.</span></label>` : ""}<label class="span-two"><span>Exception or not-applicable reason (if used)</span><textarea name="exceptionSummary" rows="2" placeholder="Privacy-safe summary only">${esc(reviewNotes(task, record))}</textarea>${review ? `<small>The dated review note is shown automatically while the review tick is set.</small>` : ""}</label></div><p class="form-error" id="task-form-error" role="alert" hidden></p><div class="dialog-actions"><button class="button secondary" type="submit" name="commit" value="save">Save progress</button><button class="button" type="submit" name="commit" value="verify">Verify and close</button><button class="button quiet" type="button" data-action="close-dialog">Close</button></div></form></section>`;
   }
   function historyPanel(record) {
     const history = (record.history || []).slice(-5).reverse();
@@ -1199,6 +1204,18 @@
 
   function saveTaskForm(form, commit) {
     const task = taskById(form.dataset.taskId); if (!task || !taskFormReviewIsCurrent(form)) return;
+    if (externalReview(task)) {
+      // Overall sign-off owns completion. Saving annotations must not turn its
+      // projected checks into fabricated native evidence or overwrite progress.
+      const values = new FormData(form), before = state.records[task.id], previous = getRecord(task.id);
+      if (commit === 'verify') return;
+      state.records[task.id] = {...previous,
+        evidenceRef:boundedString(values.get('evidenceRef')).trim(),
+        verifier:boundedString(values.get('verifier'),120).trim(),
+        exceptionSummary:stripGeneratedReviewNote(values.get('exceptionSummary'), taskFormReviewSnapshot?.note)};
+      if (!saveState()) { if (before) state.records[task.id] = before; else delete state.records[task.id]; return; }
+      taskDialog.close(); render(); toast('Notes saved. Overall sign-off is unchanged.'); return;
+    }
     const values = new FormData(form); let status = String(values.get("status") || "not-started");
     if (status === EXTERNAL_REVIEW_STATUS) status = getStatus(task);
     if (!statusMeta[status]) status = "not-started";
@@ -1444,6 +1461,7 @@
     if (event.target === roleFilter || event.target === mobileRoleFilter) { state.role = event.target.value; syncRoleFilters(); saveState(); render(); }
     if (event.target.matches("[data-task-step]")) {
       const id = event.target.dataset.taskId, previous = state.records[id];
+      if (externalReview(taskById(id))) { event.target.checked = true; return; }
       const openForm = taskDialog.open && document.getElementById("task-record-form");
       if (openForm && !taskFormReviewIsCurrent(openForm)) { event.target.checked = Boolean(previous?.stepChecks?.[event.target.dataset.taskStep]); return; }
       const record = { ...getRecord(id), stepChecks: { ...getRecord(id).stepChecks, [event.target.dataset.taskStep]: event.target.checked } };
@@ -1484,7 +1502,7 @@
     window.dispatchEvent(new CustomEvent("wwhs:forecast-updated", { detail: { wing: "vet" } }));
   }
   window.addEventListener("wwhs:review-updated", refreshReviewViews);
-  window.addEventListener("storage", event => { if (event.key === REVIEW_KEY || event.key === null) refreshReviewViews(); });
+  window.addEventListener("storage", event => { if (event.key === REVIEW_KEY || event.key === window.WWHS_TASK_REVIEW.INBOX_KEY || event.key === null) refreshReviewViews(); });
   window.addEventListener("focus", () => { if (refreshBoardDate()) render(); });
   document.addEventListener("visibilitychange", () => { if (!document.hidden && refreshBoardDate()) render(); });
   window.setInterval(() => { if (refreshBoardDate()) render(); }, 60000);

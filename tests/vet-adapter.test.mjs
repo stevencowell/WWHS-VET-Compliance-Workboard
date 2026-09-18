@@ -60,13 +60,14 @@ function harness(saved = null, options = {}) {
     vm.runInContext(fs.readFileSync(new URL('assets/js/data/'+file,root),'utf8'),context);
   }
   vm.runInContext(fs.readFileSync(new URL('assets/js/vet-step-guidance.js',root),'utf8'),context);
+  vm.runInContext(fs.readFileSync(new URL('assets/js/task-review.js',root),'utf8'),context);
   vm.runInContext(fs.readFileSync(new URL('assets/js/task-navigation.js',root),'utf8'),context);
   const initialisation = '  syncRoleFilters(); updateGuidanceToggle(); render();\n})();';
   assert.ok(source.includes(initialisation), 'test harness must replace the single final app initialisation');
   vm.runInContext(source.replace(initialisation, `  window.__test = {
     getState:()=>state, saveState, completeTask, undoTaskCompletion, importWorkspace,
     taskCard, focusTask, cycleFocusTask, workflowTaskButtons, openTask, currentView,
-    isClosed, cycleGateState, taskById, createEventOccurrence, getRecord, getStatus,
+    isClosed, cycleGateState, taskById, createEventOccurrence, getRecord, getStatus, dependencyPanel,
     externalReview, externalReviewNote, reviewNotes, stripGeneratedReviewNote,
     statusPill, taskCompletionActions, completionForm, saveTaskForm,
     guidanceTarget, guidanceLinks, stepGuidance, sourceGuidance
@@ -188,20 +189,21 @@ test('full VET register distinguishes core duties, scheduled instances and proce
   assert.equal(JSON.stringify(h.api.getState()),before);assert.equal(h.writes,0);
 });
 
-test('existing 2026 review ticks project external completion without writing native records or closing gates', () => {
+test('existing 2026 ticks complete the checklist and prerequisites without replacing native progress', () => {
   const initial=harness(), task=initial.data.taskRegister.tasks[0];
   const native={status:'in-progress',exceptionSummary:'Keep <source> & notes',stepChecks:{0:true},sourceChecked:false,doneWhenConfirmed:false};
   const h=harness(state({[task.id]:native}),{now:'2026-09-18T01:00:00Z',reviewRaw:reviewStore(task.id)});
   const raw=h.storage.get(key), before=JSON.stringify(h.api.getState()), descriptor=h.adapter.describeTask(task.id);
   assert.equal(descriptor.sourceStatus,'completed-externally');assert.equal(descriptor.taskHelp.sourceStatus,'completed-externally');
-  assert.equal(descriptor.status,'review');assert.equal(h.api.getStatus(task),'in-progress');assert.equal(h.api.isClosed(task),false);
-  assert.match(descriptor.notes,/Keep <source> & notes\n\nRecorded as completed outside this app for 2026 during the review on 18 September 2026/);
-  assert.match(h.api.statusPill(task),/Completed outside this app/);assert.match(h.api.taskCompletionActions(task),/Completed outside this app/);
+  assert.equal(descriptor.status,'done');assert.equal(h.api.getStatus(task),'in-progress');assert.equal(h.api.isClosed(task),true);
+  assert.match(descriptor.notes,/Keep <source> & notes\n\nReviewed complete for 2026 on 2026-09-18/);
+  assert.match(h.api.statusPill(task),/Task complete · overall sign-off/);assert.match(h.api.taskCompletionActions(task),/Task complete · overall sign-off/);
   const item=h.adapter.getTaskRegister().items.find(item=>item.id===task.id);
-  assert.equal(item.complete,false);assert.equal(item.externallyReviewed,true);assert.equal(item.reviewedOn,'2026-09-18');
+  assert.equal(item.complete,true);assert.equal(item.externallyReviewed,true);assert.equal(item.reviewedOn,'2026-09-18');
   h.api.openTask(task.id);
   const html=h.elements.get('task-dialog-content').innerHTML;
-  assert.match(html,/<option value="completed-externally" selected>Completed outside this app/);
+  assert.equal([...html.matchAll(/<input[^>]*data-task-step=[^>]*checked disabled/g)].length,task.actionSteps.length);
+  assert.match(html,/name="evidenceRef" value=""/);assert.match(html,/name="verifier" value=""/);
   assert.match(html,/Keep &lt;source&gt; &amp; notes/);assert.doesNotMatch(html,/name="sourceChecked" type="checkbox" checked/);
   assert.equal(h.storage.get(key),raw);assert.equal(JSON.stringify(h.api.getState()),before);assert.equal(h.writes,0);
   const reloaded=harness(raw,{now:'2026-09-18T01:00:00Z',reviewRaw:h.storage.get(reviewKey)});
@@ -297,7 +299,7 @@ test('an old recurring review does not complete a later follow-up when that date
   h.options.now='2026-09-25T01:00:00Z';h.adapter.getForecast();
   assert.equal(h.api.externalReview(task),null);assert.equal(h.adapter.describeTask(task.id).sourceStatus,'waiting');
   h.storage.set(reviewKey,reviewStore(task.id,true,'2026-09-25'));assert.ok(h.api.externalReview(task));
-  assert.equal(h.adapter.describeTask(task.id).status,'waiting');assert.equal(h.writes,0);
+  assert.equal(h.adapter.describeTask(task.id).status,'done');assert.equal(h.writes,0);
 });
 
 test('saved notes, waiting owner and chase date project without changing native records', () => {
@@ -311,13 +313,13 @@ test('saved notes, waiting owner and chase date project without changing native 
   assert.equal(h.storage.get(key),raw);assert.equal(h.writes,0);
 });
 
-test('native personal completion projects Done but cannot close a formal gate', () => {
+test('native task completion counts in the gate without inventing independent verification', () => {
   const h=harness(), task=h.data.operatingCycle2027.tasks[0], before=h.api.cycleGateState(task.gate).closed;
   h.api.completeTask(task.id);
   assert.equal(h.adapter.getEntries().length,1);
   assert.equal(h.adapter.describeTask(task.id).status,'done');
   assert.equal(h.adapter.describeTask(task.id).sourceStatus,'completed');
-  assert.equal(h.api.isClosed(task),false);assert.equal(h.api.cycleGateState(task.gate).closed,before);
+  assert.equal(h.api.isClosed(task),true);assert.equal(h.api.cycleGateState(task.gate).closed,before+1);
   assert.equal(h.api.getState().records[task.id].verifier,undefined);
   assert.equal(h.events.filter(e=>e.type==='wwhs:records-updated').length,1);
   const loaded=harness(h.storage.get(key));
@@ -468,7 +470,7 @@ test('completion removes automatic forecast while source status remains resolvab
   h.api.completeTask(id);
   assert.ok(!h.adapter.getForecast().entries.some(entry=>entry.taskId===id));
   assert.equal(h.adapter.describeRecord(id).status,'done');assert.equal(h.adapter.describeRecord(id).sourceStatus,'completed');
-  assert.equal(h.api.isClosed(h.api.taskById(id)),false);
+  assert.equal(h.api.isClosed(h.api.taskById(id)),true);
 });
 
 test('unavailable, stale and future-year source data cannot generate an automatic forecast', () => {
@@ -516,13 +518,23 @@ test('a role never receives another role prerequisite or a future-window prerequ
   assert.ok(!future.adapter.getForecast().entries.some(entry=>entry.taskId==='a-01-confirm-authority-set'));
 });
 
-test('completed prerequisites still require native verification and cyclic chains terminate', () => {
+test('completed prerequisites advance the next action and cyclic chains terminate', () => {
   const h=harness(null,{now:'2026-09-17T01:00:00Z'});h.api.completeTask('a-01-confirm-authority-set');
   const {entries}=h.adapter.getForecast();
   assert.ok(!entries.some(entry=>entry.taskId==='a-01-confirm-authority-set'));
-  assert.ok(entries.some(entry=>/verify the completed checklist/.test(entry.forecast.blockerReason)));
-  assert.ok(!entries.some(entry=>entry.taskId==='a-02-build-live-calendar'));
+  assert.ok(!entries.some(entry=>/verify the completed checklist/.test(entry.forecast.blockerReason)));
+  assert.match(h.api.dependencyPanel([h.api.taskById('a-01-confirm-authority-set')]),/Prerequisites complete/);
   const cyclic=harness(null,{now:'2026-09-17T01:00:00Z'});cyclic.api.taskById('a-01-confirm-authority-set').dependencies=['t3-05-hsc-estimates'];
   const result=cyclic.adapter.getForecast();assert.ok(result.entries.length<cyclic.data.taskRegister.tasks.length);
   assert.ok(!result.entries.some(entry=>entry.taskId==='a-01-confirm-authority-set'));
+});
+
+test('saved verified work still recognises an overall prerequisite sign-off after reload', () => {
+  const seed=harness(null,{now:'2026-09-18T01:00:00Z'});
+  const parent=seed.data.taskRegister.tasks[0], child=seed.data.taskRegister.tasks.find(task=>task.dependencies?.length===1 && task.dependencies[0]===parent.id);
+  assert.ok(child);
+  const record={status:'verified',evidenceRef:'Actual reference',verifier:'Actual verifier',sourceChecked:true,doneWhenConfirmed:true,independentVerifierConfirmed:true,stepChecks:Object.fromEntries(child.actionSteps.map((_,index)=>[index,true]))};
+  const h=harness(state({[child.id]:record}),{now:'2026-09-18T01:00:00Z',reviewRaw:reviewStore(parent.id)});
+  assert.equal(h.api.getStatus(h.api.taskById(child.id)),'verified');
+  assert.equal(h.writes,0);
 });

@@ -1,17 +1,8 @@
-// Full source register and year-specific retrospective review. Official progress
-// remains owned by each workboard; review ticks can show external completion,
-// but never verify a source checklist.
+// Full source register and year-specific overall task sign-off.
+import './task-review.js?v=overall-signoff-1';
 export const REVIEW_KEY = 'wwhs-task-register-review:v1';
 export function readReview(raw) {
-  if (!raw) return {version: 1, records: {}};
-  const data = JSON.parse(raw);
-  if (data?.version !== 1 || !data.records || typeof data.records !== 'object' || Array.isArray(data.records)) throw new Error('Unrecognised review backup');
-  const records = {};
-  for (const [key, value] of Object.entries(data.records)) {
-    if (!/^(vet|tas):\d{4}:.+$/.test(key) || typeof value?.completed !== 'boolean' || !/^\d{4}-\d{2}-\d{2}$/.test(value.reviewedOn || '')) throw new Error('Invalid review entry');
-    records[key] = {completed: value.completed, reviewedOn: value.reviewedOn};
-  }
-  return {version: 1, records};
+  return (typeof window === 'object' ? window : globalThis).WWHS_TASK_REVIEW.parse(raw);
 }
 export function reviewKey(wing, item, year) { return `${wing}:${year}:${encodeURIComponent(item.recordKey || item.id)}`; }
 export function registerDate(item) { return item.schedule?.endDate || item.schedule?.startDate || ''; }
@@ -35,7 +26,7 @@ export function matchesRegisterView(item, view, today) {
   if (view === 'later') return !item.reviewComplete && date > today && !item.inFocus;
   if (view === 'recurring') return kind === 'recurring';
   if (view === 'trigger') return kind === 'trigger' || kind === 'undated';
-  if (view === 'gaps') return !!item.gaps?.length;
+  if (view === 'gaps') return !item.reviewComplete && !!item.gaps?.length;
   if (view === 'complete') return item.reviewComplete;
   if (view === 'reference') return item.procedureOnly;
   return true;
@@ -123,7 +114,8 @@ export function createTaskRegister({wing, label, getAdapter, getSavedItems = () 
       const appliesToYear=item.year !== 'ongoing' || reviewYear === snapshot.currentYear;
       const personalDone=appliesToYear&&!!item.recordKey&&saved.some(task=>task.origin?.wing===wing&&task.origin.recordKey===item.recordKey&&task.status==='done');
       const schedule=appliesToYear?item.schedule:{kind:item.schedule?.kind||'undated',label:`Continuing duty — ${reviewYear} occurrence dates are not loaded. Open the source task for its timing rule.`};
-      return {...item,schedule,inFocus:appliesToYear&&item.inFocus,reviewYear,key,tick,sourceComplete:appliesToYear&&item.complete,personalDone,reviewComplete:!!tick?.completed || appliesToYear&&item.complete || personalDone};
+      const signedOff = globalThis.WWHS_TASK_REVIEW.resolve(review.records,wing,item.recordKey || item.id,reviewYear,sydneyToday(),registerDate({schedule}));
+      return {...item,schedule,inFocus:appliesToYear&&item.inFocus,reviewYear,key,tick:signedOff?tick:undefined,sourceComplete:appliesToYear&&item.complete&&!item.externallyReviewed,personalDone,reviewComplete:!!signedOff || appliesToYear&&item.complete || personalDone};
     });
   }
   function render() {
@@ -135,7 +127,7 @@ export function createTaskRegister({wing, label, getAdapter, getSavedItems = () 
     counts.textContent=`Showing ${filtered.length} of ${items.length} entries for ${year.value==='all'?'all listed years':year.value}. ${snapshot.roleLabel || ''}${snapshot.roleLabel?'.':''}`;
     breakdown.textContent=`In the selected year / area: ${registerEntrySummary(items) || 'no entries'}.`;
     const datedYearLoaded=snapshot.items.some(item=>item.year===year.value&&registerDate(item));
-    reviewNote.textContent=`${year.value!=='all'&&!datedYearLoaded?'No dated calendar is loaded for this year. Only continuing duties and other explicitly listed controls are shown. ':''}Use the review ticks to record work you have already completed. Each tick belongs to its labelled year; 2026 ticks do not complete 2027 work. ${wing==='vet'?'The internal VET card will show “Completed outside this app” with a dated note. Untick the review to remove that label. Checklist steps and official verification remain unchanged.':'These review ticks are separate from official checklist verification.'} Ongoing duties still repeat.`;
+    reviewNote.textContent=`${year.value!=='all'&&!datedYearLoaded?'No dated calendar is loaded for this year. Only continuing duties and other explicitly listed controls are shown. ':''}Reviewed complete signs off this task and all its applicable checklist steps, whether you used the card or completed the work elsewhere. The card shows a dated completion note and retains your existing notes. Untick to restore the earlier checklist. The date records your review, not when the work happened; evidence and verifier details are not invented. Each tick belongs to its labelled year and occurrence; 2026 ticks do not complete 2027 work. Ongoing duties still repeat.`;
     list.replaceChildren();
     if (!filtered.length) list.append(node('p','No entries match these filters. Try All entries or All listed years.'));
     for (const item of filtered) {
@@ -148,7 +140,7 @@ export function createTaskRegister({wing, label, getAdapter, getSavedItems = () 
       const date=registerDate(item), past=date&&date<today;
       const status=item.sourceComplete?`Workboard status: ${item.status}`:item.personalDone?'Done in your saved task list':item.tick?.completed?`Reviewed complete for ${item.reviewYear} · ${item.tick.reviewedOn}`:past?'Past date — review the record':item.historyOnly?'Historical record — review completion':item.inFocus?'Included in the current forecast':item.procedureOnly?'Procedure guide':item.schedule?.kind==='trigger'?'Bring forward when the trigger occurs':'Outside the current forecast';
       main.append(node('p',status,{class:'register-status'}));
-      if(item.gaps?.length){const gaps=node('details',undefined,{class:'register-gap'});gaps.append(node('summary',`${item.gaps.length} ${item.gaps.length===1?'check':'checks'} needed`));const ul=node('ul');item.gaps.forEach(gap=>ul.append(node('li',gap)));gaps.append(ul);main.append(gaps);}
+      if(!item.reviewComplete&&item.gaps?.length){const gaps=node('details',undefined,{class:'register-gap'});gaps.append(node('summary',`${item.gaps.length} ${item.gaps.length===1?'check':'checks'} needed`));const ul=node('ul');item.gaps.forEach(gap=>ul.append(node('li',gap)));gaps.append(ul);main.append(gaps);}
       const control=node('label',undefined,{class:'register-tick'});
       const checkbox=node('input',undefined,{type:'checkbox','aria-label':`Reviewed complete for ${item.reviewYear}: ${item.title}`});
       checkbox.checked=item.reviewComplete;

@@ -16,6 +16,7 @@
   let taskStateDirty = false;
   let settingsStateDirty = false;
   const completionUndo = new Map();
+  let taskReviewSnapshot = null;
 
   const statusMeta = {
     "not-started": { label: "Not started", className: "neutral" },
@@ -312,12 +313,47 @@
     return state.records[recordKey(task)] || { status: "not-started", steps: {}, milestones: {} };
   }
 
+  function overallReview(task, key = recordKey(task)) {
+    if (task.procedureOnly || ['completed','verified','not-applicable'].includes(state.records[key]?.status)) return null;
+    const year = Number(key.split('::')[1]?.match(/^\d{4}/)?.[0] || currentIso.slice(0,4));
+    const dates = [task.dueDate, ...(task.milestones || []).map(item=>item.date), key.split('::')[1]]
+      .filter(value=>window.WWHS_TASK_REVIEW.date(value) && value.startsWith(`${year}-`)).sort();
+    const notBefore = dates.at(-1) || '';
+    if (notBefore > currentIso) return null;
+    // Historical baseline reviews used the task id before occurrence records
+    // were available. Keep that identity so existing ticks can be reopened.
+    return window.WWHS_TASK_REVIEW.resolve(window.WWHS_TASK_REVIEW.read().records, 'tas', task.historyOnly ? task.id : key, year, currentIso, notBefore)
+      || window.WWHS_TASK_REVIEW.savedCompletion('tas', key, year, currentIso, notBefore);
+  }
+
+  function reviewedKeys() {
+    return Object.keys(window.WWHS_TASK_REVIEW.read().records).filter(key=>key.startsWith('tas:')).flatMap(key=>{
+      try { return [decodeURIComponent(key.split(':').slice(2).join(':'))]; } catch (_) { return []; }
+    });
+  }
+
+  function weeklyReview(index, week = weekKey()) {
+    if (safeObject(state.weekly[week])[index] === true) return null;
+    return window.WWHS_TASK_REVIEW.resolve(window.WWHS_TASK_REVIEW.read().records, 'tas', `weekly-scan-${index}::${week}`, week.slice(0,4), currentIso, week);
+  }
+
+  function reviewedRecord(task, key = recordKey(task)) {
+    return window.WWHS_TASK_REVIEW.project(state.records[key] || {status:'not-started',steps:{},milestones:{}}, overallReview(task,key), task.steps, 'steps', task.milestones || []);
+  }
+
+  function reviewIsCurrent(form) {
+    const task = data.tasks.find(item=>item.id===form.dataset.taskId), current = window.WWHS_TASK_REVIEW.read();
+    if (taskReviewSnapshot?.key === recordKey(task) && taskReviewSnapshot.raw === current.raw && current.readable && taskReviewSnapshot.note === window.WWHS_TASK_REVIEW.note(overallReview(task))) return true;
+    formError(form.querySelector('.form-error'), 'The sign-off or task cycle changed. Your draft is still here. Copy unsaved notes, then close and reopen this task before saving.');
+    return false;
+  }
+
   function hasReviewedRecord(task) {
     return Object.prototype.hasOwnProperty.call(state.records, recordKey(task));
   }
 
   function statusFor(task) {
-    return recordFor(task).status || "not-started";
+    return overallReview(task) ? 'completed' : recordFor(task).status || "not-started";
   }
 
   function isClosed(task) {
@@ -329,23 +365,23 @@
     if (!task || task.historyOnly || task.procedureOnly) return null;
     refreshDate();
     const sourceKey = key || recordKey(task);
-    const record = state.records[sourceKey] || { status: "not-started", steps: {}, milestones: {} };
+    const record = reviewedRecord(task, sourceKey), review = overallReview(task, sourceKey);
     const closed = ["completed", "verified", "not-applicable"].includes(record.status);
     const nextStep = task.steps.find((_, index) => record.steps?.[index] !== true);
     const milestone = task.milestones?.find((_, index) => record.milestones?.[index] !== true);
     return {
       wing: "tas", taskId: task.id, recordKey: sourceKey,
       title: task.title, action: closed ? task.doneWhen : nextStep || task.doneWhen,
-      notes: record.exceptionReason || "",
+      notes: window.WWHS_TASK_REVIEW.notes(record.exceptionReason, review),
       dueDate: task.milestones?.length ? milestone?.date || "" : task.dueDate || "",
       waitingOn: ["waiting", "exception"].includes(record.status) ? record.exceptionReason || task.owner || "" : "",
       status: closed ? "done" : ["waiting", "exception"].includes(record.status) ? "waiting" : "review",
-      sourceStatus: record.status, cycle: sourceKey.split("::").slice(1).join("::"),
+      sourceStatus: review ? 'completed-externally' : record.status, cycle: sourceKey.split("::").slice(1).join("::"),
       taskHelp: {
         version: 1, wing: "tas", taskId: task.id, canonicalTaskId: task.id,
         title: task.title, recordKey: sourceKey, cycle: sourceKey.split("::").slice(1).join("::"),
         asOf: currentIso, sourceAsAt: data.config.calendarChecked,
-        sourceStatus: record.status, nextStep: closed ? task.doneWhen : nextStep || task.doneWhen,
+        sourceStatus: review ? 'completed-externally' : record.status, nextStep: closed ? task.doneWhen : nextStep || task.doneWhen,
         objective: task.doneWhen, steps: task.steps || [],
         roles: [`Owner: ${task.owner || "To confirm"}`, `Verifier: ${task.verifier || "To confirm"}`],
         sources: [task.source, task.privacy].filter(Boolean),
@@ -488,8 +524,9 @@
     };
     const addTask = (task, key, olderOccurrence = false) => {
       const record = available ? state.records[key] : null;
+      const review = available ? overallReview(task,key) : null;
       const reference = task.historyOnly || task.procedureOnly;
-      const status = reference ? task.historyOnly ? "reference" : "procedure" : !available ? "unavailable" : record?.status || "not-reviewed";
+      const status = review ? 'completed' : reference ? task.historyOnly ? "reference" : "procedure" : !available ? "unavailable" : record?.status || "not-reviewed";
       const period = key.split("::").slice(1).join("::");
       const schedule = scheduleFor(task);
       if (olderOccurrence) schedule.label = `Recorded occurrence: ${period}. ${task.timing || "No separate due date recorded."}`;
@@ -512,9 +549,9 @@
         title: olderOccurrence ? `${task.title} — ${period}` : task.title,
         year: olderOccurrence ? occurrenceYear(key) : task.dueDate ? task.dueDate.slice(0, 4) : "ongoing",
         recordKey: reference ? "" : key,
-        route: `#task/${encodeURIComponent(task.id)}${olderOccurrence || (!reference && key !== recordKey(task)) ? `?record=${encodeURIComponent(key)}` : ""}`,
+        route: `#task/${encodeURIComponent(task.id)}${olderOccurrence || key !== recordKey(task) ? `?record=${encodeURIComponent(key)}` : ""}`,
         area: areaMeta[task.area]?.label || "Core work", owner: task.owner || "Owner to confirm",
-        status, complete: !reference && ["completed", "verified", "not-applicable"].includes(status),
+        status, complete: Boolean(review) || !reference && ["completed", "verified", "not-applicable"].includes(status), externallyReviewed:Boolean(review), reviewedOn:review?.reviewedOn || '',
         historyOnly: task.historyOnly === true, procedureOnly: task.procedureOnly === true,
         entryKind: task.procedureOnly ? "procedure" : olderOccurrence ? taskCycle(task) === "event" ? "event" : "scheduled" : "core",
         schedule, inFocus: focus.has(key), focusReason: focus.get(key) || "",
@@ -526,19 +563,20 @@
       const key = task.dueDate ? `${task.id}::${task.dueDate.slice(0, 4)}` : recordKey(task);
       addTask(task, key);
       if (!available || task.historyOnly || task.procedureOnly) return;
-      Object.keys(state.records).filter(savedKey => savedKey.split("::")[0] === task.id && savedKey !== key)
+      [...new Set([...Object.keys(state.records), ...reviewedKeys()])].filter(savedKey => savedKey.split("::")[0] === task.id && savedKey !== key)
         .sort().forEach(savedKey => addTask(task, savedKey, true));
     });
     const currentWeek = weekKey();
     const addWeekly = (label, index, week, olderOccurrence = false) => {
-      const checked = available && safeObject(state.weekly[week])[index] === true;
+      const review = available && weeklyReview(index,week);
+      const checked = available && (safeObject(state.weekly[week])[index] === true || Boolean(review));
       items.push({
         id: `weekly-scan-${index}${olderOccurrence ? `::${week}` : ""}`,
         recordKey: `weekly-scan-${index}::${week}`,
         title: `${label}${olderOccurrence ? ` — week beginning ${week}` : ""}`,
         year: olderOccurrence ? week.slice(0, 4) : "ongoing", route: `#today?weekly=${index}&week=${encodeURIComponent(week)}`,
         area: "Weekly review", owner: "Head Teacher TAS", status: !available ? "unavailable" : checked ? "completed" : "not-reviewed",
-        complete: checked, historyOnly: false, procedureOnly: false,
+        complete: checked, externallyReviewed:Boolean(review), reviewedOn:review?.reviewedOn || '', historyOnly: false, procedureOnly: false,
         entryKind: olderOccurrence ? "scheduled" : "core",
         schedule: { kind: "recurring", label: `Weekly scan · week beginning ${week}`, startDate: week },
         inFocus: false, focusReason: "", sourceIds: ["staff-calendar", "nesa-actions", "tas-drive"],
@@ -547,7 +585,8 @@
     };
     data.weeklyChecks.forEach((label, index) => {
       addWeekly(label, index, currentWeek);
-      if (available) Object.keys(state.weekly).filter(week => week !== currentWeek && /^\d{4}-\d{2}-\d{2}$/.test(week) && Object.prototype.hasOwnProperty.call(safeObject(state.weekly[week]), index))
+      const reviewWeeks = reviewedKeys().filter(key=>key.startsWith(`weekly-scan-${index}::`)).map(key=>key.split('::')[1]);
+      if (available) [...new Set([...Object.keys(state.weekly).filter(week=>Object.prototype.hasOwnProperty.call(safeObject(state.weekly[week]), index)), ...reviewWeeks])].filter(week => week !== currentWeek && /^\d{4}-\d{2}-\d{2}$/.test(week))
         .sort().forEach(week => addWeekly(label, index, week, true));
     });
     return {
@@ -587,6 +626,7 @@
   }
 
   function statusPill(task) {
+    if (overallReview(task)) return `<span class="pill status completed">Task complete · overall sign-off</span>`;
     if (task.historyOnly) return `<span class="pill status muted">2026 baseline</span>`;
     if (task.procedureOnly) return `<span class="pill status muted">Procedure only</span>`;
     if (!hasReviewedRecord(task)) return `<span class="pill status muted">Not reviewed here</span>`;
@@ -635,11 +675,11 @@
   function openSavedTask(task, key) {
     const validKey = key.split("::")[0] === task.id;
     const available = validKey && forecastStorageAvailable();
-    const record = available ? state.records[key] : null;
+    const record = available ? reviewedRecord(task,key) : null, review = available ? overallReview(task,key) : null;
     lastTaskTrigger = document.activeElement;
     taskDialogContent.innerHTML = `<header class="dialog-head"><div><p class="eyebrow">Recorded occurrence · read only</p><h2 id="task-dialog-title">${esc(task.title)}</h2></div><button class="dialog-close" type="button" data-action="close-task" aria-label="Close task">×</button></header>
       <div class="dialog-body"><p><strong>Occurrence:</strong> ${esc(validKey ? key.split("::").slice(1).join("::") : "Unavailable")}</p><p><strong>Saved status:</strong> ${esc(!available ? "Unavailable — reload to check saved progress" : record ? statusMeta[record.status]?.label || record.status : "Not reviewed here")}</p>
-      <p>This is the saved occurrence, separate from the current cycle. It does not alter the official school record.</p>
+      <p>This is the saved occurrence, separate from the current cycle. It does not alter the official school record.</p>${review ? `<p>${esc(window.WWHS_TASK_REVIEW.note(review))}</p>` : ""}${record?.exceptionReason ? `<p>${esc(record.exceptionReason)}</p>` : ""}
       <section class="dialog-section"><h3>Actions</h3><p class="section-help">Source links open current destinations; they do not reconstruct the source as it was at the time.</p><ol class="action-list">${task.steps.map((step, index) => `<li><div class="history-step"><span class="step-number">${record?.steps?.[index] ? "✓" : index + 1}</span><span>${esc(step)}</span></div>${stepGuidance(task, index)}</li>`).join("")}</ol></section>
       ${task.milestones?.length ? `<section class="dialog-section"><h3>Captured calendar milestones</h3>${guidanceLinks(window.TAS_STEP_GUIDANCE?.forMilestone(task))}<ul>${task.milestones.map((item, index) => `<li>${record?.milestones?.[index] ? "✓ " : ""}${esc(item.date)} · ${esc(item.label)}</li>`).join("")}</ul></section>` : ""}
       <section class="owner-systems"><h3>Open the owner system</h3><div class="system-buttons">${systemButtons(task)}</div><p>${esc(task.privacy)}</p></section>
@@ -660,7 +700,7 @@
       return;
     }
     const available = forecastStorageAvailable();
-    const checked = available && safeObject(state.weekly[week])[index] === true;
+    const checked = available && (safeObject(state.weekly[week])[index] === true || Boolean(weeklyReview(index,week)));
     lastTaskTrigger = document.activeElement;
     taskDialogContent.innerHTML = `<header class="dialog-head"><div><p class="eyebrow">Saved weekly scan · read only</p><h2 id="task-dialog-title">${esc(data.weeklyChecks[index])}</h2></div><button class="dialog-close" type="button" data-action="close-task" aria-label="Close task">×</button></header><div class="dialog-body"><p>Week beginning ${esc(week)}.</p><p>${!available ? "Saved progress is unavailable; reload to check it." : checked ? "Ticked in this browser." : "Not ticked in this browser."}</p><p>This is a local review reminder, separate from this week's scan and official school records. Links open the current source, not a historical copy.</p>${guidanceLinks(window.TAS_STEP_GUIDANCE?.forWeekly(index))}<button class="button quiet" type="button" data-action="close-task">Close occurrence</button></div>`;
     taskDialog.showModal();
@@ -751,7 +791,7 @@
       .sort((a, b) => reminderDate(a).localeCompare(reminderDate(b))).slice(0, 6) : [];
     const unreviewedPast = activeDueTasks().filter(task => !hasReviewedRecord(task) && queueDueDate(task) < currentIso);
     const week = weekKey();
-    const checks = safeObject(state.weekly[week]);
+    const checks = Object.fromEntries(data.weeklyChecks.map((_,index)=>[index,safeObject(state.weekly[week])[index] === true || Boolean(weeklyReview(index,week))]));
     const completedChecks = data.weeklyChecks.filter((_, index) => checks[index] === true).length;
     const actions = `<a class="button secondary compact" href="#calendar">Workboard dates</a>`;
 
@@ -762,8 +802,8 @@
       ${justCompleted.length ? `<section class="coming-section"><div class="section-heading"><h2>Just completed</h2></div><div class="coming-list">${justCompleted.map((task, index) => comingRow(task, index + 1, "All checklist boxes ticked")).join("")}</div></section>` : ""}
       <section class="coming-section"><div class="section-heading"><div><h2>Upcoming dates to check</h2><p>Next listed dates from the calendar checked on 26 August 2026. Confirm them in the live staff calendar.</p></div></div>${upcoming.length ? `<div class="coming-list">${upcoming.map((task, index) => comingRow(task, index + 1, `Listed ${shortDate(reminderDate(task))} · check live calendar`)).join("")}</div>` : `<p class="empty-line">${operatingYearIsCurrent ? "No later dates are listed in this calendar snapshot." : "Refresh the school calendar before using dates for this year."}</p>`}</section>
       ${unreviewedPast.length ? `<details class="standing-panel"><summary>Review past dates (${unreviewedPast.length} not reviewed here)</summary><p>These dates have passed, but this browser has no recorded status. They are not assumed to be missed work. Check the school record before adding a status.</p><div class="coming-list">${unreviewedPast.map((task, index) => comingRow(task, index + 1)).join("")}</div></details>` : ""}
-      <details class="standing-panel"><summary>Five-minute weekly scan · ${completedChecks} checks recorded</summary><p>Week beginning ${shortDate(week)}. These ticks are local reminders.</p>
-        <div class="weekly-checks">${data.weeklyChecks.map((label, index) => `<div class="weekly-check"><label><input type="checkbox" data-weekly-check="${index}" ${checks[index] ? "checked" : ""}><span>${esc(label)}</span></label>${guidanceLinks(window.TAS_STEP_GUIDANCE?.forWeekly(index))}</div>`).join("")}</div>
+      <details class="standing-panel"><summary>Five-minute weekly scan · ${completedChecks} checks recorded</summary><p>Week beginning ${shortDate(week)}. These ticks are local reminders. A tick covered by an overall sign-off can be reopened from the full task register.</p>
+        <div class="weekly-checks">${data.weeklyChecks.map((label, index) => `<div class="weekly-check"><label><input type="checkbox" data-weekly-check="${index}" ${checks[index] ? "checked" : ""} ${weeklyReview(index,week) ? "disabled" : ""}><span>${esc(label)}</span></label>${guidanceLinks(window.TAS_STEP_GUIDANCE?.forWeekly(index))}</div>`).join("")}</div>
       </details>
     </div>`;
   }
@@ -1028,9 +1068,10 @@
   function openTask(id) {
     const task = data.tasks.find(item => item.id === id);
     if (!task) return;
-    const record = recordFor(task);
+    const record = reviewedRecord(task), review = overallReview(task);
     const guidanceOpen = state.guidance || state.mode === "guided";
     lastTaskTrigger = document.activeElement;
+    taskReviewSnapshot = {key:recordKey(task), raw:window.WWHS_TASK_REVIEW.read().raw, note:window.WWHS_TASK_REVIEW.note(review)};
 
     taskDialogContent.innerHTML = `<header class="dialog-head"><div><p class="eyebrow">${esc(areaMeta[task.area]?.label || "Core work")} · ${esc(phaseLabels[task.phase] || "Action")}</p><h2 id="task-dialog-title">${esc(task.title)}</h2></div><button class="dialog-close" type="button" data-action="close-task" aria-label="Close task">×</button></header>
       <div class="dialog-body">
@@ -1039,8 +1080,8 @@
         ${planTaskButton(task)}
         ${task.applicability ? `<aside class="applicability"><strong>Applies when</strong><span>${esc(task.applicability)}</span></aside>` : ""}
         <div class="fact-grid"><div><span>Timing</span><strong>${esc(task.timing)}</strong></div><div><span>Current cycle</span><strong>${esc(cycleLabel(task))}</strong></div><div><span>Accountable</span><strong>${esc(task.owner)}</strong></div><div><span>Expected verifier</span><strong>${esc(task.verifier)}</strong></div><div><span>Primary start</span><strong>${esc(primarySystemLabel(task))}</strong></div></div>
-        ${task.milestones ? `<section class="dialog-section"><h3>Milestones</h3><p class="section-help">${task.historyOnly ? "Captured 2026 sequence for handover and planning. Rebuild it from the live calendar each year." : "Tick each dated hand-off only after it is complete in the owner system."}</p>${guidanceLinks(window.TAS_STEP_GUIDANCE?.forMilestone(task))}<ol class="milestone-list">${task.milestones.map((item, index) => task.historyOnly ? `<li><time datetime="${esc(item.date)}">${esc(longDate(item.date))}</time><span>${esc(item.label)}</span></li>` : `<li class="${record.milestones?.[index] ? "is-done" : ""}"><label><input type="checkbox" data-task-milestone="${index}" data-task-id="${esc(task.id)}" ${record.milestones?.[index] ? "checked" : ""}><time datetime="${esc(item.date)}">${esc(longDate(item.date))}</time><span>${esc(item.label)}</span></label></li>`).join("")}</ol></section>` : ""}
-        <section class="dialog-section"><h3>${task.historyOnly ? "Captured process" : task.procedureOnly ? "Follow this procedure" : "Do this"}</h3><p class="section-help">Open the source beside the step. Staff destinations may require sign-in; Drive searches are labelled. ${task.historyOnly ? "Links open current sources, not historical copies." : "Opening a link does not tick the step."}</p><ol class="action-list">${task.steps.map((step, index) => task.historyOnly || task.procedureOnly ? `<li><div class="history-step"><span class="step-number">${index + 1}</span><span>${esc(step)}</span></div>${stepGuidance(task, index)}</li>` : `<li><label><input type="checkbox" data-task-step="${index}" data-task-id="${esc(task.id)}" ${record.steps?.[index] ? "checked" : ""}><span class="step-number">${index + 1}</span><span>${esc(step)}</span></label>${stepGuidance(task, index)}</li>`).join("")}</ol></section>
+        ${task.milestones ? `<section class="dialog-section"><h3>Milestones</h3><p class="section-help">${task.historyOnly ? "Captured 2026 sequence for handover and planning. Rebuild it from the live calendar each year." : "Tick each dated hand-off only after it is complete in the owner system."}</p>${guidanceLinks(window.TAS_STEP_GUIDANCE?.forMilestone(task))}<ol class="milestone-list">${task.milestones.map((item, index) => task.historyOnly ? `<li>${record.milestones?.[index] ? "✓ " : ""}<time datetime="${esc(item.date)}">${esc(longDate(item.date))}</time><span>${esc(item.label)}</span></li>` : `<li class="${record.milestones?.[index] ? "is-done" : ""}"><label><input type="checkbox" data-task-milestone="${index}" data-task-id="${esc(task.id)}" ${record.milestones?.[index] ? "checked" : ""} ${review ? "disabled" : ""}><time datetime="${esc(item.date)}">${esc(longDate(item.date))}</time><span>${esc(item.label)}</span></label></li>`).join("")}</ol></section>` : ""}
+        <section class="dialog-section"><h3>${task.historyOnly ? "Captured process" : task.procedureOnly ? "Follow this procedure" : "Do this"}</h3><p class="section-help">Open the source beside the step. Staff destinations may require sign-in; Drive searches are labelled. ${task.historyOnly ? "Links open current sources, not historical copies." : "Opening a link does not tick the step."}</p><ol class="action-list">${task.steps.map((step, index) => task.historyOnly || task.procedureOnly ? `<li><div class="history-step"><span class="step-number">${review ? "✓" : index + 1}</span><span>${esc(step)}</span></div>${stepGuidance(task, index)}</li>` : `<li><label><input type="checkbox" data-task-step="${index}" data-task-id="${esc(task.id)}" ${record.steps?.[index] ? "checked" : ""} ${review ? "disabled" : ""}><span class="step-number">${index + 1}</span><span>${esc(step)}</span></label>${stepGuidance(task, index)}</li>`).join("")}</ol></section>
         <section class="done-when"><span>Done when</span><p>${esc(task.doneWhen)}</p></section>
         <section class="owner-systems"><h3>Open the owner system</h3><div class="system-buttons">${systemButtons(task)}</div><p>${esc(task.privacy)}</p></section>
         <details class="guidance-details" ${guidanceOpen ? "open" : ""}><summary>Explain this in plain English</summary><div><p><strong>Why it matters:</strong> ${esc(task.why)}</p><p><strong>Common trap:</strong> ${esc(task.trap)}</p></div></details>
@@ -1052,8 +1093,10 @@
   }
 
   function completionForm(task, record) {
+    const review = overallReview(task);
+    if (review) return `<section class="completion-panel"><h3>Task complete · overall sign-off</h3><p>All applicable steps are covered by this sign-off. Untick Reviewed complete in the full register to restore the earlier checklist. A completion recorded in your task list is reopened there.</p><form id="task-record-form" data-task-id="${esc(task.id)}"><div class="form-grid"><label class="check-line"><input type="checkbox" checked disabled><span>Applicable source checks covered by the overall sign-off.</span></label><label class="check-line"><input type="checkbox" checked disabled><span>Done when result confirmed through the overall sign-off.</span></label><label class="span-two"><span>Existing notes and completion record</span><textarea name="exceptionReason" rows="5">${esc(window.WWHS_TASK_REVIEW.notes(record.exceptionReason,review))}</textarea></label></div><p>Existing evidence references and verifier details are retained. None are invented by this sign-off.</p><p class="form-error" role="alert" hidden></p><div class="dialog-actions"><button class="button secondary" type="submit" name="commit" value="save">Save notes</button><button class="button quiet" type="button" data-action="close-task">Close</button></div></form></section>`;
     if (task.historyOnly) {
-      return `<section class="completion-panel procedure-only"><div><h3>Read-only 2026 baseline</h3><p>This past sequence is retained for handover and future-year planning. Do not mark it retrospectively; use the annual calendar refresh to create the next live sequence.</p></div></section>`;
+      return `<section class="completion-panel procedure-only"><div><h3>Read-only 2026 baseline</h3><p>This past sequence is retained for handover and future-year planning. Use Reviewed complete in the full task register to record a retrospective sign-off. Refresh the annual calendar before creating the next live sequence.</p></div></section>`;
     }
     if (task.procedureOnly) {
       return `<section class="completion-panel procedure-only"><div><h3>Procedure only — no case tracking here</h3><p>Complete the protected record in the authorised system. This workboard deliberately saves no status, initials, reference or case note for this workflow.</p></div><div class="dialog-actions"><button class="button quiet" type="button" data-action="close-task">Close procedure</button></div></section>`;
@@ -1074,11 +1117,20 @@
 
   function saveTask(form, commit) {
     const task = data.tasks.find(item => item.id === form.dataset.taskId);
-    if (!task || task.historyOnly || task.procedureOnly) return;
+    if (!task || task.procedureOnly || task.historyOnly && !overallReview(task)) return;
+    if (!reviewIsCurrent(form)) return;
     const values = new FormData(form);
     const key = recordKey(task);
     const savedRecord = state.records[key];
     const previous = recordFor(task);
+    if (overallReview(task)) {
+      if (commit === 'verify') return;
+      let text = String(values.get('exceptionReason') || '').trim(), note = taskReviewSnapshot.note;
+      if (note && text.endsWith(note)) text = text.slice(0,-note.length).trimEnd();
+      state.records[key] = {...previous, exceptionReason:text, updatedAt:new Date().toISOString()};
+      if (!saveState()) { if (savedRecord) state.records[key]=savedRecord; else delete state.records[key]; return; }
+      taskStateDirty=true; taskDialog.close(); toast('Notes saved. Overall sign-off is unchanged.'); return;
+    }
     let status = String(values.get("status") || "not-started");
     if (commit === "verify") status = "verified";
     const evidenceRef = String(values.get("evidenceRef") || "").trim();
@@ -1366,6 +1418,7 @@
     if (event.target.matches("[data-task-step]")) {
       const task = data.tasks.find(item => item.id === event.target.dataset.taskId);
       if (!task || task.historyOnly || task.procedureOnly) return;
+      if (overallReview(task)) { event.target.checked=true; return; }
       const key = recordKey(task);
       const savedRecord = state.records[key];
       const previous = recordFor(task);
@@ -1388,6 +1441,7 @@
     if (event.target.matches("[data-task-milestone]")) {
       const task = data.tasks.find(item => item.id === event.target.dataset.taskId);
       if (!task || task.historyOnly || task.procedureOnly) return;
+      if (overallReview(task)) { event.target.checked=true; return; }
       const key = recordKey(task);
       const savedRecord = state.records[key];
       const previous = recordFor(task);
@@ -1432,6 +1486,7 @@
     if (event.target.matches("[data-weekly-check]")) {
       const week = weekKey();
       const index = event.target.dataset.weeklyCheck;
+      if (weeklyReview(index,week)) { event.target.checked=true; toast('This scan is covered by the overall sign-off. Untick Reviewed complete in the full register to reopen it.'); return; }
       const previous = state.weekly[week];
       state.weekly[week] = { ...safeObject(state.weekly[week]), [index]: event.target.checked };
       if (!saveState()) {
@@ -1512,7 +1567,15 @@
   });
   window.addEventListener("storage", event => {
     if (event.key === data.config.storageKey || event.key === null) forecastUpdated();
+    if ([window.WWHS_TASK_REVIEW.KEY, window.WWHS_TASK_REVIEW.INBOX_KEY, null].includes(event.key)) refreshReviewViews();
   });
+  function refreshReviewViews() {
+    if (!taskDialog.open) render();
+    else { const form=document.getElementById('task-record-form'); if (form) reviewIsCurrent(form); }
+    window.dispatchEvent(new CustomEvent('wwhs:records-updated',{detail:{wing:'tas'}}));
+    forecastUpdated();
+  }
+  window.addEventListener('wwhs:review-updated',refreshReviewViews);
   window.WWHS_WORKBOARD_ADAPTER = Object.freeze({
     wing: "tas",
     getEntries: () => Object.keys(state.records).map(key => describeTask(key.split("::")[0], key)).filter(Boolean),
