@@ -104,6 +104,7 @@ export function createTaskRegister({wing, label, getAdapter, getSavedItems = () 
   }
   function save(next,{recover=false}={}) {
     try {
+      if (window.WWHS_TEAM_SESSION && !window.WWHS_TEAM_SESSION.allowWrite(REVIEW_KEY,next)) throw new Error(window.WWHS_TEAM_SESSION.reason());
       if (blocked&&!recover || localStorage.getItem(REVIEW_KEY) !== raw) { blocked = true; throw new Error('Review ticks changed in another tab. Reload review ticks before saving.'); }
       const nextRaw = JSON.stringify(next); readReview(nextRaw); localStorage.setItem(REVIEW_KEY,nextRaw); raw=nextRaw;review=next;blocked=false;
       window.dispatchEvent(new CustomEvent('wwhs:review-updated',{detail:{wing}}));

@@ -110,6 +110,11 @@
     return changed;
   }
   function boundedString(value, length = 500) { return String(value || "").slice(0, length); }
+  function recordText(value, limit = 200000) {
+    const text = String(value || "");
+    if (text.length > limit) throw new Error("Saved task text is too long to read safely; the original data has been kept.");
+    return text;
+  }
   function safeIsoDate(value) { const text = boundedString(value, 10); return /^\d{4}-\d{2}-\d{2}$/.test(text) && !Number.isNaN(Date.parse(`${text}T12:00:00`)) ? text : ""; }
   function safeTimestamp(value) { const text = boundedString(value, 40); return text && !Number.isNaN(Date.parse(text)) ? text : ""; }
   function safeObject(value) { return value && typeof value === "object" && !Array.isArray(value) ? value : {}; }
@@ -161,14 +166,14 @@
       if (!Object.keys(raw).length) return;
       const record = {
         status: statusMeta[raw.status] ? raw.status : "not-started",
-        evidenceRef: boundedString(raw.evidenceRef), verifier: boundedString(raw.verifier, 120),
+        evidenceRef: recordText(raw.evidenceRef), verifier: recordText(raw.verifier, 2000),
         sourceChecked: raw.sourceChecked === true, doneWhenConfirmed: raw.doneWhenConfirmed === true,
         independentVerifierConfirmed: raw.independentVerifierConfirmed === true,
         dependencyExceptionConfirmed: raw.dependencyExceptionConfirmed === true,
         sourceCheckedAt: safeTimestamp(raw.sourceCheckedAt), reviewDate: safeIsoDate(raw.reviewDate),
         escalationDate: safeIsoDate(raw.escalationDate), waitingForRole: workRoles.includes(raw.waitingForRole) ? raw.waitingForRole : "",
         handoffTo: workRoles.includes(raw.handoffTo) ? raw.handoffTo : "", handoffState: ["none", "sent", "accepted", "returned", "verified"].includes(raw.handoffState) ? raw.handoffState : "none",
-        exceptionSummary: boundedString(raw.exceptionSummary), stepChecks: {}, history: sanitiseHistory(raw.history)
+        exceptionSummary: recordText(raw.exceptionSummary), stepChecks: {}, history: sanitiseHistory(raw.history)
       };
       (task.actionSteps || []).forEach((_, index) => { if (safeObject(raw.stepChecks)[index] === true || safeObject(raw.stepChecks)[String(index)] === true) record.stepChecks[index] = true; });
       const allStepsComplete = (task.actionSteps || []).every((_, index) => record.stepChecks[index] === true || record.stepChecks[String(index)] === true);
@@ -215,7 +220,7 @@
       if (!Object.keys(raw).length) return;
       const status = ["unconfirmed", "in-progress", "resolved"].includes(raw.status) ? raw.status : "unconfirmed";
       const gatedStatus = status === "resolved" && !(String(raw.reference || "").trim() && String(raw.verifier || "").trim() && raw.sourceChecked === true) ? "in-progress" : status;
-      result[gap.id] = { status: gatedStatus, reference: boundedString(raw.reference), verifier: boundedString(raw.verifier, 120), sourceChecked: raw.sourceChecked === true, updatedAt: safeTimestamp(raw.updatedAt) };
+      result[gap.id] = { status: gatedStatus, reference: recordText(raw.reference), verifier: recordText(raw.verifier, 2000), sourceChecked: raw.sourceChecked === true, updatedAt: safeTimestamp(raw.updatedAt) };
     });
     return result;
   }
@@ -271,6 +276,7 @@
   }
 
   function saveState() {
+    if (window.WWHS_TEAM_SESSION && !window.WWHS_TEAM_SESSION.allowWrite(data.config.storageKey, state)) { toast(window.WWHS_TEAM_SESSION.reason(), "error"); return false; }
     if (!storageIsCurrent()) return false;
     try {
       const previousRole = loadedStorageRaw === null ? "all" : JSON.parse(loadedStorageRaw).role;
@@ -1150,6 +1156,7 @@
     const values = new FormData(form), status = String(values.get("status") || "unconfirmed");
     const reference = String(values.get("reference") || "").trim(), verifier = String(values.get("verifier") || "").trim(), sourceChecked = values.get("sourceChecked") === "on";
     const error = form.querySelector(".form-error");
+    if (reference.length > 200000 || verifier.length > 2000) { error.textContent = 'Keep references within 200,000 characters and verifier details within 2,000. Your draft is still here and has not been shortened.'; error.hidden = false; form.querySelector('.gap-resolution').open = true; return; }
     if (status === "resolved" && (!reference || !verifier || !sourceChecked)) {
       error.textContent = "Resolving an authority gap requires a privacy-safe owner-system reference, verifier and current-source check."; error.hidden = false; form.querySelector(".gap-resolution").open = true; return;
     }
@@ -1215,14 +1222,18 @@
 
   function saveTaskForm(form, commit) {
     const task = taskById(form.dataset.taskId); if (!task || !taskFormReviewIsCurrent(form)) return;
+    const inputValues = new FormData(form);
+    if (String(inputValues.get('evidenceRef') || '').length > 200000 || String(inputValues.get('verifier') || '').length > 2000 || stripGeneratedReviewNote(inputValues.get('exceptionSummary'), taskFormReviewSnapshot?.note).length > 200000) {
+      const error = form.querySelector('#task-form-error'); error.textContent = 'This text is too long to save. Keep notes and references within 200,000 characters and verifier details within 2,000. Your draft is still here.'; error.hidden = false; return;
+    }
     if (externalReview(task)) {
       // Overall sign-off owns completion. Saving annotations must not turn its
       // projected checks into fabricated native evidence or overwrite progress.
       const values = new FormData(form), before = state.records[task.id], previous = getRecord(task.id);
       if (commit === 'verify') return;
       state.records[task.id] = {...previous,
-        evidenceRef:boundedString(values.get('evidenceRef')).trim(),
-        verifier:boundedString(values.get('verifier'),120).trim(),
+        evidenceRef:recordText(values.get('evidenceRef')).trim(),
+        verifier:recordText(values.get('verifier'),2000).trim(),
         exceptionSummary:stripGeneratedReviewNote(values.get('exceptionSummary'), taskFormReviewSnapshot?.note)};
       if (!saveState()) { if (before) state.records[task.id] = before; else delete state.records[task.id]; return; }
       taskDialog.close(); render(); toast('Notes saved. Overall sign-off is unchanged.'); return;
@@ -1230,7 +1241,7 @@
     const values = new FormData(form); let status = String(values.get("status") || "not-started");
     if (status === EXTERNAL_REVIEW_STATUS) status = getStatus(task);
     if (!statusMeta[status]) status = "not-started";
-    const evidenceRef = boundedString(values.get("evidenceRef")).trim(), verifier = boundedString(values.get("verifier"), 120).trim();
+    const evidenceRef = recordText(values.get("evidenceRef")).trim(), verifier = recordText(values.get("verifier"), 2000).trim();
     const sourceChecked = values.get("sourceChecked") === "on", doneWhenConfirmed = values.get("doneWhenConfirmed") === "on", independentVerifierConfirmed = values.get("independentVerifierConfirmed") === "on", dependencyExceptionConfirmed = values.get("dependencyExceptionConfirmed") === "on", exceptionSummary = stripGeneratedReviewNote(values.get("exceptionSummary"), taskFormReviewSnapshot?.note);
     const waitingForRole = boundedString(values.get("waitingForRole"), 120).trim(), reviewDate = safeIsoDate(values.get("reviewDate")), escalationDate = safeIsoDate(values.get("escalationDate")), handoffTo = boundedString(values.get("handoffTo"), 120).trim(), handoffState = String(values.get("handoffState") || "none");
     const error = form.querySelector("#task-form-error"); if (commit === "verify") status = "verified";
@@ -1257,7 +1268,7 @@
     const previousHandoffState = previous.handoffState || "none";
     if (!allowedHandoffStates(previousHandoffState).some(([value]) => value === handoffState)) { error.textContent = "Save each hand-off stage in order: sent, accepted or returned, then verified."; error.hidden = false; return; }
     if (status === "verified" && handoffTo && !["accepted", "verified"].includes(handoffState)) { error.textContent = "A handed-off task cannot close until the receiving role has accepted it or returned it verified."; error.hidden = false; return; }
-    state.records[task.id] = { status, evidenceRef, verifier, sourceChecked, doneWhenConfirmed, independentVerifierConfirmed, dependencyExceptionConfirmed, sourceCheckedAt: sourceChecked ? (previous.sourceCheckedAt || new Date().toISOString()) : "", reviewDate, escalationDate, waitingForRole, handoffTo, handoffState, exceptionSummary: boundedString(exceptionSummary), stepChecks: previous.stepChecks || {}, history: [...(previous.history || []), { when: new Date().toISOString(), action: `${statusMeta[status].label} saved${handoffState !== "none" ? ` · hand-off ${handoffState}` : ""}` }].slice(-30) };
+    state.records[task.id] = { status, evidenceRef, verifier, sourceChecked, doneWhenConfirmed, independentVerifierConfirmed, dependencyExceptionConfirmed, sourceCheckedAt: sourceChecked ? (previous.sourceCheckedAt || new Date().toISOString()) : "", reviewDate, escalationDate, waitingForRole, handoffTo, handoffState, exceptionSummary, stepChecks: previous.stepChecks || {}, history: [...(previous.history || []), { when: new Date().toISOString(), action: `${statusMeta[status].label} saved${handoffState !== "none" ? ` · hand-off ${handoffState}` : ""}` }].slice(-30) };
     const previousAssignment = state.assignments[task.id];
     const assignment = boundedString(values.get("assignment"), 120).trim(); if (assignment) state.assignments[task.id] = assignment; else delete state.assignments[task.id];
     if (!saveState()) {
@@ -1338,6 +1349,7 @@
     reader.readAsText(file);
   }
   function resetWorkspace() {
+    if (window.WWHS_TEAM_SESSION && !window.WWHS_TEAM_SESSION.allowWrite(data.config.storageKey, freshState())) { toast(window.WWHS_TEAM_SESSION.reason(), "error"); return; }
     if (!state.resetArmed) { state.resetArmed = true; if (!saveState()) { state.resetArmed = false; return; } render(); toast("Nothing cleared yet. Use the red button again to confirm."); return; }
     if (!storageIsCurrent()) return;
     try { localStorage.removeItem(data.config.storageKey); }
@@ -1515,6 +1527,11 @@
   window.addEventListener("wwhs:review-updated", refreshReviewViews);
   window.addEventListener("storage", event => { if (event.key === REVIEW_KEY || event.key === window.WWHS_TASK_REVIEW.INBOX_KEY || event.key === null) refreshReviewViews(); });
   window.addEventListener("focus", () => { if (refreshBoardDate()) render(); });
+  window.addEventListener("beforeunload", event => {
+    const areas = [taskDialog.open && taskDialog, settingsDialog.open && settingsDialog, ...document.querySelectorAll('[data-gap-form]')].filter(Boolean);
+    const hasTextDraft = areas.some(area => [...area.querySelectorAll('textarea,input:not([type="checkbox"]):not([type="file"]):not([type="hidden"])')].some(field => !field.disabled && !field.readOnly && field.value !== field.defaultValue));
+    if (hasTextDraft) { event.preventDefault(); event.returnValue = ''; }
+  });
   document.addEventListener("visibilitychange", () => { if (!document.hidden && refreshBoardDate()) render(); });
   window.setInterval(() => { if (refreshBoardDate()) render(); }, 60000);
   syncRoleFilters(); updateGuidanceToggle(); render();

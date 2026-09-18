@@ -1,7 +1,7 @@
 // One planning surface. Specialist records remain owned by their existing workboards.
-import '../../morning-launchpad/assets/summary-import.mjs?v=tas-planning-1';
+import '../../morning-launchpad/assets/summary-import.mjs?v=team-handover-1';
 import {INBOX_KEY, validateInbox, taskSection, todaySydney} from '../../morning-launchpad/assets/summary-core.mjs?v=email-cleanup-1';
-import {createTaskRegister} from './task-register.mjs?v=tas-planning-1';
+import {createTaskRegister} from './task-register.mjs?v=team-handover-1';
 
 const base = new URL('../../', import.meta.url);
 const wing = document.body.dataset.workboard || 'launchpad';
@@ -26,6 +26,7 @@ for (const [key, text, path] of [['home', 'Home', './#home'], ['launchpad', 'Lau
 if (wing === 'launchpad') {
   nav.append(el('a', 'Finance', {href: new URL('finance/', base).href, 'data-area': 'finance'}));
 }
+if (wing !== 'launchpad') nav.append(el('a','Team handover',{href:new URL('team-handover/',base).href,'data-area':'handover'}));
 function updateAreaNavigation() {
   const current = wing === 'vet' && (!location.hash || location.hash === '#home') ? 'home' : wing;
   for (const link of nav.querySelectorAll('a')) {
@@ -48,6 +49,25 @@ theme.addEventListener('click', () => {
   updateTheme();
 });
 updateTheme(); shell.append(home, nav, theme); document.body.prepend(shell);
+
+const teamBanner=el('aside',undefined,{class:'workspace-team-banner','aria-label':'Team session'});
+const teamCopy=el('span'),teamLink=el('a','Team handover →',{href:new URL('team-handover/',base).href});
+teamBanner.append(teamCopy,teamLink);shell.after(teamBanner);
+function updateTeamBanner(message){
+  const helper=window.WWHS_TEAM_SESSION,state=helper?.read();
+  let interrupted=false;try{interrupted=!!localStorage.getItem(helper?.JOURNAL);}catch{interrupted=true;}
+  teamBanner.hidden=!state?.managed&&!interrupted;
+  if(teamBanner.hidden)return;
+  const editing=helper.isEditing(),info=state.lastFile;
+  const version=info?`Version ${info.revision} · ${info.savedBy} · ${new Date(info.savedAt).toLocaleDateString('en-AU')}. `:'';
+  teamCopy.textContent=message||(editing?`${version}Editing as ${state.active?.editor}. Finish and export to share your changes.`:state.blocked||interrupted||state.active?helper.reason():`${version}Viewing saved team progress. Import the latest file before editing.`);
+  teamBanner.dataset.state=editing?'editing':state.active||state.blocked||interrupted?'blocked':'viewing';
+  teamLink.textContent=editing?'Finish & hand over →':'Team handover →';
+}
+updateTeamBanner();
+window.addEventListener('storage',event=>{if(event.key===null||[window.WWHS_TEAM_SESSION?.KEY,window.WWHS_TEAM_SESSION?.JOURNAL].includes(event.key))updateTeamBanner();});
+window.addEventListener('wwhs:team-session-updated',()=>updateTeamBanner());
+window.addEventListener('wwhs:team-write-blocked',event=>updateTeamBanner(event.detail?.message));
 
 let board, host, specialist, specialistSummary, forecastPanel, forecastHeading, forecastNote, forecastCount, fullRegister;
 const flow = () => {
@@ -211,6 +231,13 @@ let forecastDeferred = false;
 async function refreshScheduledWork() {
   const adapter = window.WWHS_WORKBOARD_ADAPTER;
   if (!adapter || wing === 'launchpad' || host.hidden || !board.started) return;
+  if (window.WWHS_TEAM_SESSION && !window.WWHS_TEAM_SESSION.isEditing()) {
+    forecastHeading.textContent='Shared team snapshot';
+    forecastNote.textContent='Showing the last imported progress. Start a team session to refresh scheduled tasks or edit shared work.';
+    forecastCount.textContent='Use Team handover to import the latest file.';
+    forecastPanel.dataset.state='paused';
+    return;
+  }
   if (board.blocked) {
     forecastHeading.textContent = 'Schedule refresh paused';
     forecastNote.textContent = 'Reload saved work below before refreshing. Any text you are editing stays on this page.';

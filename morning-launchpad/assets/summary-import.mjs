@@ -72,6 +72,7 @@ class SummaryImport extends HTMLElement {
   disconnectedCallback(){this.removeEventListener('input',this.captureDraft);window.removeEventListener('resize',this.resizeNotes);window.removeEventListener('launchpad:open-calendar',this.openCalendarChoice);window.removeEventListener('launchpad:open-today',this.openToday);clearInterval(this.dayTimer);window.removeEventListener('storage',this.onStorage);this.started=false;}
   persist(next) {
     try {
+      if(window.WWHS_TEAM_SESSION&&!window.WWHS_TEAM_SESSION.allowWrite(INBOX_KEY,next))throw new Error(window.WWHS_TEAM_SESSION.reason());
       if(this.blocked||localStorage.getItem(INBOX_KEY)!==this.raw){this.blocked=true;this.reloadButton.hidden=false;throw new Error('The shared work list changed in another tab. Reload saved work before saving.');}
       const checked=validateInbox(JSON.stringify(next));const raw=JSON.stringify(checked);localStorage.setItem(INBOX_KEY,raw);this.raw=raw;this.inbox=checked;this.calendar?.setTasks(checked.items);window.dispatchEvent(new CustomEvent('wwhs:work-saved',{detail:{key:INBOX_KEY}}));return true;
     } catch(error){this.say(`Could not save: ${error.message} Your previous saved list is unchanged.`,true);return false;}

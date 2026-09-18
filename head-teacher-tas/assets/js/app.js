@@ -162,11 +162,11 @@
       if (!Object.keys(raw).length) return;
       const steps = safeObject(raw.steps);
       const milestones = safeObject(raw.milestones);
-      const evidenceRef = String(raw.evidenceRef || "").slice(0, 240);
-      const verifier = String(raw.verifier || "").slice(0, 100);
+      const evidenceRef = recordText(raw.evidenceRef);
+      const verifier = recordText(raw.verifier, 2000);
       const sourceChecked = raw.sourceChecked === true;
       const doneConfirmed = raw.doneConfirmed === true;
-      const exceptionReason = String(raw.exceptionReason || "").slice(0, 300);
+      const exceptionReason = recordText(raw.exceptionReason);
       const allSteps = task.steps.every((_, index) => steps[index] === true || steps[String(index)] === true);
       const allMilestones = !task.milestones?.length || task.milestones.every((_, index) => milestones[index] === true || milestones[String(index)] === true);
       const hasProgress = Object.values(steps).some(Boolean) || Object.values(milestones).some(Boolean) || Boolean(evidenceRef || verifier || exceptionReason);
@@ -197,6 +197,12 @@
     return output;
   }
 
+  function recordText(value, limit = 200000) {
+    const text = String(value || "");
+    if (text.length > limit) throw new Error("Saved task text is too long to read safely; the original data has been kept.");
+    return text;
+  }
+
   function storageIsCurrent() {
     if (stateStorageBlocked) {
       toast("Saved TAS progress could not be read safely. It has been kept unchanged. Recover the original browser data before saving.", "error");
@@ -220,6 +226,7 @@
 
   function saveState() {
     try {
+      if (window.WWHS_TEAM_SESSION && !window.WWHS_TEAM_SESSION.allowWrite(data.config.storageKey, state)) { toast(window.WWHS_TEAM_SESSION.reason(), "error"); return false; }
       if (!storageIsCurrent()) return false;
       const raw = JSON.stringify(state);
       localStorage.setItem(data.config.storageKey, raw);
@@ -432,7 +439,7 @@
       title: task.title, action: closed ? task.doneWhen : nextStep || task.doneWhen,
       notes: window.WWHS_TASK_REVIEW.notes(record.exceptionReason, review),
       dueDate: task.milestones?.length ? milestone?.date || "" : task.dueDate || "",
-      waitingOn: ["waiting", "exception"].includes(record.status) ? record.exceptionReason || task.owner || "" : "",
+      waitingOn: ["waiting", "exception"].includes(record.status) ? (record.exceptionReason || task.owner || "").slice(0, 2000) : "",
       status: closed ? "done" : ["waiting", "exception"].includes(record.status) ? "waiting" : "review",
       sourceStatus: review ? 'completed-externally' : record.status, cycle: sourceKey.split("::").slice(1).join("::"),
       taskHelp: {
@@ -1179,11 +1186,11 @@
     return `<section class="completion-panel"><div><h3>Record progress safely</h3><p>Use a record number, location or dated sign-off—not the evidence itself.</p></div><form id="task-record-form" data-task-id="${esc(task.id)}">
       <div class="form-grid">
         <label><span>Status</span><select name="status">${Object.entries(statusMeta).map(([value, meta]) => `<option value="${value}" ${record.status === value ? "selected" : ""}>${esc(value === "not-started" && !hasReviewedRecord(task) ? "Not reviewed here" : meta.label)}</option>`).join("")}</select></label>
-        <label><span>Verifier role or initials</span><input type="text" name="verifier" maxlength="100" value="${esc(record.verifier || "")}" placeholder="Expected: ${esc(task.verifier)}"></label>
-        <label class="span-two"><span>Privacy-safe owner-system reference</span><input type="text" name="evidenceRef" maxlength="240" value="${esc(record.evidenceRef || "")}" placeholder="e.g. Sentral reporting check signed off 28 Aug"><small>Never paste a name, mark, report, incident, health, leave, credential or financial detail.</small></label>
+        <label><span>Verifier role or initials</span><input type="text" name="verifier" maxlength="2000" value="${esc(record.verifier || "")}" placeholder="Expected: ${esc(task.verifier)}"></label>
+        <label class="span-two"><span>Privacy-safe owner-system reference</span><input type="text" name="evidenceRef" maxlength="200000" value="${esc(record.evidenceRef || "")}" placeholder="e.g. Sentral reporting check signed off 28 Aug"><small>Never paste a name, mark, report, incident, health, leave, credential or financial detail.</small></label>
         <label class="check-line span-two"><input type="checkbox" name="sourceChecked" ${record.sourceChecked ? "checked" : ""}><span>I checked the current live source or owner-system state.</span></label>
         <label class="check-line span-two"><input type="checkbox" name="doneConfirmed" ${record.doneConfirmed ? "checked" : ""}><span>I confirmed the stated “Done when” result.</span></label>
-        <label class="span-two"><span>Exception or not-applicable reason (if used)</span><textarea name="exceptionReason" maxlength="300" rows="2" placeholder="Privacy-safe summary only">${esc(record.exceptionReason || "")}</textarea></label>
+        <label class="span-two"><span>Exception or not-applicable reason (if used)</span><textarea name="exceptionReason" maxlength="200000" rows="2" placeholder="Privacy-safe summary only">${esc(record.exceptionReason || "")}</textarea></label>
       </div>
       <p class="form-error" role="alert" hidden></p>
       <div class="dialog-actions"><button class="button secondary" type="submit" name="commit" value="save">Save progress</button><button class="button primary" type="submit" name="commit" value="verify">Verify and close</button>${taskCycle(task) === "event" && isClosed(task) ? `<button class="button secondary" type="button" data-action="reset-occurrence" data-task-id="${esc(task.id)}">Start next occurrence</button>` : ""}<button class="button quiet" type="button" data-action="close-task">Close</button></div>
@@ -1248,6 +1255,7 @@
       if (commit === 'verify') return;
       let text = String(values.get('exceptionReason') || '').trim(), note = taskReviewSnapshot.note;
       if (note && text.endsWith(note)) text = text.slice(0,-note.length).trimEnd();
+      if (text.length > 200000) return formError(form.querySelector('.form-error'), 'Keep notes within 200,000 characters. Your draft is still here and has not been shortened.');
       state.records[key] = {...previous, exceptionReason:text, updatedAt:new Date().toISOString()};
       if (!saveState()) { if (savedRecord) state.records[key]=savedRecord; else delete state.records[key]; return; }
       taskStateDirty=true; taskDialog.close(); toast('Notes saved. Overall sign-off is unchanged.'); return;
@@ -1263,6 +1271,7 @@
     const allMilestones = !task.milestones?.length || task.milestones.every((_, index) => previous.milestones?.[index] === true || previous.milestones?.[String(index)] === true);
     const error = form.querySelector(".form-error");
 
+    if (evidenceRef.length > 200000 || verifier.length > 2000 || exceptionReason.length > 200000) return formError(error, 'This text is too long to save. Keep notes and references within 200,000 characters and verifier details within 2,000. Your draft is still here.');
     if (task.provisionalSchedule && task.operatingYear > currentDate.getFullYear() && ['completed', 'verified', 'not-applicable'].includes(status)) return formError(error, 'Keep this future-year task open for planning. Completion belongs to its 2027 cycle.');
 
     if (status === "completed" && (!allSteps || !allMilestones || !sourceChecked || !doneConfirmed)) return formError(error, "Task completion needs every action, milestone and completion check ticked.");
@@ -1412,6 +1421,7 @@
   }
 
   function clearWorkspace() {
+    if (window.WWHS_TEAM_SESSION && !window.WWHS_TEAM_SESSION.allowWrite(data.config.storageKey, freshState())) { toast(window.WWHS_TEAM_SESSION.reason(), "error"); return; }
     const confirmed = window.confirm("Clear task progress, weekly checks and your planning date changes from this browser? Any browser-only link replacements will also be removed.");
     if (!confirmed) return;
     try {
@@ -1712,6 +1722,11 @@
     forecastUpdated();
   }
   window.addEventListener('wwhs:review-updated',refreshReviewViews);
+  window.addEventListener('beforeunload', event => {
+    const areas = [taskDialog.open && taskDialog, settingsDialog.open && settingsDialog].filter(Boolean);
+    const hasTextDraft = areas.some(area => [...area.querySelectorAll('textarea,input:not([type="checkbox"]):not([type="file"]):not([type="hidden"])')].some(field => !field.disabled && !field.readOnly && field.value !== field.defaultValue));
+    if (hasTextDraft) { event.preventDefault(); event.returnValue = ''; }
+  });
   window.WWHS_WORKBOARD_ADAPTER = Object.freeze({
     wing: "tas",
     getEntries: () => Object.keys(state.records).map(key => describeTask(key.split("::")[0], key)).filter(Boolean),
