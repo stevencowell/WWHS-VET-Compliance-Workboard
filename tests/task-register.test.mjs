@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {readReview,reviewKey,matchesRegisterView,registerEntryKind,registerEntryCounts,registerEntrySummary} from '../assets/js/task-register.mjs';
+import {readReview,reviewKey,matchesRegisterView,registerEntryKind,registerEntryCounts,registerEntrySummary,registerReviewStatus} from '../assets/js/task-register.mjs';
 assert.deepEqual(readReview(null),{version:1,records:{}});
 assert.throws(()=>readReview('{"version":2,"records":{}}'));
 assert.throws(()=>readReview('{"version":1,"records":{"vet:2026:a":{"completed":"yes","reviewedOn":"2026-09-17"}}}'));
@@ -20,4 +20,9 @@ assert.equal(registerEntryKind({entryKind:'unknown'}),'core');
 assert.equal(matchesRegisterView(mixed[4],'event','2026-09-17'),false);
 assert.equal(matchesRegisterView(mixed[4],'reference','2026-09-17'),true);
 assert.equal(matchesRegisterView(mixed[1],'scheduled','2026-09-17'),true);
+// Native VET labels and TAS status codes share the same review indicator.
+for(const [status,expected] of [['Waiting','Waiting'],['In progress','In progress'],['in-progress','In progress'],['exception','Exception'],['Performed','Performed'],['recorded','Recorded']])assert.equal(registerReviewStatus({...item,status}),expected);
+for(const status of ['not-started','Not started','not-reviewed','unavailable','completed','verified','not-applicable','unknown'])assert.equal(registerReviewStatus({...item,status}),'');
+for(const guard of [{reviewComplete:true},{complete:true},{procedureOnly:true},{historyOnly:true},{statusAppliesToYear:false},{progressAvailable:false}])assert.equal(registerReviewStatus({...item,status:'waiting',...guard}), '');
+assert.equal(registerReviewStatus({...item,status:'waiting',year:'2026',statusAppliesToYear:true}),'Waiting');
 console.log('PASS full-register filtering, year separation and invalid review recovery');

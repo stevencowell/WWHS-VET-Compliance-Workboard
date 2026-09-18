@@ -17,6 +17,11 @@ const entryLabels = {core:['core duty','core duties'],scheduled:['scheduled occu
 export function registerEntrySummary(items) {
   return Object.entries(registerEntryCounts(items)).filter(([,count])=>count).map(([kind,count])=>`${count} ${entryLabels[kind][count===1?0:1]}`).join(' · ');
 }
+export function registerReviewStatus(item) {
+  if(item.reviewComplete || item.complete || item.procedureOnly || item.historyOnly || item.statusAppliesToYear===false || item.progressAvailable===false)return '';
+  const status=String(item.status||'').trim().toLowerCase().replace(/\s+/g,'-');
+  return {'in-progress':'In progress',waiting:'Waiting',exception:'Exception',performed:'Performed',recorded:'Recorded'}[status] || '';
+}
 export function matchesRegisterView(item, view, today) {
   const date = registerDate(item), kind = item.schedule?.kind;
   if (['core','scheduled','event'].includes(view)) return registerEntryKind(item) === view;
@@ -115,7 +120,7 @@ export function createTaskRegister({wing, label, getAdapter, getSavedItems = () 
       const personalDone=appliesToYear&&!!item.recordKey&&saved.some(task=>task.origin?.wing===wing&&task.origin.recordKey===item.recordKey&&task.status==='done');
       const schedule=appliesToYear?item.schedule:{kind:item.schedule?.kind||'undated',label:`Continuing duty — ${reviewYear} occurrence dates are not loaded. Open the source task for its timing rule.`};
       const signedOff = globalThis.WWHS_TASK_REVIEW.resolve(review.records,wing,item.recordKey || item.id,reviewYear,sydneyToday(),registerDate({schedule}));
-      return {...item,schedule,inFocus:appliesToYear&&item.inFocus,reviewYear,key,tick:signedOff?tick:undefined,sourceComplete:appliesToYear&&item.complete&&!item.externallyReviewed,personalDone,reviewComplete:!!signedOff || appliesToYear&&item.complete || personalDone};
+      return {...item,schedule,statusAppliesToYear:appliesToYear,inFocus:appliesToYear&&item.inFocus,reviewYear,key,tick:signedOff?tick:undefined,sourceComplete:appliesToYear&&item.complete&&!item.externallyReviewed,personalDone,reviewComplete:!!signedOff || appliesToYear&&item.complete || personalDone};
     });
   }
   function render() {
@@ -135,6 +140,8 @@ export function createTaskRegister({wing, label, getAdapter, getSavedItems = () 
       const main=node('div',undefined,{class:'register-row-main'});
       const title=node('a',item.title,{href:item.route});
       main.append(node('h3'));main.firstChild.append(title);
+      const reviewStatus=registerReviewStatus(item);
+      if(reviewStatus)main.append(node('span',`Under review · ${reviewStatus}`,{class:'register-review-status'}));
       main.append(node('p',[item.year==='ongoing'?`Ongoing duty · review ${item.reviewYear}`:item.year,entryLabels[registerEntryKind(item)][0],item.area,item.owner].filter(Boolean).join(' · '),{class:'register-meta'}));
       main.append(node('p',item.schedule?.label || 'Timing needs checking',{class:'register-timing'}));
       const date=registerDate(item), past=date&&date<today;

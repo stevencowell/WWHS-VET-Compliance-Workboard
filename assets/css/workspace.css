@@ -81,6 +81,7 @@
 .register-row.is-reviewed { background:var(--surface-soft); }
 .register-timing,.register-status { font-size:14px; }
 .register-status { color:var(--accent); }
+.register-review-status { display:inline-block; margin:2px 0 7px; padding:4px 10px; border:1px solid #ddbd6a; border-radius:999px; background:#fff3cf; color:#674500; font-size:13px; font-weight:700; line-height:1.4; }
 .register-tick { display:flex; align-items:flex-start; gap:9px; font-size:13px; line-height:1.5; cursor:pointer; }
 .register-tick input { width:20px; height:20px; margin:0; flex:none; accent-color:var(--accent); }
 .register-gap { margin-top:10px; font-size:13px; color:var(--muted); }

@@ -595,7 +595,7 @@
         id: task.id, recordKey: task.id, title: task.title, year,
         route: "#task/" + encodeURIComponent(task.id),
         area: template ? "Event procedure" : task.term ? `Term ${task.term}` : phaseMeta[task.phase]?.short || "Annual setup",
-        owner: assignedRole(task), status: template ? "Procedure - start when needed" : review ? "Task complete · overall sign-off" : statusMeta[getStatus(task)]?.label || "Not started",
+        owner: assignedRole(task), status: template ? "Procedure - start when needed" : review ? "Task complete · overall sign-off" : statusMeta[getStatus(task)]?.label || "Not started", progressAvailable: forecast.context.mode !== "unavailable",
         complete, externallyReviewed: Boolean(review), reviewedOn: review?.reviewedOn || "", historyOnly: task.historyOnly === true, procedureOnly, entryKind,
         schedule, inFocus: focused.has(task.id), focusReason, sourceIds: [...(task.sourceIds || [])], gaps
       };
