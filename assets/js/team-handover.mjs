@@ -12,10 +12,11 @@ function metadata(){
 const stamp=value=>new Intl.DateTimeFormat('en-AU',{dateStyle:'medium',timeStyle:'short',timeZone:'Australia/Sydney'}).format(new Date(value));
 const expectedSnapshot=()=>({...readRaw(localStorage),[KEYS.metadata]:rawMeta()});
 const fileInfo=payload=>Object.fromEntries(['workspaceId','revision','parentRevision','parentExportId','exportId','savedAt','savedBy','note','changes'].map(key=>[key,payload[key]]));
+const fileContents=payload=>JSON.stringify(payload,null,2);
 function say(message,error=false){$('handover-message').textContent=message;$('handover-message').classList.toggle('is-error',error);}
 function editor(id){const value=$(id).value.trim();if(!value||value.length>80)throw Error('Enter your name or initials first.');return value;}
 function download(payload,name='WWHS-team-handover.json'){
-  const url=URL.createObjectURL(new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}));
+  const url=URL.createObjectURL(new Blob([fileContents(payload)],{type:'application/json'}));
   const link=document.createElement('a');link.href=url;link.download=name;document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),10000);
 }
 function saveMeta(before,next){
@@ -35,6 +36,8 @@ function render(){
   $('last-note').textContent=info?.note?`Handover note: ${info.note}`:'';
   $('active-copy').textContent=active?`Session started ${stamp(active.startedAt)}. Save your work before exporting.`:'';
   $('pending-copy').textContent=pending?`Version ${pending.revision}, prepared by ${pending.savedBy} on ${stamp(pending.savedAt)}.`:'';
+  $('team-file-contents').textContent=pending?fileContents(pending):'';
+  if(!pending)$('copy-file-fallback').open=false;
   $('start-session').disabled=!selected;$('view-file').disabled=!selected;
   $('changes-list').replaceChildren();for(const change of info?.changes?.length?info.changes:['No changes summary recorded.']){const li=document.createElement('li');li.textContent=change;$('changes-list').append(li);}
 }
@@ -75,16 +78,27 @@ $('create-team').addEventListener('click',run(()=>{
   const before=expectedSnapshot();if(metadata())throw Error('This browser already has a team workspace. Import the latest shared file instead.');
   const name=editor('setup-editor'),data=snapshot(localStorage),payload=createBackup({snapshot:data,editor:name,workspaceId:crypto.randomUUID(),note:'First shared team snapshot.',changes:['First team file created from the saved VET and TAS progress on this computer.']});
   saveMeta(before,{version:1,lastFile:fileInfo(payload),active:{id:crypto.randomUUID(),editor:name,startedAt:new Date().toISOString(),phase:'exporting',firstFile:true,baseExportId:payload.exportId,baselineData:data},pendingExport:payload,recovery:null});
-  download(payload);say('First file downloaded. Save it in the shared folder, then confirm below.');
+  download(payload);say('The first file is ready and its download has been requested. Check it saved on your device, then upload it to the shared folder and confirm below.');
 }));
 $('finish-session').addEventListener('click',run(()=>{
   const before=expectedSnapshot(),meta=metadata();if(meta?.active?.phase!=='editing')throw Error('There is no editing session to finish.');
   if(!$('notes-saved').checked)throw Error('Save your task notes and close other editing tabs, then tick the confirmation.');
   const data=snapshot(localStorage),payload=createBackup({snapshot:data,previous:meta.lastFile,editor:meta.active.editor,note:$('handover-note').value.trim(),changes:changedCounts(meta.active.baselineData,data)});
   saveMeta(before,{...meta,active:{...meta.active,phase:'exporting'},pendingExport:payload});
-  download(payload);say('Updated file downloaded. Upload it to the current handover folder, then confirm below.');
+  download(payload);say('The updated file is ready and its download has been requested. Check it saved on your device, then upload it to the current handover folder and confirm below.');
 }));
-$('download-again').addEventListener('click',run(()=>{const payload=metadata()?.pendingExport;if(!payload)throw Error('There is no handover waiting to be saved.');download(payload);say('The same handover file has been downloaded again.');}));
+$('download-again').addEventListener('click',run(()=>{const payload=metadata()?.pendingExport;if(!payload)throw Error('There is no handover waiting to be saved.');download(payload);say('Another download of the same file has been requested. Check it saved on your device; use the copy option below if the download does not appear.');}));
+$('copy-file-contents').addEventListener('click',run(async()=>{
+  const payload=metadata()?.pendingExport;if(!payload)throw Error('There is no handover waiting to be saved.');
+  const text=fileContents(payload);$('team-file-contents').textContent=text;
+  try{
+    await navigator.clipboard.writeText(text);
+    say('File contents copied. Save the complete text as WWHS-team-handover.json, then upload that file to the current handover folder.');
+  }catch{
+    $('copy-file-fallback').open=true;
+    say('Automatic copying was blocked. Select and copy all the file contents below, then save them as WWHS-team-handover.json.',true);
+  }
+}));
 $('confirm-finish').addEventListener('click',run(()=>{
   const before=expectedSnapshot(),meta=metadata();if(!meta?.pendingExport)throw Error('There is no handover waiting to be saved.');
   saveMeta(before,{...meta,lastFile:fileInfo(meta.pendingExport),active:null,pendingExport:null});
@@ -92,13 +106,13 @@ $('confirm-finish').addEventListener('click',run(()=>{
 }));
 $('resume-editing').addEventListener('click',run(()=>{
   const before=expectedSnapshot(),meta=metadata();if(!meta?.pendingExport||!meta.active||meta.active.firstFile)throw Error('Save the first shared file, then import it to start editing.');
-  if(!confirm('Return to editing? The downloaded file will become outdated. Do not upload or share it. Export a fresh file when you finish.'))return;
+  if(!confirm('Return to editing? The prepared file will become outdated. Do not upload or share it. Export a fresh file when you finish.'))return;
   saveMeta(before,{...meta,pendingExport:null,active:{...meta.active,phase:'editing'}});location.assign(new URL('#vet-home',home).href);
 }));
 $('download-recovery').addEventListener('click',run(()=>{
   const recovery=metadata()?.recovery;if(!recovery)throw Error('No earlier import recovery copy is stored in this browser.');
   const payload=createBackup({snapshot:recovery.data,editor:'Local recovery copy',workspaceId:crypto.randomUUID(),note:`For review only: progress before import on ${stamp(recovery.capturedAt)}. Do not replace the current shared file.`});
-  download(payload,'WWHS-team-recovery-review-only.json');say('Recovery copy downloaded for review. Current progress is unchanged.');
+  download(payload,'WWHS-team-recovery-review-only.json');say('The recovery copy is ready and its download has been requested. Check it saved on your device. Current progress is unchanged.');
 }));
 window.addEventListener('storage',event=>{if(event.key===null||[...DATA_KEYS,KEYS.metadata,KEYS.journal].includes(event.key)){clearSelection();try{render();say('Saved progress or the team session changed in another tab. Check the current status before continuing.');}catch(error){say(error.message,true);}}});
 try{
