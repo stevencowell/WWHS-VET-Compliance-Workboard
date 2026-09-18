@@ -3,6 +3,13 @@ import assert from 'node:assert/strict';
 import {suggestEmail} from '../morning-launchpad/assets/email-rules.mjs';
 import {validateInbox,mergeInbox} from '../morning-launchpad/assets/summary-core.mjs';
 const suggest=(text,options={})=>suggestEmail(text,{today:'2026-09-16',...options});
+
+test('pasted full email chains retain text beyond the previous extract limit',()=>{
+ const source='Subject: Chain\n\nPlease review this request.\n'+('Earlier reply\n'.repeat(2500))+'Final supplied reply';
+ const item=suggest(source);assert.equal(item.source,source);
+ assert.equal(validateInbox(JSON.stringify({version:2,items:[item]})).items[0].source,source);
+ assert.throws(()=>suggest('x'.repeat(200001)),/Your pasted text has been kept/);
+});
 test('one pasted email keeps its source and suggests a request and explicit Australian deadline',()=>{
  const source='From: Example Teacher\nSent: 14 September 2026\nSubject: Assessment schedule\n\nHi Steve,\nPlease send the assessment schedule by 18 September 2026.\nRegards,\nExample Teacher';
  const x=suggest(source);assert.equal(x.title,'Assessment schedule');assert.equal(x.action,'Please send the assessment schedule by 18 September 2026.');assert.equal(x.dueDate,'2026-09-18');assert.equal(x.source,source);assert.equal(x.group,'ready');assert.equal(x.priority,'green');
@@ -25,7 +32,7 @@ test('conflicting or invalid dates need review and event dates stay distinct fro
 });
 test('safe visible URLs are retained, promotional text is for later, and excessive input is rejected',()=>{
  const x=suggest('Subject: Newsletter\nSpecial offer this week. Unsubscribe https://example.com/news');assert.equal(x.group,'later');assert.equal(x.priority,'purple');assert.deepEqual(x.links,['https://example.com/news']);
- assert.throws(()=>suggest(''));assert.throws(()=>suggest('a'.repeat(20001)));
+ assert.throws(()=>suggest(''));assert.throws(()=>suggest('a'.repeat(200001)));
 });
 test('repeat capture preserves existing completion and reviewed edits',()=>{
  const x={...suggest('Subject: Update\nPlease review this document.'),taskKey:'email:stable',dirty:['action','priority']};

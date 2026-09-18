@@ -15,7 +15,7 @@ Upload your Evernote HTML export into the chat. Include your latest **Export tas
 - Do not invent deadlines, appointment dates, durations or completion. Distinguish dueDate, eventDate and followUpDate. Use null for unknown dates and explain uncertainties in dateNote. Email timestamps and contract start dates are not deadlines. Label calculations and proposed dates explicitly; do not silently store a proposed follow-up as a confirmed date.
 - Existing completed or put-aside tasks stay that way. Match existing tasks by taskKey from the supplied backup, retaining the key even when wording changes. New tasks get a stable descriptive key. Do not reuse a key for a different task.
 - Preserve exactly the source note titles, including punctuation, capitals and non-breaking spaces. Store additional titles in relatedTitles. Do not invent Evernote deep links.
-- Preserve full HTTPS links without substituting or inventing destinations. Keep missing links explicit. Source excerpts must be faithful and contain enough context to support the action; never use an attachment's filename as evidence of its contents.
+- Preserve full HTTPS links without substituting or inventing destinations. Keep missing links explicit. Keep the full supplied email chain in `source` and a separate concise plain-text `sourceSummary` (see the full email rules below); never use an attachment's filename as evidence of its contents.
 - Suggest cleanup only. Never automatically delete or merge source notes. Keep uncertain or unique evidence.
 - Assess AI assistance for EVERY actionable task. The final shortlist does not limit per-task help. Cover document review, research, teaching resources, data work, file creation, coding, and authorised browser/app work as well as drafting.
 - In the briefing, give each task readiness (Ready now / Partly ready / Needs input/access / Human action only), a concrete AI deliverable, missing inputs and Steve's remaining role. Do not add an AI subtask as a duplicate task card.
@@ -41,7 +41,8 @@ Return a downloadable UTF-8 JSON file, not JSON wrapped inside Markdown. Also re
       "title": "Note : Example",
       "relatedTitles": [],
       "action": "Confirm the due date with the relevant person.",
-      "source": "Faithful source excerpt or full note body.",
+      "sourceSummary": "• A response is requested.\n• No due date was supplied; confirm it first.",
+      "source": "The complete supplied email / note text, including the supplied message chain, headers and paragraph breaks.",
       "links": [],
       "url": "",
       "priority": "green",
@@ -72,8 +73,8 @@ Return a downloadable UTF-8 JSON file, not JSON wrapped inside Markdown. Also re
 - `group`: `ready`, `later`, `waiting`. `score`: 0–100, with the top three proposed actions ranked highest. Dated items are also surfaced by the app using today's Sydney date.
 - New tasks use status `review`; when carrying forward a backup, preserve its `review`, `added`, `done`, `dismissed`, `note` or `superseded` status and its `dirty` array. `dirty` records user-edited fields; do not overwrite them in the backup.
 - Dates: null or real YYYY-MM-DD calendar dates. `dependsOn` contains the taskKey values of prerequisite tasks in the same collection. Do not create circular dependencies.
-- At most 300 tasks; title 300 characters; action 800; source 20,000; each reason/instruction/help/owner/waitingOn/dateNote 2,000. Up to 30 full HTTPS links per task, each at most 2,048 characters. Briefing at most 150,000 characters.
-- When carrying forward existing items, retain personal, pinnedDate, sectionOverride, createdOn, lastActionOn, originalEmailUrl, planAliases and other existing metadata. Do not fabricate past creation/action dates or overwrite manually selected sections. A refreshed analysis is not a new user action. New items can omit this optional metadata.
+- At most 300 tasks; title 300 characters; action 800; source 200,000; sourceSummary 4,000; each reason/instruction/help/owner/waitingOn/dateNote 2,000. Up to 30 full HTTPS links per task, each at most 2,048 characters. Briefing at most 150,000 characters. Total JSON file at most 8,000,000 characters; split large batches into separate imports, without splitting an individual email chain across duplicate task cards.
+- When carrying forward existing items, retain source, sourceSummary, personal, pinnedDate, sectionOverride, createdOn, lastActionOn, originalEmailUrl, planAliases and other existing metadata. Do not fabricate past creation/action dates or overwrite manually selected sections. A refreshed analysis is not a new user action. New items can omit this optional metadata.
 - Distinct tasks must have distinct id and taskKey values. Never include credentials, access tokens or embedded attachment binaries.
 
 Import the returned JSON using **Import email summary** in Daily Launchpad. Future updates refresh untouched fields, retain local IDs and progress, and preserve basic entries under Earlier imports. Export the task backup before changing computers. This does not synchronise with Evernote or automatically run AI inside the app.
@@ -218,6 +219,14 @@ Display each action:
 **[Priority emoji + label] [Next-step emoji + label] N. [Exact Evernote note title] — One practical action**
 
 Then include that task's **AI help** entry and **Ready-to-use help request** from the rules above. Assess every actionable task, including waiting tasks where useful preparation exists. Do not pad no-action notes with artificial tasks.
+
+### ✉️ Full Email Chain and Source Summary
+
+For Daily Launchpad imports, keep the complete supplied email or note text in `source`. Include the supplied forwarded/replied message chain, sender/recipient headers, dates, subject lines, signatures, links and paragraph breaks in their original order. Do not replace it with an extract, shorten it, remove repeated quoted replies or reconstruct messages that were not supplied. Convert an HTML export to readable plain text while retaining link destinations; do not embed HTML or attachment binaries.
+
+Write a separate `sourceSummary` as 2–4 concise plain-text bullets (using •) covering the key facts, action and any uncertainty or conflicting details. This appears in a blue **At a glance · AI summary** panel above the email text. Keep quoted evidence faithful and distinguish your interpretation from the sender's words. For a task supported by several notes, include each supplied source under its exact title.
+
+Preserve the existing task keys and completion decisions when adding fuller source text. If only an extract was supplied, retain it and say **Only an extract was supplied** in `sourceSummary`; do not claim to have the full email. The full source limit is 200,000 characters per task and the summary limit is 4,000. If a limit would be exceeded, report the issue and request a separate import or source file; never silently cut text off or create duplicate tasks to hold fragments. Never include passwords or access tokens: use **[credential redacted]** at their original position and state that redaction in the summary.
 
 ### 📎 Attachments and Links
 

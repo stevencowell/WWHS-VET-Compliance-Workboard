@@ -49,6 +49,41 @@ test('untrusted links, malformed backups and arbitrary prose are rejected', () =
 
 import {enrich, validDate, bucket, reconcilePlans} from '../morning-launchpad/assets/summary-core.mjs';
 const rich=(fields={})=>enrich({id:'source-a',taskKey:'task-a',title:'Note : Sample',action:'Check the status',source:'Evidence',...fields});
+
+test('full email chains and separate summaries round-trip without losing the final reply',()=>{
+  const source='From: Example Teacher\nSubject: Sample\n\n'+('Quoted message\n'.repeat(3000))+'\nFINAL REPLY: please confirm.';
+  const sourceSummary='• Confirm the request.\n• The date is not yet known.';
+  const saved=validateInbox(JSON.stringify({version:2,items:[rich({source,sourceSummary})]}));
+  const imported=mergeInbox([],saved.items);
+  const restored=validateInbox(JSON.stringify({version:2,items:imported.items}));
+  assert.equal(restored.items[0].source,source);
+  assert.equal(restored.items[0].sourceSummary,sourceSummary);
+  assert.ok(matchesNoteSearch(restored.items[0],'date not yet known'));
+  const legacy=rich();delete legacy.sourceSummary;
+  assert.equal(validateInbox(JSON.stringify({version:1,items:[legacy]})).items[0].sourceSummary,'');
+});
+
+test('full source upgrades and repeated imports preserve progress and do not add duplicate tasks',()=>{
+  const old=rich({id:'local',source:'Please confirm.',status:'done',action:'My wording',dirty:['action']});
+  const full=rich({source:'From: Example\n\nPlease confirm.\n\nEarlier reply: details below.',sourceSummary:'• Confirmation requested.'});
+  const first=mergeInbox([old],[full]);
+  assert.equal(first.items.length,1);assert.equal(first.added,0);
+  assert.equal(first.items[0].source,full.source);assert.equal(first.items[0].status,'done');assert.equal(first.items[0].action,'My wording');
+  const stale=rich({source:'Please confirm.'});delete stale.sourceSummary;
+  const again=mergeInbox(first.items,validateInbox(JSON.stringify({version:2,items:[stale]})).items);
+  assert.equal(again.items[0].source,full.source);assert.equal(again.items[0].sourceSummary,full.sourceSummary);assert.equal(again.items[0].id,'local');
+  assert.equal(mergeInbox(again.items,[full]).added,0);
+});
+
+test('source size and summary types are checked without silently cutting text',()=>{
+  for(const fields of [{source:'x'.repeat(200001)},{sourceSummary:'x'.repeat(4001)},{sourceSummary:null},{sourceSummary:{html:'<img>'}}])
+    assert.throws(()=>validateInbox(JSON.stringify({version:2,items:[rich(fields)]})),/Invalid task fields/);
+  const boundary=rich({source:'x'.repeat(200000),sourceSummary:'x'.repeat(4000)});
+  assert.equal(validateInbox(JSON.stringify({version:2,items:[boundary]})).items[0].source.length,200000);
+  const text='Note : Long source\nPlease review\n'+'A'.repeat(30000)+'\nFinal reply';
+  assert.ok(parseSummary(text)[0].source.endsWith('Final reply'));
+  assert.throws(()=>parseSummary('Note : Long source\nPlease review\n'+'A'.repeat(200001)),/no text has been cut off/);
+});
 test('rich files validate dates, enums and migration without changing exact titles',()=>{
   const row=rich({priority:'red',nextAction:'date',dueDate:'2026-10-13',relatedTitles:['Note : Other\u00a0title']});
   assert.equal(validateInbox(JSON.stringify({version:2,items:[row]})).items[0].relatedTitles[0],'Note : Other\u00a0title');

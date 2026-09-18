@@ -3,6 +3,8 @@ import {normaliseTaskHelpContext} from '../../assets/js/task-help.mjs?v=full-reg
 export const INBOX_KEY = 'morning-launchpad-summary:v1';
 export const LEGACY_PLAN_KEY = 'morning-launchpad-routine:v1';
 export const LIMIT = 1000000;
+export const SOURCE_LIMIT = 200000;
+export const SOURCE_SUMMARY_LIMIT = 4000;
 export const WORKSTREAMS = {personal:'Personal',vet:'VET',tas:'TAS'};
 
 export function mergeWorkboardImports(current=[],incoming=[]) {
@@ -186,13 +188,14 @@ function classify(title, action, context, section = '') {
 }
 
 function makeCandidate(title, action, source, section, index) {
+  if (source.length > SOURCE_LIMIT) throw new Error('This source is too long (maximum 200,000 characters). Import it separately; no text has been cut off.');
   action = action.replace(/^\d+[.)]\s*/, '').trim();
   const originalLinks = linksIn(source);
   // Keep the links alongside the action instead of a wall of URLs in its title.
   action = action.replace(/\[([^\]]+)\]\(https:\/\/[^\s]+\)/g, '$1').replace(/https:\/\/\S+/g, '').trim();
   const classification = classify(title, action, source, section);
   return {
-    id: `candidate-${index}`, title, action: action.slice(0, 800), source: source.slice(0, 20000),
+    id: `candidate-${index}`, title, action: action.slice(0, 800), source,
     links: originalLinks, url: originalLinks[0] || '', ...classification,
     selected: false, status: 'review',
   };
@@ -277,7 +280,7 @@ export const PRIORITIES = {
   orange: '🟠 Urgent / Not Important', purple: '🟣 Not Urgent / Not Important',
 };
 export const NEXT_ACTIONS = {'': 'Choose next step', do: '✅ Do Now', date: '⏰ Date', delegate: '👥 Delegate', delay: '⏸ Delay', delete: '🗑 Delete'};
-export const EDITABLE = ['title','source','noteHtml','noteText','action','url','originalEmailUrl','priority','nextAction','dueDate','eventDate','followUpDate','dateNote','owner','waitingOn','instruction','group','pinnedDate','sectionOverride','workstream'];
+export const EDITABLE = ['title','source','sourceSummary','noteHtml','noteText','action','url','originalEmailUrl','priority','nextAction','dueDate','eventDate','followUpDate','dateNote','owner','waitingOn','instruction','group','pinnedDate','sectionOverride','workstream'];
 export function todaySydney() { return new Intl.DateTimeFormat('en-CA', {timeZone:'Australia/Sydney',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()); }
 export function validDate(value) {
   if (value === null || value === '') return true;
@@ -288,7 +291,7 @@ export function validDate(value) {
 export function enrich(item) {
   return {workstream:'personal',origin:null,forecast:null,taskHelp:null,progressOverride:false,sectionOverride:'',createdOn:null, lastActionOn:null, pinnedDate:null, personal:false, taskKey:'', priority:'', nextAction:'', dueDate:null, eventDate:null, followUpDate:null,
     noteHtml:'', noteText:'', dateNote:'', owner:'', waitingOn:'', instruction:'', help:'', relatedTitles:[], dependsOn:[], dirty:[], planAliases:[],
-    reason:'Action to review', score:30, group:'ready', status:'review', selected:false, links:[], url:'', originalEmailUrl:'', source:'', ...item};
+    reason:'Action to review', score:30, group:'ready', status:'review', selected:false, links:[], url:'', originalEmailUrl:'', source:'', sourceSummary:'', ...item};
 }
 export function validateInbox(raw) {
   if (raw === null) return {version:2, items:[], importedAt:null, briefing:'',workboardImports:[],forecastContexts:{}};
@@ -306,7 +309,7 @@ export function validateInbox(raw) {
     x.taskHelp=normaliseTaskHelpContext(x.taskHelp);
     if(x.taskHelp&&(!x.origin||['wing','taskId','recordKey','cycle'].some(key=>x.taskHelp[key]!==x.origin[key])))throw new Error('AI help does not match its source task.');
     if (typeof x.id !== 'string' || !x.id.trim() || x.id.length > 150 || typeof x.title !== 'string' || !x.title.trim() || x.title.length > 300 ||
-      typeof x.action !== 'string' || (!x.action.trim() && !(x.personal && ['note','done','dismissed'].includes(x.status))) || x.action.length > 800 || typeof x.source !== 'string' || x.source.length > 20000 || typeof x.noteText !== 'string' || x.noteText.length > 200000 || typeof x.noteHtml !== 'string' || x.noteHtml.length > 1000000 ||
+      typeof x.action !== 'string' || (!x.action.trim() && !(x.personal && ['note','done','dismissed'].includes(x.status))) || x.action.length > 800 || typeof x.source !== 'string' || x.source.length > SOURCE_LIMIT || typeof x.sourceSummary !== 'string' || x.sourceSummary.length > SOURCE_SUMMARY_LIMIT || typeof x.noteText !== 'string' || x.noteText.length > 200000 || typeof x.noteHtml !== 'string' || x.noteHtml.length > 1000000 ||
       typeof x.taskKey !== 'string' || x.taskKey.length > 150 || !Number.isFinite(x.score) || !Object.hasOwn(WORKSTREAMS,x.workstream) || !validWorkOrigin(x.origin) || !validForecast(x.forecast) || (x.forecast&&!x.origin) || typeof x.progressOverride!=='boolean' ||
       !Array.isArray(x.links) || x.links.length > 30 || x.links.some(url => !safeUrl(url)) || typeof x.url !== 'string' || x.url && !safeUrl(x.url) ||
       typeof x.originalEmailUrl !== 'string' || x.originalEmailUrl && !safeUrl(x.originalEmailUrl) ||
@@ -342,6 +345,10 @@ export function mergeInbox(existing, incoming) {
       // Classification and source identity belong to the saved card. Older
       // exports and AI refreshes must never detach work from its native task.
       const merged={...old,...next,workstream:old.workstream,origin:old.origin||next.origin,forecast:old.forecast||next.forecast,taskHelp:old.taskHelp||(old.origin&&JSON.stringify(old.origin)!==JSON.stringify(next.origin)?null:next.taskHelp),progressOverride:old.progressOverride,taskKey:old.taskKey||next.taskKey,id:old.id,createdOn:old.createdOn||next.createdOn,lastActionOn:old.lastActionOn||next.lastActionOn,status:old.status,pinnedDate:old.pinnedDate,dirty,selected:false,planStamp:old.planStamp,planAliases:old.planAliases,preserveDoneOnce:old.preserveDoneOnce};
+      // An older import may omit the summary or supply only an extract of the
+      // saved email. Keep the fuller source and summary in that case.
+      if (!next.sourceSummary.trim()) merged.sourceSummary=old.sourceSummary;
+      if (!next.source.trim() || old.source.includes(next.source.trim())) merged.source=old.source;
       aliases.set(next.taskKey,merged.taskKey);
       for (const key of dirty) merged[key]=old[key];
       items[index]=merged; updated++;
@@ -500,7 +507,7 @@ export function recordNoteAction(item, changes, day=todaySydney()) {
 export function matchesNoteSearch(item,query){
  const normal=value=>String(value||'').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
  const terms=normal(query).trim().split(/\s+/).filter(Boolean);
- const fields=['title','action','noteText','source','instruction','help','reason','owner','waitingOn','dateNote','dueDate','eventDate','followUpDate','url','originalEmailUrl'];
+ const fields=['title','action','noteText','source','sourceSummary','instruction','help','reason','owner','waitingOn','dateNote','dueDate','eventDate','followUpDate','url','originalEmailUrl'];
  const text=normal([...fields.map(key=>item[key]),...(item.links||[]),...(item.relatedTitles||[]),PRIORITIES[item.priority],NEXT_ACTIONS[item.nextAction],...(item.noteHtml||'').matchAll(/href=["']([^"']+)["']/g)].map(value=>Array.isArray(value)?value[1]:value).join(' '));
  return terms.every(term=>text.includes(term));
 }

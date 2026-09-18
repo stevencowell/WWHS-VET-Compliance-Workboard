@@ -1,4 +1,4 @@
-import {enrich,linksIn,todaySydney,validDate} from './summary-core.mjs?v=12';
+import {enrich,linksIn,todaySydney,validDate,SOURCE_LIMIT} from './summary-core.mjs?v=email-source-1';
 const months=['january','february','march','april','may','june','july','august','september','october','november','december'];
 const datePattern='(?:\\d{4}-\\d{2}-\\d{2}|\\d{1,2}/\\d{1,2}/\\d{4}|\\d{1,2}(?:st|nd|rd|th)?\\s+(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\\s+\\d{4})';
 function fullDate(raw){
@@ -14,7 +14,7 @@ function datesAfter(text,cue){
 }
 export function suggestEmail(source,{subject='',instruction='',today=todaySydney()}={}){
  if(typeof source!=='string'||!source.trim())throw new Error('Paste one email first.');
- if(source.length>20000)throw new Error('This email is too long. Paste just the relevant message, up to 20,000 characters.');
+ if(source.length>SOURCE_LIMIT)throw new Error('This email chain is too long (maximum 200,000 characters). Your pasted text has been kept; no task was saved.');
  const text=source.replace(/\r\n?/g,'\n').trim();const candidateSubject=text.match(/^Subject:\s*(.+)$/im);const subjectMatch=candidateSubject&&text.slice(0,candidateSubject.index).split('\n').every(line=>!line.trim()||line.trim()===candidateSubject[1].trim()||/^(?:From|Sent|To|Cc|Bcc|Date):/i.test(line.trim()))?candidateSubject:null;
  let body=subjectMatch?text.slice(subjectMatch.index+subjectMatch[0].length):text;
  body=body.split(/\n(?:-{2,}\s*(?:Original|Forwarded) message|On [^\n]+wrote:|Begin forwarded message:)/i)[0];

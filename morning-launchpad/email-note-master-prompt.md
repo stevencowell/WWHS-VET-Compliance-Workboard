@@ -134,6 +134,14 @@ Display each action:
 
 Then include that task's **AI help** entry and **Ready-to-use help request** from the rules above. Assess every actionable task, including waiting tasks where useful preparation exists. Do not pad no-action notes with artificial tasks.
 
+### ✉️ Full Email Chain and Source Summary
+
+For Daily Launchpad imports, keep the complete supplied email or note text in `source`. Include the supplied forwarded/replied message chain, sender/recipient headers, dates, subject lines, signatures, links and paragraph breaks in their original order. Do not replace it with an extract, shorten it, remove repeated quoted replies or reconstruct messages that were not supplied. Convert an HTML export to readable plain text while retaining link destinations; do not embed HTML or attachment binaries.
+
+Write a separate `sourceSummary` as 2–4 concise plain-text bullets (using •) covering the key facts, action and any uncertainty or conflicting details. This appears in a blue **At a glance · AI summary** panel above the email text. Keep quoted evidence faithful and distinguish your interpretation from the sender's words. For a task supported by several notes, include each supplied source under its exact title.
+
+Preserve the existing task keys and completion decisions when adding fuller source text. If only an extract was supplied, retain it and say **Only an extract was supplied** in `sourceSummary`; do not claim to have the full email. The full source limit is 200,000 characters per task and the summary limit is 4,000. If a limit would be exceeded, report the issue and request a separate import or source file; never silently cut text off or create duplicate tasks to hold fragments. Never include passwords or access tokens: use **[credential redacted]** at their original position and state that redaction in the summary.
+
 ### 📎 Attachments and Links
 
 Extract action, document, booking, payment, order, form, policy and reference links. Preserve the full URL exactly as supplied; label its purpose. Mention action-critical links again in the relevant action or help request.
