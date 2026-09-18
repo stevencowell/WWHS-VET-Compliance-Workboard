@@ -1,5 +1,5 @@
 import {getVetTaskHelp} from './vet-task-help.mjs?v=full-register-1';
-import {getTasTaskHelp} from './tas-task-help.mjs?v=full-register-1';
+import {getTasTaskHelp} from './tas-task-help.mjs?v=tas-planning-1';
 
 const CONTEXT_FIELDS=['version','wing','taskId','canonicalTaskId','title','recordKey','cycle','asOf','sourceAsAt','sourceStatus','objective','nextStep','steps','roles','sources','links'];
 const PROFILE_FIELDS=['profileId','label','summary','deliverable'];

@@ -140,6 +140,7 @@ export function createTaskRegister({wing, label, getAdapter, getSavedItems = () 
       const main=node('div',undefined,{class:'register-row-main'});
       const title=node('a',item.title,{href:item.route});
       main.append(node('h3'));main.firstChild.append(title);
+      if(item.planningLabel)main.append(node('span',item.planningLabel,{class:'register-review-status'}));
       const reviewStatus=registerReviewStatus(item);
       if(reviewStatus)main.append(node('span',`Under review · ${reviewStatus}`,{class:'register-review-status'}));
       main.append(node('p',[item.year==='ongoing'?`Ongoing duty · review ${item.reviewYear}`:item.year,entryLabels[registerEntryKind(item)][0],item.area,item.owner].filter(Boolean).join(' · '),{class:'register-meta'}));

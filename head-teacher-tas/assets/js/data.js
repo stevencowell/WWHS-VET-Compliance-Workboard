@@ -1378,12 +1378,125 @@
     }
   ];
 
+  // Carry the annual calendar work forward as a planning baseline only. Keep
+  // the original definitions and their source dates intact for historical review.
+  // Date-neutral wording lets an edited planning date remain consistent with the
+  // checklist; current school/NESA sources still establish the actual deadline.
+  const planningCopy = {
+    "t1-vet-white-card-handoff": {
+      summary: "Confirm whether the current White Card activity affects TAS, then route all VET delivery and compliance work to the VET workboard."
+    },
+    "t1-parent-teacher-evening": {
+      summary: "Confirm bookings, coverage, current evidence access and safe follow-up for the Term 1 parent–teacher evening."
+    },
+    "t1-nesa-disability-provisions": {
+      summary: "Confirm the current disability-provisions deadline, whether TAS has an action and who holds the authorised submission role."
+    },
+    "t2-vet-placement-handoff": {
+      summary: "Control any TAS timetable or staffing impact, then use the VET workboard for the confirmed Year 12 placement window."
+    },
+    "t3-info-evening": {
+      title: "Confirm TAS readiness for the Year 9/8 information evening for next year's courses",
+      stepText: { 1: "Check that next year's course descriptions, approved offerings and fee information match the current school handbook." }
+    },
+    "t3-year12-report-chain": {
+      stepText: { 3: "Return corrections to the teacher with enough time to meet the confirmed office deadline." }
+    },
+    "t3-parent-teacher": {
+      summary: "Confirm bookings, coverage and evidence-ready conversations for the current Parent–Teacher Interviews."
+    },
+    "student-review-cycle": {
+      why: "The old guide gives a pattern; the current calendar and roster establish the actual work."
+    },
+    "t3-nesa-submission-check": {
+      title: "Confirm TAS contributions to the Term 3 NESA submission",
+      stepText: { 0: "Open the current NESA Timetable of Actions and confirm the applicable submission, scope and deadline." }
+    },
+    "t4-year11-report-chain": {
+      stepText: {
+        2: "Confirm the separate grade/Life Skills hand-off with the authorised Deputy role, then confirm applicable Year 11 data reaches the authorised NESA submitter by the current NESA deadline. The Head Teacher is not assumed to be that submitter.",
+        3: "Close corrections before the confirmed office deadline and confirm the authorised report issue date."
+      },
+      why: "The school reporting chain and NESA submission have different destinations and dates. Confirm each current deadline, the school's earlier hand-off and faculty applicability."
+    },
+    "t4-year10-report-chain": {
+      stepText: {
+        2: "Verify the current NESA grade hand-off date and route with the authorised Deputy/data role.",
+        3: "Resolve corrections and confirm the office submission by its current deadline."
+      },
+      why: "Separate report checks and NESA grade hand-offs need enough recovery time; confirm the current dates for both."
+    },
+    "t4-year9-report-chain": {
+      summary: "Complete faculty checks before the confirmed Head Teacher and office milestones."
+    },
+    "t4-year7-report-chain": {
+      summary: "Complete faculty checks before the confirmed Head Teacher and office milestones.",
+      why: "Check for clashes with Showcase or other faculty work and allocate reporting checks early."
+    },
+    "t4-showcase": {
+      summary: "Coordinate the TAS contribution, approvals, consent, safety and VET hand-off for the confirmed Showcase and Open Day."
+    },
+    "t4-year8-report-chain": {
+      summary: "Complete faculty checks before the confirmed Head Teacher and office milestones.",
+      why: "Confirm the current quality-control window and return corrections promptly."
+    },
+    "t4-enrichment": {
+      summary: "Clarify whether TAS is contributing to the current Year 10 Enrichment program and prepare only the approved work."
+    },
+    "t2-hsc-practical-options-handoff": {
+      summary: "Confirm the current HSC practical exam options deadline and coordinate the TAS hand-off to the authorised submitting role.",
+      stepText: {
+        0: "Confirm which delivered HSC practical courses require an options entry in the current NESA timetable."
+      },
+      why: "Applicable HSC practical-exam options require a visible faculty hand-off to the authorised school submitter."
+    },
+    "t3-hsc-results-certification-handoff": {
+      stepText: { 2: "Confirm the hand-off is accepted and any discrepancies are owned before the current NESA certification deadline." },
+      why: "Data submission and Principal certification are distinct school controls; confirm the current deadline and earlier faculty hand-off for each."
+    }
+  };
+  const planningBaselineIds = [
+    "t1-year-opening-readiness", "t1-student-review-cycle", "t1-vet-white-card-handoff",
+    "t1-parent-teacher-evening", "t1-nesa-disability-provisions", "t2-year12-report-chain",
+    "t2-student-review-cycle", "t2-vet-placement-handoff", "t2-year11-report-chain",
+    "t2-year8-report-chain", "t2-year9-report-chain", "t2-year7-report-chain",
+    "t2-year10-report-chain", "t3-info-evening", "t3-year12-report-chain",
+    "t3-parent-teacher", "student-review-cycle", "t3-nesa-submission-check",
+    "t4-year11-report-chain", "t4-year10-report-chain", "t4-year9-report-chain",
+    "t4-year7-report-chain", "t4-showcase", "t4-year8-report-chain", "t4-report-release",
+    "t4-enrichment", "hsc-analysis-cycle", "t2-hsc-practical-options-handoff",
+    "t3-hsc-results-certification-handoff"
+  ];
+  const planningDate = date => date.replace(/^2026-/, "2027-");
+  for (const id of planningBaselineIds) {
+    const base = tasks.find(task => task.id === id);
+    const { stepText = {}, ...copy } = planningCopy[id] || {};
+    tasks.push({
+      ...base,
+      ...copy,
+      id: `2027-${base.id}`,
+      canonicalTaskId: base.id,
+      operatingYear: 2027,
+      provisionalSchedule: true,
+      baselineTaskId: base.id,
+      baselineDueDate: base.dueDate,
+      dueDate: planningDate(base.dueDate),
+      ...(base.milestones ? { milestones: base.milestones.map(milestone => ({ ...milestone, date: planningDate(milestone.date) })) } : {}),
+      historyOnly: false,
+      cycle: "year",
+      sourceState: "verify-live",
+      timing: "2027 planning dates based on the 2026 schedule — confirm in the current source.",
+      source: `2026 baseline for 2027 planning — ${base.source}`,
+      steps: base.steps.map((step, index) => stepText[index] || step)
+    });
+  }
+
   const sourceGroups = [
     {
       id: "calendar",
       title: "Current calendar authority",
       status: "current",
-      body: "The 2026 Staff School Calendar was read live on 26 August 2026. Its exact 2026 dates drive this candidate. They are a pattern only for future years."
+      body: "The 2026 Staff School Calendar was read live on 26 August 2026. The 2027 planning dates use the same month and day as the 2026 baseline; they are provisional, may fall on a different weekday, and must be checked against the current school calendar or NESA source."
     },
     {
       id: "guide",
@@ -1410,6 +1523,7 @@
       buildId: "wwhs-head-teacher-tas-2026-08-26-live-a",
       version: "0.4.0",
       operatingYear: 2026,
+      planningYears: [2027],
       calendarChecked: "2026-08-26",
       storageKey: "wwhs-head-teacher-tas-workboard:v2",
       backupKind: "WWHS-HEAD-TEACHER-TAS-WORKBOARD-BACKUP",

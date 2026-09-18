@@ -349,7 +349,7 @@ test('unfinished historical occurrences and explicitly started events retain the
   assert.equal(new Set(entries.map(entry => entry.recordKey)).size, entries.length);
 });
 
-test('phase selection uses native term grouping, but an old source year never rolls its dated calendar forward', () => {
+test('phase selection keeps 2026 separate and uses explicitly provisional 2027 occurrences only in their year', () => {
   const opening = harness(null, { now: '2026-02-02T12:00:00' }).adapter.getForecast();
   assert.ok(opening.entries.some(entry => entry.taskId === 'class-readiness'));
   assert.ok(opening.entries.some(entry => entry.taskId === 'whs-inspection'));
@@ -359,10 +359,19 @@ test('phase selection uses native term grouping, but an old source year never ro
   assert.ok(later.entries.some(entry => entry.taskId === 'faculty-publications'));
   assert.ok(!later.entries.some(entry => entry.taskId === 'subject-selection-cycle'));
   const nextYear = harness(null, { now: '2027-02-02T12:00:00' }).adapter.getForecast();
-  assert.equal(nextYear.context.mode, 'reference-only');
+  assert.equal(nextYear.context.mode, 'current');
   assert.equal(nextYear.context.year, 2027);
   assert.equal(nextYear.context.sourceYear, 2026);
-  assert.deepEqual(json(nextYear.entries), []);
+  const planned = nextYear.entries.find(entry => entry.taskId === '2027-t1-year-opening-readiness');
+  assert.equal(planned.dueDate, '2027-02-02');
+  assert.equal(planned.recordKey, '2027-t1-year-opening-readiness::2027');
+  assert.equal(planned.forecast.dateConfidence, 'provisional');
+  assert.match(planned.forecast.reason, /Provisional planning date/);
+  assert.ok(nextYear.entries.every(entry => !entry.dueDate || entry.dueDate.startsWith('2027-')));
+  assert.ok(opening.entries.every(entry => !entry.taskId.startsWith('2027-')));
+  const unsupported = harness(null, {now:'2028-02-02T12:00:00'}).adapter.getForecast();
+  assert.equal(unsupported.context.mode, 'reference-only');
+  assert.deepEqual(json(unsupported.entries), []);
 });
 
 test('unreadable, malformed and externally changed native storage never yields a fresh-looking forecast', () => {
@@ -450,4 +459,56 @@ test('native changes emit forecast updates only after a successful save', () => 
   blocked.click('complete-task', 'faculty-meeting-control');
   assert.ok(!blocked.events.some(event => event.type === 'wwhs:forecast-updated'));
   assert.ok(blocked.adapter.getForecast().entries.some(entry => entry.taskId === 'faculty-meeting-control'));
+});
+
+test('planning dates persist in their own year and drive the register, forecast and restored backup', () => {
+  const id = '2027-t1-year-opening-readiness';
+  const original = {'t3-parent-teacher::2026':{status:'waiting',exceptionReason:'Keep this 2026 note',steps:{0:true}}};
+  const schedule = {dueDate:'2027-02-10',milestones:[],confirmed:true,sourceNote:'Staff calendar checked'};
+  const raw = saved(original,{scheduleOverrides:{[id]:schedule}});
+  const h = harness(raw,{now:'2027-02-01T12:00:00'});
+  assert.equal(h.adapter.describeTask(id).recordKey,`${id}::2027`);
+  assert.equal(h.adapter.describeTask(id).dueDate,'2027-02-10');
+  const row = h.adapter.getTaskRegister().items.find(item=>item.id===id);
+  assert.equal(row.schedule.startDate,'2027-02-10');
+  assert.equal(row.planningLabel,'Dates confirmed by you');
+  assert.equal(row.complete,false);
+  const forecast = h.adapter.getForecast().entries.find(item=>item.taskId===id);
+  assert.equal(forecast.dueDate,'2027-02-10');
+  assert.equal(forecast.forecast.dateConfidence,'listed');
+  assert.equal(h.storage.get(key),raw,'Reading dates never rewrites saved data');
+  const recovered = harness();
+  recovered.restore({kind:'WWHS-HEAD-TEACHER-TAS-WORKBOARD-BACKUP',schemaVersion:2,state:JSON.parse(raw)});
+  assert.equal(recovered.adapter.describeTask(id).dueDate,'2027-02-10');
+  assert.equal(JSON.parse(recovered.storage.get(key)).records['t3-parent-teacher::2026'].exceptionReason,'Keep this 2026 note');
+  recovered.click('clear-workspace');
+  assert.equal(recovered.adapter.describeTask(id).dueDate,'2027-02-02','Clearing restores the baseline without requiring reload');
+});
+
+test('malformed planning schedules cannot change date years, milestone order or historical dates', () => {
+  const id='2027-t3-year12-report-chain';
+  const invalid=[
+    {dueDate:'2026-08-28',milestones:['2027-08-28','2027-09-04','2027-09-18']},
+    {dueDate:'2027-02-30',milestones:['2027-02-30','2027-09-04','2027-09-18']},
+    {dueDate:'2027-08-28',milestones:['2027-08-28','2027-09-18','2027-09-04']},
+    {dueDate:'2027-08-29',milestones:['2027-08-28','2027-09-04','2027-09-18']}
+  ];
+  for(const schedule of invalid){
+    const raw=saved({}, {scheduleOverrides:{[id]:schedule,'t3-parent-teacher':{dueDate:'2026-09-09',milestones:[]}}});
+    const h=harness(raw);
+    assert.equal(h.adapter.describeTask(id).dueDate,'2027-08-28');
+    assert.equal(h.adapter.describeTask('t3-parent-teacher').dueDate,'2026-09-01');
+    assert.equal(h.storage.get(key),raw);
+  }
+});
+
+test('2026 completion cannot complete the carried-forward 2027 task and a date change alone creates no task progress', () => {
+  const task=tasks.find(item=>item.id==='t3-parent-teacher');
+  const id='2027-t3-parent-teacher';
+  const h=harness(saved({'t3-parent-teacher::2026':completeRecord(task)}, {scheduleOverrides:{[id]:{dueDate:'2027-09-03',milestones:[],confirmed:false}}}));
+  const rows=h.adapter.getTaskRegister().items;
+  assert.equal(rows.find(item=>item.id===task.id).complete,true);
+  assert.equal(rows.find(item=>item.id===id).complete,false);
+  assert.ok(!h.adapter.getEntries().some(item=>item.taskId===id));
+  assert.ok(!h.adapter.getForecast().entries.some(item=>item.taskId===id));
 });

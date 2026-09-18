@@ -2,6 +2,9 @@
   "use strict";
 
   const data = window.HT_TAS_WORKBOARD;
+  const planningDefaults = new Map(data.tasks.filter(task => task.provisionalSchedule).map(task => [task.id, {
+    dueDate: task.dueDate, milestones: (task.milestones || []).map(item => item.date)
+  }]));
   const routeContent = document.getElementById("route-content");
   const taskDialog = document.getElementById("task-dialog");
   const taskDialogContent = document.getElementById("task-dialog-content");
@@ -10,7 +13,8 @@
   const toastRegion = document.getElementById("toast-region");
   let currentDate = startOfDay(new Date());
   let currentIso = isoDate(currentDate);
-  let operatingYearIsCurrent = currentDate.getFullYear() === data.config.operatingYear;
+  let operatingYearIsCurrent = supportedYear(currentDate.getFullYear());
+  let calendarYear = String(currentDate.getFullYear() === 2027 ? 2027 : data.config.operatingYear);
   let lastTaskTrigger = null;
   let lastSettingsTrigger = null;
   let taskStateDirty = false;
@@ -48,6 +52,7 @@
     records: {},
     weekly: {},
     eventOccurrences: {},
+    scheduleOverrides: {},
     search: "",
     lastBackup: ""
   };
@@ -55,13 +60,61 @@
   let savedStateRaw = null;
   let stateStorageBlocked = false;
   let state = loadState();
+  applyPlanningDates();
+
+  function supportedYear(year) {
+    return year === data.config.operatingYear || (data.config.planningYears || []).includes(year);
+  }
+
+  function validPlanningDate(value, year) {
+    if (typeof value !== 'string' || !new RegExp(`^${year}-\\d{2}-\\d{2}$`).test(value)) return false;
+    const date = new Date(`${value}T12:00:00Z`);
+    return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
+  }
+
+  function sanitiseSchedules(value) {
+    const result = {};
+    for (const [id, raw] of Object.entries(safeObject(value))) {
+      const task = data.tasks.find(item => item.id === id), base = planningDefaults.get(id);
+      if (!base || !raw || !validPlanningDate(raw.dueDate, task.operatingYear) || !Array.isArray(raw.milestones) || raw.milestones.length !== base.milestones.length || raw.milestones.some(date => !validPlanningDate(date, task.operatingYear))) continue;
+      if (raw.milestones.length && (raw.dueDate !== raw.milestones[0] || raw.milestones.some((date, index) => index > 0 && date < raw.milestones[index - 1]))) continue;
+      result[id] = { dueDate: raw.dueDate, milestones: [...raw.milestones], confirmed: raw.confirmed === true,
+        sourceNote: String(raw.sourceNote || '').slice(0, 240), updatedAt: String(raw.updatedAt || '').slice(0, 40) };
+      if (!result[id].sourceNote.trim()) result[id].confirmed = false;
+    }
+    return result;
+  }
+
+  function applyPlanningDates() {
+    for (const task of data.tasks) {
+      const base = planningDefaults.get(task.id);
+      if (!base) continue;
+      const saved = state.scheduleOverrides[task.id] || base;
+      task.dueDate = saved.dueDate;
+      task.milestones?.forEach((item, index) => { item.date = saved.milestones[index]; });
+      task.scheduleConfirmed = saved.confirmed === true;
+    }
+  }
+
+  function planningLabel(task) {
+    if (!task.provisionalSchedule) return '';
+    return task.scheduleConfirmed ? 'Dates confirmed by you' : 'Provisional dates · based on 2026';
+  }
+
+  function weekendDates(task) {
+    return [...new Set([task.dueDate, ...(task.milestones || []).map(item => item.date)])].filter(date => [0, 6].includes(parseDate(date).getDay()));
+  }
+
+  function currentYearTasks() {
+    return data.tasks.filter(task => !task.dueDate || Number(task.dueDate.slice(0, 4)) === currentDate.getFullYear());
+  }
 
   function safeObject(value) {
     return value && typeof value === "object" && !Array.isArray(value) ? value : {};
   }
 
   function freshState() {
-    return { ...defaultState, links: {}, records: {}, weekly: {}, eventOccurrences: {} };
+    return { ...defaultState, links: {}, records: {}, weekly: {}, eventOccurrences: {}, scheduleOverrides: {} };
   }
 
   function loadState() {
@@ -82,7 +135,8 @@
         links: parsed.linkDefaultsVersion === 2 ? safeObject(parsed.links) : {},
         records: sanitiseRecords(parsed.records),
         weekly: safeObject(parsed.weekly),
-        eventOccurrences: sanitiseEventOccurrences(parsed.eventOccurrences)
+        eventOccurrences: sanitiseEventOccurrences(parsed.eventOccurrences),
+        scheduleOverrides: sanitiseSchedules(parsed.scheduleOverrides)
       };
     } catch (_) {
       stateStorageBlocked = true;
@@ -170,6 +224,7 @@
       const raw = JSON.stringify(state);
       localStorage.setItem(data.config.storageKey, raw);
       savedStateRaw = raw;
+      applyPlanningDates();
       recordsUpdated();
       return true;
     } catch (_) {
@@ -202,7 +257,7 @@
   function refreshDate() {
     currentDate = startOfDay(new Date());
     currentIso = isoDate(currentDate);
-    operatingYearIsCurrent = currentDate.getFullYear() === data.config.operatingYear;
+    operatingYearIsCurrent = supportedYear(currentDate.getFullYear());
   }
 
   function isoDate(date) {
@@ -248,6 +303,7 @@
     if (!task.dueDate) return task.timing;
     if (task.historyOnly) return `${shortDate(task.dueDate)} · 2026 baseline`;
     const dueDate = activeDueDate(task);
+    if (task.provisionalSchedule && dueDate) return `${shortDate(dueDate)} ${task.operatingYear} · ${planningLabel(task)}`;
     if (!dueDate) return isClosed(task) ? "Milestones complete · closed here" : "Milestones complete · verify closure";
     if (!operatingYearIsCurrent) return `${shortDate(dueDate)} · 2026 baseline`;
     if (isClosed(task)) return `${shortDate(dueDate)} · closed here`;
@@ -287,6 +343,7 @@
   }
 
   function cycleLabel(task) {
+    if (task.dueDate) return `${task.dueDate.slice(0, 4)} operating cycle`;
     const cycle = taskCycle(task);
     if (cycle === "week") return `Week beginning ${shortDate(weekKey())}`;
     if (cycle === "term") return termKey().toUpperCase().replace("-", " · ");
@@ -302,6 +359,7 @@
   }
 
   function recordKey(task) {
+    if (task.dueDate) return `${task.id}::${task.dueDate.slice(0, 4)}`;
     const cycle = taskCycle(task);
     if (cycle === "week") return `${task.id}::${weekKey()}`;
     if (cycle === "term") return `${task.id}::${termKey()}`;
@@ -378,13 +436,13 @@
       status: closed ? "done" : ["waiting", "exception"].includes(record.status) ? "waiting" : "review",
       sourceStatus: review ? 'completed-externally' : record.status, cycle: sourceKey.split("::").slice(1).join("::"),
       taskHelp: {
-        version: 1, wing: "tas", taskId: task.id, canonicalTaskId: task.id,
+        version: 1, wing: "tas", taskId: task.id, canonicalTaskId: task.canonicalTaskId || task.id,
         title: task.title, recordKey: sourceKey, cycle: sourceKey.split("::").slice(1).join("::"),
         asOf: currentIso, sourceAsAt: data.config.calendarChecked,
         sourceStatus: review ? 'completed-externally' : record.status, nextStep: closed ? task.doneWhen : nextStep || task.doneWhen,
         objective: task.doneWhen, steps: task.steps || [],
         roles: [`Owner: ${task.owner || "To confirm"}`, `Verifier: ${task.verifier || "To confirm"}`],
-        sources: [task.source, task.privacy].filter(Boolean),
+        sources: [task.source, planningLabel(task), task.privacy].filter(Boolean),
         // Use the catalogue's approved routes, never a locally overridden URL.
         links: [...(window.WWHS_TASK_SOURCES?.publicLinks('tas',task) || []),
           ...(task.systemIds || []).map(id => data.systems.find(system => system.id === id)).filter(Boolean).map(system => ({ label: system.label, url: system.url }))]
@@ -425,7 +483,7 @@
         ? "Saved TAS progress is unavailable or changed in another tab. Copy any unsaved work, then reload before using the forecast."
         : !operatingYearIsCurrent
           ? `The dated calendar is a ${data.config.operatingYear} reference. Refresh it before forecasting ${currentDate.getFullYear()} work.`
-          : `Calendar checked ${data.config.calendarChecked}; confirm listed dates in the live staff calendar. Term ${termNumber} uses the workboard's existing calendar grouping. School week and exact dates for recurring controls are not configured. Past dates without a recorded status need confirmation; they are not assumed to be missed work.`
+          : `2026 calendar checked ${data.config.calendarChecked}. The 2027 dates are provisional copies of the 2026 day and month unless confirmed by you. Check the current staff calendar and NESA source. Term ${termNumber} uses an approximate calendar grouping; school week is not configured. Past dates without a recorded status need confirmation; they are not assumed to be missed work.`
     };
     if (context.mode !== "current") return { entries: [], context };
 
@@ -443,7 +501,7 @@
           scheduledDate: options.scheduledDate || "", windowStart: options.windowStart || "", windowEnd: options.windowEnd || "",
           period: descriptor.cycle, sourceStatus: descriptor.sourceStatus,
           blocked: waiting, blockerReason: waiting ? descriptor.waitingOn : "",
-          dateConfidence: options.scheduledDate ? "listed" : "undated",
+          dateConfidence: task.provisionalSchedule && !task.scheduleConfirmed ? "provisional" : options.scheduledDate ? "listed" : "undated",
           requiresConfirmation: options.requiresConfirmation === true
         }
       });
@@ -461,7 +519,7 @@
       });
     });
 
-    data.tasks.forEach(task => {
+    currentYearTasks().forEach(task => {
       if (task.historyOnly || task.procedureOnly || isClosed(task)) return;
       const key = recordKey(task);
       const reviewed = hasReviewedRecord(task);
@@ -471,12 +529,12 @@
         // Untouched milestone chains use the next listed reminder, as native Today does.
         // They must not turn an earlier unchecked milestone into an assertion of missed work.
         const date = reminderDate(task);
-        if (!date || Number(date.slice(0, 4)) !== data.config.operatingYear || daysUntil(date) > horizonDays) return;
+        if (!date || Number(date.slice(0, 4)) !== currentDate.getFullYear() || daysUntil(date) > horizonDays) return;
         const past = date < currentIso;
         add(task, key, {
           section: date <= currentIso ? "ready" : "upcoming",
           kind: past ? reviewed ? "overdue" : "past-date-review" : "dated",
-          reason: past
+          reason: task.provisionalSchedule && !task.scheduleConfirmed ? `Provisional planning date based on 2026 ${past ? 'has passed' : 'is within the next 21 days'} — confirm or adjust in the task card.` : past
             ? reviewed ? "A listed date has passed for this recorded open task; check the current school record." : "Listed date passed — status not confirmed in this browser."
             : "A listed calendar milestone is within the next 21 days; confirm it in the live staff calendar.",
           scheduledDate: date, requiresConfirmation: true
@@ -520,7 +578,7 @@
     const occurrenceYear = key => key.split("::")[1]?.match(/^\d{4}(?=$|[-])/i)?.[0] || "ongoing";
     const scheduleFor = task => {
       const dates = [task.dueDate, ...(task.milestones || []).map(item => item.date)].filter(date => /^\d{4}-\d{2}-\d{2}$/.test(date || "")).sort();
-      if (dates.length) return { kind: dates[0] === dates.at(-1) ? "date" : "window", label: task.timing, startDate: dates[0], endDate: dates.at(-1) };
+      if (dates.length) return { kind: dates[0] === dates.at(-1) ? "date" : "window", label: task.provisionalSchedule ? `${planningLabel(task)} · ${dates[0]}${dates[0] !== dates.at(-1) ? ` to ${dates.at(-1)}` : ''}` : task.timing, startDate: dates[0], endDate: dates.at(-1) };
       return { kind: taskCycle(task) === "event" || task.id === "vet-handoff" ? "trigger" : task.timing ? "recurring" : "undated", label: task.timing || "No date or review rule recorded" };
     };
     const addTask = (task, key, olderOccurrence = false) => {
@@ -538,12 +596,14 @@
         schedule.label = `Recorded occurrence: ${period}. The captured calendar dates belong to ${task.dueDate.slice(0, 4)}; no separate date is confirmed for this occurrence.`;
       }
       const gaps = [];
+      if (task.provisionalSchedule && !task.scheduleConfirmed) gaps.push('Planning dates use the same day and month as 2026. Open this card to edit or confirm them against the current source.');
+      if (task.provisionalSchedule && weekendDates(task).length) gaps.push(`Weekend dates to check: ${weekendDates(task).join(', ')}. No automatic weekday shift has been made.`);
       if (!task.historyOnly && sourceGaps[task.sourceState]) gaps.push(sourceGaps[task.sourceState]);
       if (!reference && dateGaps.has(task.id)) gaps.push("The timing rule is recorded; the exact local date still needs confirmation.");
       if (!reference && repeatGaps.has(task.id)) gaps.push("Additional term or change-trigger reviews are described but are not separately scheduled.");
       if (!reference && !task.timing && !task.dueDate) gaps.push("No date or review rule recorded.");
       if (!reference && !available) gaps.push("Saved progress is unavailable or changed in another tab; reload before relying on its status.");
-      if (task.id === "t2-year7-report-chain") gaps.push("The captured report chain has no confirmed office hand-off date.");
+      if ((task.canonicalTaskId || task.id) === "t2-year7-report-chain") gaps.push("The captured report chain has no confirmed office hand-off date.");
       if (task.id === "t4-year11-report-chain") gaps.push("Confirm the local 16 October hand-off reaches the authorised NESA submitter for 21 October; check faculty applicability.");
       items.push({
         id: olderOccurrence ? key : task.id,
@@ -556,7 +616,7 @@
         historyOnly: task.historyOnly === true, procedureOnly: task.procedureOnly === true,
         entryKind: task.procedureOnly ? "procedure" : olderOccurrence ? taskCycle(task) === "event" ? "event" : "scheduled" : "core",
         schedule, inFocus: focus.has(key), focusReason: focus.get(key) || "",
-        sourceIds: [...(task.systemIds || [])], gaps
+        sourceIds: [...(task.systemIds || [])], gaps, planningLabel: planningLabel(task)
       });
     };
     data.tasks.forEach(task => {
@@ -592,7 +652,7 @@
     });
     return {
       wing: "tas", currentYear: currentDate.getFullYear(), roleLabel: "Head Teacher TAS — all defined duties",
-      sourceNote: `School calendar: ${data.config.operatingYear}, last checked ${data.config.calendarChecked}. NESA hand-off checks added from the May 2026 timetable on 17 September 2026. Ongoing rules are shown across years; future dates have not been invented.`,
+      sourceNote: `2026 school calendar last checked ${data.config.calendarChecked}. The 29 recurring dated tasks are carried into 2027 using the same day and month as provisional planning dates. Open a 2027 card to edit dates or record your source confirmation. Ongoing duties remain separate.`,
       items,
       coverageNotes: [
         "This register includes every task defined in the workboard, its saved occurrences and the five weekly scan controls. It is not proof that every school obligation has been captured.",
@@ -602,7 +662,7 @@
         "NESA dates are school deadlines. Confirm applicable courses and each faculty hand-off with the authorised submitting or certifying role; this catalogue does not give the Head Teacher that authority.",
         "The five weekly scans are available on Today; they are not generated by the 21-day forecast.",
         "Historical calendar rows and protected procedures are retained as reference; protected cases stay in their authorised systems.",
-        `No new ${data.config.operatingYear + 1} school calendar has been verified or rolled forward. There is no TAS role filter hiding catalogue duties.`
+        'The 2027 schedule is a planning baseline, not a verified 2027 school calendar. Check weekends, term dates, event applicability and current NESA deadlines. Your date changes stay in this browser and are included in the TAS workboard backup.'
       ]
     };
   }
@@ -613,6 +673,7 @@
   }
 
   function sourcePill(task) {
+    if (task.provisionalSchedule) return `<span class="pill source ${task.scheduleConfirmed ? 'good' : 'warn'}">${esc(planningLabel(task))}</span>`;
     const labels = {
       "calendar-current": ["Current date", "good"],
       "current-local": ["Recent local artefact · confirm owner", "warn"],
@@ -739,6 +800,7 @@
   }
 
   function yearBanner() {
+    if (currentDate.getFullYear() === 2027) return `<aside class="alert-banner warning"><strong>2027 planning schedule</strong><span>Dates follow the 2026 day and month until you check and confirm them. Open a task to adjust its dates.</span></aside>`;
     if (operatingYearIsCurrent) return "";
     return `<aside class="alert-banner warning"><strong>The dated calendar is a 2026 baseline.</strong><span>Refresh the live Staff Calendar and NESA dates before using this workboard in ${currentDate.getFullYear()}.</span><button type="button" data-action="open-task" data-task-id="annual-calendar-control">Open annual refresh</button></aside>`;
   }
@@ -767,7 +829,7 @@
   }
 
   function activeDueTasks() {
-    return data.tasks
+    return currentYearTasks()
       .filter(task => task.dueDate && !task.historyOnly && !task.procedureOnly && !isClosed(task))
       .sort((a, b) => queueDueDate(a).localeCompare(queueDueDate(b)));
   }
@@ -801,7 +863,7 @@
       ${yearBanner()}
       <section class="coming-section"><div class="section-heading"><div><h2>Recorded follow-ups</h2><p>${followUps.length ? `${followUps.length} open item${followUps.length === 1 ? "" : "s"} you have recorded here.` : "No follow-ups recorded in this browser. Your school systems remain the record."}</p></div></div>${followUps.length ? `<div class="coming-list">${followUps.map((task, index) => comingRow(task, index + 1)).join("")}</div>` : ""}</section>
       ${justCompleted.length ? `<section class="coming-section"><div class="section-heading"><h2>Just completed</h2></div><div class="coming-list">${justCompleted.map((task, index) => comingRow(task, index + 1, "All checklist boxes ticked")).join("")}</div></section>` : ""}
-      <section class="coming-section"><div class="section-heading"><div><h2>Upcoming dates to check</h2><p>Next listed dates from the calendar checked on 26 August 2026. Confirm them in the live staff calendar.</p></div></div>${upcoming.length ? `<div class="coming-list">${upcoming.map((task, index) => comingRow(task, index + 1, `Listed ${shortDate(reminderDate(task))} · check live calendar`)).join("")}</div>` : `<p class="empty-line">${operatingYearIsCurrent ? "No later dates are listed in this calendar snapshot." : "Refresh the school calendar before using dates for this year."}</p>`}</section>
+      <section class="coming-section"><div class="section-heading"><div><h2>Upcoming dates to check</h2><p>Confirm dates in the live staff calendar. The 2027 dates follow the 2026 pattern until confirmed by you.</p></div></div>${upcoming.length ? `<div class="coming-list">${upcoming.map((task, index) => comingRow(task, index + 1, `${task.provisionalSchedule ? planningLabel(task) : 'Listed'} · ${shortDate(reminderDate(task))}`)).join("")}</div>` : `<p class="empty-line">${operatingYearIsCurrent ? "No later dates are listed in this calendar snapshot." : "Refresh the school calendar before using dates for this year."}</p>`}</section>
       ${unreviewedPast.length ? `<details class="standing-panel"><summary>Review past dates (${unreviewedPast.length} not reviewed here)</summary><p>These dates have passed, but this browser has no recorded status. They are not assumed to be missed work. Check the school record before adding a status.</p><div class="coming-list">${unreviewedPast.map((task, index) => comingRow(task, index + 1)).join("")}</div></details>` : ""}
       <details class="standing-panel"><summary>Five-minute weekly scan · ${completedChecks} checks recorded</summary><p>Week beginning ${shortDate(week)}. These ticks are local reminders. A tick covered by an overall sign-off can be reopened from the full task register.</p>
         <div class="weekly-checks">${data.weeklyChecks.map((label, index) => `<div class="weekly-check"><label><input type="checkbox" data-weekly-check="${index}" ${checks[index] ? "checked" : ""} ${weeklyReview(index,week) ? "disabled" : ""}><span>${esc(label)}</span></label>${guidanceLinks(window.TAS_STEP_GUIDANCE?.forWeekly(index))}<details class="weekly-source-details"><summary>Sources for this weekly check</summary>${taskSourcePanel({id:`weekly-scan-${index}`})}</details></div>`).join("")}</div>
@@ -827,6 +889,7 @@
 
   function taskCompletionActions(task) {
     if (task.historyOnly || task.procedureOnly) return "";
+    if (task.provisionalSchedule && task.operatingYear > currentDate.getFullYear()) return planTaskButton(task);
     const record = recordFor(task);
     return `${planTaskButton(task)}${!isClosed(task) ? `<button class="button primary compact" type="button" data-action="complete-task" data-task-id="${esc(task.id)}" aria-label="Task Complete: ${esc(task.title)}" title="Tick all steps, milestones and completion checks">Task Complete</button>` : ""}
       ${record.status === "completed" ? `<span class="task-complete-label">✓ Task Complete</span>` : ""}
@@ -834,17 +897,19 @@
   }
 
   function renderCalendar() {
-    const dated = data.tasks.filter(task => task.dueDate).sort((a, b) => queueDueDate(a).localeCompare(queueDueDate(b)));
-    const upcoming = operatingYearIsCurrent ? dated.filter(task => daysUntil(queueDueDate(task)) >= -21) : dated;
-    const elapsed = operatingYearIsCurrent ? dated.filter(task => daysUntil(queueDueDate(task)) < -21).reverse() : [];
+    const dated = data.tasks.filter(task => task.dueDate?.startsWith(`${calendarYear}-`)).sort((a, b) => queueDueDate(a).localeCompare(queueDueDate(b)));
+    const selectedIsCurrent = Number(calendarYear) === currentDate.getFullYear();
+    const upcoming = selectedIsCurrent ? dated.filter(task => daysUntil(queueDueDate(task)) >= -21) : dated;
+    const elapsed = selectedIsCurrent ? dated.filter(task => daysUntil(queueDueDate(task)) < -21).reverse() : [];
     const controls = data.tasks.filter(task => task.area === "calendar" && !task.dueDate);
 
     routeContent.innerHTML = `<div class="page-wrap">
-      ${pageHeader("2026 CONTROL CALENDAR", "Dates, milestones and lead time", "Exact 2026 dates come from the live Staff School Calendar. Future years require a fresh calendar audit.", `<button class="button secondary compact" type="button" data-action="launch-system" data-system-id="staff-calendar">Open live calendar ↗</button>`)}
+      ${pageHeader(`${calendarYear} CONTROL CALENDAR`, "Dates, milestones and lead time", "2026 dates are the source baseline. The 2027 plan uses the same day and month until you confirm or adjust them.", `<button class="button secondary compact" type="button" data-action="launch-system" data-system-id="staff-calendar">Open live calendar ↗</button>`)}
+      <label class="calendar-year">Calendar year <select id="tas-calendar-year"><option value="2026" ${calendarYear === '2026' ? 'selected' : ''}>2026 source baseline</option><option value="2027" ${calendarYear === '2027' ? 'selected' : ''}>2027 planning schedule</option></select></label>
       ${yearBanner()}
-      <section class="calendar-callout"><div><span>Calendar checked</span><strong>26 August 2026</strong></div><p>The school year pattern is useful for planning, but the dates below must not be rolled into another year without verification.</p><button type="button" data-action="open-task" data-task-id="annual-calendar-control">Annual refresh process</button></section>
-      <section class="timeline-section"><div class="section-heading"><div><h2>${operatingYearIsCurrent ? "Current and coming" : "2026 dated baseline"}</h2><p>${upcoming.length} listed date${upcoming.length === 1 ? "" : "s"}. Dates alone do not confirm whether work is complete.</p></div></div><div class="timeline">${upcoming.map(calendarItem).join("") || `<p class="empty-line">No later 2026 dates remain.</p>`}</div></section>
-      ${elapsed.length ? `<details class="elapsed"><summary>Earlier 2026 dates (${elapsed.length})</summary><div class="timeline compact-timeline">${elapsed.map(calendarItem).join("")}</div></details>` : ""}
+      <section class="calendar-callout"><div><span>Source calendar checked</span><strong>26 August 2026</strong></div><p>Open a 2027 task to edit its planning dates. Weekend dates need checking. Changes are saved in this browser and included in your TAS backup.</p><button type="button" data-action="open-task" data-task-id="annual-calendar-control">Annual refresh process</button></section>
+      <section class="timeline-section"><div class="section-heading"><div><h2>${selectedIsCurrent ? "Current and coming" : `${calendarYear} dated schedule`}</h2><p>${upcoming.length} listed task${upcoming.length === 1 ? "" : "s"}. Dates alone do not confirm whether work is complete.</p></div></div><div class="timeline">${upcoming.map(calendarItem).join("") || `<p class="empty-line">No later dates remain.</p>`}</div></section>
+      ${elapsed.length ? `<details class="elapsed"><summary>Earlier ${calendarYear} dates (${elapsed.length})</summary><div class="timeline compact-timeline">${elapsed.map(calendarItem).join("")}</div></details>` : ""}
       <section class="timeline-section"><div class="section-heading"><div><h2>Calendar controls</h2><p>These keep the dates current rather than adding more dates.</p></div></div><div class="card-grid">${controls.map(taskCard).join("")}</div></section>
     </div>`;
   }
@@ -884,6 +949,7 @@
   function completeCalendarTask(id) {
     const task = data.tasks.find(item => item.id === id);
     if (!task || task.historyOnly || task.procedureOnly || isClosed(task)) return;
+    if (task.provisionalSchedule && task.operatingYear > currentDate.getFullYear()) return;
     const key = recordKey(task);
     const before = state.records[key];
     const after = {
@@ -926,7 +992,7 @@
   function renderArea(area) {
     const meta = areaMeta[area];
     const query = state.search.trim().toLowerCase();
-    const areaTasks = data.tasks.filter(task => task.area === area);
+    const areaTasks = currentYearTasks().filter(task => task.area === area);
     const allTasks = areaTasks.filter(task => !task.historyOnly);
     const historyTasks = areaTasks.filter(task => task.historyOnly);
     const filtered = query ? allTasks.filter(task => [task.title, task.summary, task.source, task.timing].join(" ").toLowerCase().includes(query)) : allTasks;
@@ -1085,6 +1151,7 @@
       <div class="dialog-body">
         <div class="dialog-badges">${priorityPill(task)}${statusPill(task)}${sourcePill(task)}${task.dueDate ? `<span class="pill due">${esc(dueLabel(task))}</span>` : ""}</div>
         <p class="dialog-summary">${esc(task.summary)}</p>
+        ${planningDatePanel(task)}
         ${planTaskButton(task)}
         ${task.applicability ? `<aside class="applicability"><strong>Applies when</strong><span>${esc(task.applicability)}</span></aside>` : ""}
         <div class="fact-grid"><div><span>Timing</span><strong>${esc(task.timing)}</strong></div><div><span>Current cycle</span><strong>${esc(cycleLabel(task))}</strong></div><div><span>Accountable</span><strong>${esc(task.owner)}</strong></div><div><span>Expected verifier</span><strong>${esc(task.verifier)}</strong></div><div><span>Primary start</span><strong>${esc(primarySystemLabel(task))}</strong></div></div>
@@ -1123,6 +1190,52 @@
     </form></section>`;
   }
 
+  function planningDatePanel(task) {
+    if (!task.provisionalSchedule) return '';
+    const saved = state.scheduleOverrides[task.id], weekends = weekendDates(task);
+    const locked = isClosed(task) || !forecastStorageAvailable();
+    return `<section class="planning-dates" id="planning-date-panel"><h3>2027 planning dates</h3>
+      <p><strong>${esc(planningLabel(task))}.</strong> These start with the same day and month as the 2026 schedule. Check the current school calendar or NESA source before relying on them.</p>
+      ${weekends.length ? `<p class="planning-weekend"><strong>Weekend check:</strong> ${weekends.map(date => esc(longDate(date))).join('; ')}. Adjust these if the activity needs a school day.</p>` : ''}
+      <details><summary>Edit or confirm dates</summary><form id="planning-date-form" data-task-id="${esc(task.id)}">
+      <fieldset ${locked ? 'disabled' : ''}><legend>Task dates for 2027</legend><div class="form-grid">
+      ${task.milestones?.length ? task.milestones.map((item, index) => `<label><span>${esc(item.label)}</span><input type="date" name="milestone-${index}" value="${esc(item.date)}" min="2027-01-01" max="2027-12-31" required></label>`).join('') : `<label><span>Planning date</span><input type="date" name="dueDate" value="${esc(task.dueDate)}" min="2027-01-01" max="2027-12-31" required></label>`}
+      <label class="span-two"><span>Date source or confirmation note</span><input type="text" name="sourceNote" maxlength="240" value="${esc(saved?.sourceNote || '')}" placeholder="e.g. Staff calendar checked 12 January 2027"></label>
+      <label class="check-line span-two"><input type="checkbox" name="confirmed" ${task.scheduleConfirmed ? 'checked' : ''}><span>I checked these dates against the current source.</span></label></div>
+      <p class="form-error" role="alert" hidden></p><div class="dialog-actions"><button class="button secondary" type="submit">Save dates</button><button class="button quiet" type="submit" name="mode" value="reset" formnovalidate>Restore 2026 pattern</button></div></fieldset></form></details>
+      <p class="section-help">${locked ? 'Reopen a completed task before changing its dates. If saved progress is unavailable, reload first. ' : ''}Changing dates does not complete the task. Saved in this browser; use the TAS workboard backup to keep a copy.</p><p class="planning-save-message" role="status"></p></section>`;
+  }
+
+  function savePlanningDates(form, reset = false) {
+    const task = data.tasks.find(item => item.id === form.dataset.taskId), base = planningDefaults.get(task?.id);
+    if (!base || isClosed(task)) return;
+    const values = new FormData(form), previous = state.scheduleOverrides[task.id];
+    if (!reset) {
+      const milestones = base.milestones.map((_, index) => String(values.get(`milestone-${index}`) || ''));
+      // The main date is the first milestone; it must not drift from the sequence.
+      const dates = milestones.length ? milestones : [String(values.get('dueDate') || '')];
+      const sourceNote = String(values.get('sourceNote') || '').trim().slice(0, 240);
+      const confirmed = values.get('confirmed') === 'on';
+      const error = form.querySelector('.form-error');
+      if (dates.some(date => !validPlanningDate(date, task.operatingYear))) return formError(error, 'Use valid dates within 2027.');
+      if (dates.some((date, index) => index > 0 && date < dates[index - 1])) return formError(error, 'Keep milestones in their listed order, from earliest to latest.');
+      if (confirmed && !sourceNote) return formError(error, 'Add the source you checked before marking these dates confirmed.');
+      state.scheduleOverrides[task.id] = {dueDate: dates[0], milestones, sourceNote, confirmed, updatedAt: new Date().toISOString()};
+    } else delete state.scheduleOverrides[task.id];
+    if (!saveState()) {
+      if (previous) state.scheduleOverrides[task.id] = previous; else delete state.scheduleOverrides[task.id];
+      return;
+    }
+    taskStateDirty = true;
+    // Refresh only date content, retaining unsaved progress notes elsewhere in the card.
+    document.getElementById('planning-date-panel').outerHTML = planningDatePanel(task);
+    taskDialogContent.querySelector('.planning-save-message').textContent = reset ? '2026 date pattern restored for 2027.' : 'Dates saved.';
+    const due = taskDialogContent.querySelector('.pill.due');
+    if (due) due.textContent = dueLabel(task);
+    taskDialogContent.querySelectorAll('.dialog-badges .pill.source, .source-details .pill.source').forEach(source => { source.outerHTML = sourcePill(task); });
+    taskDialogContent.querySelectorAll('.milestone-list time').forEach((node, index) => { node.dateTime = task.milestones[index].date; node.textContent = longDate(task.milestones[index].date); });
+  }
+
   function saveTask(form, commit) {
     const task = data.tasks.find(item => item.id === form.dataset.taskId);
     if (!task || task.procedureOnly || task.historyOnly && !overallReview(task)) return;
@@ -1149,6 +1262,8 @@
     const allSteps = task.steps.every((_, index) => previous.steps?.[index] === true || previous.steps?.[String(index)] === true);
     const allMilestones = !task.milestones?.length || task.milestones.every((_, index) => previous.milestones?.[index] === true || previous.milestones?.[String(index)] === true);
     const error = form.querySelector(".form-error");
+
+    if (task.provisionalSchedule && task.operatingYear > currentDate.getFullYear() && ['completed', 'verified', 'not-applicable'].includes(status)) return formError(error, 'Keep this future-year task open for planning. Completion belongs to its 2027 cycle.');
 
     if (status === "completed" && (!allSteps || !allMilestones || !sourceChecked || !doneConfirmed)) return formError(error, "Task completion needs every action, milestone and completion check ticked.");
     if (status === "verified" && !allSteps) return formError(error, "Complete each action step before verifying this task.");
@@ -1280,7 +1395,8 @@
           links: localLinks,
           records: sanitiseRecords(payload.state.records),
           weekly: safeObject(payload.state.weekly),
-          eventOccurrences: sanitiseEventOccurrences(payload.state.eventOccurrences)
+          eventOccurrences: sanitiseEventOccurrences(payload.state.eventOccurrences),
+          scheduleOverrides: sanitiseSchedules(payload.state.scheduleOverrides)
         };
         if (!saveState()) {
           state = previous;
@@ -1296,7 +1412,7 @@
   }
 
   function clearWorkspace() {
-    const confirmed = window.confirm("Clear task progress and weekly checks from this browser? Any browser-only link replacements will also be removed.");
+    const confirmed = window.confirm("Clear task progress, weekly checks and your planning date changes from this browser? Any browser-only link replacements will also be removed.");
     if (!confirmed) return;
     try {
       if (!storageIsCurrent()) return;
@@ -1307,6 +1423,7 @@
       return;
     }
     state = freshState();
+    applyPlanningDates();
     recordsUpdated();
     render();
     toast("Local workboard progress cleared");
@@ -1423,6 +1540,10 @@
   });
 
   document.addEventListener("change", event => {
+    if (event.target.id === 'tas-calendar-year' && ['2026', '2027'].includes(event.target.value)) {
+      calendarYear = event.target.value;
+      renderCalendar();
+    }
     if (event.target.matches("[data-task-step]")) {
       const task = data.tasks.find(item => item.id === event.target.dataset.taskId);
       if (!task || task.historyOnly || task.procedureOnly) return;
@@ -1514,6 +1635,10 @@
   });
 
   document.addEventListener("submit", event => {
+    if (event.target.id === 'planning-date-form') {
+      event.preventDefault();
+      savePlanningDates(event.target, event.submitter?.value === 'reset');
+    }
     if (event.target.id === "task-record-form") {
       event.preventDefault();
       saveTask(event.target, event.submitter?.value || "save");
@@ -1525,6 +1650,9 @@
   });
 
   document.addEventListener("input", event => {
+    if (event.target.matches('#planning-date-form input[type="date"]')) {
+      document.querySelector('#planning-date-form [name="confirmed"]').checked = false;
+    }
     if (event.target.matches("[data-area-search]")) {
       state.search = event.target.value;
       const position = event.target.selectionStart;

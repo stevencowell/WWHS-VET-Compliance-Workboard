@@ -268,6 +268,20 @@ const profiles = {
 };
 
 const taskProfiles = Object.freeze({
+  't1-year-opening-readiness': ['teaching-readiness', 'Prepare the annual opening check across current classes, owned programs, staff access and approved practical rooms; separate readiness checks from unresolved owner-led exceptions.'],
+  't1-student-review-cycle': ['student-review', 'Prepare only the assigned Term 1 review, wellbeing or assembly contribution and confirm the current roster before planning the sequence.'],
+  't1-vet-white-card-handoff': ['authorised-handoff', 'Check the current White Card activity and any TAS room, staffing or timetable impact; route delivery, attendance and credentialling controls to the authorised VET owner.'],
+  't1-parent-teacher-evening': ['event-preparation', 'Prepare the Term 1 parent–teacher evening checks for bookings, coverage, protected evidence access and role-based follow-up; do not draft individual family conversations.'],
+  't1-nesa-disability-provisions': ['authorised-handoff', 'Establish whether TAS has a contribution to the current disability-provisions action, its deadline and the authorised submission role; keep all learner support information protected.'],
+  't2-year12-report-chain': ['reporting', 'Prepare the Term 2 Year 12 Head Teacher check, correction, office hand-off and report issue as distinct stages.'],
+  't2-student-review-cycle': ['student-review', 'Prepare only the assigned Term 2 review, wellbeing or assembly contribution; confirm the live event and current roster rather than carrying forward an assumed responsibility.'],
+  't2-vet-placement-handoff': ['authorised-handoff', 'Reconcile the current Term 2 Year 12 work-placement window with TAS operational impacts; leave placement readiness, monitoring and evidence with the authorised VET workflow.'],
+  't2-year11-report-chain': ['reporting', 'Prepare the Term 2 Year 11 Head Teacher check, correction, office hand-off and report issue as distinct stages.'],
+  't2-year8-report-chain': ['reporting', 'Prepare the Term 2 Year 8 checking and correction hand-backs before office submission and the shared Years 7–10 release.'],
+  't2-year9-report-chain': ['reporting', 'Prepare the Term 2 Year 9 checking and correction hand-backs before office submission and the shared Years 7–10 release.'],
+  't2-year7-report-chain': ['reporting', 'Prepare the Term 2 Year 7 reporting chain and explicitly request the missing office hand-off date; never infer it from another year group or the common release date.'],
+  't2-year10-report-chain': ['reporting', 'Prepare the Term 2 Year 10 checking and correction hand-backs before office submission and the shared Years 7–10 release.'],
+  't2-hsc-practical-options-handoff': ['authorised-handoff', 'Confirm applicable delivered HSC practical courses, their current options-entry requirements and the authorised submitting role; organise the faculty hand-off without collecting learner options or claiming submission.'],
   't3-info-evening': ['course-information', 'Focus on the approved course information, fee statements and question hand-offs needed for the confirmed information evening.'],
   't3-year12-report-chain': ['reporting', 'Keep Head Teacher checks, office submission and final issue as separate hand-offs in this Year 12 chain.'],
   't3-parent-teacher': ['event-preparation', 'Focus on interview readiness, protected access to evidence, coverage and role-based follow-up; do not draft individual family conversations.'],
@@ -316,18 +330,24 @@ const taskProfiles = Object.freeze({
 const sourceInstruction = 'Use the current task details and only the authorised sources supplied or explicitly nominated. State what you can actually read and its version/date. If material is unavailable, prepare the useful blank structure and list the exact missing inputs; label unsupported dates, owners, authority and status To confirm.';
 const preparationInstruction = 'Return a practical draft in plain Australian English for the teacher to review. Do not send, publish, purchase, change access or official records, mark the task complete, or claim that an inspection, approval or verification occurred.';
 const privacyCheck = 'No personal, learner, family, personnel, incident, financial or security records are copied into the prompt or output; use blank structures or approved non-identifying aggregates.';
+const planningInstruction = 'For this 2027 planning task, dates carried from the 2026 schedule are provisional. Use any supplied saved date changes, and check the current 2027 school calendar or NESA source before treating a date as confirmed. Keep 2026 source material labelled as background; do not describe an old verified deadline as a verified 2027 deadline or silently move a weekend date.';
 
 export function getTasTaskHelp(task) {
-  if (!task || typeof task.id !== 'string' || task.historyOnly || task.procedureOnly || !Object.hasOwn(taskProfiles, task.id)) return null;
-  const [profileId, focus] = taskProfiles[task.id];
+  if (!task || typeof task.id !== 'string' || task.historyOnly || task.procedureOnly) return null;
+  const canonicalId = task.canonicalTaskId || task.id;
+  if (typeof canonicalId !== 'string' || !Object.hasOwn(taskProfiles, canonicalId)) return null;
+  const [profileId, focus] = taskProfiles[canonicalId];
   const profile = profiles[profileId];
+  // The normalised task-help context retains canonicalTaskId and the occurrence
+  // id, but not every native task flag. The planning prefix survives that path.
+  const planning = task.provisionalSchedule === true || /^2027-/.test(task.id);
   return {
     profileId: `tas-${profileId}`,
     label: profile.label,
     summary: profile.summary,
     deliverable: profile.deliverable,
-    instructions: [sourceInstruction, focus, ...profile.instructions, preparationInstruction],
-    requiredInputs: [...profile.requiredInputs],
-    reviewChecks: [...profile.reviewChecks, privacyCheck]
+    instructions: [sourceInstruction, ...(planning ? [planningInstruction] : []), focus, ...profile.instructions, preparationInstruction],
+    requiredInputs: [...profile.requiredInputs, ...(planning ? ['Current 2027 deadline sources and any saved planning-date changes or source-confirmation notes.'] : [])],
+    reviewChecks: [...profile.reviewChecks, ...(planning ? ['Provisional planning dates, current-source confirmed dates and 2026 background are clearly distinguished; no date is silently promoted to an official deadline.'] : []), privacyCheck]
   };
 }

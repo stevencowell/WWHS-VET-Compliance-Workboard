@@ -1,5 +1,5 @@
 import {createNoteEditor} from './note-editor.mjs?v=1';
-import {createTaskHelpDialog} from './task-help-dialog.mjs?v=full-register-1';
+import {createTaskHelpDialog} from './task-help-dialog.mjs?v=tas-planning-1';
 import {emailSearchText} from './email-search.mjs?v=1';
 import './email-capture.mjs?v=email-source-1';
 import './launchpad-calendar.mjs?v=10';

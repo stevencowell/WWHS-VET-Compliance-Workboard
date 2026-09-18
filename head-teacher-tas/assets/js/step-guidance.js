@@ -123,7 +123,7 @@
 
   function forStep(task, index) {
     if (!task || !Number.isInteger(index) || index < 0 || index >= (task.steps || []).length) return [];
-    return describe(plans[task.id]?.[index] || "guide", task);
+    return describe(plans[task.canonicalTaskId || task.id]?.[index] || "guide", task);
   }
 
   function forSource(task) {
@@ -143,6 +143,9 @@
     forSource,
     forWeekly: index => describe(weekly[index], index === 1 ? { source: "Guide C27" } : null),
     forMilestone: task => describe(/NESA|grade|HSC/.test(task?.source || "") ? "calendar nesa" : "calendar", task),
-    hasPlan: (taskId, index) => Object.prototype.hasOwnProperty.call(plans, taskId) && (index === undefined || typeof plans[taskId][index] === "string")
+    hasPlan: (taskId, index) => {
+      const id = window.HT_TAS_WORKBOARD?.tasks.find(task => task.id === taskId)?.canonicalTaskId || taskId;
+      return Object.prototype.hasOwnProperty.call(plans, id) && (index === undefined || typeof plans[id][index] === "string");
+    }
   });
 })();

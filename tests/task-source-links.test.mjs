@@ -20,7 +20,7 @@ test('every VET and TAS task, event template and weekly control exposes source a
     assert.match(html,/not a quotation from the source/);
     count++;
   }
-  assert.equal(count,311);
+  assert.equal(count,340);
   assert.equal(JSON.stringify({vet,tas,catalogue}),before);
 });
 
