@@ -1,6 +1,6 @@
 // One planning surface. Specialist records remain owned by their existing workboards.
-import '../../morning-launchpad/assets/summary-import.mjs?v=email-source-1';
-import {INBOX_KEY, validateInbox, taskSection, todaySydney} from '../../morning-launchpad/assets/summary-core.mjs?v=email-source-1';
+import '../../morning-launchpad/assets/summary-import.mjs?v=email-cleanup-1';
+import {INBOX_KEY, validateInbox, taskSection, todaySydney} from '../../morning-launchpad/assets/summary-core.mjs?v=email-cleanup-1';
 import {createTaskRegister} from './task-register.mjs?v=external-review-2';
 
 const base = new URL('../../', import.meta.url);

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {INBOX_KEY,enrich,validateInbox,mergeInbox,workboardTaskKey,createTrackedWork,taskSection,mergeWorkboardImports,clearWorkInbox,reconcileForecast} from '../morning-launchpad/assets/summary-core.mjs';
+import {INBOX_KEY,enrich,validateInbox,mergeInbox,workboardTaskKey,createTrackedWork,taskSection,mergeWorkboardImports,clearEmailImports,reconcileForecast} from '../morning-launchpad/assets/summary-core.mjs';
 
 const descriptor=(changes={})=>({wing:'vet',taskId:'annual-review',recordKey:'annual-review::2026',title:'Review delivery',action:'Check the delivery plan',notes:'Keep the existing evidence reference.',dueDate:'2026-09-30',waitingOn:'',status:'review',cycle:'2026',route:'#task/annual-review',...changes});
 const forecastContext=(changes={})=>({wing:'vet',date:'2026-09-17',year:2026,sourceYear:2026,role:'htvet',roleLabel:'Head Teacher VET',sourceAsAt:'2026-09-01',horizonDays:21,mode:'current',title:'Current scheduled work',note:'From the recorded schedule',...changes});
@@ -111,9 +111,9 @@ test('trackWork fails safely for changed-tab state, invalid notes and full lists
 
 test('workboard import markers validate, union on restore and survive deliberate clear',async()=>{
   const markers=['vet:annual-review::2026','tas:staff-review::2026'];
-  const inbox=validateInbox(JSON.stringify({version:2,items:[await createTrackedWork(descriptor())],workboardImports:markers}));
-  const cleared=clearWorkInbox(inbox);
-  assert.equal(cleared.items.length,0);assert.deepEqual(cleared.workboardImports,markers);assert.equal(cleared.pinWorkflowVersion,1);
+  const inbox=validateInbox(JSON.stringify({version:2,items:[await createTrackedWork(descriptor()),enrich({id:'email',title:'Fw: Email',action:'Reply'})],workboardImports:markers}));
+  const cleared=clearEmailImports(inbox);
+  assert.equal(cleared.items.length,1);assert.deepEqual(cleared.items[0],inbox.items[0]);assert.deepEqual(cleared.workboardImports,markers);assert.equal(cleared.pinWorkflowVersion,1);
   assert.deepEqual(validateInbox(JSON.stringify(cleared)).workboardImports,markers);
   assert.deepEqual(mergeWorkboardImports(markers,['tas:staff-review::2026','vet:other::2027']),[...markers,'vet:other::2027']);
   for(const workboardImports of [null,'vet:task',['other:task'],['vet:'],[123],Array.from({length:2001},(_,i)=>`vet:${i}`)])assert.throws(()=>validateInbox(JSON.stringify({version:2,items:[],workboardImports})),/workboard import history/);
@@ -200,7 +200,7 @@ test('resolved completion derives Done without rewriting personal status or crea
 
 test('forecast respects deletion markers, preserves other wings and never generates from an unavailable source',async()=>{
   const first=await reconcileForecast(validateInbox(null),{entries:[scheduled()],context:forecastContext()});
-  const deleted=clearWorkInbox(first.inbox);const suppressed=await reconcileForecast(deleted,{entries:[scheduled()],context:forecastContext()});
+  const deleted={...first.inbox,items:[]};const suppressed=await reconcileForecast(deleted,{entries:[scheduled()],context:forecastContext()});
   assert.equal(suppressed.added,0);assert.equal(suppressed.suppressed,1);assert.equal(suppressed.inbox.items.length,0);
   for(const mode of ['reference-only','unavailable']){
     const result=await reconcileForecast(first.inbox,{entries:[scheduled()],context:forecastContext({mode})});

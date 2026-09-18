@@ -3,7 +3,7 @@ import {createTaskHelpDialog} from './task-help-dialog.mjs?v=full-register-1';
 import {emailSearchText} from './email-search.mjs?v=1';
 import './email-capture.mjs?v=email-source-1';
 import './launchpad-calendar.mjs?v=10';
-import {INBOX_KEY, LIMIT, parseSummary, validateInbox, mergeInbox, safeUrl, workingNoteLinks, matchesNoteSearch, PRIORITIES, NEXT_ACTIONS, EDITABLE, enrich, todaySydney, taskSection, rank, nextDate, consolidateDuplicates, LEGACY_PLAN_KEY, isPinned, migrateToPins, recordNoteAction, WORKSTREAMS, createTrackedWork, mergeWorkboardImports, clearWorkInbox, reconcileForecast, sourceCompleted, normaliseForecastContext} from './summary-core.mjs?v=email-source-1';
+import {INBOX_KEY, LIMIT, parseSummary, validateInbox, mergeInbox, safeUrl, workingNoteLinks, matchesNoteSearch, PRIORITIES, NEXT_ACTIONS, EDITABLE, enrich, todaySydney, taskSection, rank, nextDate, consolidateDuplicates, LEGACY_PLAN_KEY, isPinned, migrateToPins, recordNoteAction, WORKSTREAMS, createTrackedWork, mergeWorkboardImports, clearEmailImports, isUnfinishedEmailNote, reconcileForecast, sourceCompleted, normaliseForecastContext} from './summary-core.mjs?v=email-cleanup-1';
 
 const repositoryRoot=new URL('../../',import.meta.url);
 
@@ -187,7 +187,7 @@ class SummaryImport extends HTMLElement {
     for(const [key,label]of [['ready','Today'],['upcoming','Soon'],['waiting','Waiting'],['notes','My Notes'],['done','Done']]){const b=button(label,()=>{this.searchInput.value='';this.view=key;this.expanded=false;this.renderItems();});this.tabs[key]={button:b,label};this.nav.append(b);}this.append(this.nav);
     this.viewHelp=element('p','',{class:'import-help',role:'status','aria-live':'polite'});this.list=element('div',undefined,{class:'import-list'});this.append(this.viewHelp,this.list);
     this.earlier=element('details',undefined,{class:'import-other'});this.earlierHeading=element('summary');this.earlierList=element('div',undefined,{class:'import-list'});this.earlier.append(this.earlierHeading,element('p','The AI task file replaces these basic entries. Their text and edits are kept here; restore one only if it contains additional work.',{class:'import-help'}),this.earlierList);this.append(this.earlier);
-    const footer=element('div',undefined,{class:'import-footer'});footer.append(element('p','Saved in this browser. Export your task backup to keep progress or move to another computer. Email and Evernote are not changed.',{class:'import-help'}),button('Export task backup',()=>{const raw=this.blocked?this.raw:JSON.stringify(this.inbox,null,2);if(raw===null){this.say('There is no saved task list to export.');return;}download(raw,'launchpad-task-backup.json');}));if(this.legacyRaw!==null)footer.append(button('Export older daily plans',()=>download(this.legacyRaw,'launchpad-older-daily-plans.json')));this.clearNotesButton=button('Clear all notes',()=>this.openClearNotes(),'import-danger');footer.append(this.clearNotesButton);this.append(footer);
+    const footer=element('div',undefined,{class:'import-footer'});footer.append(element('p','Saved in this browser. Export your task backup to keep progress or move to another computer. Email and Evernote are not changed.',{class:'import-help'}),button('Export task backup',()=>{const raw=this.blocked?this.raw:JSON.stringify(this.inbox,null,2);if(raw===null){this.say('There is no saved task list to export.');return;}download(raw,'launchpad-task-backup.json');}));if(this.legacyRaw!==null)footer.append(button('Export older daily plans',()=>download(this.legacyRaw,'launchpad-older-daily-plans.json')));this.clearNotesButton=button('Clear unfinished email notes',()=>this.openClearNotes(),'import-danger');footer.append(this.clearNotesButton);this.append(footer);
     this.taskArea=element('div',undefined,{class:'task-area'});for(const child of [...this.children])if(child!==heading&&child!==this.message&&child!==this.reloadButton)this.taskArea.append(child);this.append(this.taskArea);
     this.calendar=element('launchpad-calendar');this.calendar.hidden=true;
     this.calendar.addEventListener('calendar:minimise',()=>{this.showCalendar(false);this.calendarToggle.focus({preventScroll:true});this.calendarToggle.scrollIntoView({behavior:'smooth',block:'nearest'});});
@@ -214,24 +214,25 @@ class SummaryImport extends HTMLElement {
   }
   buildClearNotesDialog(){
     this.clearDialog=element('dialog',undefined,{class:'chatgpt-chooser','aria-labelledby':'clear-notes-title'});
-    this.clearDialog.append(element('h2','Clear all notes?',{id:'clear-notes-title'}));
-    this.clearDescription=element('p');this.clearDialog.append(this.clearDescription,element('p','This removes shared notes and tasks from Personal, VET and TAS in every section, including Done, My Notes and Earlier imports, plus the processed briefing. Task dates disappear from Calendar. Imported lessons, diary events and the VET/TAS checklists stay. Evernote and Outlook are not changed.'),element('p','This cannot be undone here. Export a backup first if you may need these notes again.'));
+    this.clearDialog.append(element('h2','Clear unfinished email notes?',{id:'clear-notes-title'}));
+    this.clearDescription=element('p');this.clearDialog.append(this.clearDescription,element('p','Only unfinished email/imported notes in Personal are removed, including their drafts, task dates and unfinished earlier imports. The old email briefing is also cleared.'),element('p','Kept: completed items in Done, My Notes and put-aside items, notes you created yourself, and every VET/TAS task and checklist. Imported lessons and diary events stay. Evernote and Outlook are not changed.'),element('p','Export a backup first and give it to the AI with your Evernote notes. This keeps task identities and completion decisions when you import the refreshed file. Clearing cannot be undone here without your backup.'));
     const actions=element('div',undefined,{class:'clear-notes-actions'});
     const cancel=button('Cancel',()=>this.clearDialog.close());cancel.setAttribute('autofocus','');
-    actions.append(cancel,button('Export backup first',()=>download(JSON.stringify(this.inbox,null,2),'launchpad-task-backup.json')),button('Yes, clear all notes',()=>{
-      if(this.blocked||this.raw!==this.clearSnapshot){this.clearDialog.close();this.say('The notes changed while this confirmation was open. Review the list and choose Clear all notes again.',true);return;}
+    actions.append(cancel,button('Export backup first',()=>download(JSON.stringify(this.inbox,null,2),'launchpad-task-backup.json')),button('Clear unfinished email notes',()=>{
+      if(this.scope||!['personal','all'].includes(this.workstream)||this.blocked||this.raw!==this.clearSnapshot){this.clearDialog.close();this.say('The work area or notes changed while this confirmation was open. Review the list before clearing unfinished email notes.',true);return;}
       // Mark migration complete so old daily plans cannot repopulate the cleared list.
-      const empty=clearWorkInbox(this.inbox);
-      if(!this.persist(empty)){this.clearDialog.close();return;}
-      this.clearDialog.close();this.view='ready';this.expanded=false;this.editingNote=null;this.noteForm.reset();this.noteEditor.open=false;this.paste.value='';this.inputDetails.open=false;this.renderItems();this.say('All saved Launchpad notes and tasks cleared. Imported calendar events were kept.');
+      const next=clearEmailImports(this.inbox);
+      if(!this.persist(next)){this.clearDialog.close();return;}
+      this.clearDialog.close();this.workstream='personal';this.view='ready';this.expanded=false;this.editingNote=null;this.noteForm.reset();this.noteEditor.open=false;this.paste.value='';this.inputDetails.open=false;this.searchInput.value='';this.renderItems();this.say('Unfinished Personal email notes cleared. Completed items are kept in Done. Your own notes and all VET/TAS work are unchanged.');
     },'import-danger'));
     this.clearDialog.append(actions);this.append(this.clearDialog);
   }
   openClearNotes(){
-    if(this.blocked)return;
+    if(this.scope||!['personal','all'].includes(this.workstream)||this.blocked)return;
     this.clearSnapshot=this.raw;
-    const count=this.inbox.items.length;
-    this.clearDescription.textContent=`You are about to remove ${count} saved ${count===1?'item':'items'} from Daily Launchpad in this browser.`;
+    const count=this.inbox.items.filter(isUnfinishedEmailNote).length;
+    if(!count)return;
+    this.clearDescription.textContent=`You are about to remove ${count} unfinished ${count===1?'email note':'email notes'} from Personal in this browser. Completed notes will stay in Done.`;
     this.clearDialog.showModal();
   }
   buildChatGPTChooser(){
@@ -466,7 +467,8 @@ class SummaryImport extends HTMLElement {
     this.calendar?.setTasks(this.scope?visible:this.inbox.items);this.updateCount();
   }
   updateCount(){
-    this.clearNotesButton.disabled=this.blocked||this.reading||(!this.inbox.items.length&&!this.inbox.briefing);
+    this.clearNotesButton.hidden=!!this.scope||!['personal','all'].includes(this.workstream);
+    this.clearNotesButton.disabled=this.blocked||this.reading||!this.inbox.items.some(isUnfinishedEmailNote);
     this.importButton.disabled=this.blocked||this.reading;this.file.disabled=this.blocked||this.reading;
     this.searchInput.disabled=this.blocked;this.clearSearch.disabled=this.blocked;
     for(const {button:control}of Object.values(this.tabs))control.disabled=this.blocked;

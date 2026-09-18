@@ -14,8 +14,21 @@ export function mergeWorkboardImports(current=[],incoming=[]) {
   return merged;
 }
 
-export function clearWorkInbox(inbox) {
-  return {version:2,items:[],importedAt:null,briefing:'',pinWorkflowVersion:1,workboardImports:mergeWorkboardImports(inbox.workboardImports),forecastContexts:inbox.forecastContexts||{}};
+export function isUnfinishedEmailNote(item) {
+  const note=enrich(item);
+  // Classification and native origin both protect workboard cards, including
+  // cards someone has moved into Personal. Manual/reference notes stay too.
+  return note.workstream==='personal'&&!note.personal&&!note.origin&&!note.forecast&&!note.taskKey.startsWith('workboard:')&&
+    ['review','added','superseded'].includes(note.status)&&!['done','notes'].includes(taskSection(note))&&
+    !['done','dismissed','note'].includes(note.previousStatus);
+}
+
+export function clearEmailImports(inbox) {
+  const items=inbox.items.filter(item=>!isUnfinishedEmailNote(item));
+  if(items.length===inbox.items.length)return inbox;
+  const next={...inbox,items,briefing:'',importedAt:null,pinWorkflowVersion:1};
+  delete next.reviewDate;delete next.generatedAt;
+  return next;
 }
 
 export function normaliseForecastContext(input) {
