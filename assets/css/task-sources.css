@@ -1,0 +1,14 @@
+.task-source-panel{margin:1.4rem 0;padding:1.15rem;border:1px solid #c9d7e4;border-left:4px solid #32668b;border-radius:12px;background:#f5f8fb;color:#19344b}
+.task-source-heading{display:flex;align-items:center;justify-content:space-between;gap:.7rem;flex-wrap:wrap}
+.task-source-heading h3{margin:0}.task-source-heading>span,.task-source-kind{font-size:.78rem;font-weight:700}
+.task-source-heading>span{background:#e3edf6;border-radius:20px;padding:.3rem .7rem}
+.task-source-basis{font-size:.94rem;line-height:1.6}.task-source-quote{margin-top:1rem}.task-source-quote blockquote{margin:.5rem 0 1rem;padding:.6rem 1rem;border-left:3px solid #537b99;font-size:1.05rem}
+.task-source-links{list-style:none;margin:1rem 0 0;padding:0;display:grid;gap:.8rem;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr))}
+.task-source-item{margin:0;padding:.85rem;background:white;border:1px solid #d1dce7;border-radius:9px;min-width:0}
+.task-source-item>a,.task-source-item>strong{display:block;font-size:.98rem;line-height:1.4;overflow-wrap:anywhere}
+.task-source-item>a{font-weight:700;text-decoration:underline;color:#1d5b91}.task-source-item>p{font-size:.88rem;margin:.65rem 0;line-height:1.45}
+.task-source-item>small{display:block;font-size:.8rem;line-height:1.4;color:#47596b}.task-source-kind{display:block;color:#526473;margin-bottom:.35rem}
+.task-source-more{margin-top:.9rem}.task-source-more>summary{cursor:pointer;font-weight:650}.source-verification{margin-top:.6rem;font-size:.78rem}.source-verification p{line-height:1.5}.source-verification summary{cursor:pointer}
+.task-source-year{padding:.7rem;border-radius:7px;background:#fff2d9;font-size:.9rem}.task-source-checklist-note{margin:1rem 0 .5rem;font-size:.85rem;line-height:1.5;color:#425567}.task-source-audit{font-size:.85rem}
+[data-workboard=tas] .task-source-panel{border-color:#d9d0e4;border-left-color:#726080;background:#f8f6fb}[data-workboard=tas] .task-source-heading>span{background:#eee8f5}
+@media(max-width:600px){.task-source-panel{padding:.85rem}.task-source-links{grid-template-columns:1fr}.task-source-heading{align-items:flex-start;flex-direction:column}}

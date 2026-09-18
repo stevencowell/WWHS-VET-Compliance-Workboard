@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
+import {normaliseTaskHelpContext} from '../assets/js/task-help.mjs';
 
 const dataScript = fs.readFileSync(new URL('../head-teacher-tas/assets/js/data.js', import.meta.url), 'utf8');
 const appScript = fs.readFileSync(new URL('../head-teacher-tas/assets/js/app.js', import.meta.url), 'utf8');
@@ -64,6 +65,9 @@ function harness(raw = null, options = {}) {
   };
   vm.createContext(context);
   vm.runInContext(dataScript, context);
+  for(const file of ['../assets/js/data/task-source-links.js','../assets/js/task-sources.js']) {
+    vm.runInContext(fs.readFileSync(new URL(file,import.meta.url),'utf8'),context);
+  }
   vm.runInContext(fs.readFileSync(new URL('../assets/js/task-review.js', import.meta.url), 'utf8'), context);
   vm.runInContext(fs.readFileSync(new URL('../assets/js/task-navigation.js', import.meta.url), 'utf8'), context);
   vm.runInContext(appScript, context);
@@ -102,6 +106,22 @@ test('a clean TAS browser exposes no catalogue tasks; track actions do not chang
   assert.equal(h.storage.has(key), false);
   assert.deepEqual(json(h.adapter.getEntries()), []);
   assert.equal(h.nodes.get('route-content').innerHTML, '');
+});
+
+test('real source helper keeps every actionable TAS AI context bounded and excludes private overrides and evidence', () => {
+  const links=Object.fromEntries(sampleData.window.HT_TAS_WORKBOARD.systems.map(system=>[system.id,`https://private.example.invalid/TAS-PRIVATE-${system.id}`]));
+  const h=harness(saved({'annual-plan-alignment::2026':{status:'in-progress',exceptionReason:'TAS-PRIVATE-NOTE',evidenceRef:'TAS-PRIVATE-EVIDENCE',verifier:'TAS-PRIVATE-VERIFIER'}},{links}));
+  const before=h.storage.get(key);
+  for(const task of tasks){
+    const descriptor=h.adapter.describeTask(task.id);
+    if(task.historyOnly||task.procedureOnly){assert.equal(descriptor,null);continue;}
+    const context=descriptor.taskHelp;
+    assert.doesNotThrow(()=>normaliseTaskHelpContext(context),task.id);
+    assert.equal(new Set(context.links.map(link=>link.url)).size,context.links.length,task.id+' deduplicates links');
+    assert.doesNotMatch(JSON.stringify(context),/private\.example\.invalid|TAS-PRIVATE/);
+  }
+  assert.ok(h.adapter.describeTask('workshop-routine').taskHelp.links.some(link=>link.url.includes('/1r4TfBMm8cwgsqUtTRkCX25ofazCstjphwLLFr42foQ0/')),'Exact maintenance schedule reaches AI context');
+  assert.equal(h.storage.get(key),before);
 });
 
 test('TAS task links open and close over the personal list without changing saved progress', () => {

@@ -188,7 +188,7 @@
     },
     {
       "id": "a-08-publish-local-handbook",
-      "title": "Update the School VET Handbook and team start-up brief",
+      "title": "Update and share the School VET Handbook",
       "phase": "annual_setup",
       "timing": "Before learner/staff induction and after material policy or process changes",
       "trigger": "New year or changed approved information",

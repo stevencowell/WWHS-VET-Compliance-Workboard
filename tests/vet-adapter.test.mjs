@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
+import {normaliseTaskHelpContext} from '../assets/js/task-help.mjs';
 
 const root = new URL('../', import.meta.url);
 const source = fs.readFileSync(new URL('assets/js/app-v2.js', root), 'utf8');
@@ -59,6 +60,9 @@ function harness(saved = null, options = {}) {
   for(const file of ['config.js','tasks.js','term1-2027.js','reference.js']) {
     vm.runInContext(fs.readFileSync(new URL('assets/js/data/'+file,root),'utf8'),context);
   }
+  for(const file of ['assets/js/data/task-source-links.js','assets/js/task-sources.js']) {
+    vm.runInContext(fs.readFileSync(new URL(file,root),'utf8'),context);
+  }
   vm.runInContext(fs.readFileSync(new URL('assets/js/vet-step-guidance.js',root),'utf8'),context);
   vm.runInContext(fs.readFileSync(new URL('assets/js/task-review.js',root),'utf8'),context);
   vm.runInContext(fs.readFileSync(new URL('assets/js/task-navigation.js',root),'utf8'),context);
@@ -110,6 +114,26 @@ test('VET adapter exposes saved work only and retains stable native routes', () 
   assert.equal(h.adapter.describeTask('missing'),null);
   assert.equal(h.api.currentView(),'my-work');
   assert.equal(h.writes,0);
+});
+
+test('real source helper keeps every VET AI context bounded and excludes private saved links and evidence', () => {
+  const base=harness();
+  const links=Object.fromEntries(base.data.systems.map(system=>[system.id,`https://private.example.invalid/VET-PRIVATE-${system.id}`]));
+  const cycle=base.data.operatingCycle2027;
+  const eventOccurrences=cycle.eventTemplates.map((template,index)=>({id:`2027-event-${template.canonicalTaskId}-test${index}`,templateId:template.id,workflowId:cycle.interruptWorkflows[0],createdAt:'2027-03-01T01:00:00.000Z',term:1}));
+  const h=harness(state({'a-08-publish-local-handbook':{status:'in-progress',exceptionSummary:'VET-PRIVATE-NOTE',evidenceRef:'VET-PRIVATE-EVIDENCE',verifier:'VET-PRIVATE-VERIFIER'}},{links,eventOccurrences}),{now:'2027-03-01T02:00:00Z'});
+  const before=h.storage.get(key), writes=h.writes;
+  const all=[...h.data.taskRegister.tasks,...h.data.operatingCycle2027.tasks,...eventOccurrences.map(event=>h.api.taskById(event.id))];
+  for(const template of cycle.eventTemplates)assert.equal(h.adapter.describeTask(template.id),null,'Template itself is not an actionable occurrence');
+  for(const task of all){
+    const context=h.adapter.describeTask(task.id).taskHelp;
+    assert.doesNotThrow(()=>normaliseTaskHelpContext(context),task.id);
+    assert.equal(new Set(context.links.map(link=>link.url)).size,context.links.length,task.id+' deduplicates links');
+    assert.doesNotMatch(JSON.stringify(context),/private\.example\.invalid|VET-PRIVATE/);
+  }
+  const handbook=h.adapter.describeTask('a-08-publish-local-handbook').taskHelp;
+  assert.ok(handbook.links.some(link=>link.url.includes('/1nhUiViZFMjSbrn5aWuTiLSVwKUdwu--f/')),'Exact audited guide reaches AI context');
+  assert.equal(h.storage.get(key),before);assert.equal(h.writes,writes);
 });
 
 test('VET task links close back to the same personal list or year scope without editing records', () => {

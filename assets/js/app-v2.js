@@ -366,7 +366,17 @@
   function is2027Task(task) { return Boolean(task && (task.operatingYear === 2027 || /^2027-/.test(task.id || ""))); }
   function sourceFor(id, task) {
     if (is2027Task(task) && cycle2027.sourceFamilies?.[id]) return cycle2027.sourceFamilies[id];
-    return data.sources.find(source => source.id === (sourceAliases[id] || id)) || null;
+    const original = data.sources.find(source => source.id === (sourceAliases[id] || id)) || null;
+    const linked = window.WWHS_TASK_SOURCES?.source(sourceAliases[id] || id, original || {});
+    return linked?.title ? linked : original;
+  }
+  function taskSourcePanel(task) {
+    return window.WWHS_TASK_SOURCES?.panel('vet',task,(task.sourceIds || []).map(id=>({id,...sourceFor(id,task)}))) || '';
+  }
+  function taskSourceLabel(task) {
+    const row=window.WWHS_TASK_SOURCES?.rowFor('vet',task);
+    if (is2027Task(task)) return '2027 planning task';
+    return row?.provenanceStatus==='specific-citation'?'Source-linked task':row?.provenanceStatus==='inferred-local-control'?'Local workboard control':'Source check needed';
   }
   function taskById(id) { return allTasks.find(task => task.id === id) || null; }
   function describeWorkTask(id) {
@@ -392,8 +402,9 @@
         sources: (task.sourceIds || []).map(id => sourceFor(id, task)).filter(Boolean).map(source => `${source.title}${source.note ? " — " + source.note : ""}`),
         // Static source routes only. Private saved links and evidence references are never copied.
         links: [...(task.sourceIds || []).map(id => sourceFor(id, task)).filter(Boolean).map(source => ({ label: source.title, url: source.url })),
+          ...(window.WWHS_TASK_SOURCES?.publicLinks('vet',task) || []),
           ...taskSystems(task).map(system => ({ label: system.label, url: system.url }))]
-          .filter((link, index, links) => /^https:\/\//.test(link.url || "") && links.findIndex(other => other.url === link.url) === index)
+          .filter((link, index, links) => /^https:\/\//.test(link.url || "") && links.findIndex(other => other.url === link.url) === index).slice(0,20)
       },
       cycle: is2027Task(task) ? "2027" : "2026",
       route: "#task/" + encodeURIComponent(task.id)
@@ -691,7 +702,7 @@
   }
   function sourceGuidance(source, task, sourceId = source?.id) {
     const system = data.systems.find(item => source?.url && item.url === source.url);
-    return guidanceLinks([{ ...(sourceId ? {sourceId} : {systemId: system?.id}), label: system ? `Open ${system.label}` : `Open ${source?.title || "source"}` }], task, "Source access");
+    return guidanceLinks([{ ...(sourceId ? {sourceId} : {systemId: system?.id}), label: source?.linkKind==='guide'?'Open Head Teacher reference guide':system ? `Open ${system.label}` : `Open ${source?.linkTitle || source?.title || "source"}`, hint:source?.accessNote || source?.locator || '' }], task, "Source access");
   }
   function gapGuidance(gap) {
     const destinations = {
@@ -1160,7 +1171,7 @@
     const record = window.WWHS_TASK_REVIEW.project(getRecord(task.id), review, task.actionSteps || [], 'stepChecks'), systems = taskSystems(task), sources = (task.sourceIds || []).map(idValue => ({ id: idValue, item: sourceFor(idValue, task) }));
     const dependencies = (task.dependencies || []).map(dependencyId => taskById(dependencyId) || { id: dependencyId, title: `Missing prerequisite configuration: ${dependencyId}`, missing: true });
     const guidanceOpen = state.guidance || state.experience === "guided";
-    taskDialogContent.innerHTML = `<header class="dialog-head"><div><p class="eyebrow">${esc(phaseMeta[task.phase]?.short || task.phase)} · ${esc(applicabilityLabel(task))}</p><h2 id="task-dialog-title">${esc(task.title)}</h2></div><button class="dialog-close" type="button" data-action="close-dialog" aria-label="Close task">×</button></header><div class="dialog-body"><div class="task-facts"><div class="fact"><span>When</span><strong>${esc(task.dueDate ? longDate(task.dueDate) : task.timing)}</strong></div><div class="fact"><span>Accountable</span><strong>${esc(accountableRole(task))}</strong></div><div class="fact"><span>Doer</span><strong>${esc(assignedRole(task))}</strong></div><div class="fact"><span>Expected verifier</span><strong>${esc(verifierRole(task))}</strong></div></div>${authorityPanel(task)}<div class="task-card-actions">${statusPill(task)}${trackTaskButton(task)}</div>${dependencies.length ? dependencyPanel(dependencies, task.dependencyMode) : ""}<section class="dialog-section"><h3>Do this</h3>${review ? `<p>All applicable steps completed through the overall sign-off. Untick the review to restore the earlier checklist.</p>` : ""}<ol class="step-list">${(task.actionSteps || []).map((step, index) => `<li><label><input type="checkbox" data-task-step="${index}" data-task-id="${esc(task.id)}" ${record.stepChecks?.[index] ? "checked" : ""} ${review ? "disabled" : ""}><span class="step-number">${index + 1}</span><span>${esc(step)}</span></label>${stepGuidance(task, index)}</li>`).join("")}</ol></section><section class="done-when"><span>Done when</span><p>${esc(task.doneWhen)}</p></section>${ownerSystemsPanel(task, systems)}<details class="guidance-details" ${guidanceOpen ? "open" : ""}><summary>Explain this in plain English</summary><div class="guidance-box"><p><strong>Why it matters:</strong> ${esc(task.guidance?.why || "This action supports the authorised annual VET process.")}</p><p><strong>Common trap:</strong> ${esc(task.guidance?.commonTrap || "Treating the workboard as the official record.")}</p><p><strong>Applies to:</strong> ${esc(task.applicability?.conditions || "Confirm locally")}</p></div></details><details class="source-details"><summary>Show mapped sources</summary><div class="source-mini-list">${sources.map(({ id: sourceId, item }) => item ? `<div><strong>${esc(item.title)}</strong><span>${esc(item.note)}</span>${sourceGuidance(item, task, sourceId)}</div>` : `<p><strong>${esc(sourceId)}</strong><span>Controlled or local source—confirm the current authorised version.</span></p>`).join("")}</div></details>${completionForm(task, record)}${historyPanel(record)}</div>`;
+    taskDialogContent.innerHTML = `<header class="dialog-head"><div><p class="eyebrow">${esc(phaseMeta[task.phase]?.short || task.phase)} · ${esc(taskSourceLabel(task))}</p><h2 id="task-dialog-title">${esc(task.title)}</h2></div><button class="dialog-close" type="button" data-action="close-dialog" aria-label="Close task">×</button></header><div class="dialog-body"><div class="task-facts"><div class="fact"><span>When</span><strong>${esc(task.dueDate ? longDate(task.dueDate) : task.timing)}</strong></div><div class="fact"><span>Accountable</span><strong>${esc(accountableRole(task))}</strong></div><div class="fact"><span>Doer</span><strong>${esc(assignedRole(task))}</strong></div><div class="fact"><span>Expected verifier</span><strong>${esc(verifierRole(task))}</strong></div></div>${authorityPanel(task)}<div class="task-card-actions">${statusPill(task)}${trackTaskButton(task)}</div>${dependencies.length ? dependencyPanel(dependencies, task.dependencyMode) : ""}${taskSourcePanel(task)}<section class="dialog-section"><h3>Suggested steps</h3>${review ? `<p>All applicable steps completed through the overall sign-off. Untick the review to restore the earlier checklist.</p>` : ""}<ol class="step-list">${(task.actionSteps || []).map((step, index) => `<li><label><input type="checkbox" data-task-step="${index}" data-task-id="${esc(task.id)}" ${record.stepChecks?.[index] ? "checked" : ""} ${review ? "disabled" : ""}><span class="step-number">${index + 1}</span><span>${esc(step)}</span></label>${stepGuidance(task, index)}</li>`).join("")}</ol></section><section class="done-when"><span>Done when</span><p>${esc(task.doneWhen)}</p></section>${ownerSystemsPanel(task, systems)}<details class="guidance-details" ${guidanceOpen ? "open" : ""}><summary>Explain this in plain English</summary><div class="guidance-box"><p><strong>Why it matters:</strong> ${esc(task.guidance?.why || "This action supports the authorised annual VET process.")}</p><p><strong>Common trap:</strong> ${esc(task.guidance?.commonTrap || "Treating the workboard as the official record.")}</p><p><strong>Applies to:</strong> ${esc(task.applicability?.conditions || "Confirm locally")}</p></div></details><details class="source-details"><summary>Show mapped sources</summary><div class="source-mini-list">${sources.map(({ id: sourceId, item }) => item ? `<div><strong>${esc(item.title)}</strong><span>${esc(item.note)}</span>${sourceGuidance(item, task, sourceId)}</div>` : `<p><strong>${esc(sourceId)}</strong><span>Controlled or local source—confirm the current authorised version.</span></p>`).join("")}</div></details>${completionForm(task, record)}${historyPanel(record)}</div>`;
     const reviewState = readReviewState();
     taskFormReviewSnapshot = { taskId: task.id, raw: reviewState.raw, readable: reviewState.readable, note: externalReviewNote(task) };
     if (!taskDialog.open) taskDialog.showModal();

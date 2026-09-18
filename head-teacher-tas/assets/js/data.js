@@ -10,7 +10,7 @@
       group: "School operations",
       kind: "staff",
       status: "staff-link",
-      url: "https://waggawagga-h.sentral.com.au/s-lD94m0/webcal/calendar/17",
+      url: "https://waggawagga-h.sentral.com.au/s-lD94m0/webcal/calendar/29",
       purpose: "Live school dates, reporting milestones, meetings and events.",
       note: "Opens the staff calendar directly. Sign in to Sentral if prompted."
     },
@@ -141,7 +141,7 @@
       kind: "local",
       status: "front-door",
       url: "https://drive.google.com/drive/folders/1Ohvheq89-a4BVAZLl9WzlZP6Tca5jKzt",
-      purpose: "2026–2029 faculty priorities, annual milestones and school-plan alignment.",
+      purpose: "Faculty priorities, annual milestones and school-plan alignment.",
       note: "Opens the Faculty Management Plan 26-29 folder containing the working plan for local endorsement."
     },
     {
@@ -150,9 +150,9 @@
       group: "Work-account sources",
       kind: "local",
       status: "front-door",
-      url: workDriveSearch('type:folder "Assessment Schedules - 2026"'),
+      url: "https://drive.google.com/drive/folders/1YF4o3wcF-D75PHfXECqnKX3u4TVPsJnq",
       purpose: "Approved schedules, task templates and amendment trail.",
-      note: "Work-account search for the 2026 assessment-schedules folder. Confirm full-faculty completeness before relying on it."
+      note: "Direct school folder for the 2026 assessment-schedules folder. Confirm full-faculty completeness before relying on it."
     },
     {
       id: "program-register",
@@ -160,9 +160,9 @@
       group: "Work-account sources",
       kind: "local",
       status: "front-door",
-      url: workDriveSearch('type:folder "B3. Programs and Registration"'),
+      url: "https://drive.google.com/drive/folders/1KeWrYpZiFXpV8Ot2xkbSksxKLlY0g7ta",
       purpose: "Current program versions, registration and monitoring locations.",
-      note: "Work-account search for the B3 hub. Confirm the canonical current register before relying on legacy Program Builder material."
+      note: "Direct school folder for the B3 hub. Confirm the canonical current register before relying on legacy Program Builder material."
     },
     {
       id: "finance-system",
@@ -180,9 +180,9 @@
       group: "Work-account sources",
       kind: "local",
       status: "front-door",
-      url: "https://drive.google.com/drive/shared-drives",
+      url: "https://drive.google.com/drive/folders/1dVYBc474-QgVK7ciOiDMkNL1qyR-6zKj",
       purpose: "Current school WHS inspections, risk records and annual control folders.",
-      note: "Open Shared drives, choose WWHS Staff, then Work Health and Safety. Protected incident and injury details stay in the authorised owner system."
+      note: "Opens the verified WWHS Staff Work Health and Safety folder. Protected incident and injury details stay in the authorised owner system."
     },
     {
       id: "workshop-maintenance",
@@ -190,9 +190,9 @@
       group: "Work-account sources",
       kind: "local",
       status: "front-door",
-      url: workDriveSearch('type:folder "C12. Workshop maintenance"'),
+      url: "https://drive.google.com/drive/folders/16yCuDKZ2c1Yd5RzO44tBEEvmO_s33vAd",
       purpose: "Current practical-area maintenance schedules, faults and approved facilities route.",
-      note: "Work-account search for the C12 workshop-maintenance material. Use the live facilities route linked there where required."
+      note: "Opens the C12 workshop-maintenance folder. Use the current maintenance material and live facilities route linked there where required."
     },
     {
       id: "chemical-register",
@@ -200,9 +200,9 @@
       group: "Work-account sources",
       kind: "local",
       status: "front-door",
-      url: workDriveSearch('type:folder "C11. Chemical Register"'),
+      url: "https://drive.google.com/drive/folders/1mQz9lpdd3rD8wgOWkbcXnITevqjddoue",
       purpose: "Current chemical-register proformas, SDS access and approved chemical-safety guidance.",
-      note: "Work-account search for the C11 chemical-register material, including the current proforma and SDS locations."
+      note: "Opens the C11 chemical-register folder, including the 2026 forms and Safety Data Sheets. Confirm the current approved register before use."
     },
     {
       id: "onguard",

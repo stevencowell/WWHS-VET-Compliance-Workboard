@@ -5,6 +5,7 @@ import vm from 'node:vm';
 
 const scripts = ['data', 'step-guidance', 'app'].map(name => fs.readFileSync(new URL(`../head-teacher-tas/assets/js/${name}.js`, import.meta.url), 'utf8'));
 scripts[0] += '\n' + fs.readFileSync(new URL('../head-teacher-tas/assets/js/guidance-destinations.js', import.meta.url), 'utf8');
+scripts[0] += '\n' + fs.readFileSync(new URL('../assets/js/task-review.js', import.meta.url), 'utf8');
 const fixture = { window: {} };
 vm.runInNewContext(scripts[0], fixture);
 vm.runInNewContext(scripts[1], fixture);
@@ -124,13 +125,13 @@ test('approved link replacements are used and labelled honestly rather than clai
   assert.doesNotMatch(html, /Find assessment schedules in Drive/);
   const unsafe = renderHarness({ links: { 'assessment-schedules': 'javascript:alert(1)' } }).open('assessment-governance');
   assert.doesNotMatch(unsafe, /href="javascript:/);
-  assert.match(unsafe, /Find assessment schedules in Drive/);
+  assert.match(unsafe, /Open 2026 assessment schedules/);
 });
 
 test('weekly guidance is rendered beside each scan without putting links inside its checkbox label', () => {
   const html = renderHarness().nodes.get('route-content').innerHTML;
   assert.equal((html.match(/data-weekly-check=/g) || []).length, data.weeklyChecks.length);
   assert.match(html, /Open NESA dates and actions/);
-  assert.match(html, /Find chemical register in Drive/);
+  assert.match(html, /Open chemical register and SDS folder/);
   for (const label of html.matchAll(/<label\b[^>]*>[\s\S]*?<\/label>/g)) assert.doesNotMatch(label[0], /<a\b/);
 });

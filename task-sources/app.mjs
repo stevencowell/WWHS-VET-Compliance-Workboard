@@ -15,6 +15,7 @@ const sourceAliases = {
 let data, rows, sources, findingsByTask;
 let activeView = views.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'tasks';
 let selectedTask = null;
+let focusedTaskId = new URL(location.href).searchParams.get('task') || '';
 
 function text(value) {
   if (value == null) return '';
@@ -32,7 +33,7 @@ function element(tag, className, content) {
 
 function sourceLink(url, title) {
   let safe = false;
-  try { safe = ['https:', 'http:'].includes(new URL(url).protocol); } catch { /* Show the title without a link. */ }
+  try { const parsed = new URL(url); safe = parsed.protocol === 'https:' && !parsed.username && !parsed.password; } catch { /* Show the title without a link. */ }
   const node = element(safe ? 'a' : 'span', '', title || 'Source location to confirm');
   if (safe) { node.href = url; node.target = '_blank'; node.rel = 'noopener noreferrer'; }
   return node;
@@ -100,6 +101,7 @@ function taskCard(row, position) {
   }
   if (related.length) card.append(reviewButton(row, related.length));
   const details = element('details', 'details');
+  if (focusedTaskId === row.id) details.open = true;
   details.append(element('summary', '', 'Source evidence and 2027 check'));
   const grid = element('div', 'detail-grid');
   for (const fields of [
@@ -126,7 +128,7 @@ function taskCard(row, position) {
   for (const reference of row.evidenceRefs || []) {
     const block = element('div', 'source-evidence');
     const heading = element('h4');
-    heading.append(sourceLink(reference.url, reference.title || reference.id));
+    heading.append(sourceLink(reference.url, reference.linkTitle || reference.title || reference.id));
     block.append(heading, element('p', 'source-id', reference.id), element('p', '', reference.relationship || 'Supporting source'), element('p', '', reference.locator || 'Exact source passage still to confirm.'), element('p', 'muted', reference.verification || 'Current source version still to confirm.'));
     if (reference.statusNote) block.append(element('p', 'muted', reference.statusNote));
     details.append(block);
@@ -140,7 +142,7 @@ function taskCard(row, position) {
 function renderTasks() {
   const period = byId('period').value;
   const status = byId('status').value;
-  const filtered = selectedWingRows().filter(row => (!period || row.phaseLabel === period)
+  const filtered = selectedWingRows().filter(row => (!focusedTaskId || row.id === focusedTaskId) && (!period || row.phaseLabel === period)
     && (!status || (status === 'review-needed' ? taskFindings(row).length : row.provenanceStatus === status))
     && matchesQuery([row.title, row.timing2026, row.sourceIds, row.sourceBasis, row.sourceGap, row.nextYearCheck, row.evidenceRefs]));
   const container = byId('task-list');
@@ -169,7 +171,7 @@ function sourceCard(source) {
   const card = element('article', 'card');
   const tags = element('div', 'tags');
   tags.append(element('span', 'tag', String(source.group || 'Source record').replace(/^\d+\s+/, '')));
-  const title = element('h3'); title.append(sourceLink(source.url, source.title));
+  const title = element('h3'); title.append(sourceLink(source.url, source.linkTitle || source.title));
   card.append(tags, title, element('p', 'source-id', `${source.id} · ${source.taskCount || 0} mapped entries across the register`));
   const details = element('dl', 'source-details');
   addField(details, 'Record type', source.countingUnit);
@@ -309,7 +311,9 @@ document.querySelectorAll('[data-view]').forEach(button => {
 document.querySelectorAll('[data-view-link]').forEach(link => link.addEventListener('click', event => { event.preventDefault(); selectedTask = null; setView(link.dataset.viewLink); byId(`tab-${activeView}`).focus(); }));
 byId('wing').addEventListener('change', () => {
   selectedTask = null;
+  focusedTaskId = '';
   const url = new URL(location.href);
+  url.searchParams.delete('task');
   if (byId('wing').value) url.searchParams.set('wing', byId('wing').value.toLowerCase()); else url.searchParams.delete('wing');
   history.replaceState(null, '', url);
   render();
@@ -318,13 +322,15 @@ for (const id of ['period', 'status']) byId(id).addEventListener('change', rende
 byId('search').addEventListener('input', render);
 byId('reset').addEventListener('click', () => {
   for (const id of ['period', 'status', 'search']) byId(id).value = '';
-  selectedTask = null; render();
+  selectedTask = null; focusedTaskId = '';
+  const url=new URL(location.href);url.searchParams.delete('task');history.replaceState(null,'',url);
+  render();
 });
 window.addEventListener('hashchange', () => setView(location.hash.slice(1), false));
 
 async function initialise() {
   try {
-    const response = await fetch('./data.json');
+    const response = await fetch('./data.json?v=direct-sources-1');
     if (!response.ok) throw new Error('Source register unavailable');
     data = await response.json();
     if (![data.rows, data.sources, data.watch, data.findings].every(Array.isArray)) throw new Error('Source register incomplete');
