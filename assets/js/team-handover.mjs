@@ -1,6 +1,7 @@
 import {KEYS, DATA_KEYS, readRaw, snapshot, createBackup, parseBackup, checkRevision, buildImportPlan} from './team-handover-core.mjs?v=team-handover-1';
 import {applyTeamTransaction, recoverTeamTransaction} from './team-handover-transaction.mjs?v=team-storage-1';
 import {prepareTeamMetadata, hydrateTeamMetadata} from './team-handover-payloads.mjs?v=team-payloads-1';
+import {chooseBackupDestination, downloadDestination} from './save-backup-file.mjs?v=private-backup-1';
 
 const $=id=>document.getElementById(id), home=new URL('../../',import.meta.url);
 const workDestination=new URL(new URLSearchParams(location.search).get('wing')==='tas'?'head-teacher-tas/#home':'#vet-home',home).href;
@@ -25,6 +26,19 @@ function download(payload,name='WWHS-team-handover.json'){
   const url=URL.createObjectURL(new Blob([fileContents(payload)],{type:'application/json'}));
   const link=document.createElement('a');link.href=url;link.download=name;document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),10000);
 }
+const teamFileName='WWHS-team-handover.json';
+function chooseTeamDestination(downloadOnly=false){
+  return downloadOnly?Promise.resolve(downloadDestination(teamFileName)):chooseBackupDestination({suggestedName:teamFileName,id:'wwhs-team-handover'});
+}
+async function savePreparedFile(payload,destination,before){
+  assertExpected(before);
+  let result;
+  try{result=await destination.write(fileContents(payload));}
+  catch(error){throw new Error('The team file could not be saved to that location. Your prepared handover is kept here. Try Save file again or Download a copy; your saved task progress is safe.',{cause:error});}
+  try{assertExpected(before);}
+  catch(error){throw new Error('The file save was requested, but progress changed in another tab while saving. Do not share that file yet. Check the current team session and prepare the latest file.',{cause:error});}
+  say(result.saved?'The file was saved to the folder you chose. If you chose 01 Current handover in Google Drive, wait for Drive to finish syncing, then confirm below. If you chose another folder, move the file into the shared folder first.':'A download of the team file was requested. Check it saved on your device, then put it in 01 Current handover in Google Drive and wait for syncing or upload to finish before confirming below.');
+}
 async function saveMeta(before,next){
   const compact=await prepareTeamMetadata(next),after={...before,[KEYS.metadata]:JSON.stringify(compact)};
   assertExpected(before);
@@ -32,6 +46,7 @@ async function saveMeta(before,next){
   await applyTeamTransaction(localStorage,before,after);
   assertExpected(after);
   window.dispatchEvent(new Event('wwhs:team-session-updated'));
+  return after;
 }
 function clearSelection(){selected=null;selectedBefore=null;$('team-file').value='';$('file-preview').hidden=true;$('only-editor').checked=false;}
 async function render(){
@@ -40,11 +55,11 @@ async function render(){
   $('start-section').hidden=!!active;$('setup-section').hidden=!!meta;$('recovery-section').hidden=!meta?.recovery;
   $('resume-editing').hidden=!!active?.firstFile;
   $('status-title').textContent=!meta?'This browser is working individually':pending?'Handover ready to save':active?'Your team session is open':'Viewing the last shared snapshot';
-  $('status-copy').textContent=!meta?'Create the first team file here, or import your colleague’s file. Your current progress stays unchanged until you choose.':pending?'Editing is paused. Put this file in Google Drive, then confirm below.':active?`Editing as ${active.editor}. Your changes are saved on this computer until you export and upload them.`:'Shared progress is view-only. Import the latest file to begin an editing session.';
+  $('status-copy').textContent=!meta?'Create the first team file here, or import your colleague’s file. Your current progress stays unchanged until you choose.':pending?'Editing is paused. Save this file in the shared Google Drive folder, wait for Drive to finish syncing, then confirm below.':active?`Editing as ${active.editor}. Your changes are saved on this computer until you save the team file in Google Drive and it finishes syncing.`:'Shared progress is view-only. Import the latest file to begin an editing session.';
   $('snapshot-facts').replaceChildren();
   if(info)for(const [title,value] of [['Version',String(info.revision)],['Saved by',info.savedBy],['File created',stamp(info.savedAt)]]){const wrap=document.createElement('div'),dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent=title;dd.textContent=value;wrap.append(dt,dd);$('snapshot-facts').append(wrap);}
   $('last-note').textContent=info?.note?`Handover note: ${info.note}`:'';
-  $('active-copy').textContent=active?`Session started ${stamp(active.startedAt)}. Save your work before exporting.`:'';
+  $('active-copy').textContent=active?`Session started ${stamp(active.startedAt)}. Save your task notes before making the team file.`:'';
   $('pending-copy').textContent=pending?`Version ${pending.revision}, prepared by ${pending.savedBy} on ${stamp(pending.savedAt)}.`:'';
   $('team-file-contents').textContent=pending?fileContents(pending):'';
   if(!pending)$('copy-file-fallback').open=false;
@@ -98,20 +113,37 @@ async function importFile(editing){
 }
 $('start-session').addEventListener('click',run(()=>importFile(true)));
 $('view-file').addEventListener('click',run(()=>importFile(false)));
-$('create-team').addEventListener('click',run(async()=>{
-  const before=expectedSnapshot();if(await metadata(before))throw Error('This browser already has a team workspace. Import the latest shared file instead.');
-  const name=editor('setup-editor'),data=snapshot(localStorage),payload=createBackup({snapshot:data,editor:name,workspaceId:crypto.randomUUID(),note:'First shared team snapshot.',changes:['First team file created from the saved VET and TAS progress on this computer.']});
-  await saveMeta(before,{version:1,lastFile:fileInfo(payload),active:{id:crypto.randomUUID(),editor:name,startedAt:new Date().toISOString(),phase:'exporting',firstFile:true,baseExportId:payload.exportId},pendingExport:payload,recovery:null});
-  download(payload);say('The first file is ready and its download has been requested. Check it saved on your device, then upload it to the shared folder and confirm below.');
-}));
-$('finish-session').addEventListener('click',run(async()=>{
-  const before=expectedSnapshot(),meta=await metadata(before);if(meta?.active?.phase!=='editing')throw Error('There is no editing session to finish.');
+async function createTeam(downloadOnly=false){
+  const before=expectedSnapshot(),name=editor('setup-editor');
+  // Open Save as while this click still has browser activation; cancellation
+  // must not create a team workspace or pause an existing session.
+  const destination=await chooseTeamDestination(downloadOnly);if(!destination){say('Save cancelled. Nothing in this browser was changed.');return;}
+  if(await metadata(before))throw Error('This browser already has a team workspace. Import the latest shared file instead.');
+  const data=snapshot(localStorage),payload=createBackup({snapshot:data,editor:name,workspaceId:crypto.randomUUID(),note:'First shared team snapshot.',changes:['First team file created from the saved VET and TAS progress on this computer.']});
+  const after=await saveMeta(before,{version:1,lastFile:fileInfo(payload),active:{id:crypto.randomUUID(),editor:name,startedAt:new Date().toISOString(),phase:'exporting',firstFile:true,baseExportId:payload.exportId},pendingExport:payload,recovery:null});
+  await savePreparedFile(payload,destination,after);
+}
+async function finishSession(downloadOnly=false){
+  const before=expectedSnapshot();
   if(!$('notes-saved').checked)throw Error('Save your task notes and close other editing tabs, then tick the confirmation.');
+  const destination=await chooseTeamDestination(downloadOnly);if(!destination){say('Save cancelled. Your editing session is still open.');return;}
+  const meta=await metadata(before);if(meta?.active?.phase!=='editing')throw Error('There is no editing session to finish.');
   const data=snapshot(localStorage),payload=createBackup({snapshot:data,previous:meta.lastFile,editor:meta.active.editor,note:$('handover-note').value.trim(),changes:changedCounts(meta.active.baselineData,data)});
-  await saveMeta(before,{...meta,active:{...meta.active,phase:'exporting'},pendingExport:payload});
-  download(payload);say('The updated file is ready and its download has been requested. Check it saved on your device, then upload it to the current handover folder and confirm below.');
-}));
-$('download-again').addEventListener('click',run(async()=>{const payload=(await metadata())?.pendingExport;if(!payload)throw Error('There is no handover waiting to be saved.');download(payload);say('Another download of the same file has been requested. Check it saved on your device; use the copy option below if the download does not appear.');}));
+  const after=await saveMeta(before,{...meta,active:{...meta.active,phase:'exporting'},pendingExport:payload});
+  await savePreparedFile(payload,destination,after);
+}
+async function saveAgain(downloadOnly=false){
+  const before=expectedSnapshot(),destination=await chooseTeamDestination(downloadOnly);
+  if(!destination){say('Save cancelled. The prepared handover is still here.');return;}
+  const payload=(await metadata(before))?.pendingExport;if(!payload)throw Error('There is no handover waiting to be saved.');
+  await savePreparedFile(payload,destination,before);
+}
+$('create-team').addEventListener('click',run(()=>createTeam()));
+$('create-team-download').addEventListener('click',run(()=>createTeam(true)));
+$('finish-session').addEventListener('click',run(()=>finishSession()));
+$('finish-session-download').addEventListener('click',run(()=>finishSession(true)));
+$('download-again').addEventListener('click',run(()=>saveAgain()));
+$('download-copy').addEventListener('click',run(()=>saveAgain(true)));
 $('copy-file-contents').addEventListener('click',run(async()=>{
   const before=expectedSnapshot(),payload=(await metadata(before))?.pendingExport;if(!payload)throw Error('There is no handover waiting to be saved.');
   const text=fileContents(payload);$('team-file-contents').textContent=text;
@@ -123,7 +155,7 @@ $('copy-file-contents').addEventListener('click',run(async()=>{
     return;
   }
   assertExpected(before);
-  say('File contents copied. Save the complete text as WWHS-team-handover.json, then upload that file to the current handover folder.');
+  say('File contents copied. Save the complete text as WWHS-team-handover.json in 01 Current handover in Google Drive, then wait for syncing to finish.');
 }));
 $('confirm-finish').addEventListener('click',run(async()=>{
   const before=expectedSnapshot(),meta=await metadata(before);if(!meta?.pendingExport)throw Error('There is no handover waiting to be saved.');
@@ -132,7 +164,7 @@ $('confirm-finish').addEventListener('click',run(async()=>{
 }));
 $('resume-editing').addEventListener('click',run(async()=>{
   const before=expectedSnapshot(),meta=await metadata(before);if(!meta?.pendingExport||!meta.active||meta.active.firstFile)throw Error('Save the first shared file, then import it to start editing.');
-  if(!confirm('Return to editing? The prepared file will become outdated. Do not upload or share it. Export a fresh file when you finish.'))return;
+  if(!confirm('Return to editing? The prepared file will become outdated. Do not share it. Save a fresh team file when you finish.'))return;
   await saveMeta(before,{...meta,pendingExport:null,active:{...meta.active,phase:'editing'}});
   window.WWHS_TEAM_EXIT_GUARD?.allowNavigation(workDestination);location.assign(workDestination);
 }));

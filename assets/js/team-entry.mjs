@@ -21,7 +21,7 @@ export function installTeamEntry({wing,base,header}) {
   const primary=make('a','Import shared progress',{href:handover,class:'team-entry-primary',autofocus:''});
   const browse=make('button','Browse without importing',{type:'button',class:'team-entry-guide'});
   const footer=make('div',undefined,{class:'team-entry-actions'});footer.append(primary,browse);
-  dialog.append(make('p',`${wing.toUpperCase()} · FIRST STEP`,{class:'eyebrow'}),title,intro,steps,footer,make('p','Import brings across both VET and TAS. Your personal Launchpad and Finance stay separate. If you edit shared work, export and upload your changes when you finish.',{class:'team-entry-small'}));
+  dialog.append(make('p',`${wing.toUpperCase()} · FIRST STEP`,{class:'eyebrow'}),title,intro,steps,footer,make('p','Import brings across both VET and TAS. Your personal Launchpad and Finance stay separate. If you edit shared work, finish and save the handover file to your shared Drive folder.',{class:'team-entry-small'}));
   document.body.append(dialog);
   function remember(){shown=true;try{sessionStorage.setItem(seenKey,'yes');}catch{}}
   function show(){if(dialog.open)return;dialog.showModal();remember();}
@@ -45,7 +45,7 @@ export function installTeamEntry({wing,base,header}) {
     const version=info?`Version ${info.revision} · ${info.savedBy} · ${new Date(info.savedAt).toLocaleDateString('en-AU')}. `:'';
     heading.textContent=editing?`Editing as ${state.active.editor}`:state?.active||state?.blocked||interrupted?'Check your team session':needsImport?'Start here: import shared progress':'Your saved team progress';
     const waiting=editing&&window.WWHS_TEAM_EXIT_GUARD?.status()==='changed';
-    description.textContent=message||(waiting?'Changes waiting for handover. Saved on this device — finish, export and upload to Google Drive before closing.':editing?`${version}Finish and export to share your changes.`:state?.blocked||interrupted||state?.active?helper.reason():needsImport?'Bring in your team’s notes and completion ticks from the shared Drive file.':`${version}Import the latest file before editing. This copy is view-only.`);
+    description.textContent=message||(waiting?'Changes waiting for handover. Finish and save the backup to your shared Google Drive folder before closing.':editing?`${version}Finish and save a backup to share your changes.`:state?.blocked||interrupted||state?.active?helper.reason():needsImport?'Bring in your team’s notes and completion ticks from the shared Drive file.':`${version}Import the latest file before editing. This copy is view-only.`);
     banner.dataset.state=editing?'editing':state?.active||state?.blocked||interrupted?'blocked':'viewing';
     importLink.textContent=editing?'Finish & hand over →':state?.active||state?.blocked||interrupted?'Open Team handover →':'Import shared progress';
     importLink.href=editing||state?.active||state?.blocked||interrupted?new URL(`team-handover/?wing=${wing==='tas'?'tas':'vet'}`,base).href:handover;

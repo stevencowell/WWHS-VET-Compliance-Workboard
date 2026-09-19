@@ -1,8 +1,9 @@
 // One planning surface. Specialist records remain owned by their existing workboards.
-import '../../morning-launchpad/assets/summary-import.mjs?v=team-handover-1';
+import '../../morning-launchpad/assets/summary-import.mjs?v=private-backup-1';
+import {installLaunchpadBackupReminder} from '../../morning-launchpad/assets/backup-reminder.mjs?v=private-backup-1';
 import {INBOX_KEY, validateInbox, taskSection, todaySydney} from '../../morning-launchpad/assets/summary-core.mjs?v=email-cleanup-1';
 import {createTaskRegister} from './task-register.mjs?v=team-handover-1';
-import {installTeamEntry} from './team-entry.mjs?v=team-exit-1';
+import {installTeamEntry} from './team-entry.mjs?v=private-backup-1';
 
 const base = new URL('../../', import.meta.url);
 const wing = document.body.dataset.workboard || 'launchpad';
@@ -52,6 +53,7 @@ theme.addEventListener('click', () => {
 updateTheme(); shell.append(home, nav, theme); document.body.prepend(shell);
 
 installTeamEntry({wing,base,header:shell});
+if(wing==='launchpad')installLaunchpadBackupReminder({header:shell});
 
 let board, host, specialist, specialistSummary, forecastPanel, forecastHeading, forecastNote, forecastCount, fullRegister;
 const flow = () => {

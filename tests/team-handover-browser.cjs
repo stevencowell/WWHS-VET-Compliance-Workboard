@@ -12,6 +12,8 @@ async function raw(page,key){return page.evaluate(key=>localStorage.getItem(key)
  const browser=await chromium.launch({headless:true}),errors=[];
  try{
   const ca=await browser.newContext({viewport:{width:1440,height:1050},acceptDownloads:true,timezoneId:'Australia/Sydney'}),cb=await browser.newContext({viewport:{width:1440,height:1050},acceptDownloads:true,timezoneId:'Australia/Sydney'});
+  // Exercise the phone/unsupported-browser fallback; Save as has a separate mocked-picker suite.
+  for(const context of [ca,cb])await context.addInitScript(()=>{window.showSaveFilePicker=undefined;});
   const a=await ca.newPage(),b=await cb.newPage();
   for(const p of [a,b]){p.setDefaultTimeout(15000);p.on('pageerror',e=>errors.push(e.message));p.on('dialog',d=>d.accept());await p.clock.setFixedTime(new Date('2026-09-19T01:00:00Z'));await p.goto(base+'/team-handover/');}
   await a.evaluate(async keys=>{

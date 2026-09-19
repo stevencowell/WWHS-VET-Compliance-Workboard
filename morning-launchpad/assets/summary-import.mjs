@@ -1,4 +1,5 @@
-import {createNoteEditor} from './note-editor.mjs?v=1';
+import {createNoteEditor} from './note-editor.mjs?v=private-backup-1';
+import {chooseBackupDestination,downloadDestination} from '../../assets/js/save-backup-file.mjs?v=private-backup-1';
 import {createTaskHelpDialog} from './task-help-dialog.mjs?v=tas-planning-1';
 import {emailSearchText} from './email-search.mjs?v=1';
 import './email-capture.mjs?v=email-source-1';
@@ -76,6 +77,17 @@ class SummaryImport extends HTMLElement {
       if(this.blocked||localStorage.getItem(INBOX_KEY)!==this.raw){this.blocked=true;this.reloadButton.hidden=false;throw new Error('The shared work list changed in another tab. Reload saved work before saving.');}
       const checked=validateInbox(JSON.stringify(next));const raw=JSON.stringify(checked);localStorage.setItem(INBOX_KEY,raw);this.raw=raw;this.inbox=checked;this.calendar?.setTasks(checked.items);window.dispatchEvent(new CustomEvent('wwhs:work-saved',{detail:{key:INBOX_KEY}}));return true;
     } catch(error){this.say(`Could not save: ${error.message} Your previous saved list is unchanged.`,true);return false;}
+  }
+  async exportTaskBackup({downloadOnly=false}={}){
+    const raw=this.blocked?this.raw:JSON.stringify(this.inbox,null,2);
+    if(raw===null){this.say('There is no saved task list to export.');return;}
+    try{
+      const destination=downloadOnly?downloadDestination('launchpad-task-backup.json'):await chooseBackupDestination({suggestedName:'launchpad-task-backup.json',id:'launchpad-private-backup'});
+      if(!destination){this.say('Save cancelled. Your notes are unchanged.');return;}
+      const result=await destination.write(raw);
+      window.dispatchEvent(new CustomEvent('launchpad:task-backup-requested',{detail:{raw,...result}}));
+      this.say(result.saved?'Task backup saved to your chosen folder. Google Drive will sync it if you selected a synced Drive folder.':'Download requested. Check that the task backup saved on your device.');
+    }catch(error){this.say(error.message,true);}
   }
   async trackWork(descriptor,{silent=false}={}) {
     const candidate=await createTrackedWork(descriptor);
@@ -188,7 +200,7 @@ class SummaryImport extends HTMLElement {
     for(const [key,label]of [['ready','Today'],['upcoming','Soon'],['waiting','Waiting'],['notes','My Notes'],['done','Done']]){const b=button(label,()=>{this.searchInput.value='';this.view=key;this.expanded=false;this.renderItems();});this.tabs[key]={button:b,label};this.nav.append(b);}this.append(this.nav);
     this.viewHelp=element('p','',{class:'import-help',role:'status','aria-live':'polite'});this.list=element('div',undefined,{class:'import-list'});this.append(this.viewHelp,this.list);
     this.earlier=element('details',undefined,{class:'import-other'});this.earlierHeading=element('summary');this.earlierList=element('div',undefined,{class:'import-list'});this.earlier.append(this.earlierHeading,element('p','The AI task file replaces these basic entries. Their text and edits are kept here; restore one only if it contains additional work.',{class:'import-help'}),this.earlierList);this.append(this.earlier);
-    const footer=element('div',undefined,{class:'import-footer'});footer.append(element('p','Saved in this browser. Export your task backup to keep progress or move to another computer. Email and Evernote are not changed.',{class:'import-help'}),button('Export task backup',()=>{const raw=this.blocked?this.raw:JSON.stringify(this.inbox,null,2);if(raw===null){this.say('There is no saved task list to export.');return;}download(raw,'launchpad-task-backup.json');}));if(this.legacyRaw!==null)footer.append(button('Export older daily plans',()=>download(this.legacyRaw,'launchpad-older-daily-plans.json')));this.clearNotesButton=button('Clear unfinished email notes',()=>this.openClearNotes(),'import-danger');footer.append(this.clearNotesButton);this.append(footer);
+    const footer=element('div',undefined,{class:'import-footer'});footer.append(element('p','Saved in this browser. Export your task backup to keep progress or move to another computer. Email and Evernote are not changed.',{class:'import-help'}),button('Save task backup…',()=>void this.exportTaskBackup()),button('Download a copy',()=>void this.exportTaskBackup({downloadOnly:true})));if(this.legacyRaw!==null)footer.append(button('Export older daily plans',()=>download(this.legacyRaw,'launchpad-older-daily-plans.json')));this.clearNotesButton=button('Clear unfinished email notes',()=>this.openClearNotes(),'import-danger');footer.append(this.clearNotesButton);this.append(footer);
     this.taskArea=element('div',undefined,{class:'task-area'});for(const child of [...this.children])if(child!==heading&&child!==this.message&&child!==this.reloadButton)this.taskArea.append(child);this.append(this.taskArea);
     this.calendar=element('launchpad-calendar');this.calendar.hidden=true;
     this.calendar.addEventListener('calendar:minimise',()=>{this.showCalendar(false);this.calendarToggle.focus({preventScroll:true});this.calendarToggle.scrollIntoView({behavior:'smooth',block:'nearest'});});
@@ -219,7 +231,7 @@ class SummaryImport extends HTMLElement {
     this.clearDescription=element('p');this.clearDialog.append(this.clearDescription,element('p','Only unfinished email/imported notes in Personal are removed, including their drafts, task dates and unfinished earlier imports. The old email briefing is also cleared.'),element('p','Kept: completed items in Done, My Notes and put-aside items, notes you created yourself, and every VET/TAS task and checklist. Imported lessons and diary events stay. Evernote and Outlook are not changed.'),element('p','Export a backup first and give it to the AI with your Evernote notes. This keeps task identities and completion decisions when you import the refreshed file. Clearing cannot be undone here without your backup.'));
     const actions=element('div',undefined,{class:'clear-notes-actions'});
     const cancel=button('Cancel',()=>this.clearDialog.close());cancel.setAttribute('autofocus','');
-    actions.append(cancel,button('Export backup first',()=>download(JSON.stringify(this.inbox,null,2),'launchpad-task-backup.json')),button('Clear unfinished email notes',()=>{
+    actions.append(cancel,button('Save backup first…',()=>void this.exportTaskBackup()),button('Clear unfinished email notes',()=>{
       if(this.scope||!['personal','all'].includes(this.workstream)||this.blocked||this.raw!==this.clearSnapshot){this.clearDialog.close();this.say('The work area or notes changed while this confirmation was open. Review the list before clearing unfinished email notes.',true);return;}
       // Mark migration complete so old daily plans cannot repopulate the cleared list.
       const next=clearEmailImports(this.inbox);

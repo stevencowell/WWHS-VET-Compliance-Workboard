@@ -11,6 +11,7 @@ const results=[],errors=[];
 let browser;
 async function contextPage(){
   const context=await browser.newContext({viewport:{width:1440,height:1000},timezoneId:'Australia/Sydney',acceptDownloads:true,serviceWorkers:'block'});
+  await context.addInitScript(()=>{window.showSaveFilePicker=undefined;});
   await context.route('**/*',route=>new URL(route.request().url()).origin===base&&route.request().method()==='GET'?route.continue():route.abort());
   const page=await context.newPage();page.setDefaultTimeout(15000);
   page.on('dialog',dialog=>dialog.accept());
