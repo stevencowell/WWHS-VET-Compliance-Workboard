@@ -1,5 +1,6 @@
 import {INBOX_KEY,validateInbox} from './summary-core.mjs?v=email-cleanup-1';
 import {isTeamItem} from '../../assets/js/team-handover-core.mjs?v=team-handover-1';
+import {mountBackupFolderSettings} from '../../assets/js/backup-folder-ui.mjs?v=default-folder-1';
 
 export const NOTES_BACKUP_KEY='morning-launchpad-backup-reminder:v1';
 function sorted(value){
@@ -74,7 +75,8 @@ export function installLaunchpadBackupReminder({header}){
   const title=make('h2','Private Launchpad backup'),copy=make('p'),status=make('p','',{role:'status',class:'private-backup-status'});
   const toggle=make('input',undefined,{type:'checkbox'}),label=make('label');toggle.checked=true;label.append(toggle,document.createTextNode('Remind me before closing if my personal notes need a backup'));
   const actions=make('div',undefined,{class:'private-backup-actions'}),download=make('button','Save task backup…',{type:'button'}),fallback=make('button','Download a copy',{type:'button'}),confirm=make('button','I’ve saved this backup',{type:'button'});confirm.hidden=true;actions.append(download,fallback,confirm);
-  panel.append(title,copy,label,actions,status,make('p','Choose your own private folder in Save as. A synced Google Drive folder uploads automatically. Keep this task file separate from the shared VET/TAS handover. Calendar events use Export calendar backup.',{class:'private-backup-small'}));
+  panel.append(title,copy,label,actions,status,make('p','Keep this task file separate from the shared VET/TAS handover. Calendar events use Export calendar backup.',{class:'private-backup-small'}));
+  mountBackupFolderSettings(panel,{scope:'private'});
   header.after(panel);
   let tracker,listener=false;
   function draftPending(){

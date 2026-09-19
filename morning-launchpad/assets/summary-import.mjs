@@ -1,5 +1,6 @@
 import {createNoteEditor} from './note-editor.mjs?v=private-backup-1';
-import {chooseBackupDestination,downloadDestination} from '../../assets/js/save-backup-file.mjs?v=private-backup-1';
+import {downloadDestination} from '../../assets/js/save-backup-file.mjs?v=default-folder-1';
+import {choosePrivateBackupDestination,getBackupFolder} from '../../assets/js/backup-folder.mjs?v=default-folder-1';
 import {createTaskHelpDialog} from './task-help-dialog.mjs?v=tas-planning-1';
 import {emailSearchText} from './email-search.mjs?v=1';
 import './email-capture.mjs?v=email-source-1';
@@ -58,6 +59,7 @@ function dateLabel(date) {
 class SummaryImport extends HTMLElement {
   connectedCallback() {
     if(this.started)return;this.started=true;
+    getBackupFolder('private'); // Load the preference before a backup button is clicked.
     this.openCards=new Set();this.view='ready';this.expanded=false;this.legacyRaw=null;this.blocked=false;this.raw=null;
     this.workstream=Object.hasOwn(WORKSTREAMS,this.dataset.workstream)?this.dataset.workstream:'all';
     this.draftInputs=new Map();this.captureDraft=event=>{const field=event.target;if(field.matches?.('textarea:not([readonly]),input:not([type="file"]):not([type="checkbox"]),[contenteditable="true"]')){this.draftInputs.delete(field);this.draftInputs.set(field,field.getAttribute('aria-label')||field.closest('label')?.childNodes[0]?.textContent||field.id||'Draft text');}};this.addEventListener('input',this.captureDraft);
@@ -82,7 +84,7 @@ class SummaryImport extends HTMLElement {
     const raw=this.blocked?this.raw:JSON.stringify(this.inbox,null,2);
     if(raw===null){this.say('There is no saved task list to export.');return;}
     try{
-      const destination=downloadOnly?downloadDestination('launchpad-task-backup.json'):await chooseBackupDestination({suggestedName:'launchpad-task-backup.json',id:'launchpad-private-backup'});
+      const destination=downloadOnly?downloadDestination('launchpad-task-backup.json'):await choosePrivateBackupDestination({suggestedName:'launchpad-task-backup.json',id:'launchpad-private-backup'});
       if(!destination){this.say('Save cancelled. Your notes are unchanged.');return;}
       const result=await destination.write(raw);
       window.dispatchEvent(new CustomEvent('launchpad:task-backup-requested',{detail:{raw,...result}}));

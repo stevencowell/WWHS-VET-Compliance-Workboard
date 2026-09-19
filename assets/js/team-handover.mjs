@@ -1,9 +1,13 @@
 import {KEYS, DATA_KEYS, readRaw, snapshot, createBackup, parseBackup, checkRevision, buildImportPlan} from './team-handover-core.mjs?v=team-handover-1';
 import {applyTeamTransaction, recoverTeamTransaction} from './team-handover-transaction.mjs?v=team-storage-1';
 import {prepareTeamMetadata, hydrateTeamMetadata} from './team-handover-payloads.mjs?v=team-payloads-1';
-import {chooseBackupDestination, downloadDestination} from './save-backup-file.mjs?v=private-backup-1';
+import {downloadDestination} from './save-backup-file.mjs?v=default-folder-1';
+import {getBackupFolder} from './backup-folder.mjs?v=default-folder-1';
+import {mountBackupFolderSettings} from './backup-folder-ui.mjs?v=default-folder-1';
 
 const $=id=>document.getElementById(id), home=new URL('../../',import.meta.url);
+const teamFolder=getBackupFolder('team');
+mountBackupFolderSettings($('team-backup-folder'),{scope:'team'});
 const workDestination=new URL(new URLSearchParams(location.search).get('wing')==='tas'?'head-teacher-tas/#home':'#vet-home',home).href;
 let selected=null, selectedBefore=null, busy=true;
 const rawMeta=()=>localStorage.getItem(KEYS.metadata);
@@ -28,7 +32,7 @@ function download(payload,name='WWHS-team-handover.json'){
 }
 const teamFileName='WWHS-team-handover.json';
 function chooseTeamDestination(downloadOnly=false){
-  return downloadOnly?Promise.resolve(downloadDestination(teamFileName)):chooseBackupDestination({suggestedName:teamFileName,id:'wwhs-team-handover'});
+  return downloadOnly?Promise.resolve(downloadDestination(teamFileName)):teamFolder.destination(teamFileName);
 }
 async function savePreparedFile(payload,destination,before){
   assertExpected(before);
@@ -71,7 +75,8 @@ function changedCounts(before,after){
   const changes=[];for(const [label,old,next] of sections){const count=[...new Set([...Object.keys(old),...Object.keys(next)])].filter(key=>JSON.stringify(old[key])!==JSON.stringify(next[key])).length;if(count)changes.push(`${label}: ${count} changed`);}return changes.length?changes:['No changes to shared progress.'];
 }
 function enableControls(enabled){
-  for(const control of document.querySelectorAll('button,input,textarea'))control.disabled=!enabled;
+  $('team-backup-folder').inert=!enabled;
+  for(const control of document.querySelectorAll('button,input,textarea'))if(!control.closest('#team-backup-folder'))control.disabled=!enabled;
   if(enabled){$('start-session').disabled=!selected;$('view-file').disabled=!selected;}
 }
 function run(action){return async()=>{

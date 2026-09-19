@@ -1,16 +1,19 @@
 // Start the picker directly from a button click, before preparing large backups.
-export async function chooseBackupDestination({suggestedName,id},win=window){
+export async function chooseBackupDestination({suggestedName,id,startIn},win=window){
   if(typeof win.showSaveFilePicker==='function'){
     let handle;
-    try{handle=await win.showSaveFilePicker({suggestedName,id,types:[{description:'JSON backup',accept:{'application/json':['.json']}}]});}
+    try{handle=await win.showSaveFilePicker({suggestedName,id,...(startIn?{startIn}:{}),types:[{description:'JSON backup',accept:{'application/json':['.json']}}]});}
     catch(error){if(error.name==='AbortError')return null;throw new Error('The Save as window could not open. Use Download a copy, or try this page in Chrome.',{cause:error});}
-    return {async write(text){
+    return fileDestination(handle);
+  }
+  return downloadDestination(suggestedName,win);
+}
+export function fileDestination(handle){
+  return {async write(text){
       let writer;
       try{writer=await handle.createWritable();await writer.write(new Blob([text],{type:'application/json'}));await writer.close();return {saved:true,method:'file'};}
       catch(error){try{await writer?.abort();}catch{}throw new Error('The backup could not be saved to that folder. Your browser data is unchanged. Try another location.',{cause:error});}
     }};
-  }
-  return downloadDestination(suggestedName,win);
 }
 export function downloadDestination(name,win=window){
   return {async write(text){

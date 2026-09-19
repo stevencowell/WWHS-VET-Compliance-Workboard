@@ -5,7 +5,9 @@ import {FINANCE_PROMPT_TOPICS,buildFinancePrompt,buildSafeFinanceSummary} from '
 import {validateBudgetPlan} from './budget-plan.mjs';
 import {setupBudgetPlanUi} from './budget-plan-ui.mjs';
 import {createFinanceBackupReminder} from './backup-reminder.mjs';
-import {chooseBackupDestination,downloadDestination} from '../assets/js/save-backup-file.mjs?v=private-backup-1';
+import {downloadDestination} from '../assets/js/save-backup-file.mjs?v=default-folder-1';
+import {choosePrivateBackupDestination} from '../assets/js/backup-folder.mjs?v=default-folder-1';
+import {mountBackupFolderSettings} from '../assets/js/backup-folder-ui.mjs?v=default-folder-1';
 
 if(window.self!==window.top)throw new Error('Open Finance Studio directly to use this workspace.');
 
@@ -69,7 +71,7 @@ async function openWorkspace(isSample=false) {
   if(engineAttempted)throw new Error('Reload Finance Studio before opening another workspace.');
   sample=isSample;
   storage=sample?memoryStorage():await createPrivateStorage(vault,{onStatus:reportStatus,autoFlushMs:300});
-  if(!sample){backupReminder=createFinanceBackupReminder(storage,{onChange:renderBackupReminder});storage=backupReminder.storage;}
+  if(!sample){backupReminder=createFinanceBackupReminder(storage,{onChange:renderBackupReminder});storage=backupReminder.storage;mountBackupFolderSettings($('financeBackupReminder'),{scope:'private'});}
   window.FINANCE_STORAGE={privateWorkspace:!sample,validateBudgetPlan,getItem:k=>storage.getItem(k),setItem:(k,v)=>{try{storage.setItem(k,v);rejectedWrites.delete(k);}catch(error){rejectedWrites.set(k,v);throw error;}},removeItem:k=>storage.removeItem(k),atomic:fn=>{const rejectedBefore=new Map(rejectedWrites);try{return storage.atomic?storage.atomic(fn):fn();}catch(error){rejectedWrites.clear();for(const [key,value] of rejectedBefore)rejectedWrites.set(key,value);fatalSaveError=error;reportStatus({state:'error',error:error.message});throw error;}},onError:error=>{fatalSaveError=error;reportStatus({state:'error',error:error.message});}};
   engineAttempted=true;
   await loadScript('./vendor/chart.js/chart.umd.js');
@@ -165,7 +167,7 @@ async function saveFinanceBackup(downloadOnly=false){
   try{
     // Open the native picker within the original click, before any encryption awaits.
     const name=`finance-encrypted-backup-${stamp()}.json`;
-    const destination=downloadOnly?downloadDestination(name):await chooseBackupDestination({suggestedName:name,id:'finance-private-backup'});
+    const destination=downloadOnly?downloadDestination(name):await choosePrivateBackupDestination({suggestedName:name,id:'finance-private-backup'});
     if(!destination)return;
     const capture=backupReminder.captureBackup();backupReminder.offerConfirmation(null);
     let text,recovery=false;
