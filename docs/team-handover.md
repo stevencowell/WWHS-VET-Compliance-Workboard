@@ -4,6 +4,8 @@ This is a manual, sequential handover using a restricted Google Drive folder. It
 
 ## Staff workflow
 
+On a new browser, entering VET or TAS opens a first-step import guide once per tab session. A prominent **Import shared progress** banner remains available, and **How to import** reopens the guide. The gateway and personal workspace do not open the prompt automatically. Existing imported team snapshots and active sessions retain their normal session banner without another opening prompt. Team handover is also linked in Launchpad navigation. Imports opened from TAS return to TAS.
+
 1. On the browser with the authoritative VET/TAS progress, open **Team handover → First time? Create the team’s first file**. Enter your name, create the JSON and put it in **01 Current handover**. Confirm the upload on the handover page.
 2. At the start of every editing session, download the current JSON from that folder, choose it in Team handover, enter your name and confirm nobody else is editing. **Import and start session** loads both workboards together. **Import to view only** is available for checking progress.
 3. Save notes and close other editing tabs. Open Team handover, add an optional handover note and choose **Finish and export**. Keep a dated copy of the previous file in **02 Previous versions**, replace the current file in Drive, wait for the upload, then choose **I’ve saved it in Google Drive**. Tell the next person it is ready.

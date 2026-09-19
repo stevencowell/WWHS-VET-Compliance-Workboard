@@ -48,7 +48,7 @@ async function raw(page,key){return page.evaluate(key=>localStorage.getItem(key)
   const again=await download(b,b.locator('#download-again'));assert.deepEqual(again,second);await b.locator('#confirm-finish').click();
   // Steve imports to view and sees native notes, dates and overall review; personal data survives.
   await choose(a,second);await a.locator('#view-file').click();await a.waitForURL('**/#vet-home');await a.waitForFunction(()=>window.WWHS_WORKBOARD_ADAPTER&&document.querySelector('summary-import')?.started);
-  assert.match(await a.locator('.workspace-team-banner').innerText(),/Viewing saved team progress/);
+  assert.match(await a.locator('.workspace-team-banner').innerText(),/Your saved team progress/);
   assert.equal(JSON.parse(await raw(a,keys.vet)).records['a-01-confirm-authority-set'].exceptionSummary,'Synthetic update by Diane: funding reply awaited.');assert.equal(JSON.parse(await raw(a,keys.tas)).records['class-readiness::2026'].exceptionReason,'Synthetic TAS follow-up from Diane.');
   assert.equal(await raw(a,'finance-secret'),'PRIVATE_FINANCE');assert.ok(JSON.parse(await raw(a,keys.inbox)).items.some(x=>x.id==='personal-email'));
   await a.locator('#role-filter').selectOption('all');
@@ -58,7 +58,7 @@ async function raw(page,key){return page.evaluate(key=>localStorage.getItem(key)
   await a.goto(base+'/team-handover/');const beforeOld=await a.evaluate(()=>({...localStorage}));await choose(a,first);assert.match(await a.locator('#handover-message').innerText(),/older/);assert.deepEqual(await a.evaluate(()=>({...localStorage})),beforeOld);
   await choose(a,{...second,exportId:'competing-export'});assert.match(await a.locator('#handover-message').innerText(),/different edits/);assert.deepEqual(await a.evaluate(()=>({...localStorage})),beforeOld);
   await choose(a,second);await a.locator('#editor-name').fill('Steve');await a.locator('#only-editor').check();await a.locator('#start-session').click();await a.waitForURL('**/#vet-home');assert.match(await a.locator('.workspace-team-banner').innerText(),/Editing as Steve/);
-  const oldMeta=JSON.parse(await raw(stale,keys.meta));await b.goto(base+'/team-handover/');await choose(b,second);await b.locator('#editor-name').fill('Diane');await b.locator('#only-editor').check();await b.locator('#start-session').click();await b.waitForURL('**/#vet-home');assert.notEqual(JSON.parse(await raw(b,keys.meta)).active.id,oldMeta.active?.id);assert.equal(await stale.evaluate(()=>window.WWHS_TEAM_SESSION.isEditing()),false);
+  const oldMeta=JSON.parse(await raw(stale,keys.meta));await b.goto(base+'/team-handover/?wing=tas#start-section');await choose(b,second);await b.locator('#editor-name').fill('Diane');await b.locator('#only-editor').check();await b.locator('#start-session').click();await b.waitForURL('**/head-teacher-tas/#home');assert.notEqual(JSON.parse(await raw(b,keys.meta)).active.id,oldMeta.active?.id);assert.equal(await stale.evaluate(()=>window.WWHS_TEAM_SESSION.isEditing()),false);
   await a.goto(base+'/team-handover/');await a.locator('#recovery-section summary').click();const recovery=await download(a,a.locator('#download-recovery'));assert.notEqual(recovery.workspaceId,second.workspaceId);assert.doesNotMatch(json(recovery),/PRIVATE_|private\.example/);
   assert.deepEqual(errors,[]);console.log('PASS two-browser handover: private separation, native VET/TAS notes, date overrides, review ticks, export freeze, repeat download, read-only UI, stale/fork rejection, old-tab guard and recovery download.');
  }finally{await browser.close();}

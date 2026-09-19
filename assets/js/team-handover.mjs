@@ -1,6 +1,7 @@
 import {KEYS, DATA_KEYS, readRaw, snapshot, createBackup, parseBackup, checkRevision, buildImportPlan, atomicApply, recoverTransaction} from './team-handover-core.mjs?v=team-handover-1';
 
 const $=id=>document.getElementById(id), home=new URL('../../',import.meta.url);
+const workDestination=new URL(new URLSearchParams(location.search).get('wing')==='tas'?'head-teacher-tas/#home':'#vet-home',home).href;
 let selected=null, selectedBefore=null, busy=false;
 const rawMeta=()=>localStorage.getItem(KEYS.metadata);
 function metadata(){
@@ -70,7 +71,7 @@ async function importFile(editing){
   checkSelectionFresh();const next={version:1,lastFile:fileInfo(selected),active:editing?{id:crypto.randomUUID(),editor:name,startedAt:new Date().toISOString(),phase:'editing',baseExportId:selected.exportId,baselineData:selected.data}:null,pendingExport:null,recovery:{capturedAt:new Date().toISOString(),lastFile:meta?.lastFile||null,data:plan.beforeSnapshot,raw:plan.before}};
   atomicApply(localStorage,{...plan.before,[KEYS.metadata]:before[KEYS.metadata]},{...plan.after,[KEYS.metadata]:JSON.stringify(next)});
   // Full navigation reloads native workboard closures after importing new state.
-  location.assign(new URL('#vet-home',home).href);
+  location.assign(workDestination);
 }
 $('start-session').addEventListener('click',run(()=>importFile(true)));
 $('view-file').addEventListener('click',run(()=>importFile(false)));
@@ -107,7 +108,7 @@ $('confirm-finish').addEventListener('click',run(()=>{
 $('resume-editing').addEventListener('click',run(()=>{
   const before=expectedSnapshot(),meta=metadata();if(!meta?.pendingExport||!meta.active||meta.active.firstFile)throw Error('Save the first shared file, then import it to start editing.');
   if(!confirm('Return to editing? The prepared file will become outdated. Do not upload or share it. Export a fresh file when you finish.'))return;
-  saveMeta(before,{...meta,pendingExport:null,active:{...meta.active,phase:'editing'}});location.assign(new URL('#vet-home',home).href);
+  saveMeta(before,{...meta,pendingExport:null,active:{...meta.active,phase:'editing'}});location.assign(workDestination);
 }));
 $('download-recovery').addEventListener('click',run(()=>{
   const recovery=metadata()?.recovery;if(!recovery)throw Error('No earlier import recovery copy is stored in this browser.');
