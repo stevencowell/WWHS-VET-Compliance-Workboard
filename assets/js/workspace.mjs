@@ -1,7 +1,7 @@
 const workStorage=()=>globalThis.WWHS_STORAGE||globalThis.localStorage;
 // One planning surface. Specialist records remain owned by their existing workboards.
-import '../../morning-launchpad/assets/summary-import.mjs?v=backup-flow-2';
-import {installLaunchpadBackupReminder} from '../../morning-launchpad/assets/backup-reminder.mjs?v=backup-flow-2';
+import '../../morning-launchpad/assets/summary-import.mjs?v=calendar-backup-1';
+import {installLaunchpadBackupReminder} from '../../morning-launchpad/assets/backup-reminder.mjs?v=calendar-backup-1';
 import {INBOX_KEY, validateInbox, taskSection, todaySydney} from '../../morning-launchpad/assets/summary-core.mjs?v=email-cleanup-1';
 import {createTaskRegister} from './task-register.mjs?v=compression-storage-1';
 import {installTeamEntry} from './team-entry.mjs?v=backup-flow-2';

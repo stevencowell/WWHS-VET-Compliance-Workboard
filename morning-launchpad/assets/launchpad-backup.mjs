@@ -86,6 +86,21 @@ function mergeTasks(current,incoming,preferBackup,counts){
   return mergeList(current,normalised,{match:sameTask,preferBackup,compare:comparableTask,preserveIdentity:true},counts);
 }
 const comparableTask=task=>{const copy={...task};for(const key of ['id','selected','forecast','taskHelp','planStamp','planAliases'])delete copy[key];return canonical(copy);};
+function mergeCalendarEvents(current,incoming,preferBackup,counts){
+  // A title and start time are not an identity: separate calendars can contain
+  // different events in the same slot. Backup IDs take precedence; a source
+  // UID can connect different local IDs only when it is unique in both lists.
+  const ids=new Set(current.map(event=>event.id));
+  const uidCounts=events=>{const counts=new Map();for(const event of events)if(event.uid)counts.set(event.uid,(counts.get(event.uid)||0)+1);return counts;};
+  const currentCounts=uidCounts(current),incomingCounts=uidCounts(incoming);
+  const uniqueSources=new Map(current.filter(event=>event.uid&&currentCounts.get(event.uid)===1).map(event=>[event.uid,event]));
+  const mapped=incoming.map(event=>{
+    if(ids.has(event.id)||!event.uid||incomingCounts.get(event.uid)!==1)return event;
+    const saved=uniqueSources.get(event.uid);
+    return saved?{...event,id:saved.id}:event;
+  });
+  return mergeList(current,mapped,{match:(a,b)=>a.id===b.id,preferBackup,preserveIdentity:true},counts);
+}
 function mergeList(current,incoming,{match,preferBackup,compare=canonical,preserveIdentity=false},counts){
   const out=current.map(item=>structuredClone(item)),matched=new Set();
   for(const item of incoming){
@@ -119,7 +134,7 @@ export function planLaunchpadRestore(storage,backup,{preferBackup=false}={}){
       else if(!current.briefing&&incoming.briefing){result.briefing=incoming.briefing;if(incoming.reviewDate)result.reviewDate=incoming.reviewDate;}
       result.forecastContexts={...(incoming.forecastContexts||{}),...(current.forecastContexts||{})};
     }else if(key===CALENDAR_KEY){
-      result={...current,events:mergeList(current.events,incoming.events,{match:(a,b)=>a.id===b.id||a.uid&&b.uid&&a.uid===b.uid||a.title===b.title&&a.startDate===b.startDate&&a.startTime===b.startTime,preferBackup,preserveIdentity:true},counts)};
+      result={...current,events:mergeCalendarEvents(current.events,incoming.events,preferBackup,counts)};
     }else if(key===LEGACY_PLAN_KEY){
       result={...current,days:{...current.days}};
       for(const[date,day]of Object.entries(incoming.days)){

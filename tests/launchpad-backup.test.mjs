@@ -73,6 +73,39 @@ test('calendar, plans, links and appearance each change the complete backup sign
     const s=fixture(),before=launchpadContent(snapshotLaunchpad(s));s.setItem(key,raw);assert.notEqual(launchpadContent(snapshotLaunchpad(s)),before,key);
   }
 });
+
+test('same-title simultaneous calendar events round-trip separately by ID, including reversed order and missing or shared UIDs',()=>{
+  for(const uids of [['source-a','source-b'],['',''],['series','series']])for(const preferBackup of [false,true]){
+    const events=uids.map((uid,i)=>event(`slot-${i}`,{uid,title:'Same meeting',startTime:'09:00',endTime:'10:00',description:`Separate record ${i}`}));
+    const current=storage({[K.calendar]:json({version:1,events})});
+    const incoming=storage({[K.calendar]:json({version:1,events:[...events].reverse()})});
+    const plan=planLaunchpadRestore(current,parseLaunchpadBackup(json(createLaunchpadBackup(incoming))),{preferBackup});
+    assert.equal(plan.after[K.calendar],current.getItem(K.calendar));
+    assert.deepEqual(plan.counts,{added:0,different:0,updated:0,kept:0});assert.equal(current.attempts.length,0);
+  }
+});
+
+test('a uniquely identified source event can move across devices without matching another event in its new slot',()=>{
+  const existing=event('local-id',{uid:'shared-source',description:'Current note'}),neighbour=event('neighbour',{uid:'other-source',title:'Changed title',startTime:'10:00',endTime:'11:00'});
+  const imported={...existing,id:'another-device-id',title:neighbour.title,startTime:neighbour.startTime,endTime:neighbour.endTime,description:'Backup note'};
+  const current=storage({[K.calendar]:json({version:1,events:[neighbour,existing]})});
+  const incoming=storage({[K.calendar]:json({version:1,events:[imported,neighbour]})}),backup=parseLaunchpadBackup(json(createLaunchpadBackup(incoming)));
+  for(const preferBackup of [false,true]){
+    const plan=planLaunchpadRestore(current,backup,{preferBackup}),events=JSON.parse(plan.after[K.calendar]).events;
+    assert.equal(events.length,2);assert.deepEqual(events[0],neighbour);
+    assert.deepEqual(events[1],preferBackup?{...imported,id:existing.id}:existing);
+    assert.equal(plan.counts.added,0);assert.equal(plan.counts.different,1);
+  }
+});
+
+test('different identified events in the same slot are added, never merged by their title',()=>{
+  const first=event('one',{title:'Same title'}),second=event('two',{title:first.title});
+  const current=storage({[K.calendar]:json({version:1,events:[first]})}),incoming=storage({[K.calendar]:json({version:1,events:[first,second]})});
+  for(const preferBackup of [false,true]){
+    const plan=planLaunchpadRestore(current,parseLaunchpadBackup(json(createLaunchpadBackup(incoming))),{preferBackup});
+    assert.deepEqual(JSON.parse(plan.after[K.calendar]).events,[first,second]);assert.equal(plan.counts.added,1);
+  }
+});
 test('download is unconfirmed until explicit confirmation; later calendar changes invalidate it',async()=>{
   const s=fixture(),tracker=createNotesBackupTracker(s,{hash:async text=>createHash('sha256').update(text).digest('hex')});await tracker.refresh();assert.equal(tracker.state().needsBackup,true);
   const raw=json(createLaunchpadBackup(s));assert.equal(await tracker.downloaded(raw),true);assert.equal(tracker.state().needsBackup,true);assert.equal(await tracker.confirm(),true);assert.equal(tracker.state().needsBackup,false);
