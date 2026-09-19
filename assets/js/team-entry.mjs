@@ -44,7 +44,8 @@ export function installTeamEntry({wing,base,header}) {
     const editing=state?.managed&&helper.isEditing(),info=state?.lastFile;
     const version=info?`Version ${info.revision} · ${info.savedBy} · ${new Date(info.savedAt).toLocaleDateString('en-AU')}. `:'';
     heading.textContent=editing?`Editing as ${state.active.editor}`:state?.active||state?.blocked||interrupted?'Check your team session':needsImport?'Start here: import shared progress':'Your saved team progress';
-    description.textContent=message||(editing?`${version}Finish and export to share your changes.`:state?.blocked||interrupted||state?.active?helper.reason():needsImport?'Bring in your team’s notes and completion ticks from the shared Drive file.':`${version}Import the latest file before editing. This copy is view-only.`);
+    const waiting=editing&&window.WWHS_TEAM_EXIT_GUARD?.status()==='changed';
+    description.textContent=message||(waiting?'Changes waiting for handover. Saved on this device — finish, export and upload to Google Drive before closing.':editing?`${version}Finish and export to share your changes.`:state?.blocked||interrupted||state?.active?helper.reason():needsImport?'Bring in your team’s notes and completion ticks from the shared Drive file.':`${version}Import the latest file before editing. This copy is view-only.`);
     banner.dataset.state=editing?'editing':state?.active||state?.blocked||interrupted?'blocked':'viewing';
     importLink.textContent=editing?'Finish & hand over →':state?.active||state?.blocked||interrupted?'Open Team handover →':'Import shared progress';
     importLink.href=editing||state?.active||state?.blocked||interrupted?new URL(`team-handover/?wing=${wing==='tas'?'tas':'vet'}`,base).href:handover;
@@ -54,6 +55,7 @@ export function installTeamEntry({wing,base,header}) {
   window.addEventListener('hashchange',()=>{refresh();maybePrompt();});
   window.addEventListener('storage',event=>{if(event.key===null||[window.WWHS_TEAM_SESSION?.KEY,window.WWHS_TEAM_SESSION?.JOURNAL].includes(event.key))refresh();});
   window.addEventListener('wwhs:team-session-updated',()=>refresh());
+  window.addEventListener('wwhs:team-exit-status',()=>refresh());
   window.addEventListener('wwhs:team-write-blocked',event=>refresh(event.detail?.message));
   refresh();queueMicrotask(maybePrompt);
 }

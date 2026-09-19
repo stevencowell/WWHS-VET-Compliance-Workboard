@@ -93,6 +93,7 @@ async function importFile(editing){
   await applyTeamTransaction(localStorage,expected,after);
   assertExpected(after);
   // Full navigation reloads native workboard closures after importing new state.
+  window.WWHS_TEAM_EXIT_GUARD?.allowNavigation(workDestination);
   location.assign(workDestination);
 }
 $('start-session').addEventListener('click',run(()=>importFile(true)));
@@ -132,7 +133,8 @@ $('confirm-finish').addEventListener('click',run(async()=>{
 $('resume-editing').addEventListener('click',run(async()=>{
   const before=expectedSnapshot(),meta=await metadata(before);if(!meta?.pendingExport||!meta.active||meta.active.firstFile)throw Error('Save the first shared file, then import it to start editing.');
   if(!confirm('Return to editing? The prepared file will become outdated. Do not upload or share it. Export a fresh file when you finish.'))return;
-  await saveMeta(before,{...meta,pendingExport:null,active:{...meta.active,phase:'editing'}});location.assign(workDestination);
+  await saveMeta(before,{...meta,pendingExport:null,active:{...meta.active,phase:'editing'}});
+  window.WWHS_TEAM_EXIT_GUARD?.allowNavigation(workDestination);location.assign(workDestination);
 }));
 $('download-recovery').addEventListener('click',run(async()=>{
   const recovery=(await metadata())?.recovery;if(!recovery)throw Error('No earlier import recovery copy is stored in this browser.');
