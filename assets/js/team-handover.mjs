@@ -9,7 +9,7 @@ const $=id=>document.getElementById(id), home=new URL('../../',import.meta.url);
 const teamFolder=getBackupFolder('team');
 mountBackupFolderSettings($('team-backup-folder'),{scope:'team'});
 const workDestination=new URL(new URLSearchParams(location.search).get('wing')==='tas'?'head-teacher-tas/#home':'#vet-home',home).href;
-let selected=null, selectedBefore=null, busy=true;
+let selected=null, selectedBefore=null, busy=true, rendered=false;
 const rawMeta=()=>localStorage.getItem(KEYS.metadata);
 function assertExpected(before){
   if(Object.entries(before).some(([key,value])=>localStorage.getItem(key)!==value))throw Error('Progress changed in another tab. Reload and reopen the latest team file before continuing.');
@@ -38,7 +38,7 @@ async function savePreparedFile(payload,destination,before){
   assertExpected(before);
   let result;
   try{result=await destination.write(fileContents(payload));}
-  catch(error){throw new Error('The team file could not be saved to that location. Your prepared handover is kept here. Try Save file again or Download a copy; your saved task progress is safe.',{cause:error});}
+  catch(error){throw new Error('The team file could not be saved to that location. Your prepared handover is kept here. Try Save backup again or Download a copy; your saved task progress is safe.',{cause:error});}
   try{assertExpected(before);}
   catch(error){throw new Error('The file save was requested, but progress changed in another tab while saving. Do not share that file yet. Check the current team session and prepare the latest file.',{cause:error});}
   say(result.saved?'The file was saved to the folder you chose. If you chose 01 Current handover in Google Drive, wait for Drive to finish syncing, then confirm below. If you chose another folder, move the file into the shared folder first.':'A download of the team file was requested. Check it saved on your device, then put it in 01 Current handover in Google Drive and wait for syncing or upload to finish before confirming below.');
@@ -54,6 +54,7 @@ async function saveMeta(before,next){
 }
 function clearSelection(){selected=null;selectedBefore=null;$('team-file').value='';$('file-preview').hidden=true;$('only-editor').checked=false;}
 async function render(){
+  rendered=false;
   const meta=await metadata(), active=meta?.active, pending=meta?.pendingExport, info=pending||meta?.lastFile;
   $('active-session').hidden=active?.phase!=='editing';$('pending-session').hidden=!pending;
   $('start-section').hidden=!!active;$('setup-section').hidden=!!meta;$('recovery-section').hidden=!meta?.recovery;
@@ -69,7 +70,32 @@ async function render(){
   if(!pending)$('copy-file-fallback').open=false;
   $('start-session').disabled=!selected;$('view-file').disabled=!selected;
   $('changes-list').replaceChildren();for(const change of info?.changes?.length?info.changes:['No changes summary recorded.']){const li=document.createElement('li');li.textContent=change;$('changes-list').append(li);}
+  rendered=true;
 }
+// Both workspace shortcuts lead to the existing guarded workflow, never to a
+// direct import or write. An active handover must finish before another import.
+function openBackupAction(){
+  if(busy||!rendered||!['#import-backup','#save-backup'].includes(location.hash))return;
+  const importing=location.hash==='#import-backup';
+  let target;
+  if(!$('pending-session').hidden){
+    target=$('pending-session');
+    if(importing)say('Finish the current handover before importing another backup. Confirm the saved file has synced, or return to editing.');
+  }else if(!$('active-session').hidden){
+    target=$('active-session');
+    if(importing)say('Save this editing session and finish the handover before importing another backup.');
+  }else if(!importing&&!$('setup-section').hidden){
+    target=$('setup-section');target.open=true;
+  }else{
+    target=$('start-section');
+    if(!importing)say('This shared copy is view-only. Import the latest backup and start an editing session before saving a new shared version.');
+  }
+  target.tabIndex=-1;target.focus({preventScroll:true});target.scrollIntoView({block:'start'});
+}
+for(const id of ['handover-import-link','handover-save-link'])$(id).addEventListener('click',event=>{
+  event.preventDefault();history.replaceState(null,'',event.currentTarget.getAttribute('href'));openBackupAction();
+});
+window.addEventListener('hashchange',openBackupAction);
 function changedCounts(before,after){
   const sections=[['VET records',before.vet.records,after.vet.records],['VET assignments',before.vet.assignments,after.vet.assignments],['VET gaps',before.vet.gaps,after.vet.gaps],['VET triggered work',before.vet.eventOccurrences,after.vet.eventOccurrences],['TAS records',before.tas.records,after.tas.records],['TAS weekly checks',before.tas.weekly,after.tas.weekly],['TAS triggered work',before.tas.eventOccurrences,after.tas.eventOccurrences],['TAS adjusted dates',before.tas.scheduleOverrides,after.tas.scheduleOverrides],['Overall review ticks',before.review.records,after.review.records],['Shared working cards',Object.fromEntries(before.inbox.items.map(item=>[item.taskKey,item])),Object.fromEntries(after.inbox.items.map(item=>[item.taskKey,item]))]];
   const changes=[];for(const [label,old,next] of sections){const count=[...new Set([...Object.keys(old),...Object.keys(next)])].filter(key=>JSON.stringify(old[key])!==JSON.stringify(next[key])).length;if(count)changes.push(`${label}: ${count} changed`);}return changes.length?changes:['No changes to shared progress.'];
@@ -184,4 +210,4 @@ try{
   if(localStorage.getItem('morning-launchpad-theme')==='dark')document.documentElement.dataset.theme='dark';
   const recovered=await recoverTeamTransaction(localStorage);await render();enableControls(true);if(recovered.status!=='none')say('The interrupted handover has been recovered. Check the current status before continuing.');
 }catch(error){say(error.message,true);for(const control of document.querySelectorAll('button,input,textarea'))control.disabled=true;}
-finally{busy=false;}
+finally{busy=false;openBackupAction();}

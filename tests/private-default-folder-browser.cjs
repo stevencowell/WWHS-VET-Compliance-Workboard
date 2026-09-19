@@ -84,7 +84,7 @@ async function folderReady(page,scope='private'){
       board.renderItems();await window.WWHS_PRIVATE_NOTES_BACKUP.refresh();window.__writeMode='defer';
     });
     assert.equal(await warns(launchpad),true);
-    await privatePanel.getByRole('button',{name:'Save task backup…',exact:true}).click();
+    await privatePanel.getByRole('button',{name:'Save backup…',exact:true}).click();
     await launchpad.waitForFunction(()=>!!window.__pendingClose);
     assert.equal(await launchpad.evaluate(()=>window.WWHS_PRIVATE_NOTES_BACKUP.state().needsBackup),true);assert.equal(await warns(launchpad),true);
     await launchpad.evaluate(()=>window.__releaseClose());
@@ -93,7 +93,7 @@ async function folderReady(page,scope='private'){
     const firstFiles=await files(launchpad);assert.equal(Object.keys(firstFiles).length,1);assert.ok(Object.values(firstFiles)[0].includes('Invented personal note'));
     pass('Launchpad reminder remains pending through write and clears only after the actual OPFS stream closes.');
     await launchpad.evaluate(()=>{window.__writeMode='normal';window.__focusDuringPermission=true;});
-    await privatePanel.getByRole('button',{name:'Save task backup…',exact:true}).click();
+    await privatePanel.getByRole('button',{name:'Save backup…',exact:true}).click();
     await launchpad.waitForFunction(()=>window.__closedNames.length===2);
     const twice=await files(launchpad);assert.equal(Object.keys(twice).length,2);for(const [name,text]of Object.entries(firstFiles))assert.equal(twice[name],text);
     assert.ok(Object.keys(twice).every(name=>/^launchpad-task-backup-\d{4}-\d{2}-\d{2}T.+\.json$/.test(name)));

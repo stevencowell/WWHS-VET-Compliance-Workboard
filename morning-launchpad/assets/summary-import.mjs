@@ -160,7 +160,7 @@ class SummaryImport extends HTMLElement {
     if(drafts.length){const saved=element('details',undefined,{class:'import-draft-recovery'});saved.append(element('summary','Text kept before reload'),element('p','Copy any unsaved changes back into the current cards. This copy stays on this page until you leave.',{class:'import-help'}),element('pre',drafts.map(field=>`${field.label}\n${field.text}`).join('\n\n'),{class:'import-source'}),button('Export this draft text',()=>download(JSON.stringify(drafts,null,2),'launchpad-draft-text.json')));this.message.after(saved);}
     this.raw=raw;this.inbox=inbox;this.blocked=false;this.draftInputs.clear();this.reloadButton.hidden=true;this.renderItems();this.say(drafts.length?'Saved work reloaded. Your kept draft text is above.':'Saved work reloaded.');window.dispatchEvent(new CustomEvent('wwhs:work-reloaded'));
   }
-  say(message,error=false){this.message.textContent=message;this.message.classList.toggle('import-error',error);this.message.setAttribute('role',error?'alert':'status');this.fileMessage.textContent=message;this.fileMessage.classList.toggle('import-error',error);if(error)this.inputDetails.open=true;}
+  say(message,error=false){this.message.textContent=message;this.message.classList.toggle('import-error',error);this.message.setAttribute('role',error?'alert':'status');this.fileMessage.textContent=message;this.fileMessage.classList.toggle('import-error',error);if(this.backupDialog?.open){this.backupMessage.textContent=message;this.backupMessage.setAttribute('role',error?'alert':'status');}else if(error)this.inputDetails.open=true;}
   syncPlans(){
     if(this.blocked||this.scope)return;
     const migration=migrateToPins(this.inbox,this.legacyRaw);
@@ -202,12 +202,12 @@ class SummaryImport extends HTMLElement {
     for(const [key,label]of [['ready','Today'],['upcoming','Soon'],['waiting','Waiting'],['notes','My Notes'],['done','Done']]){const b=button(label,()=>{this.searchInput.value='';this.view=key;this.expanded=false;this.renderItems();});this.tabs[key]={button:b,label};this.nav.append(b);}this.append(this.nav);
     this.viewHelp=element('p','',{class:'import-help',role:'status','aria-live':'polite'});this.list=element('div',undefined,{class:'import-list'});this.append(this.viewHelp,this.list);
     this.earlier=element('details',undefined,{class:'import-other'});this.earlierHeading=element('summary');this.earlierList=element('div',undefined,{class:'import-list'});this.earlier.append(this.earlierHeading,element('p','The AI task file replaces these basic entries. Their text and edits are kept here; restore one only if it contains additional work.',{class:'import-help'}),this.earlierList);this.append(this.earlier);
-    const footer=element('div',undefined,{class:'import-footer'});footer.append(element('p','Saved in this browser. Export your task backup to keep progress or move to another computer. Email and Evernote are not changed.',{class:'import-help'}),button('Save task backup…',()=>void this.exportTaskBackup()),button('Download a copy',()=>void this.exportTaskBackup({downloadOnly:true})));if(this.legacyRaw!==null)footer.append(button('Export older daily plans',()=>download(this.legacyRaw,'launchpad-older-daily-plans.json')));this.clearNotesButton=button('Clear unfinished email notes',()=>this.openClearNotes(),'import-danger');footer.append(this.clearNotesButton);this.append(footer);
+    const footer=element('div',undefined,{class:'import-footer'});footer.append(element('p','Saved in this browser. Use Import & save at the top to bring in saved notes or keep a backup. Email and Evernote are not changed.',{class:'import-help'}),button('Import backup…',()=>this.openTaskBackupImport()),button('Save backup…',()=>void this.exportTaskBackup()));if(this.legacyRaw!==null)footer.append(button('Export older daily plans',()=>download(this.legacyRaw,'launchpad-older-daily-plans.json')));this.clearNotesButton=button('Clear unfinished email notes',()=>this.openClearNotes(),'import-danger');footer.append(this.clearNotesButton);this.append(footer);
     this.taskArea=element('div',undefined,{class:'task-area'});for(const child of [...this.children])if(child!==heading&&child!==this.message&&child!==this.reloadButton)this.taskArea.append(child);this.append(this.taskArea);
     this.calendar=element('launchpad-calendar');this.calendar.hidden=true;
     this.calendar.addEventListener('calendar:minimise',()=>{this.showCalendar(false);this.calendarToggle.focus({preventScroll:true});this.calendarToggle.scrollIntoView({behavior:'smooth',block:'nearest'});});
     this.calendar.addEventListener('calendar:open-task',event=>this.openCalendarTask(event.detail.id));
-    this.calendar.addEventListener('calendar:change-task-date',event=>{const d=event.detail;if(['dueDate','eventDate','followUpDate'].includes(d.key)&&this.inbox.items.some(x=>x.id===d.id))d.ok=this.updateItem(d.id,{[d.key]:d.date},true);});this.append(this.calendar);this.buildChatGPTChooser();this.buildClearNotesDialog();this.taskHelpDialog=createTaskHelpDialog(this);
+    this.calendar.addEventListener('calendar:change-task-date',event=>{const d=event.detail;if(['dueDate','eventDate','followUpDate'].includes(d.key)&&this.inbox.items.some(x=>x.id===d.id))d.ok=this.updateItem(d.id,{[d.key]:d.date},true);});this.append(this.calendar);this.buildChatGPTChooser();this.buildClearNotesDialog();this.buildBackupImportDialog();this.taskHelpDialog=createTaskHelpDialog(this);
 
     this.headingCopy=copy;this.headingToolbar=toolbar;this.globalFooter=footer;
     this.scopedNoteButton=button('Add a note',()=>this.editPersonal());this.scopedNoteButton.hidden=true;heading.append(this.scopedNoteButton);
@@ -226,6 +226,33 @@ class SummaryImport extends HTMLElement {
     this.setAttribute('aria-label',this.scope?`${WORKSTREAMS[this.scope]} tasks and notes`:'Your shared tasks and notes');
     this.noteEditor.hidden=!!(this.scope&&this.editingNote&&this.inbox.items.find(x=>x.id===this.editingNote)?.workstream!==this.scope);
     this.showCalendar(false);this.renderItems();
+  }
+  hasNoteDraft(){
+    if(this.querySelector('[data-note-unsaved="true"]'))return true;
+    const old=this.inbox.items.find(item=>item.id===this.editingNote);
+    return this.noteEditor?.open&&Object.entries(this.noteInputs||{}).some(([key,input])=>input.value!==(old?.[key]||''));
+  }
+  openTaskBackupImport(){
+    if(this.scope)return;
+    this.backupFile.value='';this.backupMessage.textContent='';
+    this.backupDialog.showModal();this.backupFile.focus();
+  }
+  buildBackupImportDialog(){
+    this.backupDialog=element('dialog',undefined,{class:'chatgpt-chooser launchpad-backup-dialog','aria-labelledby':'launchpad-backup-title'});
+    this.backupDialog.addEventListener('cancel',event=>{if(this.backupImportBusy)event.preventDefault();});
+    this.backupDialog.append(element('p','Launchpad · Private notes and tasks',{class:'import-save-scope'}),element('h2','Import backup',{id:'launchpad-backup-title'}),element('p','Choose your saved Launchpad task backup (.json) from Steve - Private Backups in Google Drive, or from this device. On a phone, download the file from Drive first if needed.'),element('p','This adds missing notes and merges matching tasks. Existing edits and completion status in this browser are kept. It does not replace the whole list.'),element('p','For Finance, shared VET/TAS progress or calendar events, use Import in that area.',{class:'import-help'}));
+    this.backupFile=element('input',undefined,{type:'file',accept:'.json,application/json',id:'launchpad-backup-file'});
+    this.backupMessage=element('p','',{role:'status','aria-live':'polite'});
+    const apply=button('Import backup',async()=>{
+      if(!this.backupFile.files[0]){this.backupMessage.textContent='Choose your Launchpad task backup first.';return;}
+      if(this.hasNoteDraft()){this.backupMessage.textContent='Save or cancel your open note before importing. Your draft is still on this page.';return;}
+      this.backupImportBusy=true;apply.disabled=true;cancel.disabled=true;this.backupFile.disabled=true;
+      try{if(await this.importFile(this.backupFile.files[0],{backupOnly:true}))this.backupDialog.close();}
+      finally{this.backupImportBusy=false;apply.disabled=false;cancel.disabled=false;this.backupFile.disabled=false;}
+    },'import-primary');
+    const cancel=button('Cancel',()=>this.backupDialog.close());
+    const actions=element('div',undefined,{class:'import-actions'});actions.append(apply,cancel);
+    this.backupDialog.append(element('label','Choose a Launchpad backup',{for:'launchpad-backup-file'}),this.backupFile,this.backupMessage,actions);this.append(this.backupDialog);
   }
   buildClearNotesDialog(){
     this.clearDialog=element('dialog',undefined,{class:'chatgpt-chooser','aria-labelledby':'clear-notes-title'});
@@ -268,7 +295,7 @@ class SummaryImport extends HTMLElement {
       const wrapper=element('label',label);const input=element(type==='textarea'?'textarea':'input',undefined,{'aria-label':label,maxlength:String(max),...(type==='textarea'?{rows:key==='source'?'5':'2'}:{type})});
       if(key==='title')input.required=true;this.noteInputs[key]=input;wrapper.append(input);this.noteForm.append(wrapper);
     }
-    this.noteForm.append(element('p','Leave the action blank to keep a reference note. Add an action to include it in your task views. Your notes are included in Export task backup.',{class:'import-help'}));
+    this.noteForm.append(element('p','Leave the action blank to keep a reference note. Add an action to include it in your task views. Your notes are included in Save backup.',{class:'import-help'}));
     const save=element('button','Save note',{type:'submit',class:'import-primary'});this.noteForm.append(save,button('Cancel',()=>{this.noteEditor.open=false;this.editingNote=null;this.noteForm.reset();}));
     this.noteForm.addEventListener('submit',event=>{event.preventDefault();this.savePersonal();});this.noteEditor.append(this.noteForm);this.append(this.noteEditor);
   }
@@ -287,12 +314,17 @@ class SummaryImport extends HTMLElement {
     this.view=taskSection(item);this.noteEditor.open=false;this.editingNote=null;this.noteForm.reset();this.renderItems();this.say(`Saved “${item.title}” in ${this.tabs[this.view].label}.`);this.nav.scrollIntoView({behavior:'smooth',block:'start'});
   }
   importText(text){try{if(text.trim().startsWith('{'))this.importData(validateInbox(text));else this.importData({items:parseSummary(text)});}catch(error){this.say(error.message,true);}}
-  async importFile(file){
+  async importFile(file,{backupOnly=false}={}){
     if(this.reading)return;this.reading=true;this.updateCount();this.say(`Reading ${file.name}…`);let timeout;
     try {
       if(file.size>20*LIMIT)throw new Error('This file is over 20 MB. Export fewer notes or use an AI task file.');
       const text=await Promise.race([file.text(),new Promise((_,reject)=>{timeout=setTimeout(()=>reject(new Error('The browser could not finish reading this file.')),15000);})]);
-      if(/\.json$/i.test(file.name))this.importData(validateInbox(text));else this.importData({items:parseSummary(/\.html?$/i.test(file.name)?textFromHtml(text):text)});
+      if(backupOnly){
+        let data;try{data=validateInbox(text);}catch{throw new Error('Choose a valid Launchpad task backup JSON. Finance, calendar and shared VET/TAS files must be imported in their own area.');}
+        if(this.hasNoteDraft())throw new Error('Save or cancel your open note before importing.');
+        return this.importData(data);
+      }
+      if(/\.json$/i.test(file.name))return this.importData(validateInbox(text));else return this.importData({items:parseSummary(/\.html?$/i.test(file.name)?textFromHtml(text):text)});
     }catch(error){this.say(`Could not import ${file.name}. ${error.message}`,true);}finally{clearTimeout(timeout);this.reading=false;this.updateCount();}
   }
   importData(data){
@@ -303,7 +335,7 @@ class SummaryImport extends HTMLElement {
     if(!this.persist(next))return;
     this.paste.value='';this.inputDetails.open=false;this.workstream='all';this.syncPlans();this.renderItems();
     this.say(`${merged.added} tasks added; ${merged.updated} matched tasks refreshed. Your edits and progress are preserved.${merged.archived?` ${merged.archived} basic entries retained under Earlier imports.`:''}`);
-    this.nav.scrollIntoView({behavior:'smooth',block:'start'});
+    this.nav.scrollIntoView({behavior:'smooth',block:'start'});return true;
   }
   updateItem(id,changes,rerender=false){
     if(Object.hasOwn(changes,'status'))changes={...changes,progressOverride:true};

@@ -1,4 +1,5 @@
 summary-import{display:block;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:28px;margin-bottom:28px;scroll-margin-top:20px}
+.launchpad-backup-dialog{max-height:calc(100dvh - 32px);overflow:auto}.launchpad-backup-dialog input[type=file]{display:block;width:100%;max-width:100%;box-sizing:border-box;margin-top:10px;font:inherit}.launchpad-backup-dialog .import-save-scope{font-size:11px;font-weight:750;letter-spacing:1px;text-transform:uppercase}.launchpad-backup-dialog .import-actions{align-items:stretch}.launchpad-backup-dialog .import-actions button{flex:1;min-height:44px}.launchpad-backup-dialog [role=alert]{color:var(--ink);border-left:4px solid var(--focus);padding-left:12px}
 .import-workstreams{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0 4px;padding-bottom:16px;border-bottom:1px solid var(--line)}
 .import-workstreams button{font-size:14px;font-weight:600}
 .import-workstreams button[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--ink)}

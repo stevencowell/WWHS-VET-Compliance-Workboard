@@ -32,6 +32,12 @@ async function downloaded(page,id){const pending=page.waitForEvent('download');a
     const page=await context.newPage();page.setDefaultTimeout(15000);
     page.on('pageerror',error=>errors.push(error.message));page.on('dialog',dialog=>dialog.accept());
     await page.goto(base+'/team-handover/');await ready(page);
+    const unopened=await state(page);
+    await page.locator('#handover-save-link').click();assert.equal(await page.locator('#setup-section').getAttribute('open'),'');
+    assert.equal(await page.evaluate(()=>document.activeElement.id),'setup-section');assert.deepEqual(await state(page),unopened);
+    await page.locator('#setup-section summary').click();
+    await page.locator('#handover-import-link').click();assert.equal(await page.evaluate(()=>document.activeElement.id),'start-section');
+    assert.deepEqual(await state(page),unopened,'import shortcut only reveals the existing preview/consent flow');
     await page.locator('#setup-section summary').click();await page.locator('#setup-editor').fill('Synthetic editor');
     const initial=await state(page);await press(page,'#create-team');assert.deepEqual(await state(page),initial);
     assert.match(await page.locator('#handover-message').innerText(),/cancelled/i);
@@ -50,7 +56,12 @@ async function downloaded(page,id){const pending=page.waitForEvent('download');a
     assert.deepEqual(JSON.parse(await page.evaluate(()=>window.__save.files.at(-1))),fallback);
     assert.deepEqual(await state(page),prepared,'successful local file save does not falsely confirm Drive syncing');
     assert.match(await page.locator('#handover-message').innerText(),/wait for Drive to finish syncing/);
+    await page.locator('#handover-import-link').click();assert.equal(await page.evaluate(()=>document.activeElement.id),'pending-session');
+    assert.equal(await page.locator('#start-section').isVisible(),false);assert.deepEqual(await state(page),prepared);
     await press(page,'#confirm-finish');assert.equal(JSON.parse((await state(page))[metaKey]).pendingExport,null);
+    const viewOnly=await state(page);await page.locator('#handover-save-link').click();
+    assert.equal(await page.evaluate(()=>document.activeElement.id),'start-section');assert.match(await page.locator('#handover-message').innerText(),/view-only/);
+    assert.deepEqual(await state(page),viewOnly,'save shortcut cannot manufacture a new shared revision from a view-only snapshot');
 
     // Prepare an editing session and recovery copy entirely from synthetic local data.
     await page.evaluate(async metaKey=>{
@@ -66,6 +77,9 @@ async function downloaded(page,id){const pending=page.waitForEvent('download');a
         recovery:{capturedAt:new Date().toISOString(),lastFile:info,data}})));
     },metaKey);
     await page.reload();await ready(page);await page.locator('#notes-saved').check();await page.locator('#handover-note').fill('Synthetic handover note');
+    const beforeShortcut=await state(page);await page.locator('#handover-import-link').click();
+    assert.equal(await page.evaluate(()=>document.activeElement.id),'active-session');assert.equal(await page.locator('#start-section').isVisible(),false);
+    assert.deepEqual(await state(page),beforeShortcut,'active session import shortcut requires handover first');
     const editing=await state(page);await mode(page,'cancel');await press(page,'#finish-session');assert.deepEqual(await state(page),editing);
     assert.equal(await page.locator('#active-session').isVisible(),true);assert.equal(await page.locator('#handover-note').inputValue(),'Synthetic handover note');
     await mode(page,'write-fail');await press(page,'#finish-session');
@@ -82,6 +96,14 @@ async function downloaded(page,id){const pending=page.waitForEvent('download');a
     assert.equal(firstFinishCall.options.suggestedName,'WWHS-team-handover.json');
     for(const width of [390,1440]){await page.setViewportSize({width,height:1050});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,`${width}px overflow`);}
     await press(page,'#confirm-finish');assert.equal(JSON.parse((await state(page))[metaKey]).active,null);
+    for(const path of ['/#vet-home','/head-teacher-tas/#home']){
+      await page.goto(base+path);
+      const banner=page.locator('.workspace-team-banner');await banner.waitFor({state:'visible'});
+      assert.match(await banner.innerText(),/VET \+ TAS · Shared progress/i);
+      assert.equal(await banner.getByRole('link',{name:'Import backup…',exact:true}).getAttribute('href').then(href=>new URL(href).hash),'#import-backup');
+      assert.equal(await banner.getByRole('link',{name:'Save backup…',exact:true}).getAttribute('href').then(href=>new URL(href).hash),'#save-backup');
+      for(const width of [390,1440]){await page.setViewportSize({width,height:1050});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,`${path} ${width}px overflow`);}
+    }
     assert.deepEqual(errors,[]);
     console.log('PASS Team Save as: active user gesture, create/finish/pending cancellation, blocked picker, write/close failure recovery, exact repeat save, explicit fallback, private separation, Drive confirmation and mobile/desktop overflow. No filesystem handles or Drive files used.');
   }finally{await browser.close();}

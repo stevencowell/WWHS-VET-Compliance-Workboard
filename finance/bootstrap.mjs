@@ -22,7 +22,7 @@ function reportStatus(status) {
   const labels={saved:'Saved in this browser',unsaved:'Changes waiting to save…',saving:'Saving encrypted records…',error:'Not saved — download a recovery backup',conflict:'Another tab has newer records — download a recovery backup',closed:'Locked'};
   $('saveStatus').textContent=sample?'Sample only · not saved':labels[status.state]||status.state;
   $('saveStatus').dataset.error=String(['error','conflict'].includes(status.state));
-  $('downloadEncryptedBackup').textContent=['error','conflict'].includes(status.state)?'Save encrypted recovery backup…':'Save encrypted backup…';
+  $('downloadEncryptedBackup').textContent=['error','conflict'].includes(status.state)?'Save recovery backup…':'Save backup…';
   $('saveProblem').hidden=!['error','conflict'].includes(status.state);
   if(status.error)$('saveProblemMessage').textContent=status.error;
   renderBackupReminder();
@@ -36,7 +36,6 @@ function renderBackupReminder() {
   $('financeBackupAlerts').checked=state.enabled;
   $('confirmFinanceBackup').hidden=!state.canConfirm&&!state.confirming;
   $('confirmFinanceBackup').disabled=state.confirming;
-  $('financeBackupNow').hidden=!state.needsBackup||!state.enabled;
   panel.dataset.state=fatalSaveError||['error','conflict'].includes(storage?.status().state)?'error':state.enabled&&state.needsBackup?'needed':'current';
   let message;
   if(state.confirming)message='Recording your backup confirmation in this encrypted workspace…';
@@ -53,7 +52,13 @@ function memoryStorage() {
 }
 function loadScript(src) { return new Promise((resolve,reject)=>{const script=document.createElement('script');script.src=src;script.onload=resolve;script.onerror=()=>reject(new Error('A Finance Studio file could not be loaded. Reload and try again.'));document.head.append(script);}); }
 function stamp(){return new Date().toISOString().slice(0,10);}
-function setStarting(value){starting=value;for(const id of ['unlockFinance','trySample','restoreVault'])$(id).disabled=value||resetting;}
+function setStarting(value){starting=value;for(const id of ['unlockFinance','trySample','restoreVault','gateImportBackup','importEncryptedBackup','lockFinance'])$(id).disabled=value||resetting;}
+function showBackupImport(){
+  if(starting||resetting||!$('financeWorkspace').hidden)return;
+  $('restoreVaultDetails').open=true;
+  $('restoreVaultDetails').scrollIntoView({block:'center'});
+  $('restoreVaultFile').focus({preventScroll:true});
+}
 
 async function showGate() {
   const gate=await vault.getGate(); gateState=gate.state;
@@ -162,8 +167,8 @@ $('vaultForm').addEventListener('submit',async event=>{
 });
 $('trySample').addEventListener('click',async()=>{if(starting||resetting)return;setStarting(true);try{await openWorkspace(true);}catch(error){if(engineAttempted)restartAfterFailedStart();else $('gateMessage').textContent=error.message;}finally{setStarting(false);}});
 async function saveFinanceBackup(downloadOnly=false){
-  if(sample||!storage||$('downloadEncryptedBackup').disabled)return;
-  const button=$('downloadEncryptedBackup');button.disabled=true;$('financeBackupNow').disabled=true;$('downloadFinanceCopy').disabled=true;
+  if(sample||starting||resetting||!storage||$('downloadEncryptedBackup').disabled)return;
+  const button=$('downloadEncryptedBackup');button.disabled=true;$('importEncryptedBackup').disabled=true;$('lockFinance').disabled=true;$('downloadFinanceCopy').disabled=true;
   try{
     // Open the native picker within the original click, before any encryption awaits.
     const name=`finance-encrypted-backup-${stamp()}.json`;
@@ -179,15 +184,30 @@ async function saveFinanceBackup(downloadOnly=false){
     else if(result.saved&&canConfirm){const confirmed=await backupReminder.confirmBackup();$('backupStatus').textContent=confirmed?'Encrypted backup saved to your chosen folder. Keep its password safe. If you chose a Drive folder, its sync app handles the upload.':'Encrypted file saved, but more changes arrived. Save another backup to include the latest edits.';}
     else if(result.saved){$('backupStatus').textContent='Encrypted file saved, but more changes arrived. Save another backup to include the latest edits.';}
     else{$('backupStatus').textContent=canConfirm?'Encrypted backup download started. Check the saved file, then choose “I’ve saved this backup”.':'Download started, but more changes arrived. Save another backup to include the latest edits.';}
-  }catch(error){$('backupStatus').textContent=error.message;}finally{button.disabled=false;$('financeBackupNow').disabled=false;$('downloadFinanceCopy').disabled=false;}
+  }catch(error){$('backupStatus').textContent=error.message;}finally{button.disabled=false;$('importEncryptedBackup').disabled=false;$('lockFinance').disabled=false;$('downloadFinanceCopy').disabled=false;}
 }
 $('downloadEncryptedBackup').addEventListener('click',()=>saveFinanceBackup());
 const backupStatus=document.createElement('span');backupStatus.id='backupStatus';backupStatus.setAttribute('role','status');document.querySelector('.workspace-status').append(backupStatus);
 $('financeBackupAlerts').addEventListener('change',async()=>{try{backupReminder.setEnabled($('financeBackupAlerts').checked);await storage.flush();}catch(error){renderBackupReminder();reportStatus({state:error.code==='conflict'?'conflict':'error',error:error.message});}});
-$('financeBackupNow').addEventListener('click',()=>$('downloadEncryptedBackup').click());
 $('downloadFinanceCopy').addEventListener('click',()=>saveFinanceBackup(true));
 $('confirmFinanceBackup').addEventListener('click',async()=>{try{if(fatalSaveError)throw fatalSaveError;const confirmed=await backupReminder.confirmBackup();$('backupStatus').textContent=confirmed?'Backup confirmed. Keep the file and its password somewhere safe.':'More changes arrived. Download another encrypted backup before confirming.';}catch(error){$('backupStatus').textContent='The backup confirmation could not be saved. '+error.message;reportStatus({state:error.code==='conflict'?'conflict':'error',error:error.message});}});
-$('lockFinance').addEventListener('click',async()=>{try{await storage.flush();if(fatalSaveError)throw fatalSaveError;if(backupReminder?.status().shouldWarn&&!confirm('Your changes are saved in this browser, but a private encrypted backup has not been confirmed. Lock Finance anyway? Choose Cancel to keep this workspace open and back up first.'))return;storage.close();vault?.lock();resetting=true;$('financeWorkspace').hidden=true;location.replace(location.pathname);}catch(error){reportStatus({state:'error',error:error.message+' Download a recovery backup before reloading.'});}});
+async function lockWorkspace(forImport=false){
+  if(starting||resetting||!storage||$('downloadEncryptedBackup').disabled)return;
+  setStarting(true);
+  try{
+    await storage.flush();if(fatalSaveError)throw fatalSaveError;
+    const action=forImport?'Lock Finance and open backup import anyway?':'Lock Finance anyway?';
+    if(backupReminder?.status().shouldWarn&&!confirm(`Your changes are saved in this browser, but a private encrypted backup has not been confirmed. ${action} Choose Cancel to keep this workspace open and back up first.`))return;
+    storage.close();vault?.lock();resetting=true;$('financeWorkspace').hidden=true;
+    // Reload purges the old engine and decrypted records before the restore form opens.
+    history.replaceState(null,'',location.pathname+(forImport?'#import-backup':''));
+    location.reload();
+  }catch(error){reportStatus({state:'error',error:error.message+' Save a recovery backup before reloading.'});}
+  finally{setStarting(false);}
+}
+$('lockFinance').addEventListener('click',()=>lockWorkspace());
+$('importEncryptedBackup').addEventListener('click',()=>{if(!sample)lockWorkspace(true);});
+$('gateImportBackup').addEventListener('click',showBackupImport);
 $('restoreVault').addEventListener('click',async()=>{
   if(starting||resetting)return;
   const file=$('restoreVaultFile').files[0];if(!file){$('restoreVaultMessage').textContent='Choose an encrypted Finance Studio backup first.';return;}
@@ -212,8 +232,9 @@ function restartAfterFailedStart(){
   resetting=true;setStarting(true);try{sessionStorage.setItem('finance_ui_start_error','1');}catch{}
   fatalSaveError=null;storage?.close({discardUnsaved:true});vault?.lock();$('financeWorkspace').hidden=true;location.replace(location.pathname);
 }
-window.addEventListener('hashchange',()=>{if(engine)engine.App.navigate(location.hash.slice(1));});
+window.addEventListener('hashchange',()=>{if(engine)engine.App.navigate(location.hash.slice(1));else if(location.hash==='#import-backup')showBackupImport();});
 window.addEventListener('beforeunload',event=>{if(!sample&&!resetting&&(fatalSaveError||storage?.status().dirty||backupReminder?.status().shouldWarn)){event.preventDefault();event.returnValue='';}});
 // A back/forward cache entry must never restore an already-unlocked financial screen.
 window.addEventListener('pageshow',event=>{if(event.persisted)location.reload();});
 try{vault=await createLocalVault();await showGate();try{if(sessionStorage.getItem('finance_ui_start_error')){sessionStorage.removeItem('finance_ui_start_error');$('gateMessage').textContent='Finance could not finish opening. The page has been safely reset; your saved encrypted records are unchanged. Try again, or keep a copy of your backup if this continues.';}}catch{}}catch(error){$('gateTitle').textContent='Private storage is unavailable.';$('gateDescription').textContent=error.message;$('gateMessage').textContent='You can still explore the separate sample workspace, or restore an encrypted backup below.';}
+if(location.hash==='#import-backup')showBackupImport();

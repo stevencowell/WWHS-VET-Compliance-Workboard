@@ -71,11 +71,13 @@ export function createNotesBackupTracker(storage,{hash=digest,onChange=()=>{}}={
 
 export function installLaunchpadBackupReminder({header}){
   const make=(tag,text,attrs={})=>{const node=document.createElement(tag);if(text!==undefined)node.textContent=text;for(const [key,value]of Object.entries(attrs))node.setAttribute(key,value);return node;};
-  const panel=make('aside',undefined,{class:'private-backup-reminder','aria-label':'Private Launchpad backup'});
-  const title=make('h2','Private Launchpad backup'),copy=make('p'),status=make('p','',{role:'status',class:'private-backup-status'});
+  const panel=make('aside',undefined,{class:'private-backup-reminder import-save-panel','aria-label':'Private Launchpad backup'});
+  const title=make('h2','Import & save'),copy=make('p'),status=make('p','',{role:'status',class:'private-backup-status'});
   const toggle=make('input',undefined,{type:'checkbox'}),label=make('label');toggle.checked=true;label.append(toggle,document.createTextNode('Remind me before closing if my personal notes need a backup'));
-  const actions=make('div',undefined,{class:'private-backup-actions'}),download=make('button','Save task backup…',{type:'button'}),fallback=make('button','Download a copy',{type:'button'}),confirm=make('button','I’ve saved this backup',{type:'button'});confirm.hidden=true;actions.append(download,fallback,confirm);
-  panel.append(title,copy,label,actions,status,make('p','Keep this task file separate from the shared VET/TAS handover. Calendar events use Export calendar backup.',{class:'private-backup-small'}));
+  const actions=make('div',undefined,{class:'private-backup-actions'}),importBackup=make('button','Import backup…',{type:'button','data-backup-action':'import'}),download=make('button','Save backup…',{type:'button','data-backup-action':'save'}),fallback=make('button','Download a copy',{type:'button'}),confirm=make('button','I’ve saved this backup',{type:'button'});confirm.hidden=true;actions.append(importBackup,download);
+  const more=make('details',undefined,{class:'private-backup-more'}),secondary=make('div',undefined,{class:'private-backup-actions'});secondary.append(fallback);more.append(make('summary','More backup options'),label,secondary);
+  const confirmation=make('div',undefined,{class:'private-backup-actions'});confirmation.append(confirm);
+  panel.append(make('p','Launchpad · Private notes and tasks',{class:'import-save-scope'}),title,make('p','Bring saved notes onto this device, or save a copy to Steve - Private Backups.'),actions,copy,status,confirmation,more,make('p','Use a Launchpad task backup (.json). Finance and shared VET/TAS progress have their own Import & save controls. Calendar events use a separate calendar backup.',{class:'private-backup-small'}));
   mountBackupFolderSettings(panel,{scope:'private'});
   header.after(panel);
   let tracker,listener=false;
@@ -95,7 +97,6 @@ export function installLaunchpadBackupReminder({header}){
   function render(value){
     toggle.checked=value.enabled;confirm.hidden=!value.canConfirm;confirm.disabled=draftPending();
     panel.dataset.state=value.error?'error':value.needsBackup?'needed':'quiet';
-    title.textContent=value.needsBackup?'Personal notes need a backup':'Private Launchpad backup';
     copy.textContent=draftPending()?'Save your open note before backing up. Unsaved text is not in the task file.':value.needsBackup?'Your changes are saved in this browser. Save a private task backup to keep a separate copy.':value.confirmedAt?'Your last confirmed task backup covers the current personal notes.':'Reminders watch for new changes to personal notes, tasks, pins and task dates.';
     if(value.error)status.textContent=value.error;
     const needed=!!(value.enabled||draftPending());
@@ -103,6 +104,11 @@ export function installLaunchpadBackupReminder({header}){
   }
   tracker=createNotesBackupTracker(localStorage,{onChange:render});
   toggle.addEventListener('change',()=>void tracker.setEnabled(toggle.checked));
+  importBackup.addEventListener('click',()=>{
+    const board=document.querySelector('summary-import');
+    if(!board?.openTaskBackupImport){status.textContent='The task list is still opening. Try again in a moment.';return;}
+    board.openTaskBackupImport();
+  });
   download.addEventListener('click',()=>{
     const board=document.querySelector('summary-import');
     if(draftPending()){status.textContent='Save your open note first, then download the task backup.';return;}
