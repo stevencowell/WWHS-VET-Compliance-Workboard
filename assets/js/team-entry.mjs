@@ -10,7 +10,7 @@ export function installTeamEntry({wing,base,header}) {
   const copy=make('div'),heading=make('strong'),description=make('span'),actions=make('div',undefined,{class:'team-entry-actions'});
   const importLink=make('a','Import shared progress',{href:handover,class:'team-entry-primary'});
   const guide=make('button','How to import',{type:'button',class:'team-entry-guide'});
-  copy.append(heading,description);actions.append(importLink,guide);banner.append(copy,actions);header.after(banner);
+  copy.append(make('span','!',{class:'team-entry-mark','aria-hidden':'true'}),make('span','Team handover',{class:'team-entry-label'}),heading,description);actions.append(importLink,guide);banner.append(copy,actions);header.after(banner);
 
   const dialog=make('dialog',undefined,{id:'team-import-prompt',class:'team-import-prompt','aria-labelledby':'team-import-title','aria-describedby':'team-import-intro'});
   const title=make('h2','Start with your team’s saved progress',{id:'team-import-title'});
