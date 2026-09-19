@@ -29,10 +29,10 @@ async function waitReady(page) {
 async function read(page) { return page.evaluate(key => window.WWHS_STORAGE.getItem(key), INBOX); }
 async function openImport(page, payload) {
   await page.locator('[aria-label="Private Launchpad backup"] [data-backup-action="import"]').click();
-  const dialog = page.getByRole('dialog', {name: 'Import backup', exact: true});
+  const dialog = page.getByRole('dialog', {name: 'Open backup', exact: true});
   await dialog.waitFor({state: 'visible'});
   await page.locator('#launchpad-backup-file').setInputFiles({name: 'launchpad-task-backup.json', mimeType: 'application/json', buffer: Buffer.from(json(payload))});
-  await dialog.getByRole('button', {name: 'Import backup', exact: true}).click();
+  await dialog.getByRole('button', {name: 'Open backup', exact: true}).click();
   return dialog;
 }
 async function fillOrigin(page) {
@@ -127,7 +127,7 @@ async function newContext(browser, entries) {
       await page.waitForFunction(() => window.__syntheticBackupClosed && window.__syntheticBackupWrites.length === 1);
       const backupText = await page.evaluate(() => window.__syntheticBackupWrites[0]);
       assert.ok(backupText.trim().startsWith('{'), 'actual Save backup control exports plain JSON');
-      assert.deepEqual(JSON.parse(backupText), saved);
+      assert.deepEqual(JSON.parse(JSON.parse(backupText).records[INBOX]), saved);
       await page.reload({waitUntil: 'networkidle'}); await waitReady(page);
       assert.deepEqual(JSON.parse(await read(page)), saved);
       await page.getByRole('button', {name: /^My Notes \(/}).click();
@@ -165,8 +165,8 @@ async function newContext(browser, entries) {
       const before = await read(full.page), quota = await fillOrigin(full.page), fillerBefore = await fillerDigest(full.page);
       const nativeBefore = await full.page.evaluate(() => Object.fromEntries(Object.keys(localStorage).sort().map(key => [key, localStorage.getItem(key)])));
       const dialog = await openImport(full.page, inbox([addition]));
-      await dialog.getByRole('alert').filter({hasText: 'storage is full'}).waitFor({state: 'visible'});
-      assert.match(await dialog.getByRole('alert').innerText(), /previous records are kept.*do not clear browser data/i);
+      await dialog.getByRole('alert').filter({hasText: 'saved records are unchanged'}).waitFor({state: 'visible'});
+      assert.match(await dialog.getByRole('alert').innerText(), /saved records are unchanged|previous records.*restored/i);
       assert.equal(await read(full.page), before);
       assert.deepEqual(await fillerDigest(full.page), fillerBefore);
       const nativeAfter = await full.page.evaluate(() => Object.fromEntries(Object.keys(localStorage).sort().map(key => [key, localStorage.getItem(key)])));

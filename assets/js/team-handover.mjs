@@ -1,214 +1,188 @@
-import {KEYS, DATA_KEYS, readRaw, snapshot, createBackup, parseBackup, checkRevision, buildImportPlan} from './team-handover-core.mjs?v=team-handover-1';
-import {applyTeamTransaction, recoverTeamTransaction} from './team-handover-transaction.mjs?v=compression-storage-1';
-import {prepareTeamMetadata, hydrateTeamMetadata} from './team-handover-payloads.mjs?v=team-payloads-1';
-import {downloadDestination} from './save-backup-file.mjs?v=default-folder-1';
-import {getBackupFolder} from './backup-folder.mjs?v=default-folder-1';
-import {mountBackupFolderSettings} from './backup-folder-ui.mjs?v=default-folder-1';
+import {KEYS,DATA_KEYS,readRaw,snapshot,createBackup,parseBackup} from './team-handover-core.mjs?v=team-handover-1';
+import {applyTeamTransaction,recoverTeamTransaction} from './team-handover-transaction.mjs?v=backup-flow-2';
+import {prepareTeamMetadata,hydrateTeamMetadata,inspectTeamMetadata} from './team-handover-payloads.mjs?v=backup-flow-2';
+import {createSafetyBackup,parseTeamFile,buildReconnectPlan,prepareReconnectPlan} from './team-handover-recovery.mjs?v=backup-flow-2';
+import {downloadDestination} from './save-backup-file.mjs?v=backup-flow-2';
+import {getBackupFolder} from './backup-folder.mjs?v=backup-flow-2';
+import {mountBackupFolderSettings} from './backup-folder-ui.mjs?v=backup-flow-2';
 
-const $=id=>document.getElementById(id), home=new URL('../../',import.meta.url);
-const browserStorage = () => window.WWHS_STORAGE || localStorage;
-const teamFolder=getBackupFolder('team');
+const $=id=>document.getElementById(id),home=new URL('../../',import.meta.url);
+const storage=()=>window.WWHS_STORAGE||localStorage,teamFolder=getBackupFolder('team');
 mountBackupFolderSettings($('team-backup-folder'),{scope:'team'});
 const workDestination=new URL(new URLSearchParams(location.search).get('wing')==='tas'?'head-teacher-tas/#home':'#vet-home',home).href;
-let selected=null, selectedBefore=null, busy=true, rendered=false;
-const rawMeta=()=>browserStorage().getItem(KEYS.metadata);
+let selected=null,selectedBefore=null,busy=true,inspection=null,currentData=null,saveAttemptId=null,safetyAttempt=null;
+const stamp=value=>Number.isFinite(Date.parse(value))?new Intl.DateTimeFormat('en-AU',{dateStyle:'medium',timeStyle:'short',timeZone:'Australia/Sydney'}).format(new Date(value)):'Unknown date';
+const rawMeta=()=>storage().getItem(KEYS.metadata);
+const expectedSnapshot=()=>({...readRaw(storage()),[KEYS.metadata]:rawMeta()});
+const contents=value=>JSON.stringify(value);
+const info=file=>Object.fromEntries(['workspaceId','revision','parentRevision','parentExportId','exportId','savedAt','savedBy','note','changes'].map(key=>[key,file[key]]));
+const count=data=>`${Object.keys(data.vet.records).length} VET records · ${Object.keys(data.tas.records).length} TAS records · ${Object.keys(data.review.records).length} review ticks · ${data.inbox.items.length} shared cards`;
+const validName=value=>typeof value==='string'&&value.trim().length<=80?value.trim():'';
+const editor=id=>validName($(id).value)||validName(inspection?.stored?.active?.editor)||'Workboard user';
+function say(message,error=false){$('handover-message').textContent=message;$('handover-message').classList.toggle('is-error',error);$('handover-message').setAttribute('role',error?'alert':'status');}
+function assertUnchanged(before){if(Object.entries(before).some(([key,value])=>storage().getItem(key)!==value))throw Error('Progress changed in another tab. Your work is kept. Reload this page before continuing.');}
 function assertExpected(before){
-  if(Object.entries(before).some(([key,value])=>browserStorage().getItem(key)!==value))throw Error('Progress changed in another tab. Reload and reopen the latest team file before continuing.');
-  if(browserStorage().getItem(KEYS.journal)!==null)throw Error('An interrupted handover needs recovery. Reload Team handover before continuing.');
+  assertUnchanged(before);
+  if(storage().getItem(KEYS.journal)!==null)throw Error('An interrupted handover needs recovery. You can still save a safety copy, then use Check again.');
+  if(storage().getItem('morning-launchpad-restore:v1')!==null)throw Error('A Launchpad backup needs to finish opening. Return to Launchpad before replacing shared progress.');
 }
 async function metadata(before=expectedSnapshot()){
-  const raw=before[KEYS.metadata];let value;
-  try{value=raw===null?null:JSON.parse(raw);}catch{throw Error('The team session record cannot be read. Keep this browser data intact for recovery.');}
+  let value;try{value=before[KEYS.metadata]===null?null:JSON.parse(before[KEYS.metadata]);}catch{throw Error('The handover history needs reconnecting. Save a safety copy, then open the latest shared backup.');}
   const result=await hydrateTeamMetadata(value);assertExpected(before);return result;
 }
-const stamp=value=>new Intl.DateTimeFormat('en-AU',{dateStyle:'medium',timeStyle:'short',timeZone:'Australia/Sydney'}).format(new Date(value));
-const expectedSnapshot=()=>({...readRaw(browserStorage()),[KEYS.metadata]:rawMeta()});
-const fileInfo=payload=>Object.fromEntries(['workspaceId','revision','parentRevision','parentExportId','exportId','savedAt','savedBy','note','changes'].map(key=>[key,payload[key]]));
-const fileContents=payload=>JSON.stringify(payload,null,2);
-function say(message,error=false){$('handover-message').textContent=message;$('handover-message').classList.toggle('is-error',error);}
-function editor(id){const value=$(id).value.trim();if(!value||value.length>80)throw Error('Enter your name or initials first.');return value;}
-function download(payload,name='WWHS-team-handover.json'){
-  const url=URL.createObjectURL(new Blob([fileContents(payload)],{type:'application/json'}));
-  const link=document.createElement('a');link.href=url;link.download=name;document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),10000);
+function clearSelection(){selected=null;selectedBefore=null;$('team-file').value='';$('file-preview').hidden=true;}
+function openBackupAction(focus=true){
+  const opening=['#import-backup','#start-section'].includes(location.hash);
+  $('start-section').hidden=!opening;$('save-panel').hidden=opening;
+  $('handover-import-link').setAttribute('aria-current',opening?'page':'false');$('handover-save-link').setAttribute('aria-current',opening?'false':'page');
+  if(focus){const panel=$(opening?'start-section':'save-panel');panel.focus({preventScroll:true});panel.scrollIntoView({block:'start'});}
 }
-const teamFileName='WWHS-team-handover.json';
-function chooseTeamDestination(downloadOnly=false){
-  return downloadOnly?Promise.resolve(downloadDestination(teamFileName)):teamFolder.destination(teamFileName);
-}
-async function savePreparedFile(payload,destination,before){
-  assertExpected(before);
-  let result;
-  try{result=await destination.write(fileContents(payload));}
-  catch(error){throw new Error('The team file could not be saved to that location. Your prepared handover is kept here. Try Save backup again or Download a copy; your saved task progress is safe.',{cause:error});}
-  try{assertExpected(before);}
-  catch(error){throw new Error('The file save was requested, but progress changed in another tab while saving. Do not share that file yet. Check the current team session and prepare the latest file.',{cause:error});}
-  say(result.saved?'The file was saved to the folder you chose. If you chose 01 Current handover in Google Drive, wait for Drive to finish syncing, then confirm below. If you chose another folder, move the file into the shared folder first.':'A download of the team file was requested. Check it saved on your device, then put it in 01 Current handover in Google Drive and wait for syncing or upload to finish before confirming below.');
-}
-async function saveMeta(before,next){
-  const compact=await prepareTeamMetadata(next),after={...before,[KEYS.metadata]:JSON.stringify(compact)};
-  assertExpected(before);
-  window.WWHS_TEAM_STORAGE_REPORT?.recordPlan(before,after);
-  await applyTeamTransaction(browserStorage(),before,after);
-  assertExpected(after);
-  window.dispatchEvent(new Event('wwhs:team-session-updated'));
-  return after;
-}
-function clearSelection(){selected=null;selectedBefore=null;$('team-file').value='';$('file-preview').hidden=true;$('only-editor').checked=false;}
-async function render(){
-  rendered=false;
-  const meta=await metadata(), active=meta?.active, pending=meta?.pendingExport, info=pending||meta?.lastFile;
-  $('active-session').hidden=active?.phase!=='editing';$('pending-session').hidden=!pending;
-  $('start-section').hidden=!!active;$('setup-section').hidden=!!meta;$('recovery-section').hidden=!meta?.recovery;
-  $('resume-editing').hidden=!!active?.firstFile;
-  $('status-title').textContent=!meta?'This browser is working individually':pending?'Handover ready to save':active?'Your team session is open':'Viewing the last shared snapshot';
-  $('status-copy').textContent=!meta?'Create the first team file here, or import your colleague’s file. Your current progress stays unchanged until you choose.':pending?'Editing is paused. Save this file in the shared Google Drive folder, wait for Drive to finish syncing, then confirm below.':active?`Editing as ${active.editor}. Your changes are saved on this computer until you save the team file in Google Drive and it finishes syncing.`:'Shared progress is view-only. Import the latest file to begin an editing session.';
-  $('snapshot-facts').replaceChildren();
-  if(info)for(const [title,value] of [['Version',String(info.revision)],['Saved by',info.savedBy],['File created',stamp(info.savedAt)]]){const wrap=document.createElement('div'),dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent=title;dd.textContent=value;wrap.append(dt,dd);$('snapshot-facts').append(wrap);}
-  $('last-note').textContent=info?.note?`Handover note: ${info.note}`:'';
-  $('active-copy').textContent=active?`Session started ${stamp(active.startedAt)}. Save your task notes before making the team file.`:'';
-  $('pending-copy').textContent=pending?`Version ${pending.revision}, prepared by ${pending.savedBy} on ${stamp(pending.savedAt)}.`:'';
-  $('team-file-contents').textContent=pending?fileContents(pending):'';
-  if(!pending)$('copy-file-fallback').open=false;
-  $('start-session').disabled=!selected;$('view-file').disabled=!selected;
-  $('changes-list').replaceChildren();for(const change of info?.changes?.length?info.changes:['No changes summary recorded.']){const li=document.createElement('li');li.textContent=change;$('changes-list').append(li);}
-  rendered=true;
-}
-// Both workspace shortcuts lead to the existing guarded workflow, never to a
-// direct import or write. An active handover must finish before another import.
-function openBackupAction(){
-  if(busy||!rendered||!['#import-backup','#save-backup'].includes(location.hash))return;
-  const importing=location.hash==='#import-backup';
-  let target;
-  if(!$('pending-session').hidden){
-    target=$('pending-session');
-    if(importing)say('Finish the current handover before importing another backup. Confirm the saved file has synced, or return to editing.');
-  }else if(!$('active-session').hidden){
-    target=$('active-session');
-    if(importing)say('Save this editing session and finish the handover before importing another backup.');
-  }else if(!importing&&!$('setup-section').hidden){
-    target=$('setup-section');target.open=true;
-  }else{
-    target=$('start-section');
-    if(!importing)say('This shared copy is view-only. Import the latest backup and start an editing session before saving a new shared version.');
-  }
-  target.tabIndex=-1;target.focus({preventScroll:true});target.scrollIntoView({block:'start'});
-}
-for(const id of ['handover-import-link','handover-save-link'])$(id).addEventListener('click',event=>{
-  event.preventDefault();history.replaceState(null,'',event.currentTarget.getAttribute('href'));openBackupAction();
-});
-window.addEventListener('hashchange',openBackupAction);
-function changedCounts(before,after){
-  const sections=[['VET records',before.vet.records,after.vet.records],['VET assignments',before.vet.assignments,after.vet.assignments],['VET gaps',before.vet.gaps,after.vet.gaps],['VET triggered work',before.vet.eventOccurrences,after.vet.eventOccurrences],['TAS records',before.tas.records,after.tas.records],['TAS weekly checks',before.tas.weekly,after.tas.weekly],['TAS triggered work',before.tas.eventOccurrences,after.tas.eventOccurrences],['TAS adjusted dates',before.tas.scheduleOverrides,after.tas.scheduleOverrides],['Overall review ticks',before.review.records,after.review.records],['Shared working cards',Object.fromEntries(before.inbox.items.map(item=>[item.taskKey,item])),Object.fromEntries(after.inbox.items.map(item=>[item.taskKey,item]))]];
-  const changes=[];for(const [label,old,next] of sections){const count=[...new Set([...Object.keys(old),...Object.keys(next)])].filter(key=>JSON.stringify(old[key])!==JSON.stringify(next[key])).length;if(count)changes.push(`${label}: ${count} changed`);}return changes.length?changes:['No changes to shared progress.'];
-}
+for(const id of ['handover-import-link','handover-save-link'])$(id).addEventListener('click',event=>{event.preventDefault();history.replaceState(null,'',event.currentTarget.getAttribute('href'));openBackupAction();});
+window.addEventListener('hashchange',()=>openBackupAction());
 function enableControls(enabled){
   $('team-backup-folder').inert=!enabled;
   for(const control of document.querySelectorAll('button,input,textarea'))if(!control.closest('#team-backup-folder'))control.disabled=!enabled;
-  if(enabled){$('start-session').disabled=!selected;$('view-file').disabled=!selected;}
+  if(enabled){
+    const interrupted=storage().getItem(KEYS.journal)!==null||storage().getItem('morning-launchpad-restore:v1')!==null;
+    $('start-session').disabled=$('view-file').disabled=!selected||interrupted;
+    $('confirm-finish').disabled=!saveAttemptId||saveAttemptId!==inspection?.hydrated?.pendingExport?.exportId;
+    for(const id of ['create-team','finish-session','save-safety','download-current','save-current-safety','save-independent-copy'])$(id).disabled=!currentData;
+  }
+}
+async function render(){
+  inspection=await inspectTeamMetadata(rawMeta());
+  const meta=inspection.hydrated,healthy=inspection.complete,active=meta?.active,pending=healthy?meta?.pendingExport:null;
+  const interrupted=storage().getItem(KEYS.journal)!==null||storage().getItem('morning-launchpad-restore:v1')!==null;
+  let problem='';try{currentData=snapshot(storage());}catch(error){currentData=null;problem=error.message;}
+  $('save-counts').textContent=currentData?count(currentData):'Current progress needs checking before it can be saved.';
+  const damaged=!healthy||interrupted||(active?.phase==='exporting'&&!pending);
+  $('history-warning').hidden=!damaged&&!problem;
+  $('history-warning-copy').textContent=problem||(!healthy?'Part of the previous handover history is unavailable in this browser. The current task records are stored separately.':'An interrupted backup needs checking. A safety copy preserves the readable records currently on this computer.');
+  $('setup-section').hidden=damaged||!!meta;
+  $('active-session').hidden=damaged||active?.phase!=='editing';
+  $('pending-session').hidden=!pending||interrupted;
+  $('snapshot-session').hidden=!damaged&&(!meta||!!active);
+  $('snapshot-copy').textContent=damaged?'Save the VET/TAS progress currently on this computer before reconnecting.':'You are viewing a shared copy. You can save a safety backup of it without opening another file.';
+  $('pending-copy').textContent=pending?`Backup prepared ${stamp(pending.savedAt)}. Save it, then confirm it is in the shared Drive folder.`:'';
+  $('resume-editing').hidden=!!active?.firstFile;
+  $('recovery-section').hidden=!meta?.recovery?.data;
+  const details=pending||inspection.stored?.lastFile;
+  $('status-title').textContent=damaged?'Handover history needs reconnecting':!meta?'Working on this computer':pending?'Backup ready to save':active?'Editing shared progress':'Viewing shared progress';
+  $('status-copy').textContent=active?.editor?`Editing as ${active.editor}.`:'';
+  $('snapshot-facts').replaceChildren();
+  if(details)for(const [title,value] of [['Version',String(details.revision)],['Saved by',details.savedBy||'Unknown'],['Created',stamp(details.savedAt)]]){const wrap=document.createElement('div'),dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent=title;dd.textContent=value;wrap.append(dt,dd);$('snapshot-facts').append(wrap);}
+  $('last-note').textContent=details?.note||'';
+  $('changes-list').replaceChildren();for(const change of Array.isArray(details?.changes)?details.changes.filter(item=>typeof item==='string'):[]){const li=document.createElement('li');li.textContent=change;$('changes-list').append(li);}
+  openBackupAction(false);
 }
 function run(action){return async()=>{
-  if(busy)return;busy=true;enableControls(false);let ready=false;
-  try{await action();await render();ready=true;}
-  catch(error){say(error.message,true);try{await render();ready=true;}catch(recoveryError){say(recoveryError.message,true);}}
-  finally{busy=false;enableControls(ready);}
+  if(busy)return;busy=true;enableControls(false);
+  try{await action();$('save-fallback').hidden=true;}catch(error){say(error.message,true);if(currentData&&location.hash!=='#import-backup')$('save-fallback').hidden=false;}
+  finally{try{await render();busy=false;enableControls(true);}catch(error){busy=false;say(error.message,true);$('cancel-open').disabled=false;$('retry-recovery').disabled=false;}}
 };}
-function checkSelectionFresh(){
-  if(!selected||!selectedBefore)throw Error('Choose the latest shared JSON file first.');
-  if(Object.entries(selectedBefore).some(([key,value])=>browserStorage().getItem(key)!==value)){clearSelection();throw Error('Progress changed in another tab after you chose the file. Save and close that tab, then choose the file again.');}
+function chooseDestination(name,downloadOnly=false){return downloadOnly?Promise.resolve(downloadDestination(name)):teamFolder.destination(name,{direct:true});}
+async function checkDestination(destination,payload,{safety=false}={}){
+  if(!destination.read)return;
+  const existing=await destination.read();if(!existing?.trim())return existing;
+  if(safety)throw Error('Please save this safety copy with a new filename. The existing file has not been changed.');
+  let old;try{old=parseBackup(existing);}catch{throw Error('That location contains a different kind of file. Choose a new filename; the existing file has not been changed.');}
+  if(old.workspaceId!==payload.workspaceId||![payload.parentExportId,payload.exportId].includes(old.exportId))throw Error('The file in that folder is a different or newer handover. It has not been overwritten. Open the latest shared backup, or save a safety copy with a new filename.');
+  return existing;
 }
-$('team-file').addEventListener('change',run(async()=>{
-  const file=$('team-file').files[0];selected=null;selectedBefore=null;$('file-preview').hidden=true;
-  if(!file)return;if(file.size>12000000)throw Error('This file is too large for a team handover.');
-  const before=expectedSnapshot(),meta=await metadata(before);if(meta?.active)throw Error('Finish this browser’s current session first.');
-  const payload=parseBackup(await file.text());checkRevision(payload,meta?.lastFile,{firstConnection:!meta});
-  if(Object.entries(before).some(([key,value])=>browserStorage().getItem(key)!==value))throw Error('Progress changed while the file was being read. Please choose it again.');
-  selected=payload;selectedBefore=before;
-  $('preview-heading').textContent=`Version ${payload.revision} · ${payload.savedBy}`;$('preview-copy').textContent=`Created ${stamp(payload.savedAt)}. Nothing has been imported yet.`;
-  $('preview-note').textContent=payload.note?`Handover note: ${payload.note}`:'';
-  $('preview-counts').textContent=`${Object.keys(payload.data.vet.records).length} VET records · ${Object.keys(payload.data.tas.records).length} TAS records · ${payload.data.inbox.items.length} shared working cards`;
-  $('file-preview').hidden=false;say(meta&&payload.revision>meta.lastFile.revision+1?'This skips one or more versions. Confirm it came from the current shared folder; intermediate history cannot be checked.':'File checked. Choose whether to edit or view it.');
-}));
-async function importFile(editing){
-  checkSelectionFresh();const before=expectedSnapshot(),meta=await metadata(before);if(meta?.active)throw Error('Finish this browser’s current session first.');
-  const name=editing?editor('editor-name'):null;if(editing&&!$('only-editor').checked)throw Error('Confirm you have the latest shared file and nobody else is editing.');
-  const plan=buildImportPlan(browserStorage(),selected,{lastFile:meta?.lastFile,firstConnection:!meta});
-  if(!meta&&Object.values(plan.before).some(Boolean)&&!confirm('Replace shared VET/TAS progress here with the selected team file? A local recovery copy will be kept. Personal notes and Finance stay here.'))return;
-  checkSelectionFresh();const next={version:1,lastFile:fileInfo(selected),active:editing?{id:crypto.randomUUID(),editor:name,startedAt:new Date().toISOString(),phase:'editing',baseExportId:selected.exportId,baselineData:selected.data}:null,pendingExport:null,recovery:{capturedAt:new Date().toISOString(),lastFile:meta?.lastFile||null,data:plan.beforeSnapshot}};
-  const compact=await prepareTeamMetadata(next),expected={...plan.before,[KEYS.metadata]:before[KEYS.metadata]},after={...plan.after,[KEYS.metadata]:JSON.stringify(compact)};
-  checkSelectionFresh();assertExpected(expected);
-  window.WWHS_TEAM_STORAGE_REPORT?.recordPlan(expected,after);
-  await applyTeamTransaction(browserStorage(),expected,after);
-  assertExpected(after);
-  // Full navigation reloads native workboard closures after importing new state.
-  window.WWHS_TEAM_EXIT_GUARD?.allowNavigation(workDestination);
-  location.assign(workDestination);
+async function savePreparedFile(payload,destination,before){
+  assertExpected(before);const expectedText=await checkDestination(destination,payload);assertExpected(before);
+  let result;try{result=await destination.write(contents(payload),{expectedText,verify:()=>assertExpected(before)});}catch(error){throw Error('The file could not be saved there, or changed while saving. Your task progress and prepared backup are kept. Try again or use Download instead of Save as in Backup settings.');}
+  assertExpected(before);saveAttemptId=payload.exportId;
+  $('save-receipt').textContent=result.saved?'Backup saved to the location you chose. If it is in your Google Drive folder, wait for syncing, then finish below.':'Download started. Find the file in Downloads or Files, put it in the shared Google Drive folder, then finish below.';
+  say('Backup prepared. Your current task progress has been kept.');
 }
-$('start-session').addEventListener('click',run(()=>importFile(true)));
-$('view-file').addEventListener('click',run(()=>importFile(false)));
+async function saveMeta(before,next){
+  const compact=await prepareTeamMetadata(next),after={...before,[KEYS.metadata]:JSON.stringify(compact)};
+  assertExpected(before);window.WWHS_TEAM_STORAGE_REPORT?.recordPlan(before,after);
+  await applyTeamTransaction(storage(),before,after);assertExpected(after);window.dispatchEvent(new Event('wwhs:team-session-updated'));return after;
+}
+function changes(before,after){
+  const rows=[];for(const [key,title] of [['vet','VET'],['tas','TAS'],['review','Review ticks'],['inbox','Shared working cards']])if(JSON.stringify(before[key])!==JSON.stringify(after[key]))rows.push(`${title} updated.`);
+  return rows.length?rows:['No changes to shared progress.'];
+}
 async function createTeam(downloadOnly=false){
-  const before=expectedSnapshot(),name=editor('setup-editor');
-  // Open Save as while this click still has browser activation; cancellation
-  // must not create a team workspace or pause an existing session.
-  const destination=await chooseTeamDestination(downloadOnly);if(!destination){say('Save cancelled. Nothing in this browser was changed.');return;}
-  if(await metadata(before))throw Error('This browser already has a team workspace. Import the latest shared file instead.');
-  const data=snapshot(browserStorage()),payload=createBackup({snapshot:data,editor:name,workspaceId:crypto.randomUUID(),note:'First shared team snapshot.',changes:['First team file created from the saved VET and TAS progress on this computer.']});
-  const after=await saveMeta(before,{version:1,lastFile:fileInfo(payload),active:{id:crypto.randomUUID(),editor:name,startedAt:new Date().toISOString(),phase:'exporting',firstFile:true,baseExportId:payload.exportId},pendingExport:payload,recovery:null});
+  const before=expectedSnapshot(),name=editor('setup-editor'),destination=await chooseDestination('WWHS-team-handover.json',downloadOnly);
+  if(!destination){say('Save cancelled. Nothing changed.');return;}
+  if(await metadata(before))throw Error('The saved handover changed. Reload before saving.');
+  const payload=createBackup({snapshot:snapshot(storage()),editor:name,note:'First shared team backup.',changes:['First shared backup created.']});
+  await checkDestination(destination,payload);assertExpected(before);
+  const after=await saveMeta(before,{version:1,lastFile:info(payload),active:{id:crypto.randomUUID(),editor:name,startedAt:new Date().toISOString(),phase:'exporting',firstFile:true,baseExportId:payload.exportId},pendingExport:payload,recovery:null});
   await savePreparedFile(payload,destination,after);
 }
 async function finishSession(downloadOnly=false){
-  const before=expectedSnapshot();
-  if(!$('notes-saved').checked)throw Error('Save your task notes and close other editing tabs, then tick the confirmation.');
-  const destination=await chooseTeamDestination(downloadOnly);if(!destination){say('Save cancelled. Your editing session is still open.');return;}
-  const meta=await metadata(before);if(meta?.active?.phase!=='editing')throw Error('There is no editing session to finish.');
-  const data=snapshot(browserStorage()),payload=createBackup({snapshot:data,previous:meta.lastFile,editor:meta.active.editor,note:$('handover-note').value.trim(),changes:changedCounts(meta.active.baselineData,data)});
-  const after=await saveMeta(before,{...meta,active:{...meta.active,phase:'exporting'},pendingExport:payload});
-  await savePreparedFile(payload,destination,after);
+  const before=expectedSnapshot(),destination=await chooseDestination('WWHS-team-handover.json',downloadOnly);
+  if(!destination){say('Save cancelled. Your work is unchanged.');return;}
+  const meta=await metadata(before);if(meta?.active?.phase!=='editing')throw Error('The editing session changed. Reload before saving.');
+  const data=snapshot(storage()),payload=createBackup({snapshot:data,previous:meta.lastFile,editor:meta.active.editor,note:$('handover-note').value.trim(),changes:changes(meta.active.baselineData,data)});
+  await checkDestination(destination,payload);assertExpected(before);
+  const after=await saveMeta(before,{...meta,active:{...meta.active,phase:'exporting'},pendingExport:payload});await savePreparedFile(payload,destination,after);
 }
 async function saveAgain(downloadOnly=false){
-  const before=expectedSnapshot(),destination=await chooseTeamDestination(downloadOnly);
-  if(!destination){say('Save cancelled. The prepared handover is still here.');return;}
-  const payload=(await metadata(before))?.pendingExport;if(!payload)throw Error('There is no handover waiting to be saved.');
+  const before=expectedSnapshot(),destination=await chooseDestination('WWHS-team-handover.json',downloadOnly);
+  if(!destination){say('Save cancelled. The prepared backup is kept.');return;}
+  const payload=(await metadata(before))?.pendingExport;if(!payload)throw Error('The prepared backup changed. Reload before saving.');
   await savePreparedFile(payload,destination,before);
 }
+async function saveSafety(downloadOnly=false,dataOverride=null){
+  const before=expectedSnapshot(),data=dataOverride||snapshot(before);
+  const journals=[storage().getItem(KEYS.journal),storage().getItem('morning-launchpad-restore:v1')];
+  const payload=createSafetyBackup({snapshot:data,editor:editor('editor-name'),note:dataOverride?'Saved progress before an earlier backup was opened.':'Safety copy of readable progress on this computer. Review before using it as a new shared starting point.'});
+  const name=`WWHS-VET-TAS-safety-${new Date().toISOString().replace(/[:.]/g,'-')}.json`;
+  const destination=await chooseDestination(name,downloadOnly);if(!destination){say('Save cancelled. Nothing changed.');return;}
+  const unchanged=()=>{assertUnchanged(before);if(journals[0]!==storage().getItem(KEYS.journal)||journals[1]!==storage().getItem('morning-launchpad-restore:v1'))throw Error('Recovery changed while saving. Keep the file for review and save again after recovery finishes.');};
+  unchanged();const expectedText=await checkDestination(destination,payload,{safety:true});unchanged();const result=await destination.write(contents(payload),{expectedText,verify:unchanged});unchanged();
+  safetyAttempt={before,journals,isCurrent:!dataOverride};$('safety-receipt').hidden=result.saved;
+  $('save-receipt').textContent=result.saved?'Safety backup saved to the location you chose. Current progress and the shared handover file are unchanged.':'Safety backup download started. Your current progress is unchanged.';
+  say(result.saved?'Safety copy saved. You can now open the latest shared backup to reconnect.':'Check the downloaded safety copy before continuing.');
+  if(result.saved&&!dataOverride)try{await window.WWHS_TEAM_EXIT_GUARD?.acknowledgeSafetyBackup({before,journals});}catch{say('The safety file was saved, but the close reminder could not be reset. Keep the file; current progress is unchanged.',true);}
+}
 $('create-team').addEventListener('click',run(()=>createTeam()));
-$('create-team-download').addEventListener('click',run(()=>createTeam(true)));
 $('finish-session').addEventListener('click',run(()=>finishSession()));
-$('finish-session-download').addEventListener('click',run(()=>finishSession(true)));
 $('download-again').addEventListener('click',run(()=>saveAgain()));
-$('download-copy').addEventListener('click',run(()=>saveAgain(true)));
-$('copy-file-contents').addEventListener('click',run(async()=>{
-  const before=expectedSnapshot(),payload=(await metadata(before))?.pendingExport;if(!payload)throw Error('There is no handover waiting to be saved.');
-  const text=fileContents(payload);$('team-file-contents').textContent=text;
-  try{
-    await navigator.clipboard.writeText(text);
-  }catch{
-    $('copy-file-fallback').open=true;
-    say('Automatic copying was blocked. Select and copy all the file contents below, then save them as WWHS-team-handover.json.',true);
-    return;
-  }
-  assertExpected(before);
-  say('File contents copied. Save the complete text as WWHS-team-handover.json in 01 Current handover in Google Drive, then wait for syncing to finish.');
-}));
+$('save-safety').addEventListener('click',run(()=>saveSafety()));
+$('save-current-safety').addEventListener('click',run(()=>saveSafety()));
+$('save-independent-copy').addEventListener('click',run(()=>saveSafety()));
+$('download-current').addEventListener('click',run(()=>!$('setup-section').hidden?createTeam(true):!$('active-session').hidden?finishSession(true):!$('pending-session').hidden?saveAgain(true):saveSafety(true)));
+$('confirm-safety').addEventListener('click',run(async()=>{if(!safetyAttempt)throw Error('Save a safety copy first.');assertUnchanged(safetyAttempt.before);if(safetyAttempt.journals[0]!==storage().getItem(KEYS.journal)||safetyAttempt.journals[1]!==storage().getItem('morning-launchpad-restore:v1'))throw Error('Recovery changed after that download. Save a fresh backup.');if(safetyAttempt.isCurrent)await window.WWHS_TEAM_EXIT_GUARD?.acknowledgeSafetyBackup(safetyAttempt);$('safety-receipt').hidden=true;say('Safety copy confirmed. Current progress is unchanged.');}));
 $('confirm-finish').addEventListener('click',run(async()=>{
-  const before=expectedSnapshot(),meta=await metadata(before);if(!meta?.pendingExport)throw Error('There is no handover waiting to be saved.');
-  await saveMeta(before,{...meta,lastFile:fileInfo(meta.pendingExport),active:null,pendingExport:null});
-  clearSelection();$('notes-saved').checked=false;$('handover-note').value='';say('Handover finished. Let your colleague know the latest file is ready in Google Drive. This browser is now view-only.');
+  const before=expectedSnapshot(),meta=await metadata(before);if(!saveAttemptId||meta?.pendingExport?.exportId!==saveAttemptId)throw Error('Save this backup first, then confirm the file is in Google Drive.');
+  await saveMeta(before,{...meta,lastFile:info(meta.pendingExport),active:null,pendingExport:null});saveAttemptId=null;clearSelection();$('handover-note').value='';$('save-receipt').textContent='Handover finished. Your colleague can open the shared file.';say('Handover finished. This computer now shows the saved copy.');
 }));
 $('resume-editing').addEventListener('click',run(async()=>{
-  const before=expectedSnapshot(),meta=await metadata(before);if(!meta?.pendingExport||!meta.active||meta.active.firstFile)throw Error('Save the first shared file, then import it to start editing.');
-  if(!confirm('Return to editing? The prepared file will become outdated. Do not share it. Save a fresh team file when you finish.'))return;
-  await saveMeta(before,{...meta,pendingExport:null,active:{...meta.active,phase:'editing'}});
+  const before=expectedSnapshot(),meta=await metadata(before);if(!meta?.pendingExport||!meta.active||meta.active.firstFile)throw Error('Save the first shared backup before continuing.');
+  if(!confirm('Continue editing? Any prepared file will be out of date. Save a fresh backup when you finish.'))return;
+  await saveMeta(before,{...meta,pendingExport:null,active:{...meta.active,phase:'editing'}});window.WWHS_TEAM_EXIT_GUARD?.allowNavigation(workDestination);location.assign(workDestination);
+}));
+function checkSelection(){if(!selected||!selectedBefore)throw Error('Choose a backup file first.');assertExpected(selectedBefore);}
+$('team-file').addEventListener('change',run(async()=>{
+  selected=null;selectedBefore=null;$('file-preview').hidden=true;const file=$('team-file').files[0];if(!file)return;if(file.size>48000000)throw Error('This backup is too large to open safely. Current progress is unchanged.');
+  const before=expectedSnapshot(),text=await file.text();let parsed;
+  try{parsed=parseTeamFile(text);}catch(error){let other;try{other=JSON.parse(text);}catch{}if(other?.items||other?.kind==='WWHS-LAUNCHPAD-BACKUP'||other?.format==='wwhs-launchpad-backup')throw Error('This is a Launchpad backup. Open it in Launchpad; no VET/TAS progress has changed.');throw error;}
+  assertExpected(before);
+  const plan=buildReconnectPlan(storage(),parsed.file,{editor:editor('editor-name'),allowUnverifiedLineage:true});assertUnchanged(before);
+  selected=parsed;selectedBefore=before;
+  $('preview-heading').textContent=parsed.type==='safety'?'Safety backup':`Shared backup · version ${parsed.file.revision}`;
+  $('preview-copy').textContent=`Saved ${stamp(parsed.file.savedAt)} by ${parsed.file.savedBy}. Nothing has changed yet.`;
+  $('preview-counts').textContent=count(parsed.data);$('preview-note').textContent=parsed.file.note||'';
+  $('preview-warning').textContent=parsed.type==='safety'?'This safety copy will become a new shared starting point. Your current progress and old handover record will be kept for recovery.':plan.lineage==='unverified-reconnect'?'The old connection cannot be checked. Only open this if it is your trusted shared file. Current progress and the old record will be kept.':inspection?.stored?.active?'Opening this file replaces the current editing copy. Its saved progress will be kept in a recovery copy first.':plan.skipsRevisions?'This skips some shared versions. Check that you chose the newest file.':'Opening this backup keeps a recovery copy of the current saved progress first.';
+  $('file-preview').hidden=false;say('File checked. Review it, then choose Open for editing or Open to view only.');
+}));
+async function openSelected(editing){
+  checkSelection();const plan=buildReconnectPlan(storage(),selected.file,{editor:editor('editor-name'),editing,allowUnverifiedLineage:true});
+  assertUnchanged(selectedBefore);const prepared=await prepareReconnectPlan(plan);checkSelection();
+  window.WWHS_TEAM_STORAGE_REPORT?.recordPlan(prepared.before,prepared.after);await applyTeamTransaction(storage(),prepared.before,prepared.after);assertExpected(prepared.after);
   window.WWHS_TEAM_EXIT_GUARD?.allowNavigation(workDestination);location.assign(workDestination);
-}));
-$('download-recovery').addEventListener('click',run(async()=>{
-  const recovery=(await metadata())?.recovery;if(!recovery)throw Error('No earlier import recovery copy is stored in this browser.');
-  const payload=createBackup({snapshot:recovery.data,editor:'Local recovery copy',workspaceId:crypto.randomUUID(),note:`For review only: progress before import on ${stamp(recovery.capturedAt)}. Do not replace the current shared file.`});
-  download(payload,'WWHS-team-recovery-review-only.json');say('The recovery copy is ready and its download has been requested. Check it saved on your device. Current progress is unchanged.');
-}));
-window.addEventListener('storage',event=>{if(event.key===null||[...DATA_KEYS,KEYS.metadata,KEYS.journal].includes(event.key)){clearSelection();if(!busy)run(async()=>say('Saved progress or the team session changed in another tab. Check the current status before continuing.'))();}});
+}
+$('start-session').addEventListener('click',run(()=>openSelected(true)));$('view-file').addEventListener('click',run(()=>openSelected(false)));
+$('cancel-open').addEventListener('click',()=>{if(busy)return;clearSelection();history.replaceState(null,'','#save-backup');say('Open cancelled. Current progress is unchanged.');openBackupAction();enableControls(true);});
+$('download-recovery').addEventListener('click',run(async()=>{const current=await inspectTeamMetadata(rawMeta());if(!current.hydrated?.recovery?.data)throw Error('That previous copy is unavailable. Current progress is unchanged.');await saveSafety(false,current.hydrated.recovery.data);}));
+$('retry-recovery').addEventListener('click',run(async()=>{await recoverTeamTransaction(storage());say('Checked the saved records. You can save current progress or open a trusted backup.');}));
+window.addEventListener('storage',event=>{if(event.key===null||[...DATA_KEYS,KEYS.metadata,KEYS.journal,'morning-launchpad-restore:v1'].includes(event.key)){clearSelection();saveAttemptId=null;if(!busy)run(async()=>say('Progress changed in another tab. Review the current records before continuing.'))();}});
 enableControls(false);
-try{
-  if(browserStorage().getItem('morning-launchpad-theme')==='dark')document.documentElement.dataset.theme='dark';
-  const recovered=await recoverTeamTransaction(browserStorage());await render();enableControls(true);if(recovered.status!=='none')say('The interrupted handover has been recovered. Check the current status before continuing.');
-}catch(error){say(error.message,true);for(const control of document.querySelectorAll('button,input,textarea'))control.disabled=true;}
-finally{busy=false;openBackupAction();}
+try{if(storage().getItem('morning-launchpad-theme')==='dark')document.documentElement.dataset.theme='dark';await recoverTeamTransaction(storage());}catch(error){say(error.message,true);}
+try{await render();busy=false;enableControls(true);openBackupAction();}catch(error){busy=false;say(error.message,true);$('cancel-open').disabled=false;$('retry-recovery').disabled=false;}

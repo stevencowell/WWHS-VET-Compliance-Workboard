@@ -82,8 +82,12 @@ async function check(name,body){if(process.env.WORKBOARD_COMPRESSION_MATCH&&!nam
       await page.waitForFunction(key=>JSON.parse(window.WWHS_STORAGE.getItem(key)).records['vet:2026:synthetic-added-review']?.completed,keys.review);
       assert.match(await raw(page,keys.review),/^WWHS-LZ1:/);
       const reviewFile=await download(page,page.getByRole('button',{name:'Back up review ticks',exact:true}));assert.equal(reviewFile.records['vet:2026:synthetic-added-review'].completed,true);
-      await go(page,'/team-handover/');await page.locator('#setup-section summary').click();await page.locator('#setup-editor').fill('Synthetic storage tester');
+      // The redesigned Save route stays on Save even before a team connection.
+      // Missing-history and reconnect UI coverage lives in team-backup-flow-browser.cjs.
+      await go(page,'/team-handover/#save-backup');await page.locator('#setup-section summary').click();await page.locator('#setup-editor').fill('Synthetic storage tester');
+      assert.equal(await page.locator('#save-panel').isVisible(),true);assert.equal(await page.locator('#start-section').isVisible(),false);
       const team=await download(page,page.locator('#create-team'));
+      assert.equal(team.kind,'WWHS-TEAM-HANDOVER');assert.equal(team.revision,1);
       assert.equal(team.data.vet.records['a-01-confirm-authority-set'].exceptionSummary,vetNote+'\nRestored through the file control.');
       assert.equal(team.data.tas.records['class-readiness::2026'].exceptionReason,tasNote+'\nRestored through the file control.');
       assert.equal(team.data.inbox.items.find(item=>item.taskKey==='workboard:vet:a-01-confirm-authority-set').noteText,seeded.sharedNote);
@@ -99,22 +103,28 @@ async function check(name,body){if(process.env.WORKBOARD_COMPRESSION_MATCH&&!nam
       await go(page,'/morning-launchpad/#calendar');const calendar=page.locator('launchpad-calendar');await calendar.waitFor({state:'visible'});
       const incoming={version:1,events:[{id:'synthetic-added-event',uid:'synthetic-added-event',title:'Calendar import at capacity',startDate:'2026-09-21',endDate:'2026-09-21',description:repeated('Long imported calendar note',19000),origin:'import'}]};
       await calendar.getByLabel('Calendar file',{exact:true}).setInputFiles({name:'launchpad-calendar-backup.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(incoming))});
+      // Calendar JSON now uses the same explicit preview as the complete
+      // Launchpad backup. Selecting a file alone must not change saved events.
+      const preview=page.locator('.launchpad-backup-dialog');assert.equal((await parsed(page,keys.calendar)).events.length,seeded.calendarCount);await preview.getByRole('button',{name:'Open backup',exact:true}).click();
       await page.waitForFunction(({key,count})=>JSON.parse(window.WWHS_STORAGE.getItem(key)).events.length===count,{key:keys.calendar,count:seeded.calendarCount+1});
       assert.match(await raw(page,keys.calendar),/^WWHS-LZ1:/);await page.reload({waitUntil:'networkidle'});
-      const exported=await download(page,page.locator('launchpad-calendar').getByRole('button',{name:'Export calendar backup',exact:true}));
+      await page.locator('launchpad-calendar .cal-footer details > summary').click();
+      const exported=await download(page,page.locator('launchpad-calendar').getByRole('button',{name:'Export calendar only',exact:true}));
       assert.equal(exported.events.find(event=>event.id==='synthetic-added-event').description,incoming.events[0].description);assert.deepEqual(await privateDigest(page),privateBefore);
       const restored=await contextPage('/morning-launchpad/#calendar');restoreContext=restored.context;const other=restored.page;await fillOrigin(other,16384);const filler=await raw(other,fillKey);
       await other.locator('launchpad-calendar').getByLabel('Calendar file',{exact:true}).setInputFiles({name:'launchpad-calendar-backup.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(exported))});
+      const otherPreview=other.locator('.launchpad-backup-dialog');await otherPreview.getByRole('button',{name:'Open backup',exact:true}).click();
       await other.waitForFunction(({key,count})=>JSON.parse(window.WWHS_STORAGE.getItem(key)||'{"events":[]}').events.length===count,{key:keys.calendar,count:exported.events.length});
       assert.deepEqual(await parsed(other,keys.calendar),exported);assert.equal(await raw(other,fillKey),filler);
       await other.reload({waitUntil:'networkidle'});assert.equal(await other.locator('launchpad-calendar').evaluate(node=>node.data.events.length),exported.events.length);
       await compactKnown(other);await fillOrigin(other,2048);const before=await digest(other);
       const bad={version:1,events:[{...incoming.events[0],id:'too-long',uid:'too-long',description:'x'.repeat(20001)}]};
       await other.locator('launchpad-calendar').getByLabel('Calendar file',{exact:true}).setInputFiles({name:'oversized-event.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(bad))});
-      await other.locator('.cal-message').filter({hasText:'Could not import'}).waitFor();assert.deepEqual(await digest(other),before);
+      await otherPreview.getByRole('alert').filter({hasText:'Could not open this backup'}).waitFor();assert.deepEqual(await digest(other),before);await otherPreview.getByRole('button',{name:'Cancel',exact:true}).click();
       const random=entropyText(19000),tooLarge={version:1,events:Array.from({length:8},(_,i)=>({...incoming.events[0],id:'random-event-'+i,uid:'random-event-'+i,title:'Genuine capacity '+i,description:random.slice(i)+random.slice(0,i)}))};
       await other.locator('launchpad-calendar').getByLabel('Calendar file',{exact:true}).setInputFiles({name:'real-capacity.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(tooLarge))});
-      await other.locator('.cal-message').filter({hasText:'run out of storage'}).waitFor();assert.deepEqual(await digest(other),before,'Rejected import preserves exact physical records');
+      await otherPreview.getByRole('button',{name:'Open backup',exact:true}).click();
+      await otherPreview.getByRole('alert').filter({hasText:/could not save|storage|quota/i}).waitFor();assert.deepEqual(await digest(other),before,'Rejected import preserves exact physical records');
       return {events:exported.events.length,portableRestore:true,oversizedEventProtected:true,actualQuotaFailureProtected:true};
     }finally{await context.close();if(restoreContext)await restoreContext.close();}
   });

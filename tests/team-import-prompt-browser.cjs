@@ -8,7 +8,8 @@ if(!/^http:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/.test(base))throw Error('Run aga
 const outputs=path.resolve(__dirname,'../../../outputs');
 const keys={vet:'wwhs-vet-compliance-workboard:v3',tas:'wwhs-head-teacher-tas-workboard:v2',review:'wwhs-task-register-review:v1',inbox:'morning-launchpad-summary:v1',meta:'wwhs-team-handover:v1',journal:'wwhs-team-handover-journal:v1'};
 const currentFolder='https://drive.google.com/drive/folders/1cAlk5cGGQef1jOJ_x53RyhXuAUkZvKVA';
-const importURL=wing=>base+`/team-handover/?wing=${wing}#start-section`;
+const importURL=wing=>base+`/team-handover/?wing=${wing}#import-backup`;
+const saveURL=wing=>base+`/team-handover/?wing=${wing}#save-backup`;
 const routes={vet:'/#vet-home',tas:'/head-teacher-tas/#home'};
 const results=[],errors=[];
 let browser;
@@ -46,9 +47,10 @@ async function setup(width,{mode='individual',dark=false,seed=false,journal=fals
   await page.clock.setFixedTime(new Date('2026-09-19T01:00:00.000Z'));
   return {context,page};
 }
-const prompt=page=>page.locator('dialog').filter({has:page.getByText('Import shared progress',{exact:true})});
+const prompt=page=>page.getByRole('dialog',{name:'Start with your team’s saved progress',exact:true});
 const banner=page=>page.locator('.workspace-team-banner');
-const importLink=scope=>scope.getByRole('link',{name:/^Import shared progress/});
+const importLink=scope=>scope.getByRole('link',{name:'Open backup…',exact:true});
+const saveLink=scope=>scope.getByRole('link',{name:'Save backup…',exact:true});
 async function go(page,route){
   const response=await page.goto(base+route,{waitUntil:'networkidle'});
   if(response)assert.equal(response.status(),200,route);
@@ -76,7 +78,7 @@ async function withPage(width,options,body){const {context,page}=await setup(wid
   await check('390: interrupted journal excludes the first-entry prompt and preserves recovery data',()=>withPage(390,{journal:true,seed:true},async page=>{
     await go(page,routes.vet);await noPrompt(page);await fits(page);
     assert.match(await banner(page).innerText(),/handover was interrupted/i);
-    assert.equal(await banner(page).getByRole('button',{name:'How to import',exact:true}).isVisible(),false);
+    assert.equal(await banner(page).getByRole('button',{name:'Help',exact:true}).isVisible(),false);
     assert.equal(await page.evaluate(key=>localStorage.getItem(key),keys.journal),'synthetic interrupted handover: preserve exactly');
     assert.equal(await page.evaluate(key=>localStorage.getItem(key),keys.meta),null,'The prompt does not create team metadata during recovery');
     const before=await raw(page);await page.reload({waitUntil:'networkidle'});await noPrompt(page);
@@ -98,7 +100,8 @@ async function withPage(width,options,body){const {context,page}=await setup(wid
       await prompt(page).getByRole('button',{name:/browse.*without.*import/i}).click();
       await noPrompt(page);assert.deepEqual(await raw(page),before,'Dismissal leaves every localStorage value unchanged');
       assert.equal(await banner(page).isVisible(),true);assert.equal(await importLink(banner(page)).getAttribute('href'),importURL(wing));
-      await banner(page).getByRole('button',{name:'How to import',exact:true}).click();await prompt(page).waitFor({state:'visible'});
+      assert.equal(await saveLink(banner(page)).getAttribute('href'),saveURL(wing));
+      await banner(page).getByRole('button',{name:'Help',exact:true}).click();await prompt(page).waitFor({state:'visible'});
       assert.deepEqual(await raw(page),before,'Reopening the guide leaves saved progress unchanged');
       await prompt(page).getByRole('button',{name:/browse.*without.*import/i}).click();await noPrompt(page);
       await fits(page);
@@ -111,6 +114,11 @@ async function withPage(width,options,body){const {context,page}=await setup(wid
       await importLink(banner(page)).click();await page.waitForURL(importURL(other));await page.locator('#team-file').waitFor();
       assert.deepEqual(await raw(page),beforeImport,'Opening the import page does not import or change progress');
       assert.equal(await page.locator('#start-section').isVisible(),true);
+      assert.equal(await page.locator('#save-panel').isVisible(),false);
+      await page.locator('#handover-save-link').click();assert.equal(page.url(),saveURL(other));
+      assert.equal(await page.locator('#save-panel').isVisible(),true);assert.equal(await page.locator('#start-section').isVisible(),false);
+      assert.deepEqual(await raw(page),beforeImport,'Switching to Save does not open a file or change progress');
+      await fits(page);
     }));
 
     await check(`${width}: gateway, personal work and Launchpad stay free of import prompts`,()=>withPage(width,{},async page=>{

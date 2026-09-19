@@ -1,4 +1,4 @@
-import {getBackupFolder} from './backup-folder.mjs?v=default-folder-1';
+import {getBackupFolder} from './backup-folder.mjs?v=backup-flow-2';
 
 // Folder handles stay in this browser. A selected folder is not proof of cloud sync.
 export function mountBackupFolderSettings(host,{scope='private'}={}){
@@ -9,7 +9,7 @@ export function mountBackupFolderSettings(host,{scope='private'}={}){
   const title=make('strong',isPrivate?'Default private backup folder':'Default shared handover folder');
   const chosen=make('p'),help=make('p',isPrivate
     ?'Choose Steve - Private Backups in Google Drive once for Launchpad and Finance. Save backup then puts a dated copy there, keeping earlier backups.'
-    :'Choose 01 Current handover in Google Drive once for VET and TAS. Save as will open there so you can replace the current handover file.');
+    :'Choose 01 Current handover in Google Drive once for VET and TAS. Save backup then uses that folder and checks the existing shared file before replacing it.');
   help.className='backup-folder-help';
   const controls=make('div');controls.className='backup-folder-actions';
   const select=make('button'),forget=make('button','Use Save as instead');select.type=forget.type='button';

@@ -6,14 +6,14 @@ if(!/^http:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/.test(base))throw Error('Use a d
 const keys={vet:'wwhs-vet-compliance-workboard:v3',tas:'wwhs-head-teacher-tas-workboard:v2',inbox:'morning-launchpad-summary:v1',meta:'wwhs-team-handover:v1',review:'wwhs-task-register-review:v1'};
 const json=JSON.stringify;
 async function download(page,button){const event=page.waitForEvent('download');await button.click();const file=await event;await page.waitForFunction(()=>!document.getElementById('team-file').disabled);return JSON.parse(await fs.readFile(await file.path(),'utf8'));}
-async function choose(page,payload){await page.locator('#team-file').setInputFiles({name:'WWHS-team-handover.json',mimeType:'application/json',buffer:Buffer.from(json(payload))});await page.waitForFunction(()=>!document.getElementById('team-file').disabled);}
-async function raw(page,key){return page.evaluate(key=>localStorage.getItem(key),key);}
+async function choose(page,payload){await page.locator('#handover-import-link').click();await page.locator('#team-file').setInputFiles({name:'WWHS-team-handover.json',mimeType:'application/json',buffer:Buffer.from(json(payload))});await page.waitForFunction(()=>!document.getElementById('team-file').disabled);}
+async function raw(page,key){return page.evaluate(key=>(window.WWHS_STORAGE||localStorage).getItem(key),key);}
 (async()=>{
  const browser=await chromium.launch({headless:true}),errors=[];
  try{
   const ca=await browser.newContext({viewport:{width:1440,height:1050},acceptDownloads:true,timezoneId:'Australia/Sydney'}),cb=await browser.newContext({viewport:{width:1440,height:1050},acceptDownloads:true,timezoneId:'Australia/Sydney'});
   // Exercise the phone/unsupported-browser fallback; Save as has a separate mocked-picker suite.
-  for(const context of [ca,cb])await context.addInitScript(()=>{window.showSaveFilePicker=undefined;});
+  for(const context of [ca,cb])await context.addInitScript(()=>{window.showSaveFilePicker=undefined;sessionStorage.setItem('wwhs-team-import-prompt-seen:v1','yes');});
   const a=await ca.newPage(),b=await cb.newPage();
   for(const p of [a,b]){p.setDefaultTimeout(15000);p.on('pageerror',e=>errors.push(e.message));p.on('dialog',d=>d.accept());await p.clock.setFixedTime(new Date('2026-09-19T01:00:00Z'));await p.goto(base+'/team-handover/');}
   await a.evaluate(async keys=>{
@@ -27,10 +27,10 @@ async function raw(page,key){return page.evaluate(key=>localStorage.getItem(key)
   await a.reload();await a.locator('#setup-section summary').click();await a.locator('#setup-editor').fill('Steve');
   const first=await download(a,a.locator('#create-team'));assert.equal(first.revision,1);assert.equal(first.savedBy,'Steve');
   assert.doesNotMatch(json(first),/PRIVATE_|private\.example|pinnedDate|noteHtml/);
-  assert.equal(await a.locator('#pending-session').isVisible(),true);await a.locator('#confirm-finish').click();await a.waitForFunction(()=>document.getElementById('status-title').textContent==='Viewing the last shared snapshot');
+  assert.equal(await a.locator('#pending-session').isVisible(),true);await a.locator('#confirm-finish').click();await a.waitForFunction(()=>document.getElementById('status-title').textContent==='Viewing shared progress');
   // A second browser keeps its own private note and links on import.
   await b.evaluate(async keys=>{const {enrich}=await import('/morning-launchpad/assets/summary-core.mjs');localStorage.setItem(keys.inbox,JSON.stringify({version:2,items:[enrich({id:'diane-private',title:'Diane private',action:'Keep local',taskKey:'manual:diane',workstream:'personal'})]}));localStorage.setItem(keys.vet,JSON.stringify({schemaVersion:3,links:{staff:'https://private.example/diane'},records:{}}));},keys);
-  await b.reload();await choose(b,first);await b.locator('#editor-name').fill('Diane');await b.locator('#only-editor').check();await b.locator('#start-session').click();await b.waitForURL('**/#vet-home');await b.waitForFunction(()=>window.WWHS_WORKBOARD_ADAPTER&&document.querySelector('summary-import')?.started);
+  await b.reload();await choose(b,first);if(!await b.locator('#editor-name').isVisible())await b.locator('#start-section details > summary').click();await b.locator('#editor-name').fill('Diane');await b.locator('#start-session').click();await b.waitForURL('**/#vet-home');await b.waitForFunction(()=>window.WWHS_WORKBOARD_ADAPTER&&document.querySelector('summary-import')?.started);
   assert.match(await b.locator('.workspace-team-banner').innerText(),/Editing as Diane/);assert.equal(JSON.parse(await raw(b,keys.vet)).links.staff,'https://private.example/diane');
   assert.ok(JSON.parse(await raw(b,keys.inbox)).items.some(x=>x.id==='diane-private'));
   await b.evaluate(()=>window.WWHS_WORKBOARD_ADAPTER.openTask('a-01-confirm-authority-set'));
@@ -42,12 +42,12 @@ async function raw(page,key){return page.evaluate(key=>localStorage.getItem(key)
   await b.goto(base+'/#vet-home');await b.getByRole('button',{name:'All VET tasks',exact:true}).click();await b.locator('[data-register-id="a-01-confirm-authority-set"] .register-tick input').check();
   // Leave a loaded native tab to prove exporting and newly imported sessions block stale writes.
   const stale=await cb.newPage();stale.on('pageerror',e=>errors.push(e.message));await stale.goto(base+'/#vet-home');await stale.waitForFunction(()=>window.WWHS_WORKBOARD_ADAPTER);
-  await b.goto(base+'/team-handover/');await b.locator('#finish-session').click();await b.waitForFunction(()=>!document.getElementById('finish-session').disabled);assert.match(await b.locator('#handover-message').innerText(),/Save your task notes/);
-  await b.locator('#handover-note').fill('Synthetic handover: follow up funding next week.');await b.locator('#notes-saved').check();
+  await b.goto(base+'/team-handover/');await b.locator('#active-session details > summary').click();
+  await b.locator('#handover-note').fill('Synthetic handover: follow up funding next week.');
   const second=await download(b,b.locator('#finish-session'));assert.equal(second.revision,2);assert.equal(second.parentExportId,first.exportId);assert.match(second.note,/follow up funding/);
   assert.equal(second.data.tas.scheduleOverrides['2027-t1-year-opening-readiness'].dueDate,'2027-02-08');assert.equal(second.data.review.records['vet:2026:a-01-confirm-authority-set'].completed,true);
   assert.equal(await stale.evaluate(()=>window.WWHS_TEAM_SESSION.isEditing()),false);assert.equal(await stale.evaluate(key=>{const value=JSON.parse(localStorage.getItem(key));value.records['a-01-confirm-authority-set'].exceptionSummary='Attempted stale overwrite';return window.WWHS_TEAM_SESSION.allowWrite(key,value);},keys.vet),false);
-  const again=await download(b,b.locator('#download-again'));assert.deepEqual(again,second);await b.locator('#confirm-finish').click();await b.waitForFunction(()=>document.getElementById('status-title').textContent==='Viewing the last shared snapshot');
+  const again=await download(b,b.locator('#download-again'));assert.deepEqual(again,second);await b.locator('#confirm-finish').click();await b.waitForFunction(()=>document.getElementById('status-title').textContent==='Viewing shared progress');
   // Steve imports to view and sees native notes, dates and overall review; personal data survives.
   await choose(a,second);await a.locator('#view-file').click();await a.waitForURL('**/#vet-home');await a.waitForFunction(()=>window.WWHS_WORKBOARD_ADAPTER&&document.querySelector('summary-import')?.started);
   assert.match(await a.locator('.workspace-team-banner').innerText(),/Your saved team progress/);
@@ -59,9 +59,9 @@ async function raw(page,key){return page.evaluate(key=>localStorage.getItem(key)
   const beforeReview=await raw(a,keys.review);await tick.click();assert.equal(await tick.isChecked(),true);assert.equal(await raw(a,keys.review),beforeReview,'view-only real register UI cannot write');
   await a.goto(base+'/team-handover/');const beforeOld=await a.evaluate(()=>({...localStorage}));await choose(a,first);assert.match(await a.locator('#handover-message').innerText(),/older/);assert.deepEqual(await a.evaluate(()=>({...localStorage})),beforeOld);
   await choose(a,{...second,exportId:'competing-export'});assert.match(await a.locator('#handover-message').innerText(),/different edits/);assert.deepEqual(await a.evaluate(()=>({...localStorage})),beforeOld);
-  await choose(a,second);await a.locator('#editor-name').fill('Steve');await a.locator('#only-editor').check();await a.locator('#start-session').click();await a.waitForURL('**/#vet-home');assert.match(await a.locator('.workspace-team-banner').innerText(),/Editing as Steve/);
-  const oldMeta=JSON.parse(await raw(stale,keys.meta));await b.goto(base+'/team-handover/?wing=tas#start-section');await choose(b,second);await b.locator('#editor-name').fill('Diane');await b.locator('#only-editor').check();await b.locator('#start-session').click();await b.waitForURL('**/head-teacher-tas/#home');assert.notEqual(JSON.parse(await raw(b,keys.meta)).active.id,oldMeta.active?.id);assert.equal(await stale.evaluate(()=>window.WWHS_TEAM_SESSION.isEditing()),false);
-  await a.goto(base+'/team-handover/');await a.locator('#recovery-section summary').click();const recovery=await download(a,a.locator('#download-recovery'));assert.notEqual(recovery.workspaceId,second.workspaceId);assert.doesNotMatch(json(recovery),/PRIVATE_|private\.example/);
+  await choose(a,second);if(!await a.locator('#editor-name').isVisible())await a.locator('#start-section details > summary').click();await a.locator('#editor-name').fill('Steve');await a.locator('#start-session').click();await a.waitForURL('**/#vet-home');assert.match(await a.locator('.workspace-team-banner').innerText(),/Editing as Steve/);
+  const oldMeta=JSON.parse(await raw(stale,keys.meta));await b.goto(base+'/team-handover/?wing=tas#start-section');await b.waitForFunction(()=>!document.getElementById('start-section').hidden);assert.equal(await b.locator('#save-panel').isVisible(),false,'legacy Open URL stays on the Open panel');await choose(b,second);if(!await b.locator('#editor-name').isVisible())await b.locator('#start-section details > summary').click();await b.locator('#editor-name').fill('Diane');await b.locator('#start-session').click();await b.waitForURL('**/head-teacher-tas/#home');assert.notEqual(JSON.parse(await raw(b,keys.meta)).active.id,oldMeta.active?.id);assert.equal(await stale.evaluate(()=>window.WWHS_TEAM_SESSION.isEditing()),false);
+  await a.goto(base+'/team-handover/');await a.locator('#backup-settings > summary').click();const recovery=await download(a,a.locator('#download-recovery'));assert.equal(recovery.kind,'WWHS-TEAM-SAFETY-BACKUP');assert.equal(Object.hasOwn(recovery,'workspaceId'),false);assert.doesNotMatch(json(recovery),/PRIVATE_|private\.example/);
   assert.deepEqual(errors,[]);console.log('PASS two-browser handover: private separation, native VET/TAS notes, date overrides, review ticks, export freeze, repeat download, read-only UI, stale/fork rejection, old-tab guard and recovery download.');
  }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

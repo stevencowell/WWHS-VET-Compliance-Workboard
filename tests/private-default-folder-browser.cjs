@@ -28,6 +28,7 @@ async function databaseRecord(page,scope){return page.evaluate(async({scope,priv
 },{scope,privateName:PRIVATE,teamName:TEAM});}
 const warns=page=>page.evaluate(()=>{const event=new Event('beforeunload',{cancelable:true});window.dispatchEvent(event);return event.defaultPrevented;});
 async function folderReady(page,scope='private'){
+  await page.evaluate(()=>{for(const selector of ['aside[aria-label="Private Launchpad backup"] details','#financeBackupSettings','#backup-settings']){const panel=document.querySelector(selector);if(panel)panel.open=true;}});
   await page.locator(`.backup-folder-settings[data-backup-scope="${scope}"] [data-folder-action="select"]`).waitFor({state:'visible'});
   await page.waitForFunction(scope=>!document.querySelector(`.backup-folder-settings[data-backup-scope="${scope}"] [data-folder-action="select"]`).disabled,scope);
 }
@@ -96,7 +97,7 @@ async function folderReady(page,scope='private'){
     await privatePanel.getByRole('button',{name:'Save backup…',exact:true}).click();
     await launchpad.waitForFunction(()=>window.__closedNames.length===2);
     const twice=await files(launchpad);assert.equal(Object.keys(twice).length,2);for(const [name,text]of Object.entries(firstFiles))assert.equal(twice[name],text);
-    assert.ok(Object.keys(twice).every(name=>/^launchpad-task-backup-\d{4}-\d{2}-\d{2}T.+\.json$/.test(name)));
+    assert.ok(Object.keys(twice).every(name=>/^launchpad-backup-\d{4}-\d{2}-\d{2}T.+\.json$/.test(name)));
     pass('Repeated saves retain earlier dated files; a focus refresh with unchanged folder causes no false conflict.');
 
     const finance=await makePage();await finance.goto(base+'/finance/');

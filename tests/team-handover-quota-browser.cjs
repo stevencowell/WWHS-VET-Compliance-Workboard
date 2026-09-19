@@ -12,7 +12,7 @@ function entropyText(length){let seed=0x13579bdf;return Array.from({length},()=>
 let browser;
 async function contextPage(){
   const context=await browser.newContext({viewport:{width:1440,height:1000},timezoneId:'Australia/Sydney',acceptDownloads:true,serviceWorkers:'block'});
-  await context.addInitScript(()=>{window.showSaveFilePicker=undefined;});
+  await context.addInitScript(()=>{window.showSaveFilePicker=undefined;sessionStorage.setItem('wwhs-team-import-prompt-seen:v1','yes');});
   await context.route('**/*',route=>new URL(route.request().url()).origin===base&&route.request().method()==='GET'?route.continue():route.abort());
   const page=await context.newPage();page.setDefaultTimeout(15000);
   page.on('dialog',dialog=>dialog.accept());
@@ -59,6 +59,7 @@ async function storageDigests(page){
   }))));
 }
 async function choose(page,file){
+  await page.locator('#handover-import-link').click();
   await page.locator('#team-file').setInputFiles({name:'WWHS-team-handover.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(file))});
   await page.waitForFunction(()=>!document.getElementById('view-file').disabled||document.getElementById('handover-message').classList.contains('is-error'));
   assert.equal(await page.locator('#view-file').isEnabled(),true,await page.locator('#handover-message').innerText());
@@ -142,15 +143,15 @@ async function assertPrivateAndUnrelated(page,privateBefore,unrelatedBefore){
       let meta=await compactMeta(page);assert.equal(meta.active,null);
       assert.equal(await page.evaluate(key=>JSON.parse((window.WWHS_STORAGE||localStorage).getItem(key)).records['class-readiness::2026'].exceptionReason,keys.tas),'Incoming shared TAS note');
       await page.goto(base+'/team-handover/?wing=tas',{waitUntil:'networkidle'});await choose(page,file);
-      await page.locator('#editor-name').fill('Synthetic quota editor');await page.locator('#only-editor').check();await page.locator('#start-session').click();await page.waitForURL(base+'/head-teacher-tas/#home');
+      await page.locator('#start-section details > summary').click();await page.locator('#editor-name').fill('Synthetic quota editor');await page.locator('#start-session').click();await page.waitForURL(base+'/head-teacher-tas/#home');
       await page.goto(base+'/head-teacher-tas/#task/class-readiness',{waitUntil:'networkidle'});await page.locator('#task-dialog[open]').waitFor();
       await page.locator('#task-dialog textarea[name="exceptionReason"]').fill('Updated TAS note after safe quota import.');await page.getByRole('button',{name:'Save progress',exact:true}).click();
-      await page.goto(base+'/team-handover/?wing=tas',{waitUntil:'networkidle'});await page.locator('#notes-saved').check();
+      await page.goto(base+'/team-handover/?wing=tas',{waitUntil:'networkidle'});
       const exported=await download(page,'#finish-session');assert.equal(exported.revision,2);assert.equal(exported.data.tas.records['class-readiness::2026'].exceptionReason,'Updated TAS note after safe quota import.');
       assert.doesNotMatch(JSON.stringify(exported),/PRIVATE_|private\.example/);await compactMeta(page);
-      await page.locator('#confirm-finish').click();await page.waitForFunction(()=>document.querySelector('#status-title').textContent==='Viewing the last shared snapshot');
+      await page.locator('#confirm-finish').click();await page.waitForFunction(()=>document.querySelector('#status-title').textContent==='Viewing shared progress');
       assert.deepEqual(await privateDigest(page),originalPrivate);meta=await compactMeta(page);assert.equal(meta.pendingExport,null);assert.equal(meta.active,null);
-      await page.locator('#recovery-section summary').click();const recovery=await download(page,'#download-recovery');assert.equal(recovery.data.tas.records['class-readiness::2026'].exceptionReason,'Incoming shared TAS note');assert.doesNotMatch(JSON.stringify(recovery),/PRIVATE_|private\.example/);
+      await page.locator('#backup-settings > summary').click();const recovery=await download(page,'#download-recovery');assert.equal(recovery.data.tas.records['class-readiness::2026'].exceptionReason,'Incoming shared TAS note');assert.doesNotMatch(JSON.stringify(recovery),/PRIVATE_|private\.example/);
       assert.equal(await page.evaluate(key=>localStorage.getItem(key),keys.journal),null);
       await noRetainedJournal(page);
       return {inboxCharacters,oldJournalCharacters:old.journalCharacters,realOldError:old.errorName,privateBytesPreserved:true};
@@ -170,21 +171,21 @@ async function assertPrivateAndUnrelated(page,privateBefore,unrelatedBefore){
       assert.equal(old.errorName,'QuotaExceededError','Inline baseline and recovery copies exceed the remaining real browser capacity');
       await page.reload({waitUntil:'networkidle'});await choose(page,file);await page.locator('#view-file').click();await page.waitForURL(base+'/head-teacher-tas/#home');await page.waitForLoadState('networkidle');
       await compactMeta(page);await assertPrivateAndUnrelated(page,originalPrivate,unrelated);
-      await page.goto(base+'/team-handover/?wing=tas',{waitUntil:'networkidle'});await choose(page,file);await page.locator('#editor-name').fill('Synthetic near-full editor');await page.locator('#only-editor').check();await page.locator('#start-session').click();await page.waitForURL(base+'/head-teacher-tas/#home');
-      await compactMeta(page);await page.goto(base+'/team-handover/?wing=tas',{waitUntil:'networkidle'});await page.locator('#notes-saved').check();
+      await page.goto(base+'/team-handover/?wing=tas',{waitUntil:'networkidle'});await choose(page,file);await page.locator('#start-section details > summary').click();await page.locator('#editor-name').fill('Synthetic near-full editor');await page.locator('#start-session').click();await page.waitForURL(base+'/head-teacher-tas/#home');
+      await compactMeta(page);await page.goto(base+'/team-handover/?wing=tas',{waitUntil:'networkidle'});
       const first=await download(page,'#finish-session');assert.equal(first.revision,2);assert.deepEqual(first.data,file.data);await compactMeta(page);
       await page.reload({waitUntil:'networkidle'});const repeat=await download(page,'#download-again');assert.deepEqual(repeat,first,'Reloaded pending export downloads the exact same complete file');
       await page.locator('#resume-editing').click();await page.waitForURL(base+'/head-teacher-tas/#home');assert.equal((await compactMeta(page)).active.phase,'editing');
-      await page.goto(base+'/team-handover/?wing=tas',{waitUntil:'networkidle'});await page.locator('#notes-saved').check();const final=await download(page,'#finish-session');assert.equal(final.revision,2);assert.notEqual(final.exportId,first.exportId);assert.deepEqual(final.data,file.data);
-      await page.locator('#confirm-finish').click();await page.waitForFunction(()=>document.querySelector('#status-title').textContent==='Viewing the last shared snapshot');
+      await page.goto(base+'/team-handover/?wing=tas',{waitUntil:'networkidle'});const final=await download(page,'#finish-session');assert.equal(final.revision,2);assert.notEqual(final.exportId,first.exportId);assert.deepEqual(final.data,file.data);
+      await page.locator('#confirm-finish').click();await page.waitForFunction(()=>document.querySelector('#status-title').textContent==='Viewing shared progress');
       const meta=await compactMeta(page);assert.equal(meta.active,null);assert.equal(meta.pendingExport,null);
-      await page.locator('#recovery-section summary').click();const recovery=await download(page,'#download-recovery');assert.deepEqual(recovery.data,file.data);
+      await page.locator('#backup-settings > summary').click();const recovery=await download(page,'#download-recovery');assert.deepEqual(recovery.data,file.data);
       await assertPrivateAndUnrelated(page,originalPrivate,unrelated);await noRetainedJournal(page);
       return {...capacity,inlineMetadataCharacters:old.inlineCharacters,compactMetadataCharacters:JSON.stringify(meta).length,liveDataUnchanged:true,allHandoverActionsPassed:true};
     }finally{await context.close();}
   });
 
-  await check('Missing IndexedDB handover payload blocks controls and preserves local progress',async()=>{
+  await check('Missing IndexedDB history keeps current records intact and permits a complete safety backup',async()=>{
     const {context,page}=await contextPage();
     try{
       const {file}=await seed(page);await page.reload({waitUntil:'networkidle'});await choose(page,file);await page.locator('#view-file').click();await page.waitForURL(base+'/head-teacher-tas/#home');
@@ -195,10 +196,13 @@ async function assertPrivateAndUnrelated(page,privateBefore,unrelatedBefore){
           const db=open.result,transaction=db.transaction('payloads','readwrite');transaction.objectStore('payloads').delete(id);transaction.oncomplete=()=>{db.close();resolve();};transaction.onabort=()=>{db.close();reject(transaction.error);};
         };
       }),meta.recovery.dataRef.id);
-      await page.goto(base+'/team-handover/?wing=tas',{waitUntil:'networkidle'});await page.waitForFunction(()=>document.querySelector('#handover-message').classList.contains('is-error'));
-      assert.equal(await page.locator('button:not([disabled]),input:not([disabled]),textarea:not([disabled])').count(),0,'A missing payload never becomes an empty recovery or editable session');
+      await page.goto(base+'/team-handover/?wing=tas#save-backup',{waitUntil:'networkidle'});await page.waitForFunction(()=>!document.querySelector('#save-safety').disabled);
+      assert.equal(await page.locator('#history-warning').isVisible(),true);
+      assert.equal(await page.locator('#save-safety').isVisible(),true,'Missing history does not trap current records behind a blocked page');
       assert.deepEqual(await storageDigests(page),before);
-      const message=await page.locator('#handover-message').innerText();assert.match(message,/missing|could not|cannot|unavailable|not found/i);return {message,progressUnchanged:true};
+      const safety=await download(page,'#save-safety');assert.equal(safety.kind,'WWHS-TEAM-SAFETY-BACKUP');assert.deepEqual(safety.data,file.data);assert.doesNotMatch(JSON.stringify(safety),/PRIVATE_|private\.example/);
+      assert.deepEqual(await storageDigests(page),before,'A download request preserves exact current data and does not invent the missing history');
+      assert.equal(await page.locator('#safety-receipt').isVisible(),true);return {currentProgressUnchanged:true,completeSafetyDownload:true};
     }finally{await context.close();}
   });
 
@@ -212,8 +216,8 @@ async function assertPrivateAndUnrelated(page,privateBefore,unrelatedBefore){
       },{keys,file});
       await page.reload({waitUntil:'networkidle'});const legacy=await download(page,'#download-again');assert.deepEqual(legacy,file,'Legacy pending file hydrates without dropping content');
       await page.locator('#resume-editing').click();await page.waitForURL(base+'/head-teacher-tas/#home');const compact=await compactMeta(page);assert.ok(compact.active.baselineRef.id);assert.ok(compact.recovery.dataRef.id);assert.equal(compact.pendingExport,null);
-      await page.goto(base+'/team-handover/?wing=tas',{waitUntil:'networkidle'});await page.locator('#notes-saved').check();const migrated=await download(page,'#finish-session');assert.deepEqual(migrated.data,file.data);
-      await page.locator('#recovery-section summary').click();const recovered=await download(page,'#download-recovery');assert.deepEqual(recovered.data,file.data);assert.deepEqual(await privateDigest(page),originalPrivate);
+      await page.goto(base+'/team-handover/?wing=tas',{waitUntil:'networkidle'});const migrated=await download(page,'#finish-session');assert.deepEqual(migrated.data,file.data);
+      await page.locator('#backup-settings > summary').click();const recovered=await download(page,'#download-recovery');assert.deepEqual(recovered.data,file.data);assert.deepEqual(await privateDigest(page),originalPrivate);
       return {legacyDataRetained:true,compactMetadataCharacters:JSON.stringify(compact).length};
     }finally{await context.close();}
   });
@@ -229,6 +233,8 @@ async function assertPrivateAndUnrelated(page,privateBefore,unrelatedBefore){
       await page.reload({waitUntil:'networkidle'});await choose(page,file);const before=await storageDigests(page);
       await page.locator('#view-file').click();await page.waitForFunction(()=>document.querySelector('#handover-message').classList.contains('is-error'));
       const message=await page.locator('#handover-message').innerText();assert.match(message,/storage|space|quota/i);assert.match(message,/unchanged|restored|kept|safe|no.+changed/i);
+      // Diagnostics are deliberately inside the optional backup settings.
+      const settings=page.locator('#backup-settings');if(!await settings.evaluate(node=>node.open))await settings.locator(':scope > summary').click();
       const details=page.locator('#handover-storage-details');await details.waitFor({state:'visible'});
       if(!await details.evaluate(node=>node.open))await details.locator('summary').click();
       const diagnostics=await details.innerText();assert.match(diagnostics,/Other saved website data/);assert.match(diagnostics,/\d/);

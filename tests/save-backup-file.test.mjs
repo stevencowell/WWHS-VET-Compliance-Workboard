@@ -15,7 +15,8 @@ test('cancelling the picker returns no destination',async()=>{
   assert.equal(result,null);
 });
 test('a blocked picker gives the explicit download fallback',async()=>{
-  await assert.rejects(chooseBackupDestination(options,{showSaveFilePicker(){throw new DOMException('Blocked','SecurityError');}}),/Use Download a copy/);
+  const destination=await chooseBackupDestination(options,{showSaveFilePicker(){throw new DOMException('Blocked','SecurityError');}});
+  assert.equal(typeof destination.write,'function');
 });
 test('a file counts as saved only after its writable stream closes',async()=>{
   let written,close,settled=false;
@@ -47,4 +48,28 @@ test('unsupported Save as and explicit fallback request a download without claim
     assert.deepEqual(await destination.write('{}'),{saved:false,method:'download'});
     assert.equal(link.download,options.suggestedName);assert.deepEqual(events,['url','append','click','remove','revoke']);
   }
+});
+
+test('guarded file saves abort when the destination changes during create or write',async()=>{
+  for(const stage of ['create','write']){
+    let existing='original',aborted=0,closed=0;
+    const destination=await chooseBackupDestination(options,{showSaveFilePicker:async()=>({
+      getFile:async()=>({text:async()=>existing}),
+      createWritable:async()=>{if(stage==='create')existing='newer';return {
+        async write(){if(stage==='write')existing='newer';},async close(){closed++;},async abort(){aborted++;}
+      };}
+    })});
+    const expectedText=await destination.read();
+    await assert.rejects(destination.write('candidate',{expectedText}),/could not be saved/);
+    assert.equal(existing,'newer');assert.equal(closed,0);assert.equal(aborted,1);
+  }
+});
+
+test('guarded file saves recheck application state before committing',async()=>{
+  let current=true,aborted=0,closed=0;
+  const destination=await chooseBackupDestination(options,{showSaveFilePicker:async()=>({
+    getFile:async()=>({text:async()=>''}),createWritable:async()=>({async write(){current=false;},async close(){closed++;},async abort(){aborted++;}})
+  })});
+  await assert.rejects(destination.write('candidate',{expectedText:'',verify(){if(!current)throw Error('Newer task edit');}}),/could not be saved/);
+  assert.equal(closed,0);assert.equal(aborted,1);
 });

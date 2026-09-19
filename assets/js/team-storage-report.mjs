@@ -45,4 +45,4 @@ export function installStorageReport(document,window,storage){
   new window.MutationObserver(update).observe(message,{childList:true,characterData:true,subtree:true,attributes:true,attributeFilter:['class']});
   update();
 }
-if(typeof document!=='undefined')installStorageReport(document,window,window.WWHS_STORAGE||localStorage);
+if(typeof document!=='undefined'&&typeof window!=='undefined'&&document.getElementById?.('handover-storage-details'))installStorageReport(document,window,window.WWHS_STORAGE||window.localStorage);

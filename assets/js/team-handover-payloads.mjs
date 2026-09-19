@@ -1,5 +1,5 @@
 // Immutable, private browser copies. Only small references enter localStorage.
-import {parseBackup} from './team-handover-core.mjs?v=team-handover-1';
+import {parseBackup,snapshot} from './team-handover-core.mjs?v=team-handover-1';
 
 const DB_NAME='wwhs-team-handover-payloads', STORE='payloads', MAX_SIZE=12000000;
 const INFO=['workspaceId','revision','parentRevision','parentExportId','exportId','savedAt','savedBy','note','changes'];
@@ -13,6 +13,15 @@ function reference(value,kind){
   return value;
 }
 function validate(value,kind){
+  if(kind==='archive'){
+    if(!object(value)||Object.keys(value).some(key=>!['metadataRaw','data','capturedAt'].includes(key))||
+      !(value.metadataRaw===null||typeof value.metadataRaw==='string'&&value.metadataRaw.length<=MAX_SIZE))fail('The private team recovery archive is invalid.');
+    validate(value.data,'snapshot');
+    // The metadata string is preserved verbatim, even when it cannot be parsed.
+    // It can include old private inbox copies and must never become a team file.
+    parseBackup({kind:'WWHS-TEAM-HANDOVER',schemaVersion:1,workspaceId:'local-validation',revision:1,parentRevision:null,parentExportId:null,exportId:'local-validation',savedAt:value.capturedAt,savedBy:'Local validation',note:'',changes:[],data:value.data});
+    return value;
+  }
   if(!object(value)||JSON.stringify(value).length>MAX_SIZE)fail('The saved team file copy is invalid or too large.');
   // Reuse the portable schema checks without changing the original saved value.
   parseBackup(kind==='handover'?value:{kind:'WWHS-TEAM-HANDOVER',schemaVersion:1,workspaceId:'local-validation',revision:1,parentRevision:null,parentExportId:null,exportId:'local-validation',savedAt:'2026-01-01T00:00:00.000Z',savedBy:'Local validation',note:'',changes:[],data:value});
@@ -100,6 +109,55 @@ export async function hydrateTeamMetadata(input,options={}){
   }
   return result;
 }
+// Recovery screens must not require every historical copy just to inspect one.
+// This never repairs, removes or substitutes a missing historical value.
+export async function inspectTeamMetadata(input,options={}){
+  const raw=input===null?null:typeof input==='string'?input:JSON.stringify(input);
+  const result={raw,stored:null,hydrated:null,complete:true,issues:[]};
+  let value;
+  try{
+    value=raw===null?null:JSON.parse(raw);result.stored=copy(value);
+    // Validate the connection separately from its independent history sections.
+    if(value!==null)metadata({...value,active:null,recovery:null});
+    result.hydrated=copy(value);
+  }
+  catch(error){result.complete=false;result.issues.push({section:'metadata',message:error.message});return result;}
+  if(!result.hydrated)return result;
+  const partial=result.hydrated;
+  const empty=snapshot({getItem:()=>null});
+  // A readable object is not necessarily usable history. A malformed editor,
+  // date or header must send the page to current-data safety saving instead of
+  // selecting a normal save action that will inevitably reject that history.
+  try{parseBackup({...partial.lastFile,kind:'WWHS-TEAM-HANDOVER',schemaVersion:1,data:empty});}
+  catch(error){result.issues.push({section:'metadata',message:error.message});}
+  const checks=[
+    ['baseline',async()=>{
+      if(!partial.active)return;
+      if(!object(partial.active)||!['editing','exporting'].includes(partial.active.phase))fail('The active team session is invalid. Keep this browser data intact for recovery.');
+      parseBackup({kind:'WWHS-TEAM-HANDOVER',schemaVersion:1,workspaceId:'session-validation',revision:1,parentRevision:null,parentExportId:null,
+        exportId:own(partial.active,'id')?partial.active.id:'session-validation',savedBy:own(partial.active,'editor')?partial.active.editor:'Local inspection',
+        savedAt:own(partial.active,'startedAt')?partial.active.startedAt:'2026-01-01T00:00:00.000Z',note:'',changes:[],data:empty});
+      await restore(partial.active,'baselineData','baselineRef','snapshot',options);
+      if(!partial.active.firstFile&&!own(partial.active,'baselineData'))fail('The team session baseline is missing. Your saved progress has been kept.');
+    },()=>{if(object(partial.active))delete partial.active.baselineData;}],
+    ['recovery',async()=>{
+      if(!partial.recovery)return;
+      if(!object(partial.recovery))fail('The local recovery record is invalid.');
+      await restore(partial.recovery,'data','dataRef','snapshot',options);
+      if(!own(partial.recovery,'data'))fail('The local recovery copy is missing. Your saved progress has been kept.');
+    },()=>{if(object(partial.recovery)){delete partial.recovery.data;delete partial.recovery.raw;}}],
+    ['pending',async()=>{
+      if(!partial.pendingExport){if(partial.active?.phase==='exporting')fail('The prepared team file record is missing. Current progress can still be saved as a safety copy.');return;}
+      const hydrated=await hydrateTeamMetadata({...partial,active:null,recovery:null},options);
+      partial.pendingExport=hydrated.pendingExport;
+      if(hydrated.pendingExportRef)partial.pendingExportRef=hydrated.pendingExportRef;
+    },()=>{partial.pendingExport=null;delete partial.pendingExportRef;}]
+  ];
+  const issues=await Promise.all(checks.map(async([section,check,unavailable])=>{
+    try{await check();return null;}catch(error){unavailable();return {section,message:error.message};}
+  }));
+  result.issues.push(...issues.filter(Boolean));result.complete=!result.issues.length;return result;
+}
 async function store(value,kind,ref,options){
   validate(value,kind);
   if(ref)return reference(ref,kind); // Hydration has already verified its exact value.
@@ -126,3 +184,10 @@ export async function prepareTeamMetadata(input,options={}){
   delete result.pendingExportRef;
   return result;
 }
+
+// These bodies stay inside this browser. Archiving does not replace live stores
+// and does not require the old metadata's referenced copies to be readable.
+export async function archiveTeamState(input,options={}){
+  const value=copy(input);return store(value,'archive',null,options);
+}
+export async function readTeamArchive(ref,options={}){return read(ref,'archive',options);}

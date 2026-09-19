@@ -1,4 +1,4 @@
-import {chooseBackupDestination,fileDestination} from './save-backup-file.mjs?v=default-folder-1';
+import {chooseBackupDestination,fileDestination} from './save-backup-file.mjs?v=backup-flow-2';
 
 const DATABASE='wwhs-backup-folders:v1';
 const CHANNEL='wwhs-backup-folders:v1';
@@ -15,10 +15,10 @@ export function createBackupFolderStore(win=window){
     let request;
     try{request=win.indexedDB.open(DATABASE,1);}catch(error){reject(error);return;}
     request.onupgradeneeded=()=>request.result.createObjectStore('folders');
-    request.onsuccess=()=>{request.result.onversionchange=()=>request.result.close();resolve(request.result);};
+    request.onsuccess=()=>{request.result.onversionchange=()=>{request.result.close();database=undefined;};resolve(request.result);};
     request.onerror=()=>reject(request.error);
     request.onblocked=()=>reject(new Error('Browser storage is busy. Close other workboard tabs and try again.'));
-  });
+  }).catch(error=>{database=undefined;throw error;});
   async function transact(scope,update){
     const db=await open();
     return new Promise((resolve,reject)=>{
@@ -113,7 +113,10 @@ export function createBackupFolder({scope='private',win=window,store}={}){
     catch(problem){error='The folder choice could not be removed. Please try again.';if(problem?.message===changedMessage)reloadRequested=true;throw new Error(error,{cause:problem});}
     finally{await settled();}
   }
-  async function destination(suggestedName,{id}={}){
+  async function destination(suggestedName,{id,direct=false}={}){
+    // A damaged preference must not prevent a user from saving their work.
+    // Ask for a destination explicitly; never guess an old folder.
+    if(loadFailed)return chooseBackupDestination({suggestedName,id:id||(scope==='team'?'wwhs-team-handover':'wwhs-private-backup')},win);
     available();
     const chosen=record,handle=chosen?.handle,currentEpoch=epoch;
     if(!handle)return chooseBackupDestination({suggestedName,id:id||(scope==='team'?'wwhs-team-handover':'wwhs-private-backup')},win);
@@ -125,17 +128,34 @@ export function createBackupFolder({scope='private',win=window,store}={}){
       if(persisted?.revision!==chosen.revision){void hydrate();throw conflict();}
     };
     // Shared handovers keep the native confirmation before replacing the current file.
-    if(scope==='team'){
+    if(scope==='team'&&!direct){
       const destination=await chooseBackupDestination({suggestedName,id:id||'wwhs-team-handover',startIn:handle},win);
       if(!destination)return null;
       await verifyPersisted();
-      return {async write(text){await verifyPersisted();return destination.write(text);}};
+      return {async read(){await verifyPersisted();return destination.read?destination.read():null;},async write(text,options={}){await verifyPersisted();return destination.write(text,{...options,verify:async()=>{await verifyPersisted();await options.verify?.();}});}};
     }
     try{
       let permission=await handle.queryPermission({mode:'readwrite'});await checkAfterPermission();
       if(permission!=='granted'){permission=await handle.requestPermission({mode:'readwrite'});await checkAfterPermission();}
       if(permission!=='granted')throw new Error('Access to the backup folder was not granted. Choose the folder again, or use Save as.');
     }catch(problem){error=errorMessage(problem);notify();throw new Error(error,{cause:problem});}
+    // Shared callers can save directly to the remembered folder after checking
+    // the existing file's identity. Recheck its bytes immediately before writing.
+    if(scope==='team'){
+      let checkedText;
+      const read=async()=>{
+        await verifyPersisted();
+        try{const file=await handle.getFileHandle(suggestedName);return await (await file.getFile()).text();}
+        catch(problem){if(problem?.name==='NotFoundError')return '';throw problem;}
+      };
+      return {async read(){checkedText=await read();return checkedText;},async write(text,options={}){
+        await verifyPersisted();
+        if(checkedText===undefined)throw new Error('The existing shared file must be checked before saving.');
+        if(await read()!==checkedText)throw new Error('The shared file changed while saving. Nothing has been overwritten. Open the latest backup first.');
+        const file=await handle.getFileHandle(suggestedName,{create:true});await verifyPersisted();
+        return fileDestination(file).write(text,{expectedText:checkedText,verify:async()=>{await verifyPersisted();await options.verify?.();}});
+      }};
+    }
     return {async write(text){
       try{
         await verifyPersisted();

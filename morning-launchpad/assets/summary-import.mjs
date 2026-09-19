@@ -1,12 +1,15 @@
 const workStorage=()=>globalThis.WWHS_STORAGE||globalThis.localStorage;
-import {storageSizes} from '../../assets/js/team-storage-report.mjs?v=compression-storage-1';
+import {RESTORE_KEY,createLaunchpadBackup} from './launchpad-backup.mjs?v=backup-flow-2';
+import {recoverLaunchpadRestore,readLaunchpadRecovery} from './launchpad-backup-transaction.mjs?v=backup-flow-2';
+import {installLaunchpadBackupDialog} from './launchpad-backup-ui.mjs?v=backup-flow-2';
+import {storageSizes} from '../../assets/js/team-storage-report.mjs?v=backup-flow-2';
 import {createNoteEditor} from './note-editor.mjs?v=private-backup-1';
-import {downloadDestination} from '../../assets/js/save-backup-file.mjs?v=default-folder-1';
-import {choosePrivateBackupDestination,getBackupFolder} from '../../assets/js/backup-folder.mjs?v=default-folder-1';
+import {downloadDestination} from '../../assets/js/save-backup-file.mjs?v=backup-flow-2';
+import {choosePrivateBackupDestination,getBackupFolder} from '../../assets/js/backup-folder.mjs?v=backup-flow-2';
 import {createTaskHelpDialog} from './task-help-dialog.mjs?v=compression-storage-1';
 import {emailSearchText} from './email-search.mjs?v=1';
 import './email-capture.mjs?v=email-source-1';
-import './launchpad-calendar.mjs?v=compression-storage-1';
+import './launchpad-calendar.mjs?v=backup-flow-2';
 import {INBOX_KEY, LIMIT, parseSummary, validateInbox, mergeInbox, safeUrl, workingNoteLinks, matchesNoteSearch, PRIORITIES, NEXT_ACTIONS, EDITABLE, enrich, todaySydney, taskSection, rank, nextDate, consolidateDuplicates, LEGACY_PLAN_KEY, isPinned, migrateToPins, recordNoteAction, WORKSTREAMS, createTrackedWork, mergeWorkboardImports, clearEmailImports, isUnfinishedEmailNote, reconcileForecast, sourceCompleted, normaliseForecastContext} from './summary-core.mjs?v=email-cleanup-1';
 
 const repositoryRoot=new URL('../../',import.meta.url);
@@ -60,6 +63,23 @@ function dateLabel(date) {
 }
 class SummaryImport extends HTMLElement {
   connectedCallback() {
+    if(this.started||this.starting)return;
+    try{if(workStorage().getItem(RESTORE_KEY)!==null){void this.recoverBeforeOpening();return;}}catch(error){this.showRestoreRecovery(error);return;}
+    this.startWorkspace();
+  }
+  async recoverBeforeOpening(){
+    if(this.starting)return;this.starting=true;this.replaceChildren(element('p','Recovering your saved Launchpad…',{role:'status'}));
+    try{await recoverLaunchpadRestore(workStorage());this.starting=false;this.startWorkspace();window.dispatchEvent(new Event('launchpad:backup-restored'));}
+    catch(error){this.starting=false;this.showRestoreRecovery(error);}
+  }
+  showRestoreRecovery(error){
+    this.replaceChildren(element('h2','Your saved work needs recovery'),element('p',error.message,{role:'alert'}),element('p','Keep this browser and your original backup file. You can save a readable recovery copy before trying again.'));
+    this.append(button('Retry recovery',()=>void this.recoverBeforeOpening()),button('Save recovery copy…',async()=>{
+      try{const destination=await choosePrivateBackupDestination({suggestedName:'launchpad-recovery.json',id:'launchpad-recovery'});if(!destination)return;const result=await destination.write(JSON.stringify(await readLaunchpadRecovery(workStorage()),null,2));this.append(element('p',result.saved?'Recovery copy saved.':'Recovery download requested. Check that the file saved.'));}
+      catch(problem){this.append(element('p',problem.message,{role:'alert'}));}
+    }));
+  }
+  startWorkspace() {
     if(this.started)return;this.started=true;
     getBackupFolder('private'); // Load the preference before a backup button is clicked.
     this.openCards=new Set();this.view='ready';this.expanded=false;this.legacyRaw=null;this.blocked=false;this.raw=null;
@@ -83,14 +103,16 @@ class SummaryImport extends HTMLElement {
     } catch(error){this.say(`Could not save: ${error.message} Your previous saved list is unchanged.`,true);return false;}
   }
   async exportTaskBackup({downloadOnly=false}={}){
-    const raw=this.blocked?this.raw:JSON.stringify(this.inbox,null,2);
-    if(raw===null){this.say('There is no saved task list to export.');return;}
+    if(this.hasNoteDraft()||this.calendar?.hasDraft()){this.say('Save or cancel the open note or calendar event before saving a backup. Your draft is still here.',true);return;}
     try{
-      const destination=downloadOnly?downloadDestination('launchpad-task-backup.json'):await choosePrivateBackupDestination({suggestedName:'launchpad-task-backup.json',id:'launchpad-private-backup'});
+      const destination=downloadOnly?downloadDestination('launchpad-backup.json'):await choosePrivateBackupDestination({suggestedName:'launchpad-backup.json',id:'launchpad-private-backup'});
       if(!destination){this.say('Save cancelled. Your notes are unchanged.');return;}
+      if(this.hasNoteDraft()||this.calendar?.hasDraft())throw new Error('A draft changed while Save was open. Save the note or event, then save a fresh backup.');
+      if(workStorage().getItem(RESTORE_KEY)!==null)throw new Error('Finish Launchpad recovery before saving a regular backup.');
+      const raw=JSON.stringify(createLaunchpadBackup(workStorage()));
       const result=await destination.write(raw);
       window.dispatchEvent(new CustomEvent('launchpad:task-backup-requested',{detail:{raw,...result}}));
-      this.say(result.saved?'Task backup saved to your chosen folder. Google Drive will sync it if you selected a synced Drive folder.':'Download requested. Check that the task backup saved on your device.');
+      this.say(result.saved?'Launchpad backup saved: notes, completed tasks, calendar, older plans and saved links.':'Download requested. Check that the Launchpad backup saved on your device, then confirm below.');
     }catch(error){this.say(error.message,true);}
   }
   async trackWork(descriptor,{silent=false}={}) {
@@ -152,6 +174,7 @@ class SummaryImport extends HTMLElement {
   setWorkstream(key){
     if(this.scope && key!==this.scope)return false;
     if(key!=='all'&&!Object.hasOwn(WORKSTREAMS,key))throw new Error('Unknown work area.');
+    if(!this.started){this.dataset.workstream=key;return false;}
     if(this.blocked){this.say('Reload saved work before changing views. Your draft text is still here.',true);return false;}
     this.workstream=key;this.expanded=false;this.renderItems();return true;
   }
@@ -204,7 +227,7 @@ class SummaryImport extends HTMLElement {
     for(const [key,label]of [['ready','Today'],['upcoming','Soon'],['waiting','Waiting'],['notes','My Notes'],['done','Done']]){const b=button(label,()=>{this.searchInput.value='';this.view=key;this.expanded=false;this.renderItems();});this.tabs[key]={button:b,label};this.nav.append(b);}this.append(this.nav);
     this.viewHelp=element('p','',{class:'import-help',role:'status','aria-live':'polite'});this.list=element('div',undefined,{class:'import-list'});this.append(this.viewHelp,this.list);
     this.earlier=element('details',undefined,{class:'import-other'});this.earlierHeading=element('summary');this.earlierList=element('div',undefined,{class:'import-list'});this.earlier.append(this.earlierHeading,element('p','The AI task file replaces these basic entries. Their text and edits are kept here; restore one only if it contains additional work.',{class:'import-help'}),this.earlierList);this.append(this.earlier);
-    const footer=element('div',undefined,{class:'import-footer'});footer.append(element('p','Saved in this browser. Use Import & save at the top to bring in saved notes or keep a backup. Email and Evernote are not changed.',{class:'import-help'}),button('Import backup…',()=>this.openTaskBackupImport()),button('Save backup…',()=>void this.exportTaskBackup()));if(this.legacyRaw!==null)footer.append(button('Export older daily plans',()=>download(this.legacyRaw,'launchpad-older-daily-plans.json')));this.clearNotesButton=button('Clear unfinished email notes',()=>this.openClearNotes(),'import-danger');footer.append(this.clearNotesButton);this.append(footer);
+    const footer=element('div',undefined,{class:'import-footer'});footer.append(element('p','Saved in this browser. Use Open backup or Save backup at the top. Email and Evernote are not changed.',{class:'import-help'}),button('Open backup…',()=>this.openTaskBackupImport()),button('Save backup…',()=>void this.exportTaskBackup()));if(this.legacyRaw!==null)footer.append(button('Export older daily plans',()=>download(this.legacyRaw,'launchpad-older-daily-plans.json')));this.clearNotesButton=button('Clear unfinished email notes',()=>this.openClearNotes(),'import-danger');footer.append(this.clearNotesButton);this.append(footer);
     this.taskArea=element('div',undefined,{class:'task-area'});for(const child of [...this.children])if(child!==heading&&child!==this.message&&child!==this.reloadButton)this.taskArea.append(child);this.append(this.taskArea);
     this.calendar=element('launchpad-calendar');this.calendar.hidden=true;
     this.calendar.addEventListener('calendar:minimise',()=>{this.showCalendar(false);this.calendarToggle.focus({preventScroll:true});this.calendarToggle.scrollIntoView({behavior:'smooth',block:'nearest'});});
@@ -236,26 +259,12 @@ class SummaryImport extends HTMLElement {
   }
   openTaskBackupImport(){
     if(this.scope)return;
+    this.resetBackupPreview?.();
     this.backupFile.value='';this.backupMessage.textContent='';this.backupStorageDetails.hidden=true;
     this.backupDialog.showModal();this.backupFile.focus();
   }
   buildBackupImportDialog(){
-    this.backupDialog=element('dialog',undefined,{class:'chatgpt-chooser launchpad-backup-dialog','aria-labelledby':'launchpad-backup-title'});
-    this.backupDialog.addEventListener('cancel',event=>{if(this.backupImportBusy)event.preventDefault();});
-    this.backupDialog.append(element('p','Launchpad · Private notes and tasks',{class:'import-save-scope'}),element('h2','Import backup',{id:'launchpad-backup-title'}),element('p','Choose your saved Launchpad task backup (.json) from Steve - Private Backups in Google Drive, or from this device. On a phone, download the file from Drive first if needed.'),element('p','This adds missing notes and merges matching tasks. Existing edits and completion status in this browser are kept. It does not replace the whole list.'),element('p','For Finance, shared VET/TAS progress or calendar events, use Import in that area.',{class:'import-help'}));
-    this.backupFile=element('input',undefined,{type:'file',accept:'.json,application/json',id:'launchpad-backup-file'});
-    this.backupMessage=element('p','',{role:'status','aria-live':'polite'});
-    this.backupStorageDetails=element('details');this.backupStorageDetails.hidden=true;
-    const apply=button('Import backup',async()=>{
-      if(!this.backupFile.files[0]){this.backupMessage.textContent='Choose your Launchpad task backup first.';return;}
-      if(this.hasNoteDraft()){this.backupMessage.textContent='Save or cancel your open note before importing. Your draft is still on this page.';return;}
-      this.backupImportBusy=true;apply.disabled=true;cancel.disabled=true;this.backupFile.disabled=true;
-      try{if(await this.importFile(this.backupFile.files[0],{backupOnly:true}))this.backupDialog.close();}
-      finally{this.backupImportBusy=false;apply.disabled=false;cancel.disabled=false;this.backupFile.disabled=false;}
-    },'import-primary');
-    const cancel=button('Cancel',()=>this.backupDialog.close());
-    const actions=element('div',undefined,{class:'import-actions'});actions.append(apply,cancel);
-    this.backupDialog.append(element('label','Choose a Launchpad backup',{for:'launchpad-backup-file'}),this.backupFile,this.backupMessage,this.backupStorageDetails,actions);this.append(this.backupDialog);
+    installLaunchpadBackupDialog(this);
   }
   showBackupStorageDetails(show){
     this.backupStorageDetails.hidden=!show;if(!show)return;

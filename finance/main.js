@@ -15964,15 +15964,15 @@ const App = {
 
     document.getElementById("exportData")?.addEventListener("click", () => {
       exportSnapshotData();
-      UI.toast("Export Complete", "Snapshot exported as JSON.", "success");
+      UI.toast("Download started", "Check Files or Downloads for the readable snapshot. It is not password protected.", "info");
     });
 
     document.getElementById("backupApp")?.addEventListener("click", () => {
       exportFinanceStudioBackup();
       UI.toast(
-        "Backup Exported",
-        "Full backup exported with dataset, budgets, rules, and saved app settings.",
-        "success"
+        "Download started",
+        "Check Files or Downloads for the readable legacy backup. Use Save backup for a complete encrypted copy.",
+        "info"
       );
     });
   },
@@ -16306,7 +16306,6 @@ if (typeof module === "object" && module.exports) {
 if (typeof window !== "undefined") {
   window.FinanceEngine = FinanceEngine;
 }
-
 
 
 

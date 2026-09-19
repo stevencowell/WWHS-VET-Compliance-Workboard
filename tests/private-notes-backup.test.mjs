@@ -25,20 +25,22 @@ function hashGate(){
 
 test('personal content, progress, date and deletion changes need a fresh private backup',async()=>{
   for(const change of [{noteText:'New private text'},{status:'done'},{dueDate:'2026-10-01'},{pinnedDate:'2026-09-19'},{source:'Full email thread'}]){
-    const {storage,tracker}=await setup();assert.equal(tracker.state().needsBackup,false);
+    const {storage,tracker}=await setup();assert.equal(tracker.state().needsBackup,true,'existing notes need their first confirmed backup');
+    await tracker.downloaded(storage.getItem(INBOX_KEY));await tracker.confirm();assert.equal(tracker.state().needsBackup,false);
     storage.setItem(INBOX_KEY,serialise([personal(change)]));await tracker.refresh();assert.equal(tracker.state().needsBackup,true,JSON.stringify(change));
   }
   const {storage,tracker}=await setup();storage.setItem(INBOX_KEY,serialise([]));await tracker.refresh();assert.equal(tracker.state().needsBackup,true);
 });
 
-test('shared native progress and generated forecast changes do not dirty personal backups',async()=>{
+test('the complete Launchpad copy tracks shared-card changes while the old private-only signature stays compatible',async()=>{
   const original=serialise([personal(),shared()]);
   const changed=serialise([shared({status:'done',noteText:'Shared progress',lastActionOn:'2026-09-19'}),personal({selected:true,id:'new-local-id',dirty:['noteText'],planAliases:[{id:'old',title:'Old'}]})]);
   assert.equal(privateNotesContent(original),privateNotesContent(changed));
   const {storage,tracker}=await setup([personal(),shared()]);
-  storage.setItem(INBOX_KEY,changed);await tracker.refresh();assert.equal(tracker.state().needsBackup,false);
+  await tracker.downloaded(storage.getItem(INBOX_KEY));await tracker.confirm();
+  storage.setItem(INBOX_KEY,changed);await tracker.refresh();assert.equal(tracker.state().needsBackup,true);
   const forecast={version:1,managed:true,active:true,section:'ready',kind:'scheduled',reason:'Due this week',scheduledDate:'2026-09-20',windowStart:null,windowEnd:null,period:'Term 3',sourceStatus:'review',blocked:false,blockerReason:'',asOf:'2026-09-19',role:'coordinator',roleLabel:'VET Coordinator',year:'2026',sourceYear:'2026',horizonDays:21};
-  storage.setItem(INBOX_KEY,serialise([personal(),shared({forecast})]));await tracker.refresh();assert.equal(tracker.state().needsBackup,false);
+  storage.setItem(INBOX_KEY,serialise([personal(),shared({forecast})]));await tracker.refresh();assert.equal(tracker.state().needsBackup,true);
 });
 
 test('personal pins on shared cards are tracked while shared task fields stay separate',async()=>{

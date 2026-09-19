@@ -7,15 +7,15 @@ if(!/^http:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/.test(base))throw Error('Use a d
 const output=process.env.WORKBOARD_TEST_ARTIFACTS_DIR||path.resolve(__dirname,'../../../outputs/launchpad-import-backup');
 const key='morning-launchpad-summary:v1',json=JSON.stringify;
 const inbox=items=>({version:2,items,briefing:'',pinWorkflowVersion:1});
-async function read(page){return page.evaluate(key=>localStorage.getItem(key),key);}
+async function read(page){return page.evaluate(key=>window.WWHS_STORAGE.getItem(key),key);}
 async function openImport(page){
   await page.locator('[aria-label="Private Launchpad backup"] [data-backup-action="import"]').click();
-  const dialog=page.getByRole('dialog',{name:'Import backup',exact:true});await dialog.waitFor({state:'visible'});return dialog;
+  const dialog=page.getByRole('dialog',{name:'Open backup',exact:true});await dialog.waitFor({state:'visible'});return dialog;
 }
 async function choose(page,payload,name='launchpad-task-backup.json'){
   await page.locator('#launchpad-backup-file').setInputFiles({name,mimeType:'application/json',buffer:Buffer.from(typeof payload==='string'?payload:json(payload))});
 }
-async function submit(dialog){await dialog.getByRole('button',{name:'Import backup',exact:true}).click();}
+async function submit(dialog){await dialog.getByRole('button',{name:'Open backup',exact:true}).click();}
 
 (async()=>{
   const {enrich}=await import(pathToFileURL(path.resolve(__dirname,'../morning-launchpad/assets/summary-core.mjs')));
@@ -41,7 +41,7 @@ async function submit(dialog){await dialog.getByRole('button',{name:'Import back
       await page.clock.setFixedTime(new Date('2026-09-19T01:00:00Z'));await page.goto(base+'/morning-launchpad/');
       await page.waitForFunction(()=>document.querySelector('summary-import')?.started&&window.WWHS_PRIVATE_NOTES_BACKUP&&!window.WWHS_PRIVATE_NOTES_BACKUP.state().checking);
       const panel=page.locator('[aria-label="Private Launchpad backup"]');
-      assert.equal(await panel.getByRole('button',{name:'Import backup…',exact:true}).isVisible(),true);
+      assert.equal(await panel.getByRole('button',{name:'Open backup…',exact:true}).isVisible(),true);
       assert.equal(await panel.getByRole('button',{name:'Save backup…',exact:true}).isVisible(),true);
       await panel.scrollIntoViewIfNeeded();await page.screenshot({path:path.join(output,`launchpad-import-save-${width}.png`)});
       let dialog=await openImport(page);
@@ -50,7 +50,7 @@ async function submit(dialog){await dialog.getByRole('button',{name:'Import back
       await page.screenshot({path:path.join(output,`launchpad-import-dialog-${width}.png`)});
       await page.keyboard.press('Escape');await dialog.waitFor({state:'hidden'});
 
-      dialog=await openImport(page);await choose(page,payload);
+      dialog=await openImport(page);
       await page.evaluate(()=>{
         const originalText=File.prototype.text;
         File.prototype.text=function(){
@@ -58,12 +58,12 @@ async function submit(dialog){await dialog.getByRole('button',{name:'Import back
           return new Promise(resolve=>{window.__releaseFileRead=async()=>resolve(await originalText.call(file));});
         };
       });
-      await submit(dialog);await page.waitForFunction(()=>window.__fileReadStarted);
-      assert.equal(await dialog.getByRole('button',{name:'Import backup',exact:true}).isDisabled(),true);
+      await choose(page,payload);await page.waitForFunction(()=>window.__fileReadStarted);
+      assert.equal(await dialog.getByRole('button',{name:'Open backup',exact:true}).isDisabled(),true);
       assert.equal(await dialog.getByRole('button',{name:'Cancel',exact:true}).isDisabled(),true);
       assert.equal(await page.locator('#launchpad-backup-file').isDisabled(),true);
       await page.keyboard.press('Escape');assert.equal(await dialog.isVisible(),true,'Escape cannot leave an active file import hidden');
-      await page.evaluate(()=>window.__releaseFileRead());await dialog.waitFor({state:'hidden'});
+      await page.evaluate(()=>window.__releaseFileRead());await submit(dialog);await dialog.waitFor({state:'hidden'});
       let saved=JSON.parse(await read(page));const kept=saved.items.find(item=>item.taskKey==='personal:existing');
       assert.equal(kept.status,'done');assert.equal(kept.action,original.action);assert.equal(kept.source,original.source);assert.equal(kept.id,original.id);
       assert.equal(saved.items.filter(item=>item.taskKey==='personal:new').length,1);assert.equal(saved.items.find(item=>item.taskKey==='personal:new').source,addition.source);
@@ -71,8 +71,8 @@ async function submit(dialog){await dialog.getByRole('button',{name:'Import back
       saved=JSON.parse(await read(page));assert.equal(saved.items.filter(item=>item.taskKey==='personal:new').length,1);assert.equal(saved.items.filter(item=>item.taskKey==='personal:existing').length,1);
 
       for(const [name,wrong]of [['finance-backup.json',{schema:'finance-studio',version:1,accounts:[],transactions:[]}],['WWHS-team-handover.json',{format:'wwhs-team-handover',version:1,data:{vet:{},tas:{},review:{},inbox:{}}}],['broken.json','{"version":2,"items":']]){
-        const before=await read(page);dialog=await openImport(page);await choose(page,wrong,name);await submit(dialog);
-        await dialog.getByRole('alert').filter({hasText:'Choose a valid Launchpad task backup JSON'}).waitFor({state:'visible'});
+        const before=await read(page);dialog=await openImport(page);await choose(page,wrong,name);
+        await dialog.getByRole('alert').filter({hasText:'Could not open this backup.'}).waitFor({state:'visible'});
         assert.equal(await dialog.isVisible(),true);assert.equal(await read(page),before,`${name} leaves saved notes byte-for-byte unchanged`);await page.keyboard.press('Escape');
       }
 
@@ -80,7 +80,7 @@ async function submit(dialog){await dialog.getByRole('button',{name:'Import back
       await page.getByRole('textbox',{name:'Note title',exact:true}).fill('Synthetic unsaved draft');
       await page.getByRole('textbox',{name:'My note',exact:true}).fill('Keep this unsaved text intact.');
       const beforeDraft=await read(page);dialog=await openImport(page);await choose(page,inbox([enrich({...addition,id:'third-note',taskKey:'personal:third',title:'Must not import yet'})]));await submit(dialog);
-      await dialog.getByText('Save or cancel your open note before importing. Your draft is still on this page.',{exact:true}).waitFor({state:'visible'});
+      await dialog.getByText('Save or cancel your open note or calendar event first. Your draft is still here.',{exact:true}).waitFor({state:'visible'});
       assert.equal(await read(page),beforeDraft);await page.keyboard.press('Escape');
       assert.equal(await page.getByRole('textbox',{name:'Note title',exact:true}).inputValue(),'Synthetic unsaved draft');
       assert.equal(await page.getByRole('textbox',{name:'My note',exact:true}).inputValue(),'Keep this unsaved text intact.');
@@ -93,8 +93,8 @@ async function submit(dialog){await dialog.getByRole('button',{name:'Import back
       await page.evaluate(()=>{window.__pickerMode='save';});await panel.locator('[data-backup-action="save"]').click();
       await page.waitForFunction(()=>window.__backupEvents.length===1);
       const evidence=await page.evaluate(()=>({closed:window.__closed,pickers:window.__pickerCalls,writes:window.__backupWrites,events:window.__backupEvents}));
-      assert.equal(evidence.pickers.length,2);assert.equal(evidence.pickers[1].suggestedName,'launchpad-task-backup.json');assert.equal(evidence.closed,true);assert.equal(evidence.events[0].saved,true);
-      assert.equal(JSON.parse(evidence.writes[0]).items.find(item=>item.taskKey==='personal:existing').status,'done');assert.equal(JSON.parse(evidence.writes[0]).items.filter(item=>item.taskKey==='personal:new').length,1);
+      assert.equal(evidence.pickers.length,2);assert.equal(evidence.pickers[1].suggestedName,'launchpad-backup.json');assert.equal(evidence.closed,true);assert.equal(evidence.events[0].saved,true);
+      assert.equal(JSON.parse(JSON.parse(evidence.writes[0]).records[key]).items.find(item=>item.taskKey==='personal:existing').status,'done');assert.equal(JSON.parse(JSON.parse(evidence.writes[0]).records[key]).items.filter(item=>item.taskKey==='personal:new').length,1);
       assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,'page has no horizontal overflow');
       results.push({width,importPreservesEditsAndCompletion:true,reimportNoDuplicates:true,invalidFilesProtected:3,draftPreserved:true,keyboardClose:true,busyImportLocked:true,cancellationNoEvent:true,savePicker:true,dialogFits:true});await context.close();
     }

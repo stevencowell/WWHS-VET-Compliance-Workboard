@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {enrich} from '../morning-launchpad/assets/summary-core.mjs';
-import {KEYS,snapshot} from '../assets/js/team-handover-core.mjs';
-import {hasProgressChanges,isWorkboardDestination,installTeamExitGuard} from '../assets/js/team-exit-guard.mjs';
+import {KEYS,DATA_KEYS,snapshot} from '../assets/js/team-handover-core.mjs';
+import {hasProgressChanges,isWorkboardDestination,installTeamExitGuard,acknowledgeSafetyBackup,SAFETY_RECEIPT_KEY} from '../assets/js/team-exit-guard.mjs';
 
 const copy=value=>JSON.parse(JSON.stringify(value));
 function forecast(extra={}){
@@ -182,7 +182,7 @@ function session(baseline,id='session-one'){
 function harness(meta,hydrate=async value=>copy(value)){
   const saved=stores(),values=new Map(Object.entries(saved).map(([key,value])=>[key,JSON.stringify(value)]));
   if(meta)values.set(KEYS.metadata,JSON.stringify(meta));
-  const storage={writes:0,getItem:key=>values.get(key)??null,setItem(){this.writes++;},removeItem(){this.writes++;}};
+  const storage={writes:0,getItem:key=>values.get(key)??null,setItem(key,value){this.writes++;values.set(key,value);},removeItem(key){this.writes++;values.delete(key);}};
   const win=new EventTarget(),doc=new EventTarget();
   win.location={href:'https://example.test/workboard/#vet-home'};doc.hidden=false;
   const guard=installTeamExitGuard(win,doc,storage,{hydrate});
@@ -218,4 +218,79 @@ test('a late baseline cannot replace the baseline for a newer session',async()=>
   const stale=copy(pending[0].value);stale.active.baselineData.vet.records.task.evidenceRef='Unrelated old baseline';
   pending[0].resolve(stale);await settle();
   assert.equal(h.guard.status(),'clean');assert.equal(h.unload(),false);assert.equal(h.storage.writes,0);
+});
+
+const launchpadJournal='morning-launchpad-restore:v1';
+const capture=h=>({before:Object.fromEntries([...DATA_KEYS,KEYS.metadata].map(key=>[key,h.storage.getItem(key)])),
+  journals:[h.storage.getItem(KEYS.journal),h.storage.getItem(launchpadJournal)]});
+const missingHistory=()=>harness(session(fixture()),async()=>{throw Error('Missing history');});
+
+test('a confirmed current safety file clears only the close warning, preserving damaged handover history and plaintext privacy',async()=>{
+  const h=missingHistory();await h.guard.refresh();const before=capture(h);
+  assert.equal(h.unload(),true);assert.equal(h.guard.hasSafetyBackup(),false);
+  await h.guard.acknowledgeSafetyBackup(before);
+  assert.equal(h.guard.status(),'check','history is still visibly uncertain');assert.equal(h.unload(),false);assert.equal(h.guard.hasSafetyBackup(),true);
+  assert.equal(h.values.get(KEYS.metadata),before.before[KEYS.metadata]);assert.equal(h.storage.writes,1);
+  const receipt=h.values.get(SAFETY_RECEIPT_KEY);assert.ok(receipt.length<110);
+  assert.deepEqual(Object.keys(JSON.parse(receipt)),['version','digest']);assert.equal(receipt.includes('Reference'),false);assert.equal(receipt.includes('PRIVATE'),false);
+  for(const key of DATA_KEYS)assert.equal(h.values.get(key),before.before[key]);
+});
+
+test('a receipt verifies after reload, while every shared data store and either journal immediately invalidate it',async()=>{
+  for(const key of [...DATA_KEYS,KEYS.metadata,KEYS.journal,launchpadJournal]){
+    const h=missingHistory();await h.guard.refresh();await h.guard.acknowledgeSafetyBackup(capture(h));
+    const next=missingHistory();next.values.set(SAFETY_RECEIPT_KEY,h.values.get(SAFETY_RECEIPT_KEY));await next.guard.refresh();
+    assert.equal(next.unload(),false,`${key}: receipt reloads`);
+    if([KEYS.journal,launchpadJournal].includes(key))next.values.set(key,'new recovery marker');
+    else if(key===KEYS.metadata)next.values.set(key,'changed handover history');
+    else {const value=JSON.parse(next.values.get(key));
+      if(key===KEYS.vet)value.records.task.evidenceRef='Later evidence';
+      if(key===KEYS.tas)value.records.task.exceptionReason='Later TAS work';
+      if(key===KEYS.review)value.records['vet:2026:task'].reviewedOn='2026-09-19';
+      if(key===KEYS.inbox)value.items[0].noteText='Later shared note';
+      next.values.set(key,JSON.stringify(value));}
+    assert.equal(next.unload(),true,`${key}: final synchronous inspection warns`);assert.equal(next.guard.hasSafetyBackup(),false);
+  }
+});
+
+test('a safety confirmation refuses changed data or either changed journal before creating a receipt',async()=>{
+  for(const key of [KEYS.vet,KEYS.metadata,KEYS.journal,launchpadJournal]){
+    const h=missingHistory();await h.guard.refresh();const before=capture(h);h.values.set(key,'different');
+    await assert.rejects(h.guard.acknowledgeSafetyBackup(before),/changed after this safety copy/);
+    assert.equal(h.values.has(SAFETY_RECEIPT_KEY),false);assert.equal(h.unload(),true);
+  }
+});
+
+test('later edits during digest calculation or a quota error do not acknowledge the file',async()=>{
+  const h=missingHistory();await h.guard.refresh();const before=capture(h);
+  const cryptoProvider={subtle:{async digest(...args){h.values.set(launchpadJournal,'interrupted restore');return crypto.subtle.digest(...args);}}};
+  await assert.rejects(acknowledgeSafetyBackup(h.storage,before,{cryptoProvider}),/changed after this safety copy/);
+  assert.equal(h.values.has(SAFETY_RECEIPT_KEY),false);h.values.delete(launchpadJournal);
+  h.storage.setItem=()=>{throw new DOMException('Full','QuotaExceededError');};
+  await assert.rejects(h.guard.acknowledgeSafetyBackup(before),{name:'QuotaExceededError'});
+  assert.equal(h.unload(),true);assert.equal(h.guard.hasSafetyBackup(),false);assert.equal(h.values.has(SAFETY_RECEIPT_KEY),false);
+});
+
+test('private-only Launchpad edits do not invalidate a confirmed shared safety file',async()=>{
+  const h=missingHistory();await h.guard.refresh();await h.guard.acknowledgeSafetyBackup(capture(h));
+  const value=JSON.parse(h.values.get(KEYS.inbox));value.briefing='New PRIVATE briefing';h.values.set(KEYS.inbox,JSON.stringify(value));
+  assert.equal(h.unload(),false);assert.equal(h.guard.hasSafetyBackup(),true);
+});
+
+test('a download or a previous-copy export never clears warning without a matching explicit acknowledgement',async()=>{
+  const h=missingHistory();await h.guard.refresh();const before=capture(h);
+  assert.equal(h.unload(),true);assert.equal(h.storage.writes,0);
+  // A downloaded file alone causes no guard call. A previous-copy capture is
+  // deliberately different from current progress and cannot be acknowledged.
+  const older=copy(before),value=JSON.parse(older.before[KEYS.vet]);value.records.task.evidenceRef='Old evidence';older.before[KEYS.vet]=JSON.stringify(value);
+  await assert.rejects(h.guard.acknowledgeSafetyBackup(older),/changed after this safety copy/);
+  assert.equal(h.unload(),true);assert.equal(h.storage.writes,0);
+});
+
+test('receipt removal, corruption or an unrelated digest fails closed',async()=>{
+  const h=missingHistory();await h.guard.refresh();await h.guard.acknowledgeSafetyBackup(capture(h));
+  for(const value of [null,'{',JSON.stringify({version:1,digest:'0'.repeat(64)})]){
+    if(value===null)h.values.delete(SAFETY_RECEIPT_KEY);else h.values.set(SAFETY_RECEIPT_KEY,value);
+    assert.equal(h.unload(),true);await h.guard.refresh();assert.equal(h.unload(),true);
+  }
 });

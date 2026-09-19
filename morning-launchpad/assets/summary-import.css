@@ -152,3 +152,4 @@ summary-import .task-help-dialog textarea{box-sizing:border-box;width:100%;max-w
 .import-source-heading{font-weight:600}
 .import-source:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
 :root[data-theme=dark] .import-source-summary{background:#18354a;color:#edf6ff;border-color:#3b617e;border-left-color:#7cbbec}
+.launchpad-backup-choice:not([hidden]){display:flex;align-items:flex-start;gap:10px;margin:16px 0;line-height:1.5}.launchpad-backup-choice input{flex:0 0 auto;margin-top:5px}

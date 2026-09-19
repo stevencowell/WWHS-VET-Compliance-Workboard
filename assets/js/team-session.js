@@ -11,7 +11,7 @@
     catch{return {managed:true,blocked:true};}
   }
   const bootSession=read().active?.id||null;
-  function hasJournal(){try{return browserStorage().getItem(JOURNAL)!==null;}catch{return true;}}
+  function hasJournal(){try{return browserStorage().getItem(JOURNAL)!==null||browserStorage().getItem('morning-launchpad-restore:v1')!==null;}catch{return true;}}
   function isEditing() {
     const state=read();
     if(hasJournal())return false;
@@ -34,6 +34,7 @@
   }
   function reason() {
     const state=read();
+    try{if(browserStorage().getItem('morning-launchpad-restore:v1')!==null)return 'A Launchpad backup is being opened or needs recovery. Open Launchpad before saving shared progress.';}catch{}
     if(hasJournal())return 'A handover was interrupted. Open Team handover to recover it before saving.';
     if(state.blocked)return 'The team session record could not be read. Open Team handover before saving shared progress.';
     if(state.active&&state.active.id!==bootSession)return 'The team session changed in another tab. Keep any draft text, then reload this page.';

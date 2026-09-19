@@ -95,11 +95,11 @@ test('shared backups open native Save as immediately in the configured directory
   assert.equal(handle.files.size,0);assert.deepEqual(handle.calls,[]);
 });
 
-test('no default keeps Save as, while a loading or unreadable preference cannot masquerade as no default',async()=>{
+test('no default keeps Save as; an unreadable preference permits an explicit new save location',async()=>{
   let resolve;const store=memoryStore(),win=browser();store.get=()=>new Promise(done=>{resolve=done;});
   const folder=createBackupFolder({store,win});await assert.rejects(folder.destination('notes.json'),/still loading/);resolve(null);await folder.ready;
   let opened=0;win.showSaveFilePicker=async()=>{opened++;return {};};await folder.destination('notes.json');assert.equal(opened,1);
-  store.get=async()=>{throw Error('Broken database');};await folder.refresh();await assert.rejects(folder.destination('notes.json'),/could not be read/);assert.equal(opened,1);
+  store.get=async()=>{throw Error('Broken database');};await folder.refresh();await folder.destination('notes.json');assert.equal(opened,2);
 });
 
 test('another tab changing the folder invalidates a backup prepared for the old folder',async()=>{

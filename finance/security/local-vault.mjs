@@ -5,6 +5,7 @@ const ITERATIONS = 600000;
 const MAX_BACKUP_BYTES = 48 * 1024 * 1024;
 const STORE = 'vault';
 const RECORD_ID = 'primary';
+const PREVIOUS_ID = 'previous';
 const encode = text => new TextEncoder().encode(text);
 const decode = bytes => new TextDecoder('utf-8', { fatal: true }).decode(bytes);
 const failure = (code, message) => new FinanceStorageError(code, message);
@@ -56,31 +57,42 @@ export async function openVaultDatabase(indexedDB, dbName) {
   });
   db.onversionchange = () => db.close();
   return {
-    read() {
+    read(id = RECORD_ID) {
       return new Promise((resolve, reject) => {
         const transaction = db.transaction(STORE, 'readonly');
-        const request = transaction.objectStore(STORE).get(RECORD_ID);
+        const request = transaction.objectStore(STORE).get(id);
         let value;
         request.onsuccess = () => { value = request.result ?? null; };
         transaction.oncomplete = () => resolve(value);
         transaction.onerror = transaction.onabort = () => reject(failure('storage', 'The saved finance vault could not be read.'));
       });
     },
-    compareAndSwap(expected, next) {
+    readPrevious() { return this.read(PREVIOUS_ID); },
+    compareAndSwap(expected, next, { preservePrevious = false } = {}) {
       return new Promise((resolve, reject) => {
         let reason;
         const transaction = db.transaction(STORE, 'readwrite');
         const store = transaction.objectStore(STORE);
         const request = store.get(RECORD_ID);
         request.onsuccess = () => {
+          try {
           const current = request.result ?? null;
-          const matches = expected === null ? current === null : current?.vaultId === expected.vaultId && current?.revision === expected.revision;
+          const matches = expected === null ? current === null : Object.hasOwn(expected,'record')
+            ? JSON.stringify(current) === JSON.stringify(expected.record)
+            : current?.vaultId === expected.vaultId && current?.revision === expected.revision;
           if (!matches) {
             reason = failure('conflict', 'Finance was changed in another tab. Your edits are still here; save a recovery backup before reloading.');
             transaction.abort();
             return;
           }
+          // Both writes belong to this transaction: quota/abort preserves the
+          // old primary and its existing previous copy, never only one of them.
+          if (preservePrevious && current !== null) store.put(current, PREVIOUS_ID);
           store.put(next, RECORD_ID);
+          } catch (error) {
+            reason ||= failure('storage', 'Finance could not be saved in this browser. The current and previous encrypted copies are unchanged.');
+            try { transaction.abort(); } catch {}
+          }
         };
         transaction.oncomplete = () => resolve();
         transaction.onerror = transaction.onabort = () => reject(reason || failure('storage', 'Finance could not be saved in this browser. Keep this tab open and export a backup.'));
@@ -202,11 +214,33 @@ export async function createLocalVault({ dbName = 'finance-studio-private-v1' } 
       unlockedRecord = saved;
       return { revision: saved.revision, values: clean, updatedAt: saved.updatedAt };
     },
-    async exportBackup() {
+    async exportBackup({ expectedRevision } = {}) {
       requireOpen();
+      if(expectedRevision!==undefined){requireUnlocked();validateRevision(expectedRevision);}
+      const started=epoch,identity=unlockedRecord;
       const saved = await readRecord();
+      assertEpoch(started);
       if (!saved) throw failure('missing', 'There is no saved finance vault to back up.');
+      if(identity&&(saved.vaultId!==identity.vaultId||saved.salt!==identity.salt)||expectedRevision!==undefined&&saved.revision!==expectedRevision){
+        throw failure('conflict','Another tab changed the saved Finance workspace. Save a recovery backup of the records open here before reloading.');
+      }
       return JSON.stringify(saved, null, 2);
+    },
+    async getPreviousBackupInfo() {
+      requireOpen();
+      const saved = await database.readPrevious?.();
+      if (!saved) return null;
+      const record = validRecord(saved);
+      return { updatedAt: record.updatedAt };
+    },
+    async exportPreviousBackup() {
+      requireOpen();
+      const started = epoch;
+      const saved = await database.readPrevious?.();
+      assertEpoch(started);
+      if (!saved) throw failure('missing', 'There is no previous encrypted Finance copy in this browser.');
+      // No decrypt/re-encrypt: it remains protected by the original password.
+      return JSON.stringify(validRecord(saved), null, 2);
     },
     // Encrypt the latest in-memory edits even if local persistence failed or another tab won.
     // This never replaces browser storage and remains protected by the existing vault password.
@@ -227,7 +261,7 @@ export async function createLocalVault({ dbName = 'finance-studio-private-v1' } 
         // A verified backup can recover a damaged local record too. The explicit replacement
         // decision is still required, and the transaction checks that record's identity/version.
         const current = await database.read();
-        if (current && !replaceExisting) throw failure('exists', 'Restoring will replace this browser\u2019s vault. Export its backup first and confirm replacement.');
+        if (current && !replaceExisting) throw failure('exists', 'Opening this backup will replace this browser\u2019s vault. Confirm replacement first; the previous encrypted copy will be kept.');
         const started = epoch;
         const derived = await derive(password, imported.salt);
         const values = await decrypt(imported, derived);
@@ -236,7 +270,7 @@ export async function createLocalVault({ dbName = 'finance-studio-private-v1' } 
         // Fresh vault identity invalidates every other tab, including restores of old revisions.
         const saved = await encrypt(values, derived, { ...imported, vaultId: crypto.randomUUID(), revision: nextRevision, updatedAt: new Date().toISOString() });
         assertEpoch(started);
-        await database.compareAndSwap(current ? { vaultId: current.vaultId, revision: current.revision } : null, saved);
+        await database.compareAndSwap(current ? { record: current } : null, saved, { preservePrevious: true });
         assertEpoch(started);
         epoch++; key = derived; unlockedRecord = saved;
         return { state: 'ready' };

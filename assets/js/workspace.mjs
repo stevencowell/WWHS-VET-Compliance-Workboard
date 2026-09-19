@@ -1,10 +1,10 @@
 const workStorage=()=>globalThis.WWHS_STORAGE||globalThis.localStorage;
 // One planning surface. Specialist records remain owned by their existing workboards.
-import '../../morning-launchpad/assets/summary-import.mjs?v=compression-storage-1';
-import {installLaunchpadBackupReminder} from '../../morning-launchpad/assets/backup-reminder.mjs?v=compression-storage-1';
+import '../../morning-launchpad/assets/summary-import.mjs?v=backup-flow-2';
+import {installLaunchpadBackupReminder} from '../../morning-launchpad/assets/backup-reminder.mjs?v=backup-flow-2';
 import {INBOX_KEY, validateInbox, taskSection, todaySydney} from '../../morning-launchpad/assets/summary-core.mjs?v=email-cleanup-1';
 import {createTaskRegister} from './task-register.mjs?v=compression-storage-1';
-import {installTeamEntry} from './team-entry.mjs?v=import-save-1';
+import {installTeamEntry} from './team-entry.mjs?v=backup-flow-2';
 
 const base = new URL('../../', import.meta.url);
 const wing = document.body.dataset.workboard || 'launchpad';
@@ -48,7 +48,7 @@ try { if (workStorage().getItem('morning-launchpad-theme') === 'dark') document.
 theme.addEventListener('click', () => {
   const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
   document.documentElement.dataset.theme = next;
-  try { workStorage().setItem('morning-launchpad-theme', next); } catch {}
+  try { workStorage().setItem('morning-launchpad-theme', next); window.dispatchEvent(new Event('launchpad:preferences-saved')); } catch {}
   updateTheme();
 });
 updateTheme(); shell.append(home, nav, theme); document.body.prepend(shell);

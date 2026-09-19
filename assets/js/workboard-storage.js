@@ -13,7 +13,7 @@
   'use strict';
   const KEYS=Object.freeze(['morning-launchpad-summary:v1','morning-launchpad-calendar:v1','wwhs-vet-compliance-workboard:v3','wwhs-head-teacher-tas-workboard:v2','wwhs-task-register-review:v1']);
   const keys=new Set(KEYS),PREFIX='WWHS-LZ1:',THRESHOLD=32768,MAX_LENGTH=12000000;
-  const compactOnQuota=new Set([...KEYS,'wwhs-team-handover:v1','wwhs-team-handover-journal:v1','morning-launchpad-backup-reminder:v1']);
+  const compactOnQuota=new Set([...KEYS,'wwhs-team-handover:v1','wwhs-team-handover-journal:v1','morning-launchpad-backup-reminder:v1','morning-launchpad-restore:v1','wwhs-team-safety-receipt:v1']);
   const checksum=value=>{let hash=2166136261;for(let index=0;index<value.length;index++){hash^=value.charCodeAt(index);hash=Math.imul(hash,16777619);}return(hash>>>0).toString(16).padStart(8,'0');};
   function damaged(){throw new Error('This browser’s saved work could not be read safely. Keep the browser data and your backup file; do not clear storage.');}
   function decode(key,value){
