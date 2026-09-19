@@ -1,0 +1,46 @@
+// Counts only: this report never retains note text, file contents or other key names.
+const groups=[
+  ['morning-launchpad-summary:v1','Launchpad notes and working cards'],
+  ['wwhs-vet-compliance-workboard:v3','VET progress'],
+  ['wwhs-head-teacher-tas-workboard:v2','TAS progress'],
+  ['wwhs-task-register-review:v1','Review ticks'],
+  ['wwhs-team-handover:v1','Team session'],
+  ['wwhs-team-handover-journal:v1','Temporary recovery marker']
+];
+const size=value=>typeof value==='string'?value.length:0;
+export function storageSizes(storage,before={},after={}){
+  const known=new Set(groups.map(([key])=>key));let other=0;
+  for(let index=0;index<storage.length;index++){
+    const key=storage.key(index);if(!known.has(key))other+=size(storage.getItem(key));
+  }
+  const rows=groups.map(([key,label])=>{
+    const saved=size(storage.getItem(key));
+    return {label,saved,before:Object.hasOwn(before,key)?size(before[key]):saved,after:Object.hasOwn(after,key)?size(after[key]):saved};
+  });
+  rows.push({label:'Other saved website data',saved:other,before:other,after:other});
+  return {rows,total:rows.reduce((sum,row)=>sum+row.saved,0),proposed:rows.reduce((sum,row)=>sum+row.after,0)};
+}
+export function installStorageReport(document,window,storage){
+  const panel=document.getElementById('handover-storage-details'),message=document.getElementById('handover-message');
+  if(!panel||!message)return;
+  let plan=null;
+  window.WWHS_TEAM_STORAGE_REPORT=Object.freeze({recordPlan(before,after){try{plan=storageSizes(storage,before,after);}catch{plan=null;}}});
+  const number=value=>value.toLocaleString('en-AU');
+  function update(){
+    const relevant=message.classList.contains('is-error')&&/storage|quota/i.test(message.textContent);
+    panel.hidden=!relevant;if(!relevant)return;
+    const list=document.getElementById('handover-storage-sizes');list.replaceChildren();
+    try{
+      const current=storageSizes(storage),report=plan||current;
+      document.getElementById('handover-storage-total').textContent=`Saved text: ${number(current.total)} characters. ${plan?`Attempted total: ${number(report.proposed)} characters.`:''}`;
+      for(const row of report.rows){
+        if(!row.before&&!row.after)continue;
+        const item=document.createElement('li');item.textContent=`${row.label}: ${number(row.before)}${row.before!==row.after?` → ${number(row.after)}`:''} characters`;list.append(item);
+      }
+    }catch{document.getElementById('handover-storage-total').textContent='This browser could not read its storage sizes. Saved data has not been changed.';}
+    panel.open=true;
+  }
+  new window.MutationObserver(update).observe(message,{childList:true,characterData:true,subtree:true,attributes:true,attributeFilter:['class']});
+  update();
+}
+if(typeof document!=='undefined')installStorageReport(document,window,localStorage);

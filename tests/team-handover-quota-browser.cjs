@@ -66,11 +66,16 @@ async function check(name,body){try{const details=await body();results.push({nam
 async function compactMeta(page){
   const meta=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)),keys.meta);
   assert.equal(Object.hasOwn(meta.recovery||{},'raw'),false,'No redundant private inbox recovery copy is stored in metadata');
+  assert.equal(Object.hasOwn(meta.recovery||{},'data'),false,'Shared recovery data is stored outside localStorage');
+  assert.equal(Object.hasOwn(meta.active||{},'baselineData'),false,'The baseline is stored outside localStorage');
+  assert.equal(Object.hasOwn(meta.pendingExport||{},'data'),false,'Pending file contents are stored outside localStorage');
+  assert.ok(JSON.stringify(meta).length<12000,'Routine handover metadata remains small');
   assert.doesNotMatch(JSON.stringify(meta),/PRIVATE_EMAIL_|PRIVATE_HTML_|PRIVATE_FINANCE|PRIVATE_BRIEFING|private\.example/);
   return meta;
 }
 async function noRetainedJournal(page){
   const state=await page.evaluate(async key=>{
+    if(!(await indexedDB.databases()).some(db=>db.name==='wwhs-team-handover-recovery'))return {marker:localStorage.getItem(key),count:0};
     const count=await new Promise((resolve,reject)=>{
       const open=indexedDB.open('wwhs-team-handover-recovery',1);
       open.onerror=()=>reject(open.error);
@@ -82,6 +87,36 @@ async function noRetainedJournal(page){
     return {marker:localStorage.getItem(key),count};
   },keys.journal);
   assert.deepEqual(state,{marker:null,count:0},'Successful completion removes the marker and its actual IndexedDB journal record');
+}
+async function fillOrigin(page,reserve=8192){
+  return page.evaluate(reserve=>{
+    const key='synthetic-unrelated-quota-fill';let low=0,high=7*1024*1024;
+    while(low+1<high){const mid=Math.floor((low+high)/2);try{localStorage.setItem(key,'q'.repeat(mid));low=mid;}catch(error){if(error.name!=='QuotaExceededError')throw error;high=mid;}}
+    localStorage.setItem(key,'q'.repeat(Math.max(0,low-reserve)));return {fillerCharacters:low-reserve,reservedCharacters:reserve};
+  },reserve);
+}
+async function seedUnchangedFile(page){
+  await seed(page);
+  // Keep forecast refresh outside its source calendar so this test isolates
+  // metadata growth from separately generated scheduled cards.
+  await page.clock.setFixedTime(new Date('2035-01-01T01:00:00.000Z'));
+  return page.evaluate(async keys=>{
+    const {snapshot,createBackup,buildImportPlan}=await import('/assets/js/team-handover-core.mjs');
+    const vet=JSON.parse(localStorage.getItem(keys.vet)),inbox=JSON.parse(localStorage.getItem(keys.inbox));
+    vet.records['a-01-confirm-authority-set'].exceptionSummary='V'.repeat(100000);
+    inbox.items.find(item=>item.id==='synthetic-team-card').noteText='C'.repeat(100000);
+    localStorage.setItem(keys.vet,JSON.stringify(vet));localStorage.setItem(keys.inbox,JSON.stringify(inbox));
+    const file=createBackup({snapshot:snapshot(localStorage),editor:'Synthetic colleague',workspaceId:'synthetic-near-full-team',exportId:'synthetic-large-export',savedAt:'2026-09-19T01:00:00.000Z'});
+    // Store the same canonical representation an import uses. The following
+    // import should change only handover metadata, not live task values.
+    const plan=buildImportPlan(localStorage,file,{firstConnection:true});
+    for(const [key,raw] of Object.entries(plan.after))if(raw===null)localStorage.removeItem(key);else localStorage.setItem(key,raw);
+    return file;
+  },keys);
+}
+async function assertPrivateAndUnrelated(page,privateBefore,unrelatedBefore){
+  assert.deepEqual(await privateDigest(page),privateBefore);
+  assert.deepEqual((await storageDigests(page))['synthetic-unrelated-quota-fill'],unrelatedBefore,'Unrelated origin data is byte-for-byte unchanged');
 }
 
 (async()=>{
@@ -120,18 +155,79 @@ async function noRetainedJournal(page){
     }finally{await context.close();}
   });
 
+  await check('Near-full origin: unchanged large team data supports all handover actions using compact metadata',async()=>{
+    const {context,page}=await contextPage();
+    try{
+      const file=await seedUnchangedFile(page),capacity=await fillOrigin(page),originalPrivate=await privateDigest(page),unrelated=(await storageDigests(page))['synthetic-unrelated-quota-fill'];
+      const old=await page.evaluate(({keys,file})=>{
+        const lastFile=Object.fromEntries(Object.entries(file).filter(([key])=>key!=='data'));
+        const inline={version:1,lastFile,active:{id:'synthetic-inline',phase:'editing',baselineData:file.data},pendingExport:null,recovery:{capturedAt:'2026-09-19T01:00:00.000Z',data:file.data}};
+        let errorName=null;try{localStorage.setItem(keys.meta,JSON.stringify(inline));}catch(error){errorName=error.name;}
+        if(errorName===null)localStorage.removeItem(keys.meta);return {errorName,inlineCharacters:JSON.stringify(inline).length};
+      },{keys,file});
+      assert.equal(old.errorName,'QuotaExceededError','Inline baseline and recovery copies exceed the remaining real browser capacity');
+      await page.reload({waitUntil:'networkidle'});await choose(page,file);await page.locator('#view-file').click();await page.waitForURL(base+'/head-teacher-tas/#home');await page.waitForLoadState('networkidle');
+      await compactMeta(page);await assertPrivateAndUnrelated(page,originalPrivate,unrelated);
+      await page.goto(base+'/team-handover/?wing=tas',{waitUntil:'networkidle'});await choose(page,file);await page.locator('#editor-name').fill('Synthetic near-full editor');await page.locator('#only-editor').check();await page.locator('#start-session').click();await page.waitForURL(base+'/head-teacher-tas/#home');
+      await compactMeta(page);await page.goto(base+'/team-handover/?wing=tas',{waitUntil:'networkidle'});await page.locator('#notes-saved').check();
+      const first=await download(page,'#finish-session');assert.equal(first.revision,2);assert.deepEqual(first.data,file.data);await compactMeta(page);
+      await page.reload({waitUntil:'networkidle'});const repeat=await download(page,'#download-again');assert.deepEqual(repeat,first,'Reloaded pending export downloads the exact same complete file');
+      await page.locator('#resume-editing').click();await page.waitForURL(base+'/head-teacher-tas/#home');assert.equal((await compactMeta(page)).active.phase,'editing');
+      await page.goto(base+'/team-handover/?wing=tas',{waitUntil:'networkidle'});await page.locator('#notes-saved').check();const final=await download(page,'#finish-session');assert.equal(final.revision,2);assert.notEqual(final.exportId,first.exportId);assert.deepEqual(final.data,file.data);
+      await page.locator('#confirm-finish').click();await page.waitForFunction(()=>document.querySelector('#status-title').textContent==='Viewing the last shared snapshot');
+      const meta=await compactMeta(page);assert.equal(meta.active,null);assert.equal(meta.pendingExport,null);
+      await page.locator('#recovery-section summary').click();const recovery=await download(page,'#download-recovery');assert.deepEqual(recovery.data,file.data);
+      await assertPrivateAndUnrelated(page,originalPrivate,unrelated);await noRetainedJournal(page);
+      return {...capacity,inlineMetadataCharacters:old.inlineCharacters,compactMetadataCharacters:JSON.stringify(meta).length,liveDataUnchanged:true,allHandoverActionsPassed:true};
+    }finally{await context.close();}
+  });
+
+  await check('Missing IndexedDB handover payload blocks controls and preserves local progress',async()=>{
+    const {context,page}=await contextPage();
+    try{
+      const {file}=await seed(page);await page.reload({waitUntil:'networkidle'});await choose(page,file);await page.locator('#view-file').click();await page.waitForURL(base+'/head-teacher-tas/#home');
+      const meta=await compactMeta(page);assert.ok(meta.recovery.dataRef.id);
+      const before=await storageDigests(page);
+      await page.evaluate(async id=>new Promise((resolve,reject)=>{
+        const open=indexedDB.open('wwhs-team-handover-payloads',1);open.onerror=()=>reject(open.error);open.onsuccess=()=>{
+          const db=open.result,transaction=db.transaction('payloads','readwrite');transaction.objectStore('payloads').delete(id);transaction.oncomplete=()=>{db.close();resolve();};transaction.onabort=()=>{db.close();reject(transaction.error);};
+        };
+      }),meta.recovery.dataRef.id);
+      await page.goto(base+'/team-handover/?wing=tas',{waitUntil:'networkidle'});await page.waitForFunction(()=>document.querySelector('#handover-message').classList.contains('is-error'));
+      assert.equal(await page.locator('button:not([disabled]),input:not([disabled]),textarea:not([disabled])').count(),0,'A missing payload never becomes an empty recovery or editable session');
+      assert.deepEqual(await storageDigests(page),before);
+      const message=await page.locator('#handover-message').innerText();assert.match(message,/missing|could not|cannot|unavailable|not found/i);return {message,progressUnchanged:true};
+    }finally{await context.close();}
+  });
+
+  await check('Legacy inline metadata keeps complete downloads and migrates payloads on the next successful change',async()=>{
+    const {context,page}=await contextPage();
+    try{
+      const file=await seedUnchangedFile(page),originalPrivate=await privateDigest(page);
+      await page.evaluate(({keys,file})=>{
+        const lastFile=Object.fromEntries(Object.entries(file).filter(([key])=>key!=='data'));
+        localStorage.setItem(keys.meta,JSON.stringify({version:1,lastFile,active:{id:'synthetic-legacy-session',editor:'Synthetic legacy editor',startedAt:'2026-09-19T01:00:00.000Z',phase:'exporting',baseExportId:file.exportId,baselineData:file.data},pendingExport:file,recovery:{capturedAt:'2026-09-19T01:00:00.000Z',lastFile:null,data:file.data,raw:{unused:'legacy redundant data'}}}));
+      },{keys,file});
+      await page.reload({waitUntil:'networkidle'});const legacy=await download(page,'#download-again');assert.deepEqual(legacy,file,'Legacy pending file hydrates without dropping content');
+      await page.locator('#resume-editing').click();await page.waitForURL(base+'/head-teacher-tas/#home');const compact=await compactMeta(page);assert.ok(compact.active.baselineRef.id);assert.ok(compact.recovery.dataRef.id);assert.equal(compact.pendingExport,null);
+      await page.goto(base+'/team-handover/?wing=tas',{waitUntil:'networkidle'});await page.locator('#notes-saved').check();const migrated=await download(page,'#finish-session');assert.deepEqual(migrated.data,file.data);
+      await page.locator('#recovery-section summary').click();const recovered=await download(page,'#download-recovery');assert.deepEqual(recovered.data,file.data);assert.deepEqual(await privateDigest(page),originalPrivate);
+      return {legacyDataRetained:true,compactMetadataCharacters:JSON.stringify(compact).length};
+    }finally{await context.close();}
+  });
+
   await check('True final-capacity failure preserves every previous storage value and reports a usable error',async()=>{
     const {context,page}=await contextPage();
     try{
       const {file}=await seed(page);file.data.vet.records['a-01-confirm-authority-set'].exceptionSummary='Incoming large shared note. '.repeat(6500);
-      const capacity=await page.evaluate(()=>{
-        const key='synthetic-unrelated-quota-fill';let low=0,high=7*1024*1024;
-        while(low+1<high){const mid=Math.floor((low+high)/2);try{localStorage.setItem(key,'q'.repeat(mid));low=mid;}catch(error){if(error.name!=='QuotaExceededError')throw error;high=mid;}}
-        localStorage.setItem(key,'q'.repeat(Math.max(0,low-4096)));return {fillerCharacters:low-4096,reservedCharacters:4096};
-      });
+      const capacity=await fillOrigin(page,4096);
       await page.reload({waitUntil:'networkidle'});await choose(page,file);const before=await storageDigests(page);
       await page.locator('#view-file').click();await page.waitForFunction(()=>document.querySelector('#handover-message').classList.contains('is-error'));
       const message=await page.locator('#handover-message').innerText();assert.match(message,/storage|space|quota/i);assert.match(message,/unchanged|restored|kept|safe|no.+changed/i);
+      const details=page.locator('#handover-storage-details');await details.waitFor({state:'visible'});
+      if(!await details.evaluate(node=>node.open))await details.locator('summary').click();
+      const diagnostics=await details.innerText();assert.match(diagnostics,/Other saved website data/);assert.match(diagnostics,/\d/);
+      assert.doesNotMatch(diagnostics,/PRIVATE_|private\.example|synthetic-email|synthetic-finance-secret|synthetic-unrelated-quota-fill/,'Diagnostics contain sizes and labels only');
       assert.deepEqual(await storageDigests(page),before,'Quota failure restores every original localStorage value, including unrelated fill and private mail');
       assert.equal(await page.evaluate(key=>localStorage.getItem(key),keys.journal),null,'Completed rollback removes the temporary marker');
       await noRetainedJournal(page);

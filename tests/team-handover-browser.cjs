@@ -5,8 +5,8 @@ const base=process.env.WORKBOARD_TEST_URL||'http://127.0.0.1:43175';
 if(!/^http:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/.test(base))throw Error('Use a disposable local preview.');
 const keys={vet:'wwhs-vet-compliance-workboard:v3',tas:'wwhs-head-teacher-tas-workboard:v2',inbox:'morning-launchpad-summary:v1',meta:'wwhs-team-handover:v1',review:'wwhs-task-register-review:v1'};
 const json=JSON.stringify;
-async function download(page,button){const event=page.waitForEvent('download');await button.click();const file=await event;return JSON.parse(await fs.readFile(await file.path(),'utf8'));}
-async function choose(page,payload){await page.locator('#team-file').setInputFiles({name:'WWHS-team-handover.json',mimeType:'application/json',buffer:Buffer.from(json(payload))});await page.waitForFunction(()=>!document.getElementById('start-session').disabled||document.getElementById('handover-message').classList.contains('is-error'));}
+async function download(page,button){const event=page.waitForEvent('download');await button.click();const file=await event;await page.waitForFunction(()=>!document.getElementById('team-file').disabled);return JSON.parse(await fs.readFile(await file.path(),'utf8'));}
+async function choose(page,payload){await page.locator('#team-file').setInputFiles({name:'WWHS-team-handover.json',mimeType:'application/json',buffer:Buffer.from(json(payload))});await page.waitForFunction(()=>!document.getElementById('team-file').disabled);}
 async function raw(page,key){return page.evaluate(key=>localStorage.getItem(key),key);}
 (async()=>{
  const browser=await chromium.launch({headless:true}),errors=[];
@@ -25,7 +25,7 @@ async function raw(page,key){return page.evaluate(key=>localStorage.getItem(key)
   await a.reload();await a.locator('#setup-section summary').click();await a.locator('#setup-editor').fill('Steve');
   const first=await download(a,a.locator('#create-team'));assert.equal(first.revision,1);assert.equal(first.savedBy,'Steve');
   assert.doesNotMatch(json(first),/PRIVATE_|private\.example|pinnedDate|noteHtml/);
-  assert.equal(await a.locator('#pending-session').isVisible(),true);await a.locator('#confirm-finish').click();assert.match(await a.locator('#status-title').innerText(),/Viewing/);
+  assert.equal(await a.locator('#pending-session').isVisible(),true);await a.locator('#confirm-finish').click();await a.waitForFunction(()=>document.getElementById('status-title').textContent==='Viewing the last shared snapshot');
   // A second browser keeps its own private note and links on import.
   await b.evaluate(async keys=>{const {enrich}=await import('/morning-launchpad/assets/summary-core.mjs');localStorage.setItem(keys.inbox,JSON.stringify({version:2,items:[enrich({id:'diane-private',title:'Diane private',action:'Keep local',taskKey:'manual:diane',workstream:'personal'})]}));localStorage.setItem(keys.vet,JSON.stringify({schemaVersion:3,links:{staff:'https://private.example/diane'},records:{}}));},keys);
   await b.reload();await choose(b,first);await b.locator('#editor-name').fill('Diane');await b.locator('#only-editor').check();await b.locator('#start-session').click();await b.waitForURL('**/#vet-home');await b.waitForFunction(()=>window.WWHS_WORKBOARD_ADAPTER&&document.querySelector('summary-import')?.started);
@@ -40,12 +40,12 @@ async function raw(page,key){return page.evaluate(key=>localStorage.getItem(key)
   await b.goto(base+'/#vet-home');await b.getByRole('button',{name:'All VET tasks',exact:true}).click();await b.locator('[data-register-id="a-01-confirm-authority-set"] .register-tick input').check();
   // Leave a loaded native tab to prove exporting and newly imported sessions block stale writes.
   const stale=await cb.newPage();stale.on('pageerror',e=>errors.push(e.message));await stale.goto(base+'/#vet-home');await stale.waitForFunction(()=>window.WWHS_WORKBOARD_ADAPTER);
-  await b.goto(base+'/team-handover/');await b.locator('#finish-session').click();assert.match(await b.locator('#handover-message').innerText(),/Save your task notes/);
+  await b.goto(base+'/team-handover/');await b.locator('#finish-session').click();await b.waitForFunction(()=>!document.getElementById('finish-session').disabled);assert.match(await b.locator('#handover-message').innerText(),/Save your task notes/);
   await b.locator('#handover-note').fill('Synthetic handover: follow up funding next week.');await b.locator('#notes-saved').check();
   const second=await download(b,b.locator('#finish-session'));assert.equal(second.revision,2);assert.equal(second.parentExportId,first.exportId);assert.match(second.note,/follow up funding/);
   assert.equal(second.data.tas.scheduleOverrides['2027-t1-year-opening-readiness'].dueDate,'2027-02-08');assert.equal(second.data.review.records['vet:2026:a-01-confirm-authority-set'].completed,true);
   assert.equal(await stale.evaluate(()=>window.WWHS_TEAM_SESSION.isEditing()),false);assert.equal(await stale.evaluate(key=>{const value=JSON.parse(localStorage.getItem(key));value.records['a-01-confirm-authority-set'].exceptionSummary='Attempted stale overwrite';return window.WWHS_TEAM_SESSION.allowWrite(key,value);},keys.vet),false);
-  const again=await download(b,b.locator('#download-again'));assert.deepEqual(again,second);await b.locator('#confirm-finish').click();
+  const again=await download(b,b.locator('#download-again'));assert.deepEqual(again,second);await b.locator('#confirm-finish').click();await b.waitForFunction(()=>document.getElementById('status-title').textContent==='Viewing the last shared snapshot');
   // Steve imports to view and sees native notes, dates and overall review; personal data survives.
   await choose(a,second);await a.locator('#view-file').click();await a.waitForURL('**/#vet-home');await a.waitForFunction(()=>window.WWHS_WORKBOARD_ADAPTER&&document.querySelector('summary-import')?.started);
   assert.match(await a.locator('.workspace-team-banner').innerText(),/Your saved team progress/);
