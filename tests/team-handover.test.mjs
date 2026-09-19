@@ -205,3 +205,37 @@ test('event occurrences, checklist history and planning dates transfer without m
   assert.equal(own(actual.records['2027-event-source-check-one'],'sourceChecked'),false);assert.equal(own(actual.records['2027-event-source-check-one'],'doneWhenConfirmed'),false);
   assert.deepEqual(JSON.parse(destination.getItem(KEYS.tas)).scheduleOverrides,JSON.parse(local.getItem(KEYS.tas)).scheduleOverrides);
 });
+
+
+test('area exports contain only their own native records, reviews, task cards and deletion history',()=>{
+  const local=fixture();
+  for(const scope of ['vet','tas']){
+    const file=backup(local,{scope}),other=scope==='vet'?'tas':'vet';
+    assert.equal(file.scope,scope);assert.deepEqual(file.data[other],snapshot(new Storage())[other]);
+    assert.ok(Object.keys(file.data.review.records).every(key=>key.startsWith(`${scope}:`)));
+    assert.ok(file.data.inbox.items.every(item=>item.origin.wing===scope));
+    assert.ok(file.data.inbox.workboardImports.every(key=>key.startsWith(`${scope}:`)));
+    assert.deepEqual(parseBackup(json(file)),file);
+    const malformed=copy(file);malformed.data[other]=snapshot(local)[other];assert.throws(()=>parseBackup(malformed),/another area/);
+  }
+});
+test('scoped and legacy combined imports replace only the selected area and retain other area and private cards',()=>{
+  for(const scope of ['vet','tas'])for(const legacy of [false,true]){
+    const local=fixture(),other=scope==='vet'?'tas':'vet',before=readRaw(local),beforeInbox=JSON.parse(before[KEYS.inbox]);
+    const incoming=backup(local,legacy?{}:{scope});incoming.data[scope].records={};
+    incoming.data.inbox.items=incoming.data.inbox.items.filter(item=>item.origin.wing!==scope);
+    incoming.data.review.records={};
+    const plan=buildImportPlan(local,incoming,{scope,firstConnection:true});atomicApply(local,plan.before,plan.after);
+    assert.equal(local.getItem(KEYS[other]),before[KEYS[other]],'other native store remains byte-identical');
+    assert.deepEqual(JSON.parse(local.getItem(KEYS[scope])).records,{});
+    const inbox=JSON.parse(local.getItem(KEYS.inbox));
+    assert.deepEqual(inbox.items.filter(item=>!isTeamItem(item)||item.origin.wing===other),beforeInbox.items.filter(item=>!isTeamItem(item)||item.origin.wing===other));
+    for(const [key,value] of Object.entries(JSON.parse(before[KEYS.review]).records))if(key.startsWith(`${other}:`))assert.deepEqual(JSON.parse(local.getItem(KEYS.review)).records[key],value);
+    assert.equal(inbox.items.filter(item=>isTeamItem(item)&&item.origin.wing===scope).length,0);
+  }
+});
+test('wrong area backup is rejected before any live write',()=>{
+  const local=fixture(),before=readRaw(local);
+  assert.throws(()=>buildImportPlan(local,backup(local,{scope:'tas'}),{scope:'vet',firstConnection:true}),/TAS backup/);
+  assert.deepEqual(readRaw(local),before);assert.equal(local.writes,0);
+});

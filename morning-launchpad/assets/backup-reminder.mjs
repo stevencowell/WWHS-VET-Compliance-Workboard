@@ -1,10 +1,10 @@
 const workStorage=()=>globalThis.WWHS_STORAGE||globalThis.localStorage;
 import {INBOX_KEY,validateInbox} from './summary-core.mjs?v=backup-flow-2';
-import {isTeamItem} from '../../assets/js/team-handover-core.mjs?v=team-handover-1';
-import {mountBackupFolderSettings} from '../../assets/js/backup-folder-ui.mjs?v=backup-flow-2';
-import {BACKUP_KEYS,snapshotLaunchpad,launchpadContent,parseLaunchpadBackup,backupCounts} from './launchpad-backup.mjs?v=calendar-backup-1';
-import {readPreviousLaunchpadBackup} from './launchpad-backup-transaction.mjs?v=calendar-backup-1';
-import {choosePrivateBackupDestination} from '../../assets/js/backup-folder.mjs?v=backup-flow-2';
+import {isTeamItem} from '../../assets/js/team-handover-core.mjs?v=area-backups-1';
+import {mountBackupFolderSettings} from '../../assets/js/backup-folder-ui.mjs?v=area-backups-1';
+import {BACKUP_KEYS,snapshotLaunchpad,launchpadContent,parseLaunchpadBackup,backupCounts} from './launchpad-backup.mjs?v=area-backups-1';
+import {readPreviousLaunchpadBackup} from './launchpad-backup-transaction.mjs?v=area-backups-1';
+import {choosePrivateBackupDestination} from '../../assets/js/backup-folder.mjs?v=area-backups-1';
 
 export const NOTES_BACKUP_KEY='morning-launchpad-backup-reminder:v1';
 function sorted(value){
@@ -77,25 +77,32 @@ export function createNotesBackupTracker(storage,{hash=digest,onChange=()=>{}}={
 
 export function installLaunchpadBackupReminder({header}){
   const make=(tag,text,attrs={})=>{const node=document.createElement(tag);if(text!==undefined)node.textContent=text;for(const [key,value]of Object.entries(attrs))node.setAttribute(key,value);return node;};
-  const panel=make('aside',undefined,{class:'private-backup-reminder import-save-panel','aria-label':'Private Launchpad backup'});
-  const title=make('h2','Your backup'),copy=make('p'),status=make('p','',{role:'status',class:'private-backup-status'});
+  const toolbar=make('aside',undefined,{class:'backup-toolbar','aria-label':'Launchpad backups'}),toolbarCopy=make('div',undefined,{class:'backup-toolbar-copy'}),toolbarStatus=make('span','Saved on this browser',{class:'backup-toolbar-status'});
+  toolbarCopy.append(make('span','Launchpad backups',{class:'backup-toolbar-label'}),toolbarStatus);
+  const panel=make('dialog',undefined,{id:'launchpad-backup-options',class:'private-backup-reminder import-save-panel backup-options-dialog','aria-labelledby':'launchpad-backup-options-title'});
+  const title=make('h2','Save your Launchpad backup',{id:'launchpad-backup-options-title'}),copy=make('p'),status=make('p','',{role:'status',class:'private-backup-status'});
   const toggle=make('input',undefined,{type:'checkbox'}),label=make('label');toggle.checked=true;label.append(toggle,document.createTextNode('Remind me before closing if my Launchpad needs a backup'));
-  const actions=make('div',undefined,{class:'private-backup-actions'}),importBackup=make('button','Open backup…',{type:'button','data-backup-action':'import'}),download=make('button','Save backup…',{type:'button','data-backup-action':'save'}),fallback=make('button','Download a copy',{type:'button'}),confirm=make('button','I’ve saved this backup',{type:'button'});confirm.hidden=true;actions.append(importBackup,download);
+  const toolbarActions=make('div',undefined,{class:'backup-toolbar-actions'}),importBackup=make('button','Open backup…',{type:'button','data-backup-action':'import'}),saveOptions=make('button','Save backup…',{type:'button','data-backup-action':'save',class:'backup-toolbar-primary','aria-haspopup':'dialog','aria-controls':'launchpad-backup-options'}),guide=make('button','Details',{type:'button',class:'backup-toolbar-details','aria-haspopup':'dialog','aria-controls':'launchpad-backup-options'});
+  toolbarActions.append(importBackup,saveOptions,guide);toolbar.append(toolbarCopy,toolbarActions);header.after(toolbar);
+  const actions=make('div',undefined,{class:'private-backup-actions'}),download=make('button','Save backup…',{type:'button'}),fallback=make('button','Download a copy',{type:'button'}),confirm=make('button','I’ve saved this backup',{type:'button'});confirm.hidden=true;actions.append(download);
   const more=make('details',undefined,{class:'private-backup-more'}),secondary=make('div',undefined,{class:'private-backup-actions'});secondary.append(fallback);more.append(make('summary','More backup options'),label,secondary);
   const previous=make('button','Save previous copy…',{type:'button'});previous.hidden=true;secondary.append(previous);
   const refreshPrevious=async()=>{try{previous.hidden=!await readPreviousLaunchpadBackup();}catch{previous.hidden=false;}};
   previous.addEventListener('click',async()=>{
     try{
-      const destination=await choosePrivateBackupDestination({suggestedName:'launchpad-before-restore.json',id:'launchpad-before-restore'});if(!destination)return;
+      const destination=await choosePrivateBackupDestination({suggestedName:'launchpad-before-restore.json',id:'launchpad-before-restore',scope:'launchpad'});if(!destination)return;
       const backup=await readPreviousLaunchpadBackup();if(!backup)throw Error('No previous replacement copy is saved in this browser.');
       const result=await destination.write(JSON.stringify(backup));status.textContent=result.saved?'Previous Launchpad copy saved. Open it to review the work from before the last replacement.':'Previous copy download requested. Check that the file saved before opening it.';
     }catch(error){status.textContent=error.message;}
   });
   void refreshPrevious();
   const confirmation=make('div',undefined,{class:'private-backup-actions'});confirmation.append(confirm);
-  panel.append(make('p','Launchpad · Private backup',{class:'import-save-scope'}),title,make('p','One file for your notes, completed tasks, calendar, older plans and saved links.'),actions,copy,status,confirmation,more,make('p','Use the latest file when changing device. Files do not sync automatically. Keep this private; Finance and shared VET/TAS progress have separate backups.',{class:'private-backup-small'}));
-  mountBackupFolderSettings(more,{scope:'private'});
-  header.after(panel);
+  const close=make('button','Close',{type:'button',class:'backup-dialog-close'});
+  panel.append(close,make('p','Launchpad · Private backup',{class:'import-save-scope'}),title,make('p','One file for your notes, completed tasks, calendar, older plans and saved links.'),actions,copy,status,confirmation,more,make('p','Use the latest file when changing device. Files do not sync automatically. Keep this private; Finance, VET and TAS have separate backups.',{class:'private-backup-small'}));
+  mountBackupFolderSettings(more,{scope:'launchpad'});
+  document.body.append(panel);
+  const showOptions=()=>{if(!panel.open)panel.showModal();};
+  saveOptions.addEventListener('click',showOptions);guide.addEventListener('click',showOptions);close.addEventListener('click',()=>panel.close());
   let tracker,listener=false;
   function draftPending(){
     const board=document.querySelector('summary-import');
@@ -113,7 +120,9 @@ export function installLaunchpadBackupReminder({header}){
   }
   function render(value){
     toggle.checked=value.enabled;confirm.hidden=!value.canConfirm;confirm.disabled=draftPending();
-    panel.dataset.state=value.error?'error':value.needsBackup?'needed':'quiet';
+    panel.dataset.state=toolbar.dataset.state=value.error?'error':value.needsBackup?'needed':'quiet';
+    toolbarStatus.textContent=value.error?'Backup needs attention':draftPending()?'Unsaved note or event':value.canConfirm?'Confirm your downloaded copy':value.needsBackup?'Changes to back up':value.confirmedAt?'Backup up to date':'Saved on this browser';
+    toolbarStatus.title=value.error||'';
     copy.textContent=draftPending()?'Save or cancel the open note or calendar event before backing up.':value.needsBackup?'Saved in this browser. Save a backup to keep a separate copy.':value.confirmedAt?'Your last confirmed backup covers the current Launchpad.':'Your Launchpad is ready. Saved notes and dates will be included in one backup.';
     if(value.error)status.textContent=value.error;
     const needed=!!(value.enabled||draftPending());
@@ -123,19 +132,23 @@ export function installLaunchpadBackupReminder({header}){
   toggle.addEventListener('change',()=>void tracker.setEnabled(toggle.checked));
   importBackup.addEventListener('click',()=>{
     const board=document.querySelector('summary-import');
-    if(!board?.started||!board?.openTaskBackupImport){status.textContent='Finish opening or recovering your Launchpad first. Recovery controls are shown with the task list.';return;}
+    if(!board?.started||!board?.openTaskBackupImport){status.textContent='Finish opening or recovering your Launchpad first. Recovery controls are shown with the task list.';showOptions();return;}
     board.openTaskBackupImport();
   });
-  download.addEventListener('click',()=>{
+  async function saveBackup(options){
     const board=document.querySelector('summary-import');
     if(draftPending()){status.textContent='Save or cancel the open note or event first, then save your backup.';return;}
     if(!board?.started||!board?.exportTaskBackup){status.textContent='Finish opening or recovering your Launchpad first. Recovery controls are shown with the task list.';return;}
-    board.exportTaskBackup();
-  });
-  fallback.addEventListener('click',()=>{
-    if(draftPending()){status.textContent='Save or cancel the open note or event first, then save your backup.';return;}
-    document.querySelector('summary-import')?.exportTaskBackup({downloadOnly:true});
-  });
+    status.textContent='';download.disabled=fallback.disabled=true;
+    try{
+      await board.exportTaskBackup(options);
+      // Save cancellations and failures are reported by the task board. Keep
+      // that message visible in this modal instead of behind its backdrop.
+      if(!status.textContent)status.textContent=board.message?.textContent||'No new backup was saved.';
+    }finally{download.disabled=fallback.disabled=false;}
+  }
+  download.addEventListener('click',()=>void saveBackup());
+  fallback.addEventListener('click',()=>void saveBackup({downloadOnly:true}));
   confirm.addEventListener('click',async()=>{
     if(draftPending()){status.textContent='Save or cancel the open note or event, then save a fresh backup.';return;}
     status.textContent=await tracker.confirm()?'Backup confirmed. New changes will bring the reminder back.':'Notes changed after that download, or the confirmation could not be saved. Download a fresh backup.';

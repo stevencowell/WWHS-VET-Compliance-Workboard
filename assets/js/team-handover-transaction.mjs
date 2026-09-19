@@ -1,9 +1,9 @@
 // Private, browser-local recovery. Portable handover files never contain this data.
-import {KEYS, DATA_KEYS, recoverTransaction as recoverLegacyTransaction} from './team-handover-core.mjs?v=team-handover-1';
+import {KEYS, DATA_KEYS, recoverTransaction as recoverLegacyTransaction} from './team-handover-core.mjs?v=area-backups-1';
 
 const LOCK_NAME='wwhs-team-handover-transaction:v2';
 const DB_NAME='wwhs-team-handover-recovery', STORE_NAME='transactions';
-const ALLOWED_KEYS=[...DATA_KEYS,KEYS.metadata], MAX_VALUE=12000000;
+const ALLOWED_KEYS=[...DATA_KEYS,KEYS.metadata,KEYS.vetMetadata,KEYS.tasMetadata], MAX_VALUE=12000000;
 const object=value=>!!value&&typeof value==='object'&&!Array.isArray(value);
 const fail=message=>{throw new Error(message);};
 function transactionId(value){

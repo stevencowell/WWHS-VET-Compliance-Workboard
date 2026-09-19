@@ -1,15 +1,15 @@
 const workStorage=()=>globalThis.WWHS_STORAGE||globalThis.localStorage;
-import {RESTORE_KEY,createLaunchpadBackup} from './launchpad-backup.mjs?v=calendar-backup-1';
-import {recoverLaunchpadRestore,readLaunchpadRecovery} from './launchpad-backup-transaction.mjs?v=calendar-backup-1';
-import {installLaunchpadBackupDialog} from './launchpad-backup-ui.mjs?v=calendar-backup-1';
-import {storageSizes} from '../../assets/js/team-storage-report.mjs?v=backup-flow-2';
+import {RESTORE_KEY,createLaunchpadBackup} from './launchpad-backup.mjs?v=area-backups-1';
+import {recoverLaunchpadRestore,readLaunchpadRecovery} from './launchpad-backup-transaction.mjs?v=area-backups-1';
+import {installLaunchpadBackupDialog} from './launchpad-backup-ui.mjs?v=area-backups-1';
+import {storageSizes} from '../../assets/js/team-storage-report.mjs?v=area-backups-1';
 import {createNoteEditor} from './note-editor.mjs?v=private-backup-1';
 import {downloadDestination} from '../../assets/js/save-backup-file.mjs?v=backup-flow-2';
-import {choosePrivateBackupDestination,getBackupFolder} from '../../assets/js/backup-folder.mjs?v=backup-flow-2';
+import {choosePrivateBackupDestination,getBackupFolder} from '../../assets/js/backup-folder.mjs?v=area-backups-1';
 import {createTaskHelpDialog} from './task-help-dialog.mjs?v=compression-storage-1';
 import {emailSearchText} from './email-search.mjs?v=1';
 import './email-capture.mjs?v=email-source-1';
-import './launchpad-calendar.mjs?v=calendar-backup-1';
+import './launchpad-calendar.mjs?v=area-backups-1';
 import {INBOX_KEY, LIMIT, parseSummary, validateInbox, mergeInbox, safeUrl, workingNoteLinks, matchesNoteSearch, PRIORITIES, NEXT_ACTIONS, EDITABLE, enrich, todaySydney, taskSection, rank, nextDate, consolidateDuplicates, LEGACY_PLAN_KEY, isPinned, migrateToPins, recordNoteAction, WORKSTREAMS, createTrackedWork, mergeWorkboardImports, clearEmailImports, isUnfinishedEmailNote, reconcileForecast, sourceCompleted, normaliseForecastContext} from './summary-core.mjs?v=email-cleanup-1';
 
 const repositoryRoot=new URL('../../',import.meta.url);
@@ -81,7 +81,7 @@ class SummaryImport extends HTMLElement {
   }
   startWorkspace() {
     if(this.started)return;this.started=true;
-    getBackupFolder('private'); // Load the preference before a backup button is clicked.
+    getBackupFolder('launchpad'); // Load the preference before a backup button is clicked.
     this.openCards=new Set();this.view='ready';this.expanded=false;this.legacyRaw=null;this.blocked=false;this.raw=null;
     this.workstream=Object.hasOwn(WORKSTREAMS,this.dataset.workstream)?this.dataset.workstream:'all';
     this.draftInputs=new Map();this.captureDraft=event=>{const field=event.target;if(field.matches?.('textarea:not([readonly]),input:not([type="file"]):not([type="checkbox"]),[contenteditable="true"]')){this.draftInputs.delete(field);this.draftInputs.set(field,field.getAttribute('aria-label')||field.closest('label')?.childNodes[0]?.textContent||field.id||'Draft text');}};this.addEventListener('input',this.captureDraft);
@@ -261,7 +261,7 @@ class SummaryImport extends HTMLElement {
     if(this.scope)return;
     this.resetBackupPreview?.();
     this.backupFile.value='';this.backupMessage.textContent='';this.backupStorageDetails.hidden=true;
-    this.backupDialog.showModal();this.backupFile.focus();
+    this.backupFileBrowser?.reset();this.backupDialog.showModal();this.backupDialog.querySelector('.backup-file-browser button:not([hidden])')?.focus();
   }
   buildBackupImportDialog(){
     installLaunchpadBackupDialog(this);

@@ -231,3 +231,48 @@ test('archive cannot overwrite an existing immutable body or be read as a portab
   assert.deepEqual(db.bodies.get('fixed'),before);assert.deepEqual(await readTeamArchive(ref,options),value);
   await assert.rejects(readTeamArchive({...ref,kind:'handover'},options),/reference is invalid/);
 });
+
+
+test('area reconnect archives safely and changes only its own metadata lineage and data',async()=>{
+  for(const scope of ['vet','tas']){
+    const f=fixture(),other=scope==='vet'?'tas':'vet',metaKey=KEYS[`${scope}Metadata`],otherKey=KEYS[`${other}Metadata`],db=backend();
+    f.storage.values.set(otherKey,json({unrelated:'The other area metadata stays byte-identical'}));
+    const old=f.storage.getItem(KEYS.metadata),otherRaw=f.storage.getItem(otherKey),otherData=f.storage.getItem(KEYS[other]);
+    const plan=buildReconnectPlan(f.storage,f.file,{...reconnectOptions,scope});
+    assert.equal(plan.metadataKey,metaKey);assert.equal(plan.nextMetadata.lastFile.scope,scope);
+    assert.deepEqual(plan.nextMetadata.active.baselineData[other],snapshot(new Storage())[other]);
+    const prepared=await prepareReconnectPlan(plan,db.options);await applyTeamTransaction(f.storage,prepared.before,prepared.after,{backend:db.api,locks,createId:()=>`tx-${scope}`});
+    assert.equal(f.storage.getItem(KEYS.metadata),old);assert.equal(f.storage.getItem(otherKey),otherRaw);assert.equal(f.storage.getItem(KEYS[other]),otherData);
+    const restored=await hydrateTeamMetadata(JSON.parse(f.storage.getItem(metaKey)),db.options);assert.equal(restored.lastFile.scope,scope);
+    const scoped=createBackup({snapshot:snapshot(f.storage),scope,previous:restored.lastFile,editor:'Steve',savedAt:when});
+    assert.equal(scoped.revision,2);assert.equal(scoped.scope,scope);assert.equal(scoped.parentExportId,f.file.exportId);
+  }
+});
+test('VET and TAS revision conflict checks remain independent',()=>{
+  const f=fixture(),vet=createBackup({snapshot:f.data,scope:'vet',editor:'Steve',workspaceId:'vet-team',exportId:'vet-one',savedAt:when});
+  f.storage.values.set(KEYS.vetMetadata,json({version:1,lastFile:info(vet),active:null,pendingExport:null}));
+  f.storage.values.delete(KEYS.metadata);
+  const tas=createBackup({snapshot:f.data,scope:'tas',editor:'Diane',workspaceId:'tas-team',exportId:'tas-one',savedAt:when});
+  assert.equal(buildReconnectPlan(f.storage,tas,{...reconnectOptions,scope:'tas'}).lineage,'first-connection');
+  assert.throws(()=>buildReconnectPlan(f.storage,vet,{...reconnectOptions,scope:'tas'}),/VET backup/);
+  const fork={...vet,exportId:'other-vet-one'};assert.throws(()=>buildReconnectPlan(f.storage,fork,{...reconnectOptions,scope:'vet'}),/same revision/);
+});
+test('scoped safety backups roundtrip without including the other area',()=>{
+  const f=fixture(),file=createSafetyBackup({snapshot:f.data,scope:'tas',editor:'Steve',savedAt:when,snapshotId:'tas-safety'});
+  assert.equal(file.scope,'tas');assert.deepEqual(file.data.vet,snapshot(new Storage()).vet);
+  assert.equal(parseTeamFile(json(file)).file.scope,'tas');
+  assert.throws(()=>buildReconnectPlan(f.storage,file,{...reconnectOptions,scope:'vet'}),/TAS backup/);
+});
+
+test('first area migration preserves legacy revision checks and exact legacy CAS value',async()=>{
+  const f=fixture(),next=createBackup({snapshot:f.data,previous:f.file,editor:'Steve',exportId:'legacy-two',savedAt:when});
+  const oldMeta=json({...f.meta,lastFile:info(next)});f.storage.values.set(KEYS.metadata,oldMeta);
+  assert.throws(()=>buildReconnectPlan(f.storage,f.file,{...reconnectOptions,scope:'vet'}),/older/);
+  const plan=buildReconnectPlan(f.storage,next,{...reconnectOptions,scope:'vet'}),db=backend();
+  assert.equal(plan.before[KEYS.metadata],oldMeta);assert.equal(plan.before[KEYS.vetMetadata],null);
+  const prepared=await prepareReconnectPlan(plan,db.options);assert.equal(prepared.after[KEYS.metadata],oldMeta);
+  assert.equal((await readTeamArchive(prepared.archiveRef,db.options)).metadataRaw,oldMeta);
+  f.storage.values.set(KEYS.metadata,json({...f.meta,lastFile:info({...next,exportId:'competing'})}));
+  await assert.rejects(applyTeamTransaction(f.storage,prepared.before,prepared.after,{backend:db.api,locks}),/changed/);
+  assert.equal(f.storage.getItem(KEYS.vetMetadata),null);
+});

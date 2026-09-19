@@ -4,10 +4,11 @@ import {INBOX_KEY, EDITABLE, validateInbox, validDate, validWorkOrigin, mergeWor
 export const KEYS = Object.freeze({
   vet:'wwhs-vet-compliance-workboard:v3', tas:'wwhs-head-teacher-tas-workboard:v2',
   review:'wwhs-task-register-review:v1', inbox:INBOX_KEY,
-  metadata:'wwhs-team-handover:v1', journal:'wwhs-team-handover-journal:v1'
+  metadata:'wwhs-team-handover:v1', vetMetadata:'wwhs-team-handover:vet:v1', tasMetadata:'wwhs-team-handover:tas:v1', journal:'wwhs-team-handover-journal:v1'
 });
 export const DATA_KEYS = Object.freeze([KEYS.vet,KEYS.tas,KEYS.review,KEYS.inbox]);
-const WRITABLE_KEYS = [...DATA_KEYS,KEYS.metadata];
+const WRITABLE_KEYS = [...DATA_KEYS,KEYS.metadata,KEYS.vetMetadata,KEYS.tasMetadata];
+export const metadataKey = scope=>scope==='vet'?KEYS.vetMetadata:scope==='tas'?KEYS.tasMetadata:KEYS.metadata;
 const MAX_SIZE = 12000000;
 const FORBIDDEN_KEYS = new Set(['__proto__','prototype','constructor']);
 const VET_FIELDS = ['records','assignments','gaps','eventOccurrences'];
@@ -208,10 +209,20 @@ export function snapshot(storageOrRaw){
     inbox:portableInbox(raw[KEYS.inbox])
   };
 }
-const META_FIELDS=['kind','schemaVersion','workspaceId','revision','parentRevision','parentExportId','exportId','savedAt','savedBy','note','changes','data'];
+export function scopeSnapshot(data,scope){
+  if(!scope)return clone(data);
+  if(!['vet','tas'].includes(scope))fail('Unrecognised backup area.');
+  const result=clone(data),other=scope==='vet'?'tas':'vet';
+  result[other]=snapshot({getItem:()=>null})[other];
+  result.review.records=Object.fromEntries(Object.entries(result.review.records).filter(([key])=>key.startsWith(`${scope}:`)));
+  result.inbox.items=result.inbox.items.filter(item=>item.origin.wing===scope);
+  result.inbox.workboardImports=result.inbox.workboardImports.filter(key=>key.startsWith(`${scope}:`));
+  return result;
+}
+const META_FIELDS=['scope','kind','schemaVersion','workspaceId','revision','parentRevision','parentExportId','exportId','savedAt','savedBy','note','changes','data'];
 function metadata(value){
   if(!object(value)||value.kind!=='WWHS-TEAM-HANDOVER'||value.schemaVersion!==1)fail('This is not a supported WWHS team handover file.');
-  keys(value,META_FIELDS,'team handover');identity(value.workspaceId,150);identity(value.exportId,150);
+  keys(value,META_FIELDS,'team handover');if(own(value,'scope')&&!['vet','tas'].includes(value.scope))fail('Unrecognised backup area.');identity(value.workspaceId,150);identity(value.exportId,150);
   if(!Number.isSafeInteger(value.revision)||value.revision<1)fail('Invalid team file revision.');
   if(value.revision===1){
     if(value.parentRevision!==null||value.parentExportId!==null)fail('The first team file cannot have a parent revision.');
@@ -229,14 +240,16 @@ export function parseBackup(input){
   }else{
     try{if(JSON.stringify(value).length>MAX_SIZE)fail('The team file is too large.');value=clone(value);}catch{fail('The team file could not be read.');}
   }
-  metadata(value);return {...value,data:validateData(value.data)};
+  metadata(value);const data=validateData(value.data);
+  if(value.scope&&JSON.stringify(data)!==JSON.stringify(scopeSnapshot(data,value.scope)))fail('This area backup contains records from another area. Nothing has changed.');
+  return {...value,data};
 }
-export function createBackup({snapshot:data,previous=null,editor,note='',workspaceId,exportId=globalThis.crypto.randomUUID(),savedAt=new Date().toISOString(),changes=[]}){
+export function createBackup({snapshot:data,previous=null,editor,note='',workspaceId,exportId=globalThis.crypto.randomUUID(),savedAt=new Date().toISOString(),changes=[],scope=previous?.scope}){
   if(previous&&(!Number.isSafeInteger(previous.revision)||previous.revision<1||!previous.exportId||!previous.workspaceId))fail('Invalid previous team file.');
   if(previous&&workspaceId&&workspaceId!==previous.workspaceId)fail('The workspace must stay the same for the next revision.');
-  return parseBackup({kind:'WWHS-TEAM-HANDOVER',schemaVersion:1,workspaceId:previous?.workspaceId||workspaceId||globalThis.crypto.randomUUID(),
+  return parseBackup({...(scope?{scope}:{}),kind:'WWHS-TEAM-HANDOVER',schemaVersion:1,workspaceId:previous?.workspaceId||workspaceId||globalThis.crypto.randomUUID(),
     revision:previous?previous.revision+1:1,parentRevision:previous?.revision??null,parentExportId:previous?.exportId??null,
-    exportId,savedAt,savedBy:editor,note,changes,data});
+    exportId,savedAt,savedBy:editor,note,changes,data:scopeSnapshot(data,scope)});
 }
 export function checkRevision(input,lastFile,{firstConnection=false}={}){
   const payload=parseBackup(input);
@@ -253,7 +266,7 @@ export function checkRevision(input,lastFile,{firstConnection=false}={}){
   // The manual file selection remains necessary; no concurrent snapshots merge.
   return {same:false,firstConnection:false};
 }
-function reconcileInbox(raw,incoming,createId){
+function reconcileInbox(raw,incoming,createId,scope){
   const checked=validateInbox(raw),saved=raw===null?{version:2,items:[],importedAt:null,briefing:''}:JSON.parse(raw);
   const oldById=new Map(saved.items.map(item=>[item.id,item])),team=new Map(),privateItems=[];
   for(const item of checked.items){
@@ -269,7 +282,7 @@ function reconcileInbox(raw,incoming,createId){
   const items=[],usedIds=new Set(checked.items.map(item=>item.id));let added=0,updated=0,removed=0;
   for(const existing of checked.items){
     const original=oldById.get(existing.id);
-    if(!isTeamItem(existing)){items.push(original);continue;}
+    if(!isTeamItem(existing)||scope&&existing.origin.wing!==scope){items.push(original);continue;}
     const key=originIdentity(existing),incomingItem=incomingByIdentity.get(key);
     if(!incomingItem){removed++;continue;}
     const next={...original,...clone(incomingItem),id:existing.id,taskKey:existing.taskKey};
@@ -291,14 +304,18 @@ function reconcileInbox(raw,incoming,createId){
   validateInbox(JSON.stringify(result));
   return {raw:JSON.stringify(result),counts:{added,updated,removed,privateKept:privateItems.length}};
 }
-export function buildImportPlan(storage,input,{lastFile=null,firstConnection=false,createId=()=>globalThis.crypto.randomUUID()}={}){
-  const payload=parseBackup(input),gate=checkRevision(payload,lastFile,{firstConnection}),before=readRaw(storage),beforeSnapshot=snapshot(before);
+export function buildImportPlan(storage,input,{lastFile=null,firstConnection=false,createId=()=>globalThis.crypto.randomUUID(),scope=null}={}){
+  const payload=parseBackup(input);
+  if(scope&&payload.scope&&scope!==payload.scope)fail(`This is a ${payload.scope.toUpperCase()} backup. Open it in that area; nothing has changed.`);
+  scope=scope||payload.scope||null;
+  const data=scopeSnapshot(payload.data,scope),gate=checkRevision(payload,lastFile,{firstConnection}),before=readRaw(storage),beforeSnapshot=snapshot(before);
   const vet=parseSaved(before[KEYS.vet],{schemaVersion:3},'VET progress'),tas=parseSaved(before[KEYS.tas],{schemaVersion:2},'TAS progress');
-  const inbox=reconcileInbox(before[KEYS.inbox],payload.data.inbox,createId);
+  const inbox=reconcileInbox(before[KEYS.inbox],data.inbox,createId,scope);
+  const reviews=scope?{version:1,records:{...Object.fromEntries(Object.entries(beforeSnapshot.review.records).filter(([key])=>!key.startsWith(`${scope}:`))),...data.review.records}}:data.review;
   const after={
-    [KEYS.vet]:JSON.stringify({...vet,...payload.data.vet}),
-    [KEYS.tas]:JSON.stringify({...tas,...payload.data.tas}),
-    [KEYS.review]:JSON.stringify(payload.data.review),
+    [KEYS.vet]:scope==='tas'?before[KEYS.vet]:JSON.stringify({...vet,...data.vet}),
+    [KEYS.tas]:scope==='vet'?before[KEYS.tas]:JSON.stringify({...tas,...data.tas}),
+    [KEYS.review]:JSON.stringify(reviews),
     [KEYS.inbox]:inbox.raw
   };
   return {before,after,beforeSnapshot,counts:inbox.counts,payload,same:gate.same};

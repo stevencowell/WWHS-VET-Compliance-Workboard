@@ -7,14 +7,14 @@ if(!/^http:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/.test(base))throw Error('Use a d
 const suffix=process.env.WORKBOARD_BACKUP_MATCH?'-'+process.env.WORKBOARD_BACKUP_MATCH.replace(/[^a-z0-9]+/gi,'-'):'';
 const output=path.resolve(__dirname,`../../../outputs/team-backup-flow-browser-report${suffix}.json`);
 const results=[],errors=[],when='2026-09-19T07:00:00.000Z';
-const keys={vet:'wwhs-vet-compliance-workboard:v3',tas:'wwhs-head-teacher-tas-workboard:v2',inbox:'morning-launchpad-summary:v1',review:'wwhs-task-register-review:v1',meta:'wwhs-team-handover:v1'};
+const keys={vet:'wwhs-vet-compliance-workboard:v3',tas:'wwhs-head-teacher-tas-workboard:v2',inbox:'morning-launchpad-summary:v1',review:'wwhs-task-register-review:v1',meta:'wwhs-team-handover:vet:v1'};
 let browser;
-async function ready(page){await page.waitForFunction(()=>document.getElementById('status-title')?.textContent!=='Checking this browser…'&&!document.getElementById('team-file')?.disabled);}
-async function values(page){return page.evaluate(()=>Object.fromEntries(Object.keys(localStorage).filter(key=>key!=='wwhs-team-safety-receipt:v1').sort().map(key=>[key,(window.WWHS_STORAGE||localStorage).getItem(key)])));}
+async function ready(page){await page.waitForFunction(()=>document.getElementById('status-title')?.textContent!=='Checking this browser…'&&document.querySelector('#team-file-browser input[type=file]')&&!document.querySelector('#team-file-browser button').disabled);}
+async function values(page){return page.evaluate(()=>Object.fromEntries(Object.keys(localStorage).filter(key=>!key.startsWith('wwhs-team-safety-receipt:v1')).sort().map(key=>[key,(window.WWHS_STORAGE||localStorage).getItem(key)])));}
 async function picker(page,mode='save',existing=''){await page.evaluate(({mode,existing})=>Object.assign(window.__save,{mode,existing,files:[],calls:[],reads:0,writers:0}),{mode,existing});}
 async function press(page,selector){await page.locator(selector).click();await ready(page);}
 async function downloaded(page,selector){const promise=page.waitForEvent('download');await press(page,selector);const file=await promise;return JSON.parse(await fs.readFile(await file.path(),'utf8'));}
-async function choose(page,file){await page.locator('#handover-import-link').click();await page.locator('#team-file').setInputFiles({name:'synthetic-backup.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(file))});await ready(page);}
+async function choose(page,file){await page.locator('#handover-import-link').click();await page.locator('#team-file-browser input[type=file]').setInputFiles({name:'synthetic-backup.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(file))});await ready(page);}
 async function fileSaved(page){return page.evaluate(()=>{const text=window.__save.files.at(-1);return text?JSON.parse(text):null;});}
 async function newPage(){
   const context=await browser.newContext({viewport:{width:1440,height:1050},acceptDownloads:true,serviceWorkers:'block',timezoneId:'Australia/Sydney'});
@@ -55,10 +55,10 @@ async function seed(page,mode){
     store.setItem(keys.review,JSON.stringify({version:1,records:{'vet:2026:a-01-confirm-authority-set':{completed:true,reviewedOn:'2026-09-19'}}}));
     localStorage.setItem('synthetic-finance','PRIVATE_FINANCE');
     const current=core.snapshot(store),baseline=structuredClone(current);baseline.vet.records['a-01-confirm-authority-set'].exceptionSummary='BASELINE_VET_NOTE';
-    const first=core.createBackup({snapshot:baseline,editor:'Synthetic colleague',workspaceId:'test-shared-team',exportId:'team-one',savedAt:when});
+    const first=core.createBackup({scope:'vet',snapshot:baseline,editor:'Synthetic colleague',workspaceId:'test-shared-team',exportId:'team-one',savedAt:when});
     const nextData=structuredClone(current);nextData.vet.records['a-01-confirm-authority-set'].exceptionSummary='LATEST_VET_NOTE';nextData.tas.records['class-readiness::2026'].exceptionReason='LATEST_TAS_NOTE';nextData.inbox.items[0].noteText='LATEST_SHARED_NOTE';
     const next=core.createBackup({snapshot:nextData,previous:first,editor:'Synthetic colleague',exportId:'team-two',savedAt:when});
-    const safety=recovery.createSafetyBackup({snapshot:nextData,editor:'Synthetic colleague',snapshotId:'selected-safety',savedAt:when});
+    const safety=recovery.createSafetyBackup({scope:'vet',snapshot:nextData,editor:'Synthetic colleague',snapshotId:'selected-safety',savedAt:when});
     const meta={version:1,lastFile:info(first),active:{id:'test-session',phase:'editing',editor:'Synthetic editor',startedAt:when,baseExportId:first.exportId,baselineData:baseline},pendingExport:null,
       recovery:{capturedAt:when,lastFile:null,data:baseline,raw:{[keys.inbox]:'PRIVATE_OLD_HISTORY'}}};
     if(mode==='view')meta.active=null;
@@ -77,7 +77,7 @@ async function seed(page,mode){
   await page.reload();await ready(page);return fixture;
 }
 function privateFree(file){assert.doesNotMatch(JSON.stringify(file),/PRIVATE_|private\.example/);}
-function notes(file,expected){assert.equal(file.data.vet.records['a-01-confirm-authority-set'].exceptionSummary,expected.vet.records['a-01-confirm-authority-set'].exceptionSummary);assert.equal(file.data.tas.records['class-readiness::2026'].exceptionReason,expected.tas.records['class-readiness::2026'].exceptionReason);assert.equal(file.data.inbox.items[0].noteText,expected.inbox.items[0].noteText);}
+function notes(file,expected){assert.equal(file.data.vet.records['a-01-confirm-authority-set'].exceptionSummary,expected.vet.records['a-01-confirm-authority-set'].exceptionSummary);if(file.scope==='vet')assert.deepEqual(file.data.tas.records,{});assert.equal(file.data.inbox.items[0].noteText,expected.inbox.items[0].noteText);}
 async function check(name,body){if(process.env.WORKBOARD_BACKUP_MATCH&&!name.includes(process.env.WORKBOARD_BACKUP_MATCH))return;try{const detail=await body();results.push({name,passed:true,detail});console.log('PASS '+name);}catch(error){const message=(error.stack||error.message).slice(0,2500);results.push({name,passed:false,error:message});console.error('FAIL '+name+'\n'+message);}}
 
 (async()=>{
@@ -152,7 +152,7 @@ async function check(name,body){if(process.env.WORKBOARD_BACKUP_MATCH&&!name.inc
           const store=window.WWHS_STORAGE||localStorage,core=await import('/assets/js/team-handover-core.mjs'),payloads=await import('/assets/js/team-handover-payloads.mjs');
           const meta=JSON.parse(store.getItem(keys.meta));return {data:core.snapshot(store),meta,archive:await payloads.readTeamArchive(meta.archiveRef),inbox:JSON.parse(store.getItem(keys.inbox)),finance:localStorage.getItem('synthetic-finance')};
         },keys);
-        notes({data:restored.data},file.data);assert.equal(restored.archive.metadataRaw,f.metadataRaw);assert.deepEqual(restored.archive.data,f.current);
+        notes({data:restored.data},file.data);assert.deepEqual(restored.data.tas,f.current.tas);assert.equal(restored.archive.metadataRaw,f.metadataRaw);assert.deepEqual(restored.archive.data,f.current);
         assert.equal(restored.inbox.items.find(item=>item.id==='private-card').noteText,'PRIVATE_NOTE');assert.equal(restored.finance,'PRIVATE_FINANCE');assert.equal(restored.meta.active?.phase||null,editing?'editing':null);
         if(type==='safety'){assert.equal(restored.meta.lineage.type,'safety-restored');assert.notEqual(restored.meta.lastFile.workspaceId,f.first.workspaceId);}
         else assert.equal(restored.meta.lastFile.exportId,f.next.exportId);
@@ -181,22 +181,61 @@ async function check(name,body){if(process.env.WORKBOARD_BACKUP_MATCH&&!name.inc
         assert.equal(JSON.parse((await values(page))[keys.vet]).records['a-01-confirm-authority-set'].exceptionSummary,'NEW_OTHER_TAB_NOTE');assert.equal((await values(page))[keys.meta],before[keys.meta]);
       }finally{await context.close();}
     });
+    for(const scope of ['vet','tas'])for(const legacy of [false,true])await check(`${scope} ${legacy?'legacy combined':'scoped'} Open preserves the other area and legacy history`,async()=>{
+      const {context,page}=await newPage();try{
+        const f=await seed(page,'individual');
+        const setup=await page.evaluate(async({keys,f,scope,legacy,when})=>{
+          const core=await import('/assets/js/team-handover-core.mjs'),store=window.WWHS_STORAGE;
+          const first=core.createBackup({snapshot:f.current,editor:'Synthetic',workspaceId:'area-team',exportId:'area-one',savedAt:when});
+          const {kind,schemaVersion,data,...header}=first;
+          const oldMeta=JSON.stringify({version:1,lastFile:header,active:{id:'old-combined-session',phase:'editing',editor:'Synthetic',startedAt:when,baselineData:f.current},pendingExport:null});
+          store.setItem('wwhs-team-handover:v1',oldMeta);store.removeItem('wwhs-team-handover:vet:v1');store.removeItem('wwhs-team-handover:tas:v1');
+          const incoming=structuredClone(f.current),id=scope==='vet'?'a-01-confirm-authority-set':'class-readiness::2026';
+          incoming[scope].records[id][scope==='vet'?'exceptionSummary':'exceptionReason']='IMPORTED_AREA_NOTE';
+          const file=core.createBackup({snapshot:incoming,previous:first,scope:legacy?undefined:scope,editor:'Synthetic',exportId:'area-two',savedAt:when});
+          return {file,oldMeta,otherRaw:store.getItem(keys[scope==='vet'?'tas':'vet'])};
+        },{keys,f,scope,legacy,when});
+        await page.goto(base+`/team-handover/?wing=${scope}#import-backup`);await ready(page);await choose(page,setup.file);
+        assert.equal(await page.locator('#file-preview').isVisible(),true);
+        await Promise.all([page.waitForURL(url=>url.pathname===(scope==='vet'?'/':'/head-teacher-tas/')),page.locator('#view-file').click()]);
+        const result=await page.evaluate(({keys,scope})=>{const store=window.WWHS_STORAGE;return {legacy:store.getItem('wwhs-team-handover:v1'),own:JSON.parse(store.getItem(`wwhs-team-handover:${scope}:v1`)),other:store.getItem(`wwhs-team-handover:${scope==='vet'?'tas':'vet'}:v1`),otherRaw:store.getItem(keys[scope==='vet'?'tas':'vet']),native:JSON.parse(store.getItem(keys[scope]))};},{keys,scope});
+        assert.equal(result.legacy,setup.oldMeta);assert.equal(result.other,null);assert.equal(result.otherRaw,setup.otherRaw);assert.equal(result.own.lastFile.scope,scope);
+        const id=scope==='vet'?'a-01-confirm-authority-set':'class-readiness::2026';assert.equal(result.native.records[id][scope==='vet'?'exceptionSummary':'exceptionReason'],'IMPORTED_AREA_NOTE');
+        await page.goto(base+`/team-handover/?wing=${scope}#import-backup`);await ready(page);
+        const wrong={...setup.file,scope:scope==='vet'?'tas':'vet'};await choose(page,wrong);assert.equal(await page.locator('#file-preview').isVisible(),false);assert.equal(await page.locator('#start-session').isDisabled(),true);
+      }finally{await context.close();}
+    });
+    await check('first scoped save keeps combined legacy metadata and excludes the other area',async()=>{
+      const {context,page}=await newPage();try{
+        const f=await seed(page,'individual');
+        const legacy=await page.evaluate(async({keys,f,when})=>{
+          const core=await import('/assets/js/team-handover-core.mjs'),store=window.WWHS_STORAGE;
+          const first=core.createBackup({snapshot:f.current,editor:'Synthetic',workspaceId:'legacy-team',exportId:'legacy-one',savedAt:when});
+          const {kind,schemaVersion,data,...header}=first;
+          const raw=JSON.stringify({version:1,lastFile:header,active:{id:'legacy-active',editor:'Synthetic',phase:'editing',startedAt:when,baselineData:f.current},pendingExport:null});
+          store.setItem('wwhs-team-handover:v1',raw);store.removeItem(keys.meta);return raw;
+        },{keys,f,when});
+        await page.reload();await ready(page);await picker(page);await press(page,'#finish-session');const saved=await fileSaved(page);notes(saved,f.current);assert.equal(saved.scope,'vet');assert.equal(saved.parentExportId,'legacy-one');
+        assert.equal(await page.evaluate(()=>window.WWHS_STORAGE.getItem('wwhs-team-handover:v1')),legacy);
+        assert.equal(await page.evaluate(()=>window.WWHS_STORAGE.getItem('wwhs-team-handover:tas:v1')),null);
+      }finally{await context.close();}
+    });
     await check('remembered shared folder writes real OPFS files directly, preserves safety copies and checks existing handover',async()=>{
       const {context,page}=await newPage();try{
         await context.addInitScript(()=>{window.showDirectoryPicker=async()=> (await navigator.storage.getDirectory()).getDirectoryHandle('Synthetic team backups',{create:true});});
         const f=await seed(page,'active');
-        await page.evaluate(async file=>{const folder=await(await navigator.storage.getDirectory()).getDirectoryHandle('Synthetic team backups',{create:true});const handle=await folder.getFileHandle('WWHS-team-handover.json',{create:true});const writer=await handle.createWritable();await writer.write(JSON.stringify(file));await writer.close();},f.first);
+        await page.evaluate(async file=>{const folder=await(await navigator.storage.getDirectory()).getDirectoryHandle('Synthetic team backups',{create:true});const handle=await folder.getFileHandle('WWHS-VET-backup.json',{create:true});const writer=await handle.createWritable();await writer.write(JSON.stringify(file));await writer.close();},f.first);
         const files=()=>page.evaluate(async()=>{const folder=await(await navigator.storage.getDirectory()).getDirectoryHandle('Synthetic team backups'),result={};for await(const [name,handle]of folder.entries())if(handle.kind==='file')result[name]=await(await handle.getFile()).text();return result;});
-        await page.locator('#backup-settings > summary').click();await page.locator('[data-backup-scope="team"] [data-folder-action="select"]').click();
-        await page.waitForFunction(()=>document.querySelector('[data-backup-scope="team"]').textContent.includes('Selected: Synthetic team backups'));
-        await press(page,'#finish-session');const saved=await files(),shared=JSON.parse(saved['WWHS-team-handover.json']);notes(shared,f.current);privateFree(shared);assert.equal(shared.parentExportId,f.first.exportId);
+        await page.locator('#backup-settings > summary').click();await page.locator('[data-backup-scope="vet"] [data-folder-action="select"]').click();
+        await page.waitForFunction(()=>document.querySelector('[data-backup-scope="vet"]').textContent.includes('Selected: Synthetic team backups'));
+        await press(page,'#finish-session');const saved=await files(),shared=JSON.parse(saved['WWHS-VET-backup.json']);notes(shared,f.current);privateFree(shared);assert.equal(shared.parentExportId,f.first.exportId);
         assert.equal(await page.evaluate(()=>window.__save.calls.length),0,'remembered folder uses direct real file writes');
-        await press(page,'#confirm-finish');await press(page,'#save-safety');const withSafety=await files();assert.equal(withSafety['WWHS-team-handover.json'],saved['WWHS-team-handover.json']);
-        const names=Object.keys(withSafety).filter(name=>name.startsWith('WWHS-VET-TAS-safety-'));assert.equal(names.length,1);privateFree(JSON.parse(withSafety[names[0]]));
-        await page.reload();await ready(page);await press(page,'#save-safety');const twice=await files();assert.equal(Object.keys(twice).filter(name=>name.startsWith('WWHS-VET-TAS-safety-')).length,2);for(const [name,text]of Object.entries(withSafety))assert.equal(twice[name],text);
+        await press(page,'#confirm-finish');await press(page,'#save-safety');const withSafety=await files();assert.equal(withSafety['WWHS-VET-backup.json'],saved['WWHS-VET-backup.json']);
+        const names=Object.keys(withSafety).filter(name=>name.startsWith('WWHS-VET-safety-'));assert.equal(names.length,1);privateFree(JSON.parse(withSafety[names[0]]));
+        await page.reload();await ready(page);await press(page,'#save-safety');const twice=await files();assert.equal(Object.keys(twice).filter(name=>name.startsWith('WWHS-VET-safety-')).length,2);for(const [name,text]of Object.entries(withSafety))assert.equal(twice[name],text);
         assert.equal(await page.evaluate(()=>window.__save.calls.length),0,'stored native directory handle survives reload');
         // Replace only the disposable OPFS file with a competing synthetic file.
-        await seed(page,'active');await page.evaluate(async file=>{const folder=await(await navigator.storage.getDirectory()).getDirectoryHandle('Synthetic team backups'),handle=await folder.getFileHandle('WWHS-team-handover.json'),writer=await handle.createWritable();await writer.write(JSON.stringify(file));await writer.close();},f.next);
+        await seed(page,'active');await page.evaluate(async file=>{const folder=await(await navigator.storage.getDirectory()).getDirectoryHandle('Synthetic team backups'),handle=await folder.getFileHandle('WWHS-VET-backup.json'),writer=await handle.createWritable();await writer.write(JSON.stringify(file));await writer.close();},f.next);
         const before=await values(page),existing=await files();await press(page,'#finish-session');assert.deepEqual(await files(),existing);assert.deepEqual(await values(page),before);assert.match(await page.locator('#handover-message').innerText(),/not been overwritten/);
       }finally{await context.close();}
     });

@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createBackupFolder} from '../assets/js/backup-folder.mjs';
+import {isBackupForArea,compatibleBackupFiles} from '../assets/js/backup-file-types.mjs';
 
 const notFound=()=>new DOMException('No such file','NotFoundError');
 function memoryStore(){
@@ -12,8 +13,10 @@ function memoryStore(){
   },async delete(scope,expected){return this.set(scope,null,expected);}};
 }
 function directory(name,{permission='granted',requested='granted',failWrite=false}={}){
-  const files=new Map();const calls=[];
+  const files=new Map(),directories=new Map();const calls=[];
   return {kind:'directory',name,files,calls,async isSameEntry(other){return other===this;},
+    directories,async getDirectoryHandle(name,{create}={}){if(!directories.has(name)){if(!create)throw notFound();directories.set(name,directory(name));}return directories.get(name);},
+    async *values(){yield* files.values();},
     async queryPermission(){calls.push('query');return permission;},async requestPermission(){calls.push('permission');return requested;},
     async getFileHandle(filename,options){
       calls.push([filename,options]);
@@ -145,4 +148,48 @@ test('unconfigured private backups preserve the existing caller picker id',async
   const win=browser();let options;win.showSaveFilePicker=async value=>{options=value;return {};};
   const folder=createBackupFolder({store:memoryStore(),win});await folder.ready;
   await folder.destination('notes.json',{id:'launchpad-task-backup'});assert.equal(options.id,'launchpad-task-backup');
+});
+
+test('each area remembers a separate folder and Open starts there with its own picker ID',async()=>{
+  const store=memoryStore();
+  for(const scope of ['vet','tas','launchpad','finance']){
+    const handle=directory(scope),win=browser();await configured({scope,handle,win,store});
+    let options;const file={name:'backup.json'};win.showOpenFilePicker=async value=>{options=value;return[{getFile:async()=>file}];};
+    const folder=createBackupFolder({scope,store,win});await folder.ready;
+    assert.equal(await folder.openFile(),file);assert.equal(options.startIn,handle);assert.equal(options.id,`wwhs-${scope}-backups`);assert.equal(options.excludeAcceptAllOption,true);
+  }
+  assert.equal(store.data.size,4);
+});
+
+test('existing parent preference creates separate area subfolders only after a user action',async()=>{
+  const store=memoryStore(),parent=directory('Private'),win=browser();await configured({handle:parent,store,win});
+  const launchpad=createBackupFolder({scope:'launchpad',store,win}),finance=createBackupFolder({scope:'finance',store,win});await Promise.all([launchpad.ready,finance.ready]);
+  assert.equal(parent.directories.size,0);assert.equal(launchpad.state().parentName,'Private');
+  await(await launchpad.destination('launchpad-backup.json')).write('notes');await(await finance.destination('finance-backup.json')).write('encrypted');
+  assert.deepEqual([...parent.directories.keys()],['Launchpad','Finance']);assert.equal(parent.files.size,0);
+  assert.equal(parent.directories.get('Launchpad').files.size,1);assert.equal(parent.directories.get('Finance').files.size,1);
+  await launchpad.forget();assert.equal(launchpad.state().parentName,'');assert.equal(store.data.get('finance').handle.name,'Finance');
+});
+
+test('folder listing offers compatible backups only, including older files without moving them',async()=>{
+  const store=memoryStore(),parent=directory('Private');await configured({handle:parent,store});
+  const add=(handle,name,value)=>{const file={name,size:100,lastModified:1,text:async()=>JSON.stringify(value)};handle.files.set(name,{kind:'file',name,getFile:async()=>file});};
+  const notes={format:'wwhs-launchpad-backup',version:1,records:{}},finance={format:'finance-studio-encrypted-vault',version:1,ciphertext:'encrypted'};
+  add(parent,'old-notes.json',notes);add(parent,'finance.json',finance);add(parent,'unrelated.json',{name:'unrelated'});
+  const folder=createBackupFolder({scope:'launchpad',store,win:browser()});await folder.ready;
+  const entries=await folder.files(),compatible=await compatibleBackupFiles(entries,'launchpad');
+  assert.deepEqual(compatible.map(entry=>entry.file.name),['old-notes.json']);assert.equal(compatible[0].legacy,true);assert.equal(parent.files.size,3);
+  assert.equal((await compatibleBackupFiles(entries,'finance')).length,1);
+  assert.equal(isBackupForArea({kind:'WWHS-TEAM-HANDOVER',schemaVersion:1,data:{},scope:'vet'},'tas'),false);
+  assert.equal(isBackupForArea({kind:'WWHS-TEAM-HANDOVER',schemaVersion:1,data:{},scope:'vet'},'vet'),true);
+  assert.equal(isBackupForArea({kind:'WWHS-TEAM-HANDOVER',schemaVersion:1,data:{}},'tas'),true);
+  assert.equal(isBackupForArea({kind:'WWHS-TEAM-SAFETY-BACKUP',schemaVersion:1,data:{},scope:'vet'},'vet'),true);
+  assert.equal(isBackupForArea({kind:'WWHS-TEAM-SAFETY-BACKUP',schemaVersion:1,data:{},scope:'vet'},'tas'),false);
+});
+
+test('two areas cannot select the same exact folder and cancelled Open changes no preference',async()=>{
+  const store=memoryStore(),handle=directory('Area'),win=browser();await configured({scope:'vet',store,handle,win});
+  win.showDirectoryPicker=async()=>handle;const tas=createBackupFolder({scope:'tas',store,win});await tas.ready;
+  await assert.rejects(tas.select(),/Each area needs its own/);assert.equal(store.data.has('tas'),false);
+  win.showOpenFilePicker=async()=>{throw new DOMException('Cancelled','AbortError');};assert.equal(await tas.openFile(),null);assert.equal(store.data.size,1);
 });

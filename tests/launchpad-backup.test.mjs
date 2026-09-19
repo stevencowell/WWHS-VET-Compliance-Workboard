@@ -153,8 +153,8 @@ test('edits during asynchronous preparation prevent restore from touching any sa
   await assert.rejects(applyLaunchpadRestore(s,before,after,o),/changed in another tab/);assert.equal(s.getItem(K.theme),'dark');assert.equal(s.getItem(K.links),before[K.links]);assert.equal(JSON.parse(s.getItem(K.inbox)).items[0].id,'newer');assert.equal(s.getItem(RESTORE_KEY),null);
 });
 test('team session changes during lock acquisition or recovery preparation prevent every Launchpad write',async()=>{
-  for(const timing of ['lock','database']){
-    const s=fixture(),before=snapshotLaunchpad(s),after={...before,[K.theme]:'light',[K.links]:'[]'},o=options(),key='wwhs-team-handover:v1';
+  for(const timing of ['lock','database'])for(const key of ['wwhs-team-handover:v1','wwhs-team-handover:vet:v1','wwhs-team-handover:tas:v1']){
+    const s=fixture(),before=snapshotLaunchpad(s),after={...before,[K.theme]:'light',[K.links]:'[]'},o=options();
     if(timing==='lock')o.locks.request=async(name,opts,fn)=>{s.setItem(key,'{"phase":"view-only"}');return fn({name});};
     else {const put=o.backend.put.bind(o.backend);o.backend.put=async body=>{await put(body);s.setItem(key,'{"phase":"view-only"}');};}
     await assert.rejects(applyLaunchpadRestore(s,before,after,o),/shared work session changed/);assert.deepEqual(snapshotLaunchpad(s),before);assert.equal(s.getItem(RESTORE_KEY),null);assert.equal(o.backend.records.size,0);

@@ -1,11 +1,11 @@
 // Private, browser-local recovery. Portable handover files never contain this data.
-import {BACKUP_KEYS, RESTORE_KEY,createLaunchpadBackup} from './launchpad-backup.mjs?v=calendar-backup-1';
+import {BACKUP_KEYS, RESTORE_KEY,createLaunchpadBackup} from './launchpad-backup.mjs?v=area-backups-1';
 const KEYS={journal:RESTORE_KEY}, DATA_KEYS=Object.values(BACKUP_KEYS);
 
 const LOCK_NAME='wwhs-team-handover-transaction:v2';
 const DB_NAME='wwhs-launchpad-recovery', STORE_NAME='transactions';
 const PREVIOUS_ID='previous-launchpad-copy';
-const TEAM_GUARD_KEYS=['wwhs-team-handover:v1','wwhs-team-handover-journal:v1'];
+const TEAM_GUARD_KEYS=['wwhs-team-handover:v1','wwhs-team-handover-journal:v1','wwhs-team-handover:vet:v1','wwhs-team-handover:tas:v1'];
 export const captureLaunchpadTeamGuard=storage=>Object.fromEntries(TEAM_GUARD_KEYS.map(key=>[key,storage.getItem(key)]));
 const ALLOWED_KEYS=[...DATA_KEYS], MAX_VALUE=12000000;
 const object=value=>!!value&&typeof value==='object'&&!Array.isArray(value);

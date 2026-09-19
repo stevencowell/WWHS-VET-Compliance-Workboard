@@ -1,6 +1,7 @@
-import {BACKUP_KEYS,MAX_BACKUP_BYTES,parseLaunchpadBackup,planLaunchpadRestore,backupCounts} from './launchpad-backup.mjs?v=calendar-backup-1';
-import {applyLaunchpadRestore,captureLaunchpadTeamGuard} from './launchpad-backup-transaction.mjs?v=calendar-backup-1';
+import {BACKUP_KEYS,MAX_BACKUP_BYTES,parseLaunchpadBackup,planLaunchpadRestore,backupCounts} from './launchpad-backup.mjs?v=area-backups-1';
+import {applyLaunchpadRestore,captureLaunchpadTeamGuard} from './launchpad-backup-transaction.mjs?v=area-backups-1';
 import {validateInbox} from './summary-core.mjs?v=backup-flow-2';
+import {mountBackupFileBrowser} from '../../assets/js/backup-file-browser.mjs?v=area-backups-1';
 const storage=()=>globalThis.WWHS_STORAGE||globalThis.localStorage;
 const el=(tag,text,attrs={})=>{const node=document.createElement(tag);if(text!==undefined)node.textContent=text;for(const[key,value]of Object.entries(attrs))node.setAttribute(key,value);return node;};
 
@@ -10,11 +11,12 @@ export function installLaunchpadBackupDialog(board){
   dialog.addEventListener('cancel',event=>{if(board.backupImportBusy)event.preventDefault();});
   dialog.append(el('p','Launchpad · Private backup',{class:'import-save-scope'}),el('h2','Open backup',{id:'launchpad-backup-title'}),el('p','Choose your Launchpad backup from your private folder or Downloads. It brings back notes, completed tasks, calendar, older plans and saved links. Older task-only backups still work.'),el('p','Missing records are added. Records already here stay unless you choose the backup versions below. Nothing here is removed.'),el('p','Finance and shared VET/TAS progress use their own Open backup controls.',{class:'import-help'}));
   const file=board.backupFile=el('input',undefined,{type:'file',accept:'.json,application/json',id:'launchpad-backup-file'});
+  file.hidden=true;
   const message=board.backupMessage=el('p','',{role:'status','aria-live':'polite'});
   const details=board.backupStorageDetails=el('details');details.hidden=true;
   const prefer=el('input',undefined,{type:'checkbox'}),choice=el('label','Use versions from this backup where records differ',{class:'launchpad-backup-choice'});choice.prepend(prefer);choice.hidden=true;
   const apply=el('button','Open backup',{type:'button',class:'import-primary'}),cancel=el('button','Cancel',{type:'button'});
-  const busy=value=>{board.backupImportBusy=value;apply.disabled=value||!preview;cancel.disabled=value;file.disabled=value;prefer.disabled=value;};
+  const busy=value=>{board.backupImportBusy=value;apply.disabled=value||!preview;cancel.disabled=value;file.disabled=value;prefer.disabled=value;board.backupFileBrowser?.setDisabled(value);};
   board.resetBackupPreview=()=>{preview=null;prefer.checked=false;choice.hidden=true;busy(false);};board.resetBackupPreview();
   cancel.addEventListener('click',()=>dialog.close());
   const prepare=async chosen=>{
@@ -30,6 +32,8 @@ export function installLaunchpadBackupDialog(board){
     finally{busy(false);}
   };
   file.addEventListener('change',()=>void prepare(file.files[0]));
+  const files=el('div');board.backupFileBrowser=mountBackupFileBrowser(files,{scope:'launchpad',onFile:prepare,onError:error=>{board.resetBackupPreview();message.setAttribute('role','alert');message.textContent=error.message;}});
+  dialog.addEventListener('close',()=>board.backupFileBrowser.reset());
   board.openBackupFile=async chosen=>{board.openTaskBackupImport();await prepare(chosen);};
   apply.addEventListener('click',async()=>{
     if(!preview)return;
@@ -52,5 +56,5 @@ export function installLaunchpadBackupDialog(board){
     }finally{busy(false);}
   });
   const actions=el('div',undefined,{class:'import-actions'});actions.append(apply,cancel);
-  dialog.append(el('label','Choose a Launchpad backup',{for:'launchpad-backup-file'}),file,message,choice,details,actions);board.append(dialog);
+  dialog.append(files,file,message,choice,details,actions);board.append(dialog);
 }

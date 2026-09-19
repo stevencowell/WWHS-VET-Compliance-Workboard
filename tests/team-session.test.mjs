@@ -31,10 +31,11 @@ function stores(){
     [KEYS.inbox]:json({version:2,items:[teamCard(),personalCard()],briefing:'Private briefing',workboardImports:['vet:task::2026'],forecastContexts:{}})
   };
 }
-function harness({teamState=metadata(),journal=null}={}){
+function harness({teamState=metadata(),journal=null,areas={}}={}){
   const values=new Map(Object.entries(stores())),events=[],writes=[];
   if(teamState!==null)values.set(KEYS.metadata,typeof teamState==='string'?teamState:json(teamState));
   if(journal!==null)values.set(KEYS.journal,journal);
+  for(const [scope,state] of Object.entries(areas))values.set(KEYS[`${scope}Metadata`],typeof state==='string'?state:json(state));
   const storage={getItem:key=>values.get(key)??null,setItem(key,value){values.set(key,String(value));writes.push({key,value:String(value)});},removeItem(key){values.delete(key);writes.push({key,value:null});}};
   const window={dispatchEvent(event){events.push(event);return true;}};
   class CustomEvent{constructor(type,options={}){this.type=type;this.detail=options.detail;}}
@@ -149,4 +150,25 @@ test('reordering saved records and card display order is operationally unchanged
   const h=harness(),inbox=h.value(KEYS.inbox);inbox.items.reverse();assert.equal(h.attempt(KEYS.inbox,inbox),true);
   const vet=h.value(KEYS.vet);vet.records={task:{exceptionSummary:'Working note',stepChecks:{0:false},status:'in-progress'}};assert.equal(h.attempt(KEYS.vet,vet),true);
   assert.equal(h.events.length,0);
+});
+
+
+test('area sessions permit TAS work while VET is view only and keep legacy history unchanged',()=>{
+  const h=harness({areas:{vet:metadata(),tas:metadata(editing('tas-session'))}}),legacy=h.values.get(KEYS.metadata);
+  assert.equal(h.guard.isEditing('vet'),false);assert.equal(h.guard.isEditing('tas'),true);
+  const vet=h.value(KEYS.vet);vet.records.task.status='completed';denied(h,KEYS.vet,vet);
+  const tas=h.value(KEYS.tas);tas.records['task::2026'].status='completed';assert.equal(h.attempt(KEYS.tas,tas),true);
+  const reviews=h.value(KEYS.review);reviews.records['tas:2026:task']={completed:true,reviewedOn:'2026-09-20'};assert.equal(h.attempt(KEYS.review,reviews),true);
+  reviews.records['vet:2026:task']={completed:true,reviewedOn:'2026-09-20'};denied(h,KEYS.review,reviews);
+  assert.equal(h.values.get(KEYS.metadata),legacy);
+});
+test('area session changes in another tab do not revoke the other area',()=>{
+  const h=harness({areas:{vet:metadata(editing('vet-session')),tas:metadata(editing('tas-session'))}});
+  h.values.set(KEYS.vetMetadata,json(metadata(editing('new-vet-session'))));
+  assert.equal(h.guard.isEditing('vet'),false);assert.equal(h.guard.isEditing('tas'),true);
+  const tas=h.value(KEYS.tas);tas.records['task::2026'].exceptionReason='Later note';assert.equal(h.attempt(KEYS.tas,tas),true);
+});
+test('damaged area metadata does not block unrelated native work',()=>{
+  const h=harness({teamState:null,areas:{vet:'broken',tas:metadata(editing('tas-session'))}});
+  const tas=h.value(KEYS.tas);tas.records['task::2026'].exceptionReason='Later note';assert.equal(h.attempt(KEYS.tas,tas),true);
 });

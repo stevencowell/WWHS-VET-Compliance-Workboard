@@ -4,7 +4,7 @@
 const {chromium}=require('C:/Users/scowell1/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
 const fs=require('node:fs'),path=require('node:path'),http=require('node:http'),assert=require('node:assert/strict');
 const root=path.resolve(__dirname,'..'),out=path.resolve(root,'../../outputs');
-const PRIVATE='Synthetic private backups',TEAM='Synthetic team handover';
+const PRIVATE='Synthetic Launchpad backups',FINANCE='Synthetic Finance backups',TEAM='Synthetic VET backups';
 const types={'.html':'text/html','.mjs':'text/javascript','.js':'text/javascript','.css':'text/css','.json':'application/json','.svg':'image/svg+xml','.webp':'image/webp','.png':'image/png'};
 const report={pass:false,syntheticOPFSOnly:true,checks:[],pickers:[],pageErrors:[],externalRequests:[]};
 const pass=name=>report.checks.push(name);
@@ -19,18 +19,20 @@ async function files(page,folder=PRIVATE){return page.evaluate(async name=>{
   for await(const [filename,handle]of directory.entries())if(handle.kind==='file')values[filename]=await(await handle.getFile()).text();
   return values;
 },folder);}
-async function databaseRecord(page,scope){return page.evaluate(async({scope,privateName,teamName})=>{
+async function databaseRecord(page,scope){return page.evaluate(async({scope,privateName,financeName,teamName})=>{
   const db=await new Promise((resolve,reject)=>{const r=indexedDB.open('wwhs-backup-folders:v1',1);r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});
   const value=await new Promise((resolve,reject)=>{const r=db.transaction('folders').objectStore('folders').get(scope);r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});db.close();
   if(!value)return null;
-  const reference=await(await navigator.storage.getDirectory()).getDirectoryHandle(scope==='private'?privateName:teamName,{create:true});
+  const reference=await(await navigator.storage.getDirectory()).getDirectoryHandle(scope==='launchpad'?privateName:scope==='finance'?financeName:teamName,{create:true});
   return {keys:Object.keys(value).sort(),name:value.handle?.name,revision:value.revision,nativeHandle:value.handle instanceof FileSystemDirectoryHandle,sameEntry:await value.handle.isSameEntry(reference)};
-},{scope,privateName:PRIVATE,teamName:TEAM});}
+},{scope,privateName:PRIVATE,financeName:FINANCE,teamName:TEAM});}
 const warns=page=>page.evaluate(()=>{const event=new Event('beforeunload',{cancelable:true});window.dispatchEvent(event);return event.defaultPrevented;});
-async function folderReady(page,scope='private'){
-  await page.evaluate(()=>{for(const selector of ['aside[aria-label="Private Launchpad backup"] details','#financeBackupSettings','#backup-settings']){const panel=document.querySelector(selector);if(panel)panel.open=true;}});
-  await page.locator(`.backup-folder-settings[data-backup-scope="${scope}"] [data-folder-action="select"]`).waitFor({state:'visible'});
-  await page.waitForFunction(scope=>!document.querySelector(`.backup-folder-settings[data-backup-scope="${scope}"] [data-folder-action="select"]`).disabled,scope);
+async function folderReady(page,scope='launchpad'){
+  if(scope==='launchpad'&&!await page.locator('#launchpad-backup-options').evaluate(node=>node.open))await page.locator('[data-backup-action=save]').click();
+  if(scope==='finance'&&!await page.locator('#financeBackupReminder').evaluate(node=>node.open))await page.locator('#financeSaveBackup').click();
+  await page.evaluate(()=>{for(const selector of ['#launchpad-backup-options details','#financeBackupSettings','#backup-settings']){const panel=document.querySelector(selector);if(panel)panel.open=true;}});
+  await page.locator(`${scope==='finance'?'#financeBackupReminder ':''}.backup-folder-settings[data-backup-scope="${scope}"] [data-folder-action="select"]`).waitFor({state:'visible'});
+  await page.waitForFunction(scope=>!document.querySelector(`${scope==='finance'?'#financeBackupReminder ':''}.backup-folder-settings[data-backup-scope="${scope}"] [data-folder-action="select"]`).disabled,scope);
 }
 
 (async()=>{
@@ -40,10 +42,10 @@ async function folderReady(page,scope='private'){
     const context=await browser.newContext({viewport:{width:1440,height:1050},acceptDownloads:false,serviceWorkers:'block'});
     await context.exposeBinding('__recordSyntheticPicker',(_,value)=>report.pickers.push(value));
     await context.route('**/*',route=>{if(new URL(route.request().url()).origin===base)return route.continue();report.externalRequests.push(route.request().url());return route.abort();});
-    await context.addInitScript(({privateName,teamName})=>{
+    await context.addInitScript(({privateName,financeName,teamName})=>{
       window.__writeMode='normal';window.__denyFolder=false;window.__folderChoice=null;window.__closedNames=[];window.__pendingClose=null;window.__permissionRequests=0;window.__focusDuringPermission=false;
       window.showDirectoryPicker=async options=>{
-        const name=window.__folderChoice||(options.id.includes('team')?teamName:privateName);
+        const name=window.__folderChoice||(options.id.includes('vet')?teamName:options.id.includes('finance')?financeName:privateName);
         await window.__recordSyntheticPicker({kind:'directory',name,id:options.id});
         return(await navigator.storage.getDirectory()).getDirectoryHandle(name,{create:true});
       };
@@ -66,15 +68,15 @@ async function folderReady(page,scope='private'){
           await writer.close();window.__closedNames.push(name);
         }};
       };
-    },{privateName:PRIVATE,teamName:TEAM});
+    },{privateName:PRIVATE,financeName:FINANCE,teamName:TEAM});
     const makePage=async()=>{const page=await context.newPage();page.setDefaultTimeout(15000);page.on('pageerror',error=>report.pageErrors.push(error.message));return page;};
     const launchpad=await makePage();await launchpad.goto(base+'/morning-launchpad/');
     await launchpad.waitForFunction(()=>document.querySelector('summary-import')?.started&&window.WWHS_PRIVATE_NOTES_BACKUP&&!window.WWHS_PRIVATE_NOTES_BACKUP.state().checking);
     await folderReady(launchpad);
-    const privatePanel=launchpad.locator('aside[aria-label="Private Launchpad backup"]');
+    const privatePanel=launchpad.locator('#launchpad-backup-options');
     await privatePanel.locator('[data-folder-action="select"]').click();
     await launchpad.waitForFunction(name=>document.querySelector('.backup-folder-settings').textContent.includes('Selected: '+name),PRIVATE);
-    const initialRecord=await databaseRecord(launchpad,'private');assert.equal(initialRecord.nativeHandle,true);assert.equal(initialRecord.sameEntry,true);assert.deepEqual(initialRecord.keys,['handle','revision']);assert.equal(await databaseRecord(launchpad,'team'),null);
+    const initialRecord=await databaseRecord(launchpad,'launchpad');assert.equal(initialRecord.nativeHandle,true);assert.equal(initialRecord.sameEntry,true);assert.deepEqual(initialRecord.keys,['handle','revision']);assert.equal(await databaseRecord(launchpad,'vet'),null);
     pass('Launchpad remembers a genuine OPFS directory handle in actual IndexedDB; no backup payload is in the preference record.');
 
     await launchpad.evaluate(async()=>{
@@ -102,50 +104,52 @@ async function folderReady(page,scope='private'){
 
     const finance=await makePage();await finance.goto(base+'/finance/');
     await finance.locator('#vaultPassword').fill('synthetic folder test password');await finance.locator('#confirmPassword').fill('synthetic folder test password');await finance.locator('#unlockFinance').click();
-    await finance.waitForFunction(()=>document.querySelector('#saveStatus')?.textContent==='Saved in this browser');await folderReady(finance);
-    assert.match(await finance.locator('.backup-folder-settings[data-backup-scope="private"]').innerText(),/Selected: Synthetic private backups/);
-    assert.equal((await databaseRecord(finance,'private')).revision,initialRecord.revision);
-    assert.equal(report.pickers.filter(p=>p.kind==='directory').length,1);assert.equal(report.pickers.filter(p=>p.kind==='file').length,0);
-    pass('Finance automatically uses the Launchpad directory after a separate page load, without another native chooser.');
+    await finance.waitForFunction(()=>document.querySelector('#saveStatus')?.textContent==='Saved in this browser');await folderReady(finance,'finance');
+    assert.match(await finance.locator('#financeBackupReminder .backup-folder-settings[data-backup-scope="finance"]').innerText(),/remember it for Open and Save/);
+    await finance.locator('#financeBackupReminder .backup-folder-settings[data-backup-scope="finance"] [data-folder-action="select"]').click();
+    await finance.waitForFunction(name=>document.querySelector('#financeBackupReminder [data-backup-scope="finance"]').textContent.includes('Selected: '+name),FINANCE);
+    const financeRecord=await databaseRecord(finance,'finance');assert.equal(financeRecord.name,FINANCE);assert.notEqual(financeRecord.name,initialRecord.name);
+    assert.equal(report.pickers.filter(p=>p.kind==='directory').length,2);assert.equal(report.pickers.filter(p=>p.kind==='file').length,0);
+    pass('Finance selects and remembers its own folder separately from Launchpad.');
     const edit=async amount=>{await finance.evaluate(amount=>window.FINANCE_STORAGE.setItem('finance_studio_budget_items_v3',JSON.stringify([{id:'synthetic-budget',category:'Housing',item:'Water',annual_budget:amount,notes:'Secret invented finance marker'}])),amount);await finance.waitForFunction(()=>document.querySelector('#saveStatus').textContent==='Saved in this browser');};
     await edit(111);assert.equal(await warns(finance),true);
     await finance.evaluate(()=>window.__writeMode='defer');await finance.locator('#downloadEncryptedBackup').click();await finance.waitForFunction(()=>!!window.__pendingClose);
     assert.equal(await warns(finance),true);assert.equal(await finance.locator('#financeBackupReminder').getAttribute('data-state'),'needed');
     await finance.evaluate(()=>window.__releaseClose());await finance.waitForFunction(()=>document.querySelector('#backupStatus').textContent.startsWith('Encrypted backup saved'));
     assert.equal(await warns(finance),false);
-    const withFinance=await files(finance);const encryptedName=Object.keys(withFinance).find(name=>name.startsWith('finance-encrypted-backup-'));assert.ok(encryptedName);
+    const withFinance=await files(finance,FINANCE);const encryptedName=Object.keys(withFinance).find(name=>name.startsWith('finance-encrypted-backup-'));assert.ok(encryptedName);
     const encrypted=JSON.parse(withFinance[encryptedName]);assert.equal(encrypted.kdf,'PBKDF2-SHA256');assert.ok(encrypted.ciphertext);assert.ok(!withFinance[encryptedName].includes('Secret invented finance marker'));assert.ok(!withFinance[encryptedName].includes('Invented personal note'));
-    for(const [name,text]of Object.entries(twice))assert.equal(withFinance[name],text);
-    pass('Finance writes encrypted content only to the same private folder and confirms only after file close; existing task backups survive unchanged.');
+    assert.equal(Object.keys(withFinance).length,1);assert.deepEqual(await files(finance,PRIVATE),twice);
+    pass('Finance writes encrypted content only to its own folder and confirms only after file close; Launchpad backups remain unchanged in their separate folder.');
 
     await edit(222);await finance.evaluate(()=>window.__writeMode='fail-close');await finance.locator('#downloadEncryptedBackup').click();
     await finance.waitForFunction(()=>!document.querySelector('#downloadEncryptedBackup').disabled&&document.querySelector('#backupStatus').textContent.includes('could not be saved'));
     assert.equal(await warns(finance),true);assert.equal(await finance.locator('#confirmFinanceBackup').isVisible(),false);
-    for(const [name,text]of Object.entries(withFinance))assert.equal((await files(finance))[name],text);
+    for(const [name,text]of Object.entries(withFinance))assert.equal((await files(finance,FINANCE))[name],text);
     pass('A file-close failure retains the Finance warning and cannot replace earlier backups.');
-    await finance.evaluate(()=>{window.__writeMode='normal';window.__denyFolder=true;});const beforeDenied=await files(finance);
+    await finance.evaluate(()=>{window.__writeMode='normal';window.__denyFolder=true;});const beforeDenied=await files(finance,FINANCE);
     await finance.locator('#downloadEncryptedBackup').click();await finance.waitForFunction(()=>!document.querySelector('#downloadEncryptedBackup').disabled&&document.querySelector('#backupStatus').textContent.includes('not granted'));
-    assert.equal(await warns(finance),true);assert.ok(await finance.evaluate(()=>window.__permissionRequests>0));assert.deepEqual(await files(finance),beforeDenied);assert.equal(report.pickers.filter(p=>p.kind==='file').length,0);
+    assert.equal(await warns(finance),true);assert.ok(await finance.evaluate(()=>window.__permissionRequests>0));assert.deepEqual(await files(finance,FINANCE),beforeDenied);assert.equal(report.pickers.filter(p=>p.kind==='file').length,0);
     pass('Denied directory permission leaves the warning and files unchanged; it does not silently open another chooser.');
     await finance.evaluate(()=>window.__denyFolder=false);await finance.locator('#downloadEncryptedBackup').click();await finance.waitForFunction(()=>document.querySelector('#backupStatus').textContent.startsWith('Encrypted backup saved'));assert.equal(await warns(finance),false);
-    const afterRetry=await files(finance);assert.equal(Object.keys(afterRetry).filter(name=>name.startsWith('finance-encrypted-backup-')&&afterRetry[name]).length,2);
+    const afterRetry=await files(finance,FINANCE);assert.equal(Object.keys(afterRetry).filter(name=>name.startsWith('finance-encrypted-backup-')&&afterRetry[name]).length,2);
     pass('Retry succeeds with the remembered handle and retains both successful encrypted backups.');
 
-    const team=await makePage();await team.goto(base+'/team-handover/');await folderReady(team,'team');
-    const teamPanel=team.locator('.backup-folder-settings[data-backup-scope="team"]');assert.match(await teamPanel.innerText(),/No default folder selected/);
+    const team=await makePage();await team.goto(base+'/team-handover/?wing=vet#save-backup');await folderReady(team,'vet');
+    const teamPanel=team.locator('.backup-folder-settings[data-backup-scope="vet"]');assert.match(await teamPanel.innerText(),/remember it for Open and Save/);
     await team.evaluate(name=>window.__folderChoice=name,PRIVATE);await teamPanel.locator('[data-folder-action="select"]').click();
-    await team.waitForFunction(()=>document.querySelector('.backup-folder-settings[data-backup-scope="team"]').textContent.includes('different folders'));
-    assert.equal(await databaseRecord(team,'team'),null);assert.equal((await databaseRecord(team,'private')).revision,initialRecord.revision);
-    await team.evaluate(name=>window.__folderChoice=name,TEAM);await teamPanel.locator('[data-folder-action="select"]').click();await team.waitForFunction(name=>document.querySelector('.backup-folder-settings[data-backup-scope="team"]').textContent.includes('Selected: '+name),TEAM);
-    assert.equal((await databaseRecord(team,'team')).sameEntry,true);assert.equal((await databaseRecord(team,'private')).sameEntry,true);
-    await finance.reload();await finance.locator('#vaultPassword').fill('synthetic folder test password');await finance.locator('#unlockFinance').click();await finance.waitForFunction(()=>document.querySelector('#saveStatus')?.textContent==='Saved in this browser');await folderReady(finance);
-    assert.match(await finance.locator('.backup-folder-settings[data-backup-scope="private"]').innerText(),/Selected: Synthetic private backups/);
-    await finance.evaluate(name=>window.__folderChoice=name,TEAM);await finance.locator('.backup-folder-settings[data-backup-scope="private"] [data-folder-action="select"]').click();
-    await finance.waitForFunction(()=>document.querySelector('.backup-folder-settings[data-backup-scope="private"]').textContent.includes('different folders'));
-    assert.equal((await databaseRecord(finance,'private')).revision,initialRecord.revision);assert.equal((await databaseRecord(finance,'team')).name,TEAM);
-    await finance.evaluate(async()=>{const {getBackupFolder}=await import('/assets/js/backup-folder.mjs?v=default-folder-1');await getBackupFolder('private').refresh();});
-    assert.deepEqual(await files(finance),afterRetry);assert.deepEqual(await files(finance,TEAM),{});
-    pass('Private and team choices remain separate in IndexedDB; selecting the same directory is rejected in both directions without moving or writing any files.');
+    await team.waitForFunction(()=>document.querySelector('.backup-folder-settings[data-backup-scope="vet"]').textContent.includes('Each area needs its own'));
+    assert.equal(await databaseRecord(team,'vet'),null);assert.equal((await databaseRecord(team,'launchpad')).revision,initialRecord.revision);
+    await team.evaluate(name=>window.__folderChoice=name,TEAM);await teamPanel.locator('[data-folder-action="select"]').click();await team.waitForFunction(name=>document.querySelector('.backup-folder-settings[data-backup-scope="vet"]').textContent.includes('Selected: '+name),TEAM);
+    assert.equal((await databaseRecord(team,'vet')).sameEntry,true);assert.equal((await databaseRecord(team,'launchpad')).sameEntry,true);
+    await finance.reload();await finance.locator('#vaultPassword').fill('synthetic folder test password');await finance.locator('#unlockFinance').click();await finance.waitForFunction(()=>document.querySelector('#saveStatus')?.textContent==='Saved in this browser');await folderReady(finance,'finance');
+    assert.match(await finance.locator('#financeBackupReminder .backup-folder-settings[data-backup-scope="finance"]').innerText(),/Selected: Synthetic Finance backups/);
+    await finance.evaluate(name=>window.__folderChoice=name,TEAM);await finance.locator('#financeBackupReminder .backup-folder-settings[data-backup-scope="finance"] [data-folder-action="select"]').click();
+    await finance.waitForFunction(()=>document.querySelector('#financeBackupReminder .backup-folder-settings[data-backup-scope="finance"]').textContent.includes('Each area needs its own'));
+    assert.equal((await databaseRecord(finance,'finance')).revision,financeRecord.revision);assert.equal((await databaseRecord(finance,'vet')).name,TEAM);
+    await finance.evaluate(async()=>{const {getBackupFolder}=await import('/assets/js/backup-folder.mjs?v=area-backups-1');await getBackupFolder('finance').refresh();});
+    assert.deepEqual(await files(finance,FINANCE),afterRetry);assert.deepEqual(await files(finance,TEAM),{});
+    pass('Launchpad, Finance and VET retain independent folders in IndexedDB; selecting a directory already used by another area is rejected without moving or writing files.');
 
     await finance.setViewportSize({width:390,height:844});assert.ok(await finance.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
     await finance.locator('#financeBackupReminder').scrollIntoViewIfNeeded();await finance.screenshot({path:path.join(out,'private-default-folder-finance-mobile.png'),fullPage:false});
@@ -153,7 +157,7 @@ async function folderReady(page,scope='private'){
     await privatePanel.scrollIntoViewIfNeeded();await launchpad.screenshot({path:path.join(out,'private-default-folder-launchpad-mobile.png'),fullPage:false});
     pass('Finance and Launchpad folder controls fit at 390 pixels without horizontal page overflow.');
     assert.deepEqual(report.pageErrors,[]);assert.deepEqual(report.externalRequests,[]);report.pass=true;report.successfulPrivateFiles=Object.entries(afterRetry).filter(([,text])=>text).map(([name])=>name);report.emptyFailedFiles=Object.entries(afterRetry).filter(([,text])=>!text).map(([name])=>name);
-    await context.close();console.log(`PASS private default folder: ${report.checks.length} checks; actual OPFS/IndexedDB; no real Drive or personal profile.`);
+    await context.close();console.log(`PASS separate private backup folders: ${report.checks.length} checks; actual OPFS/IndexedDB; no real Drive or personal profile.`);
   }catch(error){report.error=error.message;throw error;}
   finally{report.finishedAt=new Date().toISOString();fs.writeFileSync(path.join(out,'private-default-folder-browser.json'),JSON.stringify(report,null,2)+'\n');await browser.close();server.close();}
 })().catch(error=>{console.error(error);server.close();process.exitCode=1;});

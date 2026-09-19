@@ -5,6 +5,8 @@ const groups=[
   ['wwhs-head-teacher-tas-workboard:v2','TAS progress'],
   ['wwhs-task-register-review:v1','Review ticks'],
   ['wwhs-team-handover:v1','Team session'],
+  ['wwhs-team-handover:vet:v1','VET session'],
+  ['wwhs-team-handover:tas:v1','TAS session'],
   ['wwhs-team-handover-journal:v1','Temporary recovery marker']
 ];
 const size=value=>typeof value==='string'?value.length:0;

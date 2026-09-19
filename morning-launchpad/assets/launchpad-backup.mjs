@@ -1,7 +1,7 @@
 // A complete private Launchpad file. Native VET/TAS and Finance data stay separate.
 import {INBOX_KEY, LEGACY_PLAN_KEY, validateInbox, validDate, mergeWorkboardImports} from './summary-core.mjs?v=backup-flow-2';
 import {CALENDAR_KEY, validateCalendar} from './calendar-core.mjs?v=8';
-import {snapshot as teamSnapshot,isTeamItem} from '../../assets/js/team-handover-core.mjs?v=team-handover-1';
+import {snapshot as teamSnapshot,isTeamItem} from '../../assets/js/team-handover-core.mjs?v=area-backups-1';
 
 export const BACKUP_FORMAT='wwhs-launchpad-backup';
 // The JSON envelope quotes five already-serialised records. Account for escaping

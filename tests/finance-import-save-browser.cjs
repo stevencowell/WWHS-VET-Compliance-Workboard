@@ -1,4 +1,6 @@
 'use strict';
+async function openSave(page){if(!await page.locator('#financeBackupReminder').evaluate(node=>node.open))await page.locator('#financeSaveBackup').click();}
+async function closeSave(page){if(await page.locator('#financeBackupReminder').evaluate(node=>node.open))await page.locator('#closeFinanceBackup').click();}
 // Fresh synthetic browser storage only: no user profile, personal files or Drive.
 const {chromium}=require('C:/Users/scowell1/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
 const fs=require('node:fs'),path=require('node:path'),http=require('node:http'),assert=require('node:assert/strict');
@@ -34,7 +36,7 @@ async function dismissOrAccept(page,selector,accept,pattern){
     await context.addInitScript(()=>{window.__files=[];window.showSaveFilePicker=async()=>{let text;return{createWritable:async()=>({write:async value=>{text=await value.text();},close:async()=>{window.__files.push(text);},abort:async()=>{}})};};});
     const page=await context.newPage();page.setDefaultTimeout(15000);page.on('pageerror',error=>report.pageErrors.push(error.message));
     await page.goto(base+'/finance/');await page.locator('#vaultForm').waitFor({state:'visible'});
-    await page.locator('#gateImportBackup').click();assert.equal(await page.locator('#restoreVaultDetails').getAttribute('open'),'');assert.equal(await page.evaluate(()=>document.activeElement.id),'restoreVaultFile');assert.equal(await rawVault(page),'null');
+    await page.locator('#gateImportBackup').click();assert.equal(await page.locator('#restoreVaultDetails').getAttribute('open'),'');assert.equal(await page.evaluate(()=>document.activeElement.id),'financeBackupFiles');assert.equal(await rawVault(page),'null');
     check('Locked Import backup opens and focuses the existing encrypted restore form without creating records');
     await page.locator('#restoreVaultFile').setInputFiles({name:'cancelled-test.json',mimeType:'application/json',buffer:Buffer.from('{}')});await page.locator('#restoreVaultPassword').fill('synthetic cancelled password');await page.locator('#cancelRestoreBackup').click();assert.equal(await page.locator('#restoreVaultPassword').inputValue(),'');assert.equal(await page.locator('#restoreVaultFile').inputValue(),'');assert.equal(await page.locator('#restoreVaultDetails').getAttribute('open'),null);assert.equal(await page.evaluate(()=>document.activeElement.id),'gateImportBackup');assert.equal(await rawVault(page),'null');check('Cancel closes the open form, clears its file/password, restores focus and leaves the vault untouched');
     const backup=await page.evaluate(async({key,password})=>{
@@ -42,18 +44,18 @@ async function dismissOrAccept(page,selector,accept,pattern){
       await vault.setup(password);const initial=await vault.loadState();await vault.saveState(initial.revision,{[key]:JSON.stringify({syntheticCase:'Imported test records'})});const text=await vault.exportBackup();vault.close();return text;
     },{key:KEY,password:BACKUP_PASSWORD});
     await page.locator('#vaultPassword').fill(PASSWORD);await page.locator('#confirmPassword').fill(PASSWORD);await page.locator('#unlockFinance').click();await waitSaved(page);
-    assert.equal(await page.locator('#financeBackupReminderTitle').innerText(),'Backups');assert.equal(await page.locator('#importEncryptedBackup').innerText(),'Open backup…');assert.equal(await page.locator('#financeBackupSettings').getAttribute('open'),null);assert.equal(await page.locator('#financeBackupReminder .import-save-scope').textContent(),'Finance · Private encrypted records');
+    assert.equal(await page.locator('#financeBackupReminderTitle').textContent(),'Save Finance backup');assert.equal(await page.locator('#financeBackupReminder').isVisible(),false);assert.equal(await page.locator('#financeBackupToolbar').isVisible(),true);assert.equal(await page.locator('#importEncryptedBackup').innerText(),'Open backup…');assert.equal(await page.locator('#financeBackupSettings').getAttribute('open'),null);assert.equal(await page.locator('#financeBackupReminder .import-save-scope').textContent(),'Finance · Private encrypted records');
     assert.equal(await page.locator('#downloadEncryptedBackup').innerText(),'Save backup…');assert.equal(await page.locator('#financeBackupNow').count(),0);
     await page.evaluate(key=>window.FINANCE_STORAGE.setItem(key,JSON.stringify({syntheticCase:'Current test records'})),KEY);await waitSaved(page);
-    await page.locator('#downloadEncryptedBackup').click();await page.waitForFunction(()=>document.querySelector('#backupStatus').textContent.startsWith('Encrypted backup saved to'));
+    await openSave(page);await page.locator('#downloadEncryptedBackup').click();await page.waitForFunction(()=>document.querySelector('#backupStatus').textContent.startsWith('Encrypted backup saved to'));
     assert.ok(JSON.parse(await page.evaluate(()=>window.__files[0])).ciphertext);assert.ok(!(await page.evaluate(()=>window.__files[0])).includes('Current test records'));
     check('One main encrypted save button is paired with import; existing successful save behaviour retained');
     await page.evaluate(key=>window.FINANCE_STORAGE.setItem(key,JSON.stringify({syntheticCase:'New current edit'})),KEY);
-    await dismissOrAccept(page,'#importEncryptedBackup',false,/Lock Finance and open backup import anyway/);
+    await closeSave(page);await dismissOrAccept(page,'#importEncryptedBackup',false,/Lock Finance and open backup import anyway/);
     assert.equal(await page.locator('#financeWorkspace').isVisible(),true);assert.match(await page.evaluate(key=>window.FINANCE_STORAGE.getItem(key),KEY),/New current edit/);await waitSaved(page);
     check('Import first flushes edits; cancelling the existing backup-before-lock warning keeps the workspace and records open');
-    await dismissOrAccept(page,'#importEncryptedBackup',true,/Lock Finance and open backup import anyway/);
-    await page.waitForURL('**/finance/#import-backup');await page.waitForFunction(()=>document.activeElement?.id==='restoreVaultFile');
+    await closeSave(page);await dismissOrAccept(page,'#importEncryptedBackup',true,/Lock Finance and open backup import anyway/);
+    await page.waitForURL('**/finance/#import-backup');await page.waitForFunction(()=>document.activeElement?.id==='financeBackupFiles');
     assert.equal(await page.evaluate(()=>typeof window.FinanceEngine),'undefined');assert.equal(await page.locator('#financeWorkspace').isVisible(),false);
     const before=await rawVault(page);
     const current=await page.evaluate(async({key,password})=>{const {createLocalVault}=await import('/finance/security/local-vault.mjs');const vault=await createLocalVault();await vault.unlock(password);const values=(await vault.loadState()).values;vault.close();return values[key];},{key:KEY,password:PASSWORD});assert.match(current,/New current edit/);
@@ -76,10 +78,10 @@ async function dismissOrAccept(page,selector,accept,pattern){
     const oldCopy=await page.evaluate(async password=>{const {createLocalVault}=await import('/finance/security/local-vault.mjs');const vault=await createLocalVault();const text=await vault.exportPreviousBackup();vault.close();const reader=await createLocalVault({}, {database:{read:async()=>JSON.parse(text),close(){}}});await reader.unlock(password);const state=await reader.loadState();reader.close();return state.values;},PASSWORD);
     assert.match(oldCopy[KEY],/New current edit/);check('Successful replacement retains authentic previous ciphertext, decryptable with its original password');
     await page.evaluate(()=>window.FINANCE_STORAGE.setItem('finance_studio_previous_probe_v1','{"currentEdit":"KEEP_CURRENT_REMINDER"}'));await waitSaved(page);
-    await page.locator('#financeBackupSettings > summary').click();await page.locator('#savePreviousBackup').click();await page.waitForFunction(()=>document.querySelector('#financePreviousBackupMessage').textContent.startsWith('Previous encrypted copy saved'));
+    await openSave(page);await page.locator('#financeBackupSettings > summary').click();await page.locator('#savePreviousBackup').click();await page.waitForFunction(()=>document.querySelector('#financePreviousBackupMessage').textContent.startsWith('Previous encrypted copy saved'));
     assert.deepEqual(JSON.parse(await page.evaluate(()=>window.__files.at(-1))),JSON.parse(before));assert.match(await page.locator('#financeBackupReminderMessage').innerText(),/backup is recommended/);assert.equal(await page.evaluate(()=>{const e=new Event('beforeunload',{cancelable:true});window.dispatchEvent(e);return e.defaultPrevented;}),true);
     check('Save previous copy exports only the old encrypted records and never acknowledges current changes');
-    await dismissOrAccept(page,'#importEncryptedBackup',true,/Lock Finance and open backup import anyway/);await page.waitForFunction(()=>document.activeElement?.id==='restoreVaultFile');
+    await closeSave(page);await dismissOrAccept(page,'#importEncryptedBackup',true,/Lock Finance and open backup import anyway/);await page.waitForFunction(()=>document.activeElement?.id==='financeBackupFiles');
     const pairBeforeFailure=await rawCopies(page);await page.locator('#gatePreviousBackup').click();await page.waitForFunction(()=>document.querySelector('#gatePreviousBackupMessage').textContent.startsWith('Previous encrypted copy saved'));
     assert.deepEqual(JSON.parse(await page.evaluate(()=>window.__files.at(-1))),JSON.parse(before));assert.equal(await page.locator('#financeWorkspace').isVisible(),false);assert.deepEqual(await rawCopies(page),pairBeforeFailure);
     check('Locked restore details can save the previous encrypted copy without unlocking or replacing either record');
@@ -94,10 +96,10 @@ async function dismissOrAccept(page,selector,accept,pattern){
     await page.locator('#restoreVaultPassword').fill(BACKUP_PASSWORD);await dismissOrAccept(page,'#restoreVault',false,/Replace this browser/);assert.deepEqual(await rawCopies(page),pairBeforeFailure);
     check('Wrong password and cancellation preserve an existing primary and previous copy');
     await page.locator('#vaultPassword').fill(BACKUP_PASSWORD);await page.locator('#unlockFinance').click();await waitSaved(page);
-    await page.evaluate(()=>window.FINANCE_STORAGE.onError(new Error('Synthetic unsaved failure')));await page.locator('#importEncryptedBackup').click();await page.waitForFunction(()=>!document.querySelector('#importEncryptedBackup').disabled);assert.equal(await page.locator('#financeWorkspace').isVisible(),true);assert.match(await page.locator('#saveProblemMessage').innerText(),/Synthetic unsaved failure/);assert.match(await page.evaluate(key=>window.FINANCE_STORAGE.getItem(key),KEY),/Imported test records/);
+    await page.evaluate(()=>window.FINANCE_STORAGE.onError(new Error('Synthetic unsaved failure')));await closeSave(page);await page.locator('#importEncryptedBackup').click();await page.waitForFunction(()=>!document.querySelector('#importEncryptedBackup').disabled);assert.equal(await page.locator('#financeWorkspace').isVisible(),true);assert.match(await page.locator('#saveProblemMessage').innerText(),/Synthetic unsaved failure/);assert.match(await page.evaluate(key=>window.FINANCE_STORAGE.getItem(key),KEY),/Imported test records/);
     check('Fatal save errors block the import transition and keep the current workspace available for recovery');
-    await page.locator('#retrySave').click();await waitSaved(page);assert.deepEqual(await page.evaluate(()=>Object.keys(localStorage)),[]);
-    await page.setViewportSize({width:390,height:844});await page.locator('#financeBackupReminder').scrollIntoViewIfNeeded();assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));await page.screenshot({path:path.join(out,'finance-import-save-mobile.png')});
+    await closeSave(page);await page.locator('#retrySave').click();await waitSaved(page);assert.deepEqual(await page.evaluate(()=>Object.keys(localStorage)),[]);
+    await page.setViewportSize({width:390,height:844});await openSave(page);await page.locator('#financeBackupReminder').scrollIntoViewIfNeeded();assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));await page.screenshot({path:path.join(out,'finance-import-save-mobile.png')});
     check('390px import/save controls fit without horizontal overflow; no financial localStorage');
     const conflictKey='finance_studio_conflict_probe_v1';await page.evaluate(key=>window.FINANCE_STORAGE.setItem(key,'{"marker":"SYNTHETIC_ORIGINAL_TAB"}'),conflictKey);await waitSaved(page);
     const replacement=await page.evaluate(async key=>{
@@ -109,10 +111,10 @@ async function dismissOrAccept(page,selector,accept,pattern){
       const record=JSON.parse(await other.exportBackup());other.close();
       await new Promise((resolve,reject)=>{const tx=db.transaction('vault','readwrite');tx.objectStore('vault').put(record,'primary');tx.oncomplete=resolve;tx.onabort=()=>reject(tx.error);});db.close();return JSON.stringify(record);
     },conflictKey);
-    await page.locator('#downloadEncryptedBackup').click();await page.waitForFunction(()=>document.querySelector('#backupStatus').textContent.startsWith('Encrypted recovery file saved'));
+    await openSave(page);await page.locator('#downloadEncryptedBackup').click();await page.waitForFunction(()=>document.querySelector('#backupStatus').textContent.startsWith('Encrypted recovery file saved'));
     assert.equal(await rawVault(page),replacement);assert.equal(await page.locator('#saveStatus').getAttribute('data-error'),'true');assert.equal(await page.locator('#confirmFinanceBackup').isVisible(),false);
     const recoveredMarker=await page.evaluate(async({password,key})=>{const {createLocalVault}=await import('/finance/security/local-vault.mjs');const record=JSON.parse(window.__files.at(-1));const vault=await createLocalVault({}, {database:{read:async()=>record,close(){}}});await vault.unlock(password);const value=(await vault.loadState()).values[key];vault.close();return value;},{password:BACKUP_PASSWORD,key:conflictKey});assert.match(recoveredMarker,/SYNTHETIC_ORIGINAL_TAB/);
-    await page.locator('#retrySave').click();await page.waitForFunction(()=>document.querySelector('#saveStatus').textContent.startsWith('Another tab'));assert.equal(await rawVault(page),replacement);assert.equal(await page.evaluate(()=>{const e=new Event('beforeunload',{cancelable:true});window.dispatchEvent(e);return e.defaultPrevented;}),true);
+    await closeSave(page);await page.locator('#retrySave').click();await page.waitForFunction(()=>document.querySelector('#saveStatus').textContent.startsWith('Another tab'));assert.equal(await rawVault(page),replacement);assert.equal(await page.evaluate(()=>{const e=new Event('beforeunload',{cancelable:true});window.dispatchEvent(e);return e.defaultPrevented;}),true);
     check('A same-revision replacement produces recovery from this tab, preserves the other vault and cannot be falsely cleared by retry');
     const sample=await context.newPage();sample.on('pageerror',error=>report.pageErrors.push(error.message));await sample.goto(base+'/finance/');await sample.locator('#trySample').click();await sample.locator('#financeWorkspace').waitFor({state:'visible'});assert.equal(await sample.locator('#financeBackupReminder').isVisible(),false);assert.equal(await sample.locator('#downloadEncryptedBackup').isVisible(),false);assert.equal(await sample.locator('#importEncryptedBackup').isVisible(),false);assert.equal(await sample.locator('#restoreBackup').isDisabled(),true);
     check('Sample mode remains isolated from all private import/save controls');

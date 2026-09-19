@@ -1,13 +1,13 @@
 // Immutable, private browser copies. Only small references enter localStorage.
-import {parseBackup,snapshot} from './team-handover-core.mjs?v=team-handover-1';
+import {parseBackup,snapshot} from './team-handover-core.mjs?v=area-backups-1';
 
 const DB_NAME='wwhs-team-handover-payloads', STORE='payloads', MAX_SIZE=12000000;
-const INFO=['workspaceId','revision','parentRevision','parentExportId','exportId','savedAt','savedBy','note','changes'];
+const INFO=['scope','workspaceId','revision','parentRevision','parentExportId','exportId','savedAt','savedBy','note','changes'];
 const object=value=>!!value&&typeof value==='object'&&!Array.isArray(value);
 const own=(value,key)=>Object.hasOwn(value,key);
 const fail=message=>{throw new Error(message);};
 const copy=value=>JSON.parse(JSON.stringify(value));
-const info=value=>Object.fromEntries(INFO.map(key=>[key,value[key]]));
+const info=value=>Object.fromEntries(INFO.filter(key=>value[key]!==undefined).map(key=>[key,value[key]]));
 function reference(value,kind){
   if(!object(value)||value.version!==1||value.kind!==kind||typeof value.id!=='string'||!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,149}$/.test(value.id)||Object.keys(value).some(key=>!['version','id','kind'].includes(key)))fail('The saved team file reference is invalid. Keep this browser data intact for recovery.');
   return value;

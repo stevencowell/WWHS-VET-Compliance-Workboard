@@ -294,3 +294,41 @@ test('receipt removal, corruption or an unrelated digest fails closed',async()=>
     assert.equal(h.unload(),true);await h.guard.refresh();assert.equal(h.unload(),true);
   }
 });
+
+
+test('area reminders inspect only their own progress and saving one leaves the other warning active',async()=>{
+  const baseline=fixture(),h=harness(null),hydrate=async value=>copy(value);
+  h.values.set(KEYS.vetMetadata,JSON.stringify(session(baseline,'vet-session')));
+  h.values.set(KEYS.tasMetadata,JSON.stringify(session(baseline,'tas-session')));
+  const vet=installTeamExitGuard(h.win,h.doc,h.storage,{hydrate,scope:'vet'}),tas=installTeamExitGuard(h.win,h.doc,h.storage,{hydrate,scope:'tas'});
+  await Promise.all([vet.refresh(),tas.refresh()]);assert.equal(vet.status(),'clean');assert.equal(tas.status(),'clean');
+  const edited=JSON.parse(h.values.get(KEYS.tas));edited.records.task.exceptionReason='Unsaved TAS work';h.values.set(KEYS.tas,JSON.stringify(edited));
+  await Promise.all([vet.refresh(),tas.refresh()]);assert.equal(vet.status(),'clean');assert.equal(tas.status(),'changed');
+  h.values.set(KEYS.vetMetadata,JSON.stringify({version:1,lastFile:{workspaceId:'vet',revision:2},active:null,pendingExport:null}));
+  await Promise.all([vet.refresh(),tas.refresh()]);assert.equal(vet.status(),'idle');assert.equal(tas.status(),'changed');assert.equal(h.unload(),true);
+});
+test('area safety receipt cannot silence the other area and survives only irrelevant other-area changes',async()=>{
+  const baseline=fixture(),h=harness(null),hydrate=async value=>copy(value);
+  h.values.set(KEYS.vetMetadata,JSON.stringify(session(baseline,'vet-session')));h.values.set(KEYS.tasMetadata,JSON.stringify(session(baseline,'tas-session')));
+  const vet=installTeamExitGuard(h.win,h.doc,h.storage,{hydrate,scope:'vet'}),tas=installTeamExitGuard(h.win,h.doc,h.storage,{hydrate,scope:'tas'});
+  for(const scope of ['vet','tas']){const edited=JSON.parse(h.values.get(KEYS[scope]));edited.records.task[scope==='vet'?'exceptionSummary':'exceptionReason']='Changed';h.values.set(KEYS[scope],JSON.stringify(edited));}
+  await Promise.all([vet.refresh(),tas.refresh()]);
+  await vet.acknowledgeSafetyBackup({scope:'vet',before:Object.fromEntries([...DATA_KEYS,KEYS.vetMetadata].map(key=>[key,h.storage.getItem(key)])),journals:[null,null]});
+  assert.equal(vet.hasSafetyBackup(),true);assert.equal(tas.hasSafetyBackup(),false);assert.equal(h.unload(),true);
+  const changed=JSON.parse(h.values.get(KEYS.tas));changed.records.task.exceptionReason='Later TAS work';h.values.set(KEYS.tas,JSON.stringify(changed));
+  assert.equal(vet.hasSafetyBackup(),true,'saving VET is independent of future TAS work');
+});
+
+
+test('scoped safety receipt binds legacy fallback session until the area has its own metadata',async()=>{
+  const baseline=fixture(),h=harness(null),legacy=session(baseline,'legacy-session');
+  h.values.set(KEYS.metadata,JSON.stringify(legacy));
+  const vet=installTeamExitGuard(h.win,h.doc,h.storage,{hydrate:async value=>copy(value),scope:'vet'});
+  await vet.refresh();
+  const expected={scope:'vet',before:Object.fromEntries([...DATA_KEYS,KEYS.vetMetadata,KEYS.metadata].map(key=>[key,h.storage.getItem(key)])),journals:[null,null]};
+  await vet.acknowledgeSafetyBackup(expected);assert.equal(vet.hasSafetyBackup(),true);
+  h.values.set(KEYS.metadata,JSON.stringify({...legacy,active:{...legacy.active,phase:'exporting'},pendingExport:{exportId:'next-file'}}));
+  assert.equal(vet.hasSafetyBackup(),false,'a new effective legacy session invalidates the old receipt immediately');
+  await vet.refresh();assert.equal(vet.status(),'upload');assert.equal(h.unload(),true);
+  await assert.rejects(vet.acknowledgeSafetyBackup(expected),/changed/);
+});
