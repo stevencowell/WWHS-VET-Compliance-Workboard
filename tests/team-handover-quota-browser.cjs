@@ -8,6 +8,7 @@ if(!/^http:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/.test(base))throw Error('Use a d
 const output=path.resolve(__dirname,'../../../outputs/team-handover-quota-browser-report.json');
 const keys={vet:'wwhs-vet-compliance-workboard:v3',tas:'wwhs-head-teacher-tas-workboard:v2',review:'wwhs-task-register-review:v1',inbox:'morning-launchpad-summary:v1',meta:'wwhs-team-handover:v1',journal:'wwhs-team-handover-journal:v1'};
 const results=[],errors=[];
+function entropyText(length){let seed=0x13579bdf;return Array.from({length},()=>{seed^=seed<<13;seed^=seed>>>17;seed^=seed<<5;return String.fromCharCode(33+((seed>>>0)%90));}).join('');}
 let browser;
 async function contextPage(){
   const context=await browser.newContext({viewport:{width:1440,height:1000},timezoneId:'Australia/Sydney',acceptDownloads:true,serviceWorkers:'block'});
@@ -45,8 +46,8 @@ async function seed(page){
 }
 async function privateDigest(page){
   return page.evaluate(async keys=>{
-    const inbox=JSON.parse(localStorage.getItem(keys.inbox));
-    const text=JSON.stringify({briefing:inbox.briefing,items:inbox.items.filter(item=>item.workstream==='personal'),vet:JSON.parse(localStorage.getItem(keys.vet)).links,tas:JSON.parse(localStorage.getItem(keys.tas)).links,role:JSON.parse(localStorage.getItem(keys.vet)).role,mode:JSON.parse(localStorage.getItem(keys.tas)).mode,finance:localStorage.getItem('synthetic-finance-secret')});
+    const inbox=JSON.parse((window.WWHS_STORAGE||localStorage).getItem(keys.inbox));
+    const text=JSON.stringify({briefing:inbox.briefing,items:inbox.items.filter(item=>item.workstream==='personal'),vet:JSON.parse((window.WWHS_STORAGE||localStorage).getItem(keys.vet)).links,tas:JSON.parse((window.WWHS_STORAGE||localStorage).getItem(keys.tas)).links,role:JSON.parse((window.WWHS_STORAGE||localStorage).getItem(keys.vet)).role,mode:JSON.parse((window.WWHS_STORAGE||localStorage).getItem(keys.tas)).mode,finance:localStorage.getItem('synthetic-finance-secret')});
     const hash=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(text));
     return {length:text.length,hash:[...new Uint8Array(hash)].map(byte=>byte.toString(16).padStart(2,'0')).join('')};
   },keys);
@@ -103,7 +104,7 @@ async function seedUnchangedFile(page){
   await page.clock.setFixedTime(new Date('2035-01-01T01:00:00.000Z'));
   return page.evaluate(async keys=>{
     const {snapshot,createBackup,buildImportPlan}=await import('/assets/js/team-handover-core.mjs');
-    const vet=JSON.parse(localStorage.getItem(keys.vet)),inbox=JSON.parse(localStorage.getItem(keys.inbox));
+    const vet=JSON.parse((window.WWHS_STORAGE||localStorage).getItem(keys.vet)),inbox=JSON.parse((window.WWHS_STORAGE||localStorage).getItem(keys.inbox));
     vet.records['a-01-confirm-authority-set'].exceptionSummary='V'.repeat(100000);
     inbox.items.find(item=>item.id==='synthetic-team-card').noteText='C'.repeat(100000);
     localStorage.setItem(keys.vet,JSON.stringify(vet));localStorage.setItem(keys.inbox,JSON.stringify(inbox));
@@ -139,7 +140,7 @@ async function assertPrivateAndUnrelated(page,privateBefore,unrelatedBefore){
       await page.waitForLoadState('networkidle');assert.deepEqual(await privateDigest(page),originalPrivate);
       await noRetainedJournal(page);
       let meta=await compactMeta(page);assert.equal(meta.active,null);
-      assert.equal(await page.evaluate(key=>JSON.parse(localStorage.getItem(key)).records['class-readiness::2026'].exceptionReason,keys.tas),'Incoming shared TAS note');
+      assert.equal(await page.evaluate(key=>JSON.parse((window.WWHS_STORAGE||localStorage).getItem(key)).records['class-readiness::2026'].exceptionReason,keys.tas),'Incoming shared TAS note');
       await page.goto(base+'/team-handover/?wing=tas',{waitUntil:'networkidle'});await choose(page,file);
       await page.locator('#editor-name').fill('Synthetic quota editor');await page.locator('#only-editor').check();await page.locator('#start-session').click();await page.waitForURL(base+'/head-teacher-tas/#home');
       await page.goto(base+'/head-teacher-tas/#task/class-readiness',{waitUntil:'networkidle'});await page.locator('#task-dialog[open]').waitFor();
@@ -220,7 +221,10 @@ async function assertPrivateAndUnrelated(page,privateBefore,unrelatedBefore){
   await check('True final-capacity failure preserves every previous storage value and reports a usable error',async()=>{
     const {context,page}=await contextPage();
     try{
-      const {file}=await seed(page);file.data.vet.records['a-01-confirm-authority-set'].exceptionSummary='Incoming large shared note. '.repeat(6500);
+      const {file}=await seed(page);file.data.vet.records['a-01-confirm-authority-set'].exceptionSummary=entropyText(160000);
+      // Compact known records first: the failure must reflect genuine remaining
+      // capacity, not reclaimable legacy JSON or a highly repeated test note.
+      await page.evaluate(keys=>{for(const key of [keys.inbox,keys.vet,keys.tas,keys.review]){const raw=window.WWHS_STORAGE.getItem(key);if(raw!==null)window.WWHS_STORAGE.setItem(key,raw);}},keys);
       const capacity=await fillOrigin(page,4096);
       await page.reload({waitUntil:'networkidle'});await choose(page,file);const before=await storageDigests(page);
       await page.locator('#view-file').click();await page.waitForFunction(()=>document.querySelector('#handover-message').classList.contains('is-error'));

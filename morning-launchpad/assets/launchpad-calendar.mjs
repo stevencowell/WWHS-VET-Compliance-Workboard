@@ -1,3 +1,4 @@
+const workStorage=()=>globalThis.WWHS_STORAGE||globalThis.localStorage;
 import {CALENDAR_KEY,ZONE,WEEKDAYS,dateObject,addDays,shiftMonth,weekStart,monthDays,labelDate,normalEvent,validateCalendar,taskEvents,calendarCategory,eventsOn,parseCalendarFile,mergeEvents,toICS,csvTemplate} from './calendar-core.mjs?v=8';
 import {todaySydney,safeUrl} from './summary-core.mjs?v=12';
 const el=(tag,text,attrs={})=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;for(const[k,v]of Object.entries(attrs))n.setAttribute(k,v);return n;};
@@ -5,13 +6,13 @@ const btn=(text,fn,attrs={})=>{const n=el('button',text,{type:'button',...attrs}
 function download(text,name,type='application/json'){const url=URL.createObjectURL(new Blob([text],{type}));const a=el('a','',{href:url,download:name});a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 class LaunchpadCalendar extends HTMLElement{
  connectedCallback(){if(this.started)return;this.started=true;this.tasks=[];this.date=todaySydney();this.view='month';this.blocked=false;this.raw=null;
-  try{this.raw=localStorage.getItem(CALENDAR_KEY);this.data=validateCalendar(this.raw);}catch{this.data={version:1,events:[]};this.blocked=true;}
+  try{this.raw=workStorage().getItem(CALENDAR_KEY);this.data=validateCalendar(this.raw);}catch{this.data={version:1,events:[]};this.blocked=true;}
   this.build();this.render();if(this.blocked)this.say('Your saved calendar could not be read. Export a backup before recovering it; the original is untouched.',true);
   this.storage=e=>{if(e.key===CALENDAR_KEY||e.key===null){this.blocked=true;this.say('The calendar changed in another tab. Reload before saving.',true);}};window.addEventListener('storage',this.storage);
  }
  disconnectedCallback(){window.removeEventListener('storage',this.storage);this.started=false;}
  setTasks(tasks){this.tasks=tasks||[];if(this.started)this.render();}
- save(events){try{if(this.blocked||localStorage.getItem(CALENDAR_KEY)!==this.raw)throw new Error('Reload the calendar before saving changes.');const checked=validateCalendar(JSON.stringify({version:1,events}));const raw=JSON.stringify(checked);localStorage.setItem(CALENDAR_KEY,raw);this.raw=raw;this.data=checked;this.render();window.dispatchEvent(new CustomEvent('launchpad:calendar-saved'));return true;}catch(e){this.say(e.name==='QuotaExceededError'?'This browser has run out of storage. Your saved events have not changed. Export a shorter date range from the source calendar and try again.':'Could not save: '+e.message,true);return false;}}
+ save(events){try{if(this.blocked||workStorage().getItem(CALENDAR_KEY)!==this.raw)throw new Error('Reload the calendar before saving changes.');const checked=validateCalendar(JSON.stringify({version:1,events}));const raw=JSON.stringify(checked);workStorage().setItem(CALENDAR_KEY,raw);this.raw=raw;this.data=checked;this.render();window.dispatchEvent(new CustomEvent('launchpad:calendar-saved'));return true;}catch(e){this.say(e.name==='QuotaExceededError'?'This browser has run out of storage. Your saved events have not changed. Export a shorter date range from the source calendar and try again.':'Could not save: '+e.message,true);return false;}}
  say(text,error=false){this.message.textContent=text;this.message.classList.toggle('cal-error',error);this.formMessage.textContent=error?text:'';}
  build(){this.replaceChildren();this.setAttribute('aria-label','Launchpad calendar');
   const heading=el('div',undefined,{class:'cal-heading'});const title=el('div');title.append(el('h2','Calendar'),el('p','Task dates appear automatically · Sydney time',{class:'cal-help'}));heading.append(title,btn('+ Add event',()=>this.edit(null,this.date),{class:'cal-primary'}),btn('Import dates',()=>{this.importPanel.open=true;this.file.focus();}),btn('Minimise calendar',()=>this.dispatchEvent(new CustomEvent('calendar:minimise',{bubbles:true}))));this.append(heading);

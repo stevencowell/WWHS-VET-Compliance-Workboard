@@ -1,5 +1,6 @@
 (function () {
   "use strict";
+  const browserStorage = () => window.WWHS_STORAGE || localStorage;
 
   const data = window.VET_WORKBOARD;
   const register = data.taskRegister;
@@ -250,7 +251,7 @@
   }
   function loadState() {
     try {
-      loadedStorageRaw = localStorage.getItem(data.config.storageKey);
+      loadedStorageRaw = browserStorage().getItem(data.config.storageKey);
       if (loadedStorageRaw === null) return freshState();
       const saved = JSON.parse(loadedStorageRaw);
       if (!saved || Array.isArray(saved) || saved.schemaVersion !== 3) { storageReadable = false; return freshState(); }
@@ -264,7 +265,7 @@
       return false;
     }
     try {
-      if (localStorage.getItem(data.config.storageKey) !== loadedStorageRaw) {
+      if (browserStorage().getItem(data.config.storageKey) !== loadedStorageRaw) {
         toast("VET progress changed in another tab. Keep any unsaved notes, then reload this page before saving.", "error");
         return false;
       }
@@ -281,7 +282,7 @@
     try {
       const previousRole = loadedStorageRaw === null ? "all" : JSON.parse(loadedStorageRaw).role;
       const nextRaw = JSON.stringify(state);
-      localStorage.setItem(data.config.storageKey, nextRaw);
+      browserStorage().setItem(data.config.storageKey, nextRaw);
       loadedStorageRaw = nextRaw;
       window.dispatchEvent(new CustomEvent("wwhs:records-updated", { detail: { wing: "vet" } }));
       if (previousRole !== state.role) window.dispatchEvent(new CustomEvent("wwhs:forecast-updated", { detail: { wing: "vet" } }));
@@ -316,7 +317,7 @@
   }
   function readReviewState() {
     let raw;
-    try { raw = localStorage.getItem(REVIEW_KEY); }
+    try { raw = browserStorage().getItem(REVIEW_KEY); }
     catch (_) { reviewCache = { raw: undefined, readable: false, records: {} }; return reviewCache; }
     if (reviewCache.readable && raw === reviewCache.raw) return reviewCache;
     const records = {};
@@ -446,7 +447,7 @@
           : `No ${year} VET schedule is loaded. Only explicitly recorded follow-ups can be shown; older dates are not rolled into this year.`
     };
     try {
-      if (!storageReadable || localStorage.getItem(data.config.storageKey) !== loadedStorageRaw) {
+      if (!storageReadable || browserStorage().getItem(data.config.storageKey) !== loadedStorageRaw) {
         return { entries: [], context: { ...context, mode: "unavailable", note: "Saved VET progress is unreadable or changed in another tab. Reload or recover it before an automatic forecast can be prepared." } };
       }
     } catch (_) {
@@ -615,7 +616,7 @@
     describeRecord: describeWorkTask,
     getHelpContext: key => {
       refreshBoardDate();
-      try { if (!storageReadable || localStorage.getItem(data.config.storageKey) !== loadedStorageRaw) return null; } catch (_) { return null; }
+      try { if (!storageReadable || browserStorage().getItem(data.config.storageKey) !== loadedStorageRaw) return null; } catch (_) { return null; }
       return describeWorkTask(key)?.taskHelp || null;
     },
     getForecast,
@@ -1352,7 +1353,7 @@
     if (window.WWHS_TEAM_SESSION && !window.WWHS_TEAM_SESSION.allowWrite(data.config.storageKey, freshState())) { toast(window.WWHS_TEAM_SESSION.reason(), "error"); return; }
     if (!state.resetArmed) { state.resetArmed = true; if (!saveState()) { state.resetArmed = false; return; } render(); toast("Nothing cleared yet. Use the red button again to confirm."); return; }
     if (!storageIsCurrent()) return;
-    try { localStorage.removeItem(data.config.storageKey); }
+    try { browserStorage().removeItem(data.config.storageKey); }
     catch (_) { toast("This browser could not clear saved VET progress. Nothing has been changed.", "error"); return; }
     loadedStorageRaw = null; state = freshState(); completionUndo.clear(); refreshAllTasks([]);
     window.dispatchEvent(new CustomEvent("wwhs:records-updated", { detail: { wing: "vet" } }));

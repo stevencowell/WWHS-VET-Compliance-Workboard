@@ -1,16 +1,17 @@
 (function (root) {
   'use strict';
+  const browserStorage = () => root.WWHS_STORAGE || localStorage;
   const KEY='wwhs-team-handover:v1', JOURNAL='wwhs-team-handover-journal:v1';
   const VET='wwhs-vet-compliance-workboard:v3', TAS='wwhs-head-teacher-tas-workboard:v2', REVIEW='wwhs-task-register-review:v1', INBOX='morning-launchpad-summary:v1';
   const fields=['taskKey','title','action','noteText','workstream','origin','forecast','taskHelp','progressOverride','sectionOverride','createdOn','lastActionOn','personal','priority','nextAction','dueDate','eventDate','followUpDate','dateNote','owner','waitingOn','instruction','reason','score','group','status','dependsOn','dirty'];
   function sort(value) {if(Array.isArray(value))return value.map(sort);if(value&&typeof value==='object')return Object.fromEntries(Object.keys(value).sort().map(key=>[key,sort(value[key])]));return value;}
   const canonical=value=>JSON.stringify(sort(value));
   function read() {
-    try {const raw=localStorage.getItem(KEY);if(!raw)return {managed:false};const state=JSON.parse(raw);if(state?.version!==1||!state.lastFile?.workspaceId||!Number.isInteger(state.lastFile.revision))throw Error();return {...state,managed:true};}
+    try {const raw=browserStorage().getItem(KEY);if(!raw)return {managed:false};const state=JSON.parse(raw);if(state?.version!==1||!state.lastFile?.workspaceId||!Number.isInteger(state.lastFile.revision))throw Error();return {...state,managed:true};}
     catch{return {managed:true,blocked:true};}
   }
   const bootSession=read().active?.id||null;
-  function hasJournal(){try{return localStorage.getItem(JOURNAL)!==null;}catch{return true;}}
+  function hasJournal(){try{return browserStorage().getItem(JOURNAL)!==null;}catch{return true;}}
   function isEditing() {
     const state=read();
     if(hasJournal())return false;
@@ -43,7 +44,7 @@
     // Recovery compares complete raw values, so even preference-only writes must wait.
     if(!hasJournal()){
       if(isEditing())return true;
-      try{if(!read().blocked&&canonical(operational(key,localStorage.getItem(key)))===canonical(operational(key,next)))return true;}catch{}
+      try{if(!read().blocked&&canonical(operational(key,browserStorage().getItem(key)))===canonical(operational(key,next)))return true;}catch{}
     }
     root.dispatchEvent(new CustomEvent('wwhs:team-write-blocked',{detail:{message:reason()}}));return false;
   }

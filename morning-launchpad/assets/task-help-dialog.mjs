@@ -1,3 +1,4 @@
+const workStorage=()=>globalThis.WWHS_STORAGE||globalThis.localStorage;
 import {getTaskHelpProfile, buildTaskHelpPrompt} from '../../assets/js/task-help.mjs?v=tas-planning-1';
 import {INBOX_KEY, todaySydney} from './summary-core.mjs?v=task-help-1';
 
@@ -29,7 +30,7 @@ export function createTaskHelpDialog(board){
     card?.querySelector('.import-ai-help')?.focus({preventScroll:true});
   });
   function resolve(){
-    if(board.blocked||localStorage.getItem(INBOX_KEY)!==board.raw)throw new Error('Your work list changed or could not be saved. Reload saved work before preparing this request.');
+    if(board.blocked||workStorage().getItem(INBOX_KEY)!==board.raw)throw new Error('Your work list changed or could not be saved. Reload saved work before preparing this request.');
     const saved=board.inbox.items.find(item=>item.id===selectedId);
     if(!saved)throw new Error('This task is no longer in the saved work list.');
     let item={...saved},draft=false;

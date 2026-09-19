@@ -1,5 +1,6 @@
 (function (root) {
   'use strict';
+  const browserStorage = () => root.WWHS_STORAGE || localStorage;
   const KEY = 'wwhs-task-register-review:v1';
   const INBOX_KEY = 'morning-launchpad-summary:v1';
   function date(value) {
@@ -26,13 +27,13 @@
   }
   function read() {
     let raw;
-    try { raw = localStorage.getItem(KEY); return {raw, readable:true, ...parse(raw)}; }
+    try { raw = browserStorage().getItem(KEY); return {raw, readable:true, ...parse(raw)}; }
     catch (_) { return {raw, readable:false, records:{}}; }
   }
   function savedCompletion(wing, key, year, today, notBefore = '') {
     if (Number(year) > Number(today.slice(0,4)) || notBefore > today) return null;
     try {
-      const inbox = JSON.parse(localStorage.getItem(INBOX_KEY) || 'null');
+      const inbox = JSON.parse(browserStorage().getItem(INBOX_KEY) || 'null');
       const item = inbox?.items?.find(item => item.status === 'done' && item.origin?.wing === wing && item.origin.recordKey === key);
       if (!item) return null;
       const reviewedOn = date(item.lastActionOn) || date(item.createdOn);

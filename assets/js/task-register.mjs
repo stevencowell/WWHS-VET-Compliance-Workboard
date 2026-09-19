@@ -1,6 +1,7 @@
 // Full source register and year-specific overall task sign-off.
-import './task-review.js?v=overall-signoff-1';
+import './task-review.js?v=compression-storage-1';
 export const REVIEW_KEY = 'wwhs-task-register-review:v1';
+const browserStorage = () => window.WWHS_STORAGE || localStorage;
 export function readReview(raw) {
   return (typeof window === 'object' ? window : globalThis).WWHS_TASK_REVIEW.parse(raw);
 }
@@ -99,14 +100,14 @@ export function createTaskRegister({wing, label, getAdapter, getSavedItems = () 
   body.append(backup); panel.append(body);
   let snapshot, review = {version:1,records:{}}, raw = null, blocked = false;
   function load() {
-    try { raw = localStorage.getItem(REVIEW_KEY); review = readReview(raw); blocked = false; }
+    try { raw = browserStorage().getItem(REVIEW_KEY); review = readReview(raw); blocked = false; }
     catch { blocked = true; message.textContent='Saved review ticks could not be read. They are unchanged. Back them up before recovering them.'; }
   }
   function save(next,{recover=false}={}) {
     try {
       if (window.WWHS_TEAM_SESSION && !window.WWHS_TEAM_SESSION.allowWrite(REVIEW_KEY,next)) throw new Error(window.WWHS_TEAM_SESSION.reason());
-      if (blocked&&!recover || localStorage.getItem(REVIEW_KEY) !== raw) { blocked = true; throw new Error('Review ticks changed in another tab. Reload review ticks before saving.'); }
-      const nextRaw = JSON.stringify(next); readReview(nextRaw); localStorage.setItem(REVIEW_KEY,nextRaw); raw=nextRaw;review=next;blocked=false;
+      if (blocked&&!recover || browserStorage().getItem(REVIEW_KEY) !== raw) { blocked = true; throw new Error('Review ticks changed in another tab. Reload review ticks before saving.'); }
+      const nextRaw = JSON.stringify(next); readReview(nextRaw); browserStorage().setItem(REVIEW_KEY,nextRaw); raw=nextRaw;review=next;blocked=false;
       window.dispatchEvent(new CustomEvent('wwhs:review-updated',{detail:{wing}}));
       return true;
     } catch(error) { message.textContent=`Could not save: ${error.message}`; return false; }

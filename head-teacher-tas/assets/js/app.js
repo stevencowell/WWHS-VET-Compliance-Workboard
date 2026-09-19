@@ -1,5 +1,6 @@
 (function () {
   "use strict";
+  const browserStorage = () => window.WWHS_STORAGE || localStorage;
 
   const data = window.HT_TAS_WORKBOARD;
   const planningDefaults = new Map(data.tasks.filter(task => task.provisionalSchedule).map(task => [task.id, {
@@ -119,7 +120,7 @@
 
   function loadState() {
     try {
-      savedStateRaw = localStorage.getItem(data.config.storageKey);
+      savedStateRaw = browserStorage().getItem(data.config.storageKey);
       if (savedStateRaw === null) return freshState();
       const parsed = JSON.parse(savedStateRaw);
       if (!parsed || parsed.schemaVersion !== 2) {
@@ -208,7 +209,7 @@
       toast("Saved TAS progress could not be read safely. It has been kept unchanged. Recover the original browser data before saving.", "error");
       return false;
     }
-    if (localStorage.getItem(data.config.storageKey) !== savedStateRaw) {
+    if (browserStorage().getItem(data.config.storageKey) !== savedStateRaw) {
       toast("TAS progress changed in another tab. Nothing was overwritten. Copy any unsaved text, then reload before saving.", "error");
       return false;
     }
@@ -229,7 +230,7 @@
       if (window.WWHS_TEAM_SESSION && !window.WWHS_TEAM_SESSION.allowWrite(data.config.storageKey, state)) { toast(window.WWHS_TEAM_SESSION.reason(), "error"); return false; }
       if (!storageIsCurrent()) return false;
       const raw = JSON.stringify(state);
-      localStorage.setItem(data.config.storageKey, raw);
+      browserStorage().setItem(data.config.storageKey, raw);
       savedStateRaw = raw;
       applyPlanningDates();
       recordsUpdated();
@@ -461,7 +462,7 @@
 
   function forecastStorageAvailable() {
     try {
-      return !stateStorageBlocked && localStorage.getItem(data.config.storageKey) === savedStateRaw;
+      return !stateStorageBlocked && browserStorage().getItem(data.config.storageKey) === savedStateRaw;
     } catch (_) {
       return false;
     }
@@ -1426,7 +1427,7 @@
     if (!confirmed) return;
     try {
       if (!storageIsCurrent()) return;
-      localStorage.removeItem(data.config.storageKey);
+      browserStorage().removeItem(data.config.storageKey);
       savedStateRaw = null;
     } catch (_) {
       toast("This browser could not clear the workboard", "error");

@@ -1,10 +1,12 @@
+const workStorage=()=>globalThis.WWHS_STORAGE||globalThis.localStorage;
+import {storageSizes} from '../../assets/js/team-storage-report.mjs?v=compression-storage-1';
 import {createNoteEditor} from './note-editor.mjs?v=private-backup-1';
 import {downloadDestination} from '../../assets/js/save-backup-file.mjs?v=default-folder-1';
 import {choosePrivateBackupDestination,getBackupFolder} from '../../assets/js/backup-folder.mjs?v=default-folder-1';
-import {createTaskHelpDialog} from './task-help-dialog.mjs?v=tas-planning-1';
+import {createTaskHelpDialog} from './task-help-dialog.mjs?v=compression-storage-1';
 import {emailSearchText} from './email-search.mjs?v=1';
 import './email-capture.mjs?v=email-source-1';
-import './launchpad-calendar.mjs?v=10';
+import './launchpad-calendar.mjs?v=compression-storage-1';
 import {INBOX_KEY, LIMIT, parseSummary, validateInbox, mergeInbox, safeUrl, workingNoteLinks, matchesNoteSearch, PRIORITIES, NEXT_ACTIONS, EDITABLE, enrich, todaySydney, taskSection, rank, nextDate, consolidateDuplicates, LEGACY_PLAN_KEY, isPinned, migrateToPins, recordNoteAction, WORKSTREAMS, createTrackedWork, mergeWorkboardImports, clearEmailImports, isUnfinishedEmailNote, reconcileForecast, sourceCompleted, normaliseForecastContext} from './summary-core.mjs?v=email-cleanup-1';
 
 const repositoryRoot=new URL('../../',import.meta.url);
@@ -63,7 +65,7 @@ class SummaryImport extends HTMLElement {
     this.openCards=new Set();this.view='ready';this.expanded=false;this.legacyRaw=null;this.blocked=false;this.raw=null;
     this.workstream=Object.hasOwn(WORKSTREAMS,this.dataset.workstream)?this.dataset.workstream:'all';
     this.draftInputs=new Map();this.captureDraft=event=>{const field=event.target;if(field.matches?.('textarea:not([readonly]),input:not([type="file"]):not([type="checkbox"]),[contenteditable="true"]')){this.draftInputs.delete(field);this.draftInputs.set(field,field.getAttribute('aria-label')||field.closest('label')?.childNodes[0]?.textContent||field.id||'Draft text');}};this.addEventListener('input',this.captureDraft);
-    try {this.raw=localStorage.getItem(INBOX_KEY);this.inbox=validateInbox(this.raw);if(!this.scope)this.legacyRaw=localStorage.getItem(LEGACY_PLAN_KEY);} catch {this.blocked=true;this.inbox=validateInbox(null);}
+    try {this.raw=workStorage().getItem(INBOX_KEY);this.inbox=validateInbox(this.raw);if(!this.scope)this.legacyRaw=workStorage().getItem(LEGACY_PLAN_KEY);} catch {this.blocked=true;this.inbox=validateInbox(null);}
     this.build();this.resizeNotes=()=>this.querySelectorAll('.import-working-note textarea').forEach(fitNoteText);window.addEventListener('resize',this.resizeNotes);
     this.onStorage=event=>{if(event.key===INBOX_KEY||event.key===null){this.blocked=true;this.updateCount();this.reloadButton.hidden=false;this.say('Your shared work list changed in another tab. Reload saved work before saving here. Text you are editing is still on this page.',true);}};
     window.addEventListener('storage',this.onStorage);
@@ -76,8 +78,8 @@ class SummaryImport extends HTMLElement {
   persist(next) {
     try {
       if(window.WWHS_TEAM_SESSION&&!window.WWHS_TEAM_SESSION.allowWrite(INBOX_KEY,next))throw new Error(window.WWHS_TEAM_SESSION.reason());
-      if(this.blocked||localStorage.getItem(INBOX_KEY)!==this.raw){this.blocked=true;this.reloadButton.hidden=false;throw new Error('The shared work list changed in another tab. Reload saved work before saving.');}
-      const checked=validateInbox(JSON.stringify(next));const raw=JSON.stringify(checked);localStorage.setItem(INBOX_KEY,raw);this.raw=raw;this.inbox=checked;this.calendar?.setTasks(checked.items);window.dispatchEvent(new CustomEvent('wwhs:work-saved',{detail:{key:INBOX_KEY}}));return true;
+      if(this.blocked||workStorage().getItem(INBOX_KEY)!==this.raw){this.blocked=true;this.reloadButton.hidden=false;throw new Error('The shared work list changed in another tab. Reload saved work before saving.');}
+      const checked=validateInbox(JSON.stringify(next));const raw=JSON.stringify(checked);workStorage().setItem(INBOX_KEY,raw);this.raw=raw;this.inbox=checked;this.calendar?.setTasks(checked.items);window.dispatchEvent(new CustomEvent('wwhs:work-saved',{detail:{key:INBOX_KEY}}));return true;
     } catch(error){this.say(`Could not save: ${error.message} Your previous saved list is unchanged.`,true);return false;}
   }
   async exportTaskBackup({downloadOnly=false}={}){
@@ -119,7 +121,7 @@ class SummaryImport extends HTMLElement {
       if(guard.key!==expected||(guard.raw!==null&&typeof guard.raw!=='string'))throw new Error('Invalid forecast source guard.');
       const checkReview=Object.hasOwn(guard,'reviewRaw');
       if(checkReview&&(snapshot.context?.wing!=='vet'||(guard.reviewRaw!==null&&typeof guard.reviewRaw!=='string')))throw new Error('Invalid forecast review guard.');
-      try{return localStorage.getItem(guard.key)!==guard.raw||(checkReview&&localStorage.getItem('wwhs-task-register-review:v1')!==guard.reviewRaw);}catch{return true;}
+      try{return workStorage().getItem(guard.key)!==guard.raw||(checkReview&&workStorage().getItem('wwhs-task-register-review:v1')!==guard.reviewRaw);}catch{return true;}
     };
     if(sourceChanged())return {changed:false,deferred:true,sourceChanged:true,added:0,updated:0,retired:0,suppressed:0};
     if(this.contains(document.activeElement))return {changed:false,deferred:true,added:0,updated:0,retired:0,suppressed:0};
@@ -156,11 +158,11 @@ class SummaryImport extends HTMLElement {
   reloadSavedWork(){
     const drafts=[...this.draftInputs].filter(([field])=>field.isConnected).map(([field,label])=>({label,text:field.isContentEditable?field.innerText:field.value,...(field.isContentEditable?{html:field.innerHTML}:{})})).filter(field=>field.text);
     if(drafts.length&&!window.confirm('Reload the saved list? Text you entered on this page will be kept below under “Text kept before reload”, so you can copy any unsaved changes back.'))return;
-    let raw,inbox;try{raw=localStorage.getItem(INBOX_KEY);inbox=validateInbox(raw);}catch{this.say('The saved work list could not be read. Your current page and draft text have been kept. Export a backup before recovering it.',true);return;}
+    let raw,inbox;try{raw=workStorage().getItem(INBOX_KEY);inbox=validateInbox(raw);}catch{this.say('The saved work list could not be read. Your current page and draft text have been kept. Export a backup before recovering it.',true);return;}
     if(drafts.length){const saved=element('details',undefined,{class:'import-draft-recovery'});saved.append(element('summary','Text kept before reload'),element('p','Copy any unsaved changes back into the current cards. This copy stays on this page until you leave.',{class:'import-help'}),element('pre',drafts.map(field=>`${field.label}\n${field.text}`).join('\n\n'),{class:'import-source'}),button('Export this draft text',()=>download(JSON.stringify(drafts,null,2),'launchpad-draft-text.json')));this.message.after(saved);}
     this.raw=raw;this.inbox=inbox;this.blocked=false;this.draftInputs.clear();this.reloadButton.hidden=true;this.renderItems();this.say(drafts.length?'Saved work reloaded. Your kept draft text is above.':'Saved work reloaded.');window.dispatchEvent(new CustomEvent('wwhs:work-reloaded'));
   }
-  say(message,error=false){this.message.textContent=message;this.message.classList.toggle('import-error',error);this.message.setAttribute('role',error?'alert':'status');this.fileMessage.textContent=message;this.fileMessage.classList.toggle('import-error',error);if(this.backupDialog?.open){this.backupMessage.textContent=message;this.backupMessage.setAttribute('role',error?'alert':'status');}else if(error)this.inputDetails.open=true;}
+  say(message,error=false){this.message.textContent=message;this.message.classList.toggle('import-error',error);this.message.setAttribute('role',error?'alert':'status');this.fileMessage.textContent=message;this.fileMessage.classList.toggle('import-error',error);if(this.backupDialog?.open){this.backupMessage.textContent=message;this.backupMessage.setAttribute('role',error?'alert':'status');this.showBackupStorageDetails(error&&/storage.*full|quota/i.test(message));}else if(error)this.inputDetails.open=true;}
   syncPlans(){
     if(this.blocked||this.scope)return;
     const migration=migrateToPins(this.inbox,this.legacyRaw);
@@ -234,7 +236,7 @@ class SummaryImport extends HTMLElement {
   }
   openTaskBackupImport(){
     if(this.scope)return;
-    this.backupFile.value='';this.backupMessage.textContent='';
+    this.backupFile.value='';this.backupMessage.textContent='';this.backupStorageDetails.hidden=true;
     this.backupDialog.showModal();this.backupFile.focus();
   }
   buildBackupImportDialog(){
@@ -243,6 +245,7 @@ class SummaryImport extends HTMLElement {
     this.backupDialog.append(element('p','Launchpad · Private notes and tasks',{class:'import-save-scope'}),element('h2','Import backup',{id:'launchpad-backup-title'}),element('p','Choose your saved Launchpad task backup (.json) from Steve - Private Backups in Google Drive, or from this device. On a phone, download the file from Drive first if needed.'),element('p','This adds missing notes and merges matching tasks. Existing edits and completion status in this browser are kept. It does not replace the whole list.'),element('p','For Finance, shared VET/TAS progress or calendar events, use Import in that area.',{class:'import-help'}));
     this.backupFile=element('input',undefined,{type:'file',accept:'.json,application/json',id:'launchpad-backup-file'});
     this.backupMessage=element('p','',{role:'status','aria-live':'polite'});
+    this.backupStorageDetails=element('details');this.backupStorageDetails.hidden=true;
     const apply=button('Import backup',async()=>{
       if(!this.backupFile.files[0]){this.backupMessage.textContent='Choose your Launchpad task backup first.';return;}
       if(this.hasNoteDraft()){this.backupMessage.textContent='Save or cancel your open note before importing. Your draft is still on this page.';return;}
@@ -252,7 +255,17 @@ class SummaryImport extends HTMLElement {
     },'import-primary');
     const cancel=button('Cancel',()=>this.backupDialog.close());
     const actions=element('div',undefined,{class:'import-actions'});actions.append(apply,cancel);
-    this.backupDialog.append(element('label','Choose a Launchpad backup',{for:'launchpad-backup-file'}),this.backupFile,this.backupMessage,actions);this.append(this.backupDialog);
+    this.backupDialog.append(element('label','Choose a Launchpad backup',{for:'launchpad-backup-file'}),this.backupFile,this.backupMessage,this.backupStorageDetails,actions);this.append(this.backupDialog);
+  }
+  showBackupStorageDetails(show){
+    this.backupStorageDetails.hidden=!show;if(!show)return;
+    this.backupStorageDetails.replaceChildren(element('summary','Browser storage details'));
+    try{
+      const report=storageSizes(workStorage()),list=element('ul');
+      for(const row of report.rows)if(row.saved)list.append(element('li',`${row.label}: ${row.saved.toLocaleString('en-AU')} storage characters`));
+      this.backupStorageDetails.append(element('p','These counts describe this browser on this device, not your Google Drive allowance. No note contents are shown.'),list);
+    }catch{this.backupStorageDetails.append(element('p','Storage details are unavailable. Your saved records have not been cleared.'));}
+    this.backupStorageDetails.open=true;
   }
   buildClearNotesDialog(){
     this.clearDialog=element('dialog',undefined,{class:'chatgpt-chooser','aria-labelledby':'clear-notes-title'});

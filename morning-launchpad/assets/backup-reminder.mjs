@@ -1,3 +1,4 @@
+const workStorage=()=>globalThis.WWHS_STORAGE||globalThis.localStorage;
 import {INBOX_KEY,validateInbox} from './summary-core.mjs?v=email-cleanup-1';
 import {isTeamItem} from '../../assets/js/team-handover-core.mjs?v=team-handover-1';
 import {mountBackupFolderSettings} from '../../assets/js/backup-folder-ui.mjs?v=default-folder-1';
@@ -102,7 +103,7 @@ export function installLaunchpadBackupReminder({header}){
     const needed=!!(value.enabled||draftPending());
     if(needed!==listener){window[needed?'addEventListener':'removeEventListener']('beforeunload',beforeUnload);listener=needed;}
   }
-  tracker=createNotesBackupTracker(localStorage,{onChange:render});
+  tracker=createNotesBackupTracker(workStorage(),{onChange:render});
   toggle.addEventListener('change',()=>void tracker.setEnabled(toggle.checked));
   importBackup.addEventListener('click',()=>{
     const board=document.querySelector('summary-import');

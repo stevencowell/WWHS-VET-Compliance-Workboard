@@ -1,8 +1,9 @@
+const workStorage=()=>globalThis.WWHS_STORAGE||globalThis.localStorage;
 // One planning surface. Specialist records remain owned by their existing workboards.
-import '../../morning-launchpad/assets/summary-import.mjs?v=import-save-1';
-import {installLaunchpadBackupReminder} from '../../morning-launchpad/assets/backup-reminder.mjs?v=import-save-1';
+import '../../morning-launchpad/assets/summary-import.mjs?v=compression-storage-1';
+import {installLaunchpadBackupReminder} from '../../morning-launchpad/assets/backup-reminder.mjs?v=compression-storage-1';
 import {INBOX_KEY, validateInbox, taskSection, todaySydney} from '../../morning-launchpad/assets/summary-core.mjs?v=email-cleanup-1';
-import {createTaskRegister} from './task-register.mjs?v=team-handover-1';
+import {createTaskRegister} from './task-register.mjs?v=compression-storage-1';
 import {installTeamEntry} from './team-entry.mjs?v=import-save-1';
 
 const base = new URL('../../', import.meta.url);
@@ -43,11 +44,11 @@ function updateTheme() {
   theme.textContent = dark ? 'Light appearance' : 'Dark appearance';
   theme.setAttribute('aria-pressed', String(dark));
 }
-try { if (localStorage.getItem('morning-launchpad-theme') === 'dark') document.documentElement.dataset.theme = 'dark'; } catch {}
+try { if (workStorage().getItem('morning-launchpad-theme') === 'dark') document.documentElement.dataset.theme = 'dark'; } catch {}
 theme.addEventListener('click', () => {
   const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
   document.documentElement.dataset.theme = next;
-  try { localStorage.setItem('morning-launchpad-theme', next); } catch {}
+  try { workStorage().setItem('morning-launchpad-theme', next); } catch {}
   updateTheme();
 });
 updateTheme(); shell.append(home, nav, theme); document.body.prepend(shell);
@@ -130,7 +131,7 @@ function updateVetTaskCount() {
   if (!link) return;
   // Count unfinished saved cards, independently of the complete source register.
   try {
-    const items = validateInbox(localStorage.getItem(INBOX_KEY)).items;
+    const items = validateInbox(workStorage().getItem(INBOX_KEY)).items;
     const today = todaySydney();
     const count = items.filter(item => item.workstream === wing && taskSection(item, today) !== 'done').length;
     link.textContent = `${label} tasks (${count})`;
@@ -244,8 +245,8 @@ async function refreshScheduledWork() {
     forecastCount.textContent = 'Your saved cards are kept. No new scheduled tasks were added.';
     return;
   }
-  const sourceGuard = {key: context.sourceStateKey, raw: localStorage.getItem(context.sourceStateKey)};
-  if (wing === 'vet') sourceGuard.reviewRaw = localStorage.getItem('wwhs-task-register-review:v1');
+  const sourceGuard = {key: context.sourceStateKey, raw: workStorage().getItem(context.sourceStateKey)};
+  if (wing === 'vet') sourceGuard.reviewRaw = workStorage().getItem('wwhs-task-register-review:v1');
   const resolved = board.inbox.items.filter(item => item.origin?.wing === wing)
     .map(item => {
       const descriptor = adapter.describeRecord?.(item.origin.recordKey);

@@ -1,5 +1,6 @@
 (function () {
   'use strict';
+  const browserStorage = () => window.WWHS_STORAGE || localStorage;
   const wing = document.body.dataset.workboard === 'tas' ? 'tas' : 'vet';
   const board = wing === 'tas' ? window.HT_TAS_WORKBOARD : window.VET_WORKBOARD;
   const wingName = wing === 'tas' ? 'TAS' : 'VET';
@@ -10,7 +11,7 @@
   const safe = value => { if (typeof value !== 'string') return ''; try { const u = new URL(value); return u.protocol === 'https:' ? u.href : ''; } catch (_) { return ''; } };
   function storedLinks(board) {
     try {
-      const saved = JSON.parse(localStorage.getItem(board.config.storageKey) || '{}');
+      const saved = JSON.parse(browserStorage().getItem(board.config.storageKey) || '{}');
       const schemaVersion = wing === 'vet' ? 3 : 2;
       return saved?.schemaVersion === schemaVersion && saved.linkDefaultsVersion === 2 && saved.links && typeof saved.links === 'object' && !Array.isArray(saved.links) ? saved.links : {};
     } catch (_) { return {}; }

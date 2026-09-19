@@ -116,4 +116,4 @@ export function installTeamExitGuard(win,doc,storage,{hydrate=hydrateTeamMetadat
   const guard=Object.freeze({refresh,status:()=>state,allowNavigation});
   win.WWHS_TEAM_EXIT_GUARD=guard;void refresh();return guard;
 }
-if(typeof window==='object')installTeamExitGuard(window,document,localStorage);
+if(typeof window==='object')installTeamExitGuard(window,document,window.WWHS_STORAGE||localStorage);

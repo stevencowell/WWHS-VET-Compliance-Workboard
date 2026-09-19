@@ -23,8 +23,15 @@ function assertMarker(storage,raw){if(storage.getItem(KEYS.journal)!==raw)fail('
 function writeValue(storage,key,value){if(value===null)storage.removeItem(key);else storage.setItem(key,value);}
 const changedKeys=(before,after)=>Object.keys(after).filter(key=>before[key]!==after[key]);
 const valueSize=(key,value)=>value===null?0:key.length+value.length;
-function writeOrder(from,to){
-  return changedKeys(from,to).sort((a,b)=>(valueSize(a,to[a])-valueSize(a,from[a]))-(valueSize(b,to[b])-valueSize(b,from[b])));
+function writeOrder(storage,from,to){
+  // A longer JSON value can occupy less space once compressed. Measure the
+  // current physical value (including legacy plain JSON), not its decoded size.
+  const delta=key=>{
+    const before=typeof storage.storedSize==='function'?storage.storedSize(key):valueSize(key,from[key]);
+    const after=typeof storage.encodedSize==='function'?storage.encodedSize(key,to[key]):valueSize(key,to[key]);
+    return after-before;
+  };
+  return changedKeys(from,to).map(key=>({key,delta:delta(key)})).sort((a,b)=>a.delta-b.delta).map(item=>item.key);
 }
 function markerText(id,phase){
   // Reserve the committed phase's extra character before changing any user data.
@@ -119,7 +126,7 @@ function rollbackValues(storage,body,rawMarker){
     expected[key]=current;
   }
   // Return space released by growing keys before restoring keys that had shrunk.
-  for(const key of writeOrder(expected,body.before)){
+  for(const key of writeOrder(storage,expected,body.before)){
     assertMarker(storage,rawMarker);assertCurrent(storage,expected);
     writeValue(storage,key,body.before[key]);expected[key]=body.before[key];
   }
@@ -161,7 +168,7 @@ export async function applyTeamTransaction(storage,beforeInput,afterInput,option
     try{
       assertMarker(storage,prepared);assertCurrent(storage,before);
       const expected={...before};
-      for(const key of writeOrder(before,after)){
+      for(const key of writeOrder(storage,before,after)){
         assertMarker(storage,prepared);assertCurrent(storage,expected);
         writeValue(storage,key,after[key]);expected[key]=after[key];
       }
