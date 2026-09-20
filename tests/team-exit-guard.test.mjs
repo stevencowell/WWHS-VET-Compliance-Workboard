@@ -138,7 +138,7 @@ test('moving an existing shared card into personal is a shared removal',()=>{
 test('only exact same-repository workboard destinations are eligible for navigation exemption',()=>{
   const base='https://stevencowell.github.io/WWHS-VET-Compliance-Workboard/';
   const allowed=['','index.html','head-teacher-tas/','head-teacher-tas/index.html',
-    'morning-launchpad/','morning-launchpad/index.html','team-handover/','team-handover/index.html'];
+    'morning-launchpad/','morning-launchpad/index.html','team-handover/','team-handover/index.html','task-sources/','task-sources/index.html'];
   for(const path of allowed){
     assert.equal(isWorkboardDestination(new URL(path,base).href,base),true,path);
     assert.equal(isWorkboardDestination(`${path}?wing=tas#start-section`,base),true,path+' query/hash');
@@ -146,7 +146,7 @@ test('only exact same-repository workboard destinations are eligible for navigat
   for(const href of ['https://other.example/WWHS-VET-Compliance-Workboard/',
     'http://stevencowell.github.io/WWHS-VET-Compliance-Workboard/',
     'https://stevencowell.github.io/another-repository/team-handover/',
-    '../Finance/', 'task-sources/','head-teacher-tas/task/','team-handover-extra/',
+    '../Finance/', 'task-sources-extra/','head-teacher-tas/task/','team-handover-extra/',
     'team-handover/file.json','assets/js/team-exit-guard.mjs','javascript:void(0)','mailto:someone@example.com']){
     assert.equal(isWorkboardDestination(href,base),false,href);
   }

@@ -5,7 +5,7 @@ import {mountBackupFolderSettings} from '../../assets/js/backup-folder-ui.mjs?v=
 import {BACKUP_KEYS,snapshotLaunchpad,launchpadContent,parseLaunchpadBackup,backupCounts} from './launchpad-backup.mjs?v=early-completion-1';
 import {readPreviousLaunchpadBackup} from './launchpad-backup-transaction.mjs?v=early-completion-1';
 import {choosePrivateBackupDestination} from '../../assets/js/backup-folder.mjs?v=area-backups-1';
-import {createWorkspaceNavigationAllowance} from '../../assets/js/workspace-navigation.mjs?v=workspace-navigation-1';
+import {createWorkspaceNavigationAllowance} from '../../assets/js/workspace-navigation.mjs?v=workspace-navigation-2';
 
 export const NOTES_BACKUP_KEY='morning-launchpad-backup-reminder:v1';
 function sorted(value){

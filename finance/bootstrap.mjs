@@ -9,7 +9,7 @@ import {downloadDestination} from '../assets/js/save-backup-file.mjs?v=backup-fl
 import {choosePrivateBackupDestination,getBackupFolder} from '../assets/js/backup-folder.mjs?v=area-backups-1';
 import {mountBackupFolderSettings} from '../assets/js/backup-folder-ui.mjs?v=area-backups-1';
 import {mountBackupFileBrowser} from '../assets/js/backup-file-browser.mjs?v=area-backups-1';
-import {createWorkspaceNavigationAllowance} from '../assets/js/workspace-navigation.mjs?v=workspace-navigation-1';
+import {createWorkspaceNavigationAllowance} from '../assets/js/workspace-navigation.mjs?v=workspace-navigation-2';
 
 if(window.self!==window.top)throw new Error('Open Finance Studio directly to use this workspace.');
 

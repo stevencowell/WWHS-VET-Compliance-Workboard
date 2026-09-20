@@ -5,7 +5,7 @@ export function isWorkboardDestination(href,base){
     const root=new URL(base),url=new URL(href,root);
     return url.origin===root.origin&&['','index.html','head-teacher-tas/','head-teacher-tas/index.html',
       'morning-launchpad/','morning-launchpad/index.html','finance/','finance/index.html',
-      'team-handover/','team-handover/index.html'].some(path=>url.pathname===root.pathname+path);
+      'team-handover/','team-handover/index.html','task-sources/','task-sources/index.html'].some(path=>url.pathname===root.pathname+path);
   }catch{return false;}
 }
 

@@ -13,8 +13,8 @@ function setup(){
   return {guard,click,advance:()=>clock+=1001};
 }
 test('all workspace destinations including Finance are allowed, external and unrelated destinations are not',()=>{
-  for(const href of ['./#vet-home','head-teacher-tas/','morning-launchpad/','finance/','finance/index.html','team-handover/?wing=vet'])assert.equal(isWorkboardDestination(href,base),true,href);
-  for(const href of ['https://other.test/workboard/','http://example.test/workboard/','../finance/','task-sources/','finance/backup.json','javascript:void(0)'])assert.equal(isWorkboardDestination(href,base),false,href);
+  for(const href of ['./#vet-home','head-teacher-tas/','morning-launchpad/','finance/','finance/index.html','team-handover/?wing=vet','task-sources/?wing=vet','task-sources/index.html?wing=tas'])assert.equal(isWorkboardDestination(href,base),true,href);
+  for(const href of ['https://other.test/workboard/','http://example.test/workboard/','../finance/','task-sources-extra/','task-sources/data.json','finance/backup.json','javascript:void(0)'])assert.equal(isWorkboardDestination(href,base),false,href);
 });
 test('normal internal navigation permits only the next unload and expires when navigation does not happen',()=>{
   const h=setup();h.click('../#vet-home');assert.equal(h.guard.consume(),true);assert.equal(h.guard.consume(),false);
