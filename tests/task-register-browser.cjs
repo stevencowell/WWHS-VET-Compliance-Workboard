@@ -30,7 +30,7 @@ const base='http://127.0.0.1:4173',reviewKey='wwhs-task-register-review:v1';
       await page.reload();await page.waitForFunction(()=>document.querySelector('.workspace-forecast')?.dataset.ready==='true');await page.getByRole('button',{name:`All ${wing.toUpperCase()} tasks`,exact:true}).click();await view.selectOption('complete');assert.equal(await register.getByRole('checkbox',{name:label,exact:true}).isChecked(),true);
       if(wing==='vet'){
         await year.selectOption('2027');await view.selectOption('all');assert.ok(await register.locator('.register-row').count()>100);
-        assert.equal(await register.locator('.register-tick input:not(:disabled)').count(),0,'2027 work cannot be prematurely ticked off');
+        assert.ok(await register.locator('.register-tick input:not(:disabled)').count()>0,'Explicit early sign-off is available for future work');
         assert.equal(await register.locator('.register-tick input:checked').count(),0,'2026 completion cannot complete 2027');
         const area=register.getByRole('combobox',{name:'Task area or term',exact:true});
         const firstTerm=await area.locator('option').allTextContents();const term=firstTerm.find(x=>/^Term 1$/i.test(x));assert.ok(term);await area.selectOption({label:term});

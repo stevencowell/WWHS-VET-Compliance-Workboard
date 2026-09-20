@@ -1,7 +1,7 @@
 const workStorage=()=>globalThis.WWHS_STORAGE||globalThis.localStorage;
-import {RESTORE_KEY,createLaunchpadBackup} from './launchpad-backup.mjs?v=area-backups-1';
-import {recoverLaunchpadRestore,readLaunchpadRecovery} from './launchpad-backup-transaction.mjs?v=area-backups-1';
-import {installLaunchpadBackupDialog} from './launchpad-backup-ui.mjs?v=area-backups-1';
+import {RESTORE_KEY,createLaunchpadBackup} from './launchpad-backup.mjs?v=early-completion-1';
+import {recoverLaunchpadRestore,readLaunchpadRecovery} from './launchpad-backup-transaction.mjs?v=early-completion-1';
+import {installLaunchpadBackupDialog} from './launchpad-backup-ui.mjs?v=early-completion-1';
 import {storageSizes} from '../../assets/js/team-storage-report.mjs?v=area-backups-1';
 import {createNoteEditor} from './note-editor.mjs?v=private-backup-1';
 import {downloadDestination} from '../../assets/js/save-backup-file.mjs?v=backup-flow-2';
@@ -9,7 +9,7 @@ import {choosePrivateBackupDestination,getBackupFolder} from '../../assets/js/ba
 import {createTaskHelpDialog} from './task-help-dialog.mjs?v=compression-storage-1';
 import {emailSearchText} from './email-search.mjs?v=1';
 import './email-capture.mjs?v=email-source-1';
-import './launchpad-calendar.mjs?v=area-backups-1';
+import './launchpad-calendar.mjs?v=early-completion-1';
 import {INBOX_KEY, LIMIT, parseSummary, validateInbox, mergeInbox, safeUrl, workingNoteLinks, matchesNoteSearch, PRIORITIES, NEXT_ACTIONS, EDITABLE, enrich, todaySydney, taskSection, rank, nextDate, consolidateDuplicates, LEGACY_PLAN_KEY, isPinned, migrateToPins, recordNoteAction, WORKSTREAMS, createTrackedWork, mergeWorkboardImports, clearEmailImports, isUnfinishedEmailNote, reconcileForecast, sourceCompleted, normaliseForecastContext} from './summary-core.mjs?v=email-cleanup-1';
 
 const repositoryRoot=new URL('../../',import.meta.url);

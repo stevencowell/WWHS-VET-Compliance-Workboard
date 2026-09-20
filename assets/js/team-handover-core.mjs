@@ -150,8 +150,9 @@ function reviewData(value,{strict=false}={}){
   if(strict&&!own(value,'records'))fail('The review handover is incomplete.');
   return {version:1,records:map(field(value,'records',{}),(item,key)=>{
     if(!/^(vet|tas):\d{4}:.+$/.test(key))fail('Invalid review task identity.');
-    keys(item,['completed','reviewedOn'],'review record');
+    keys(item,['completed','reviewedOn','completedEarly'],'review record');
     boolean(item.completed,'review tick');
+    if(own(item,'completedEarly'))boolean(item.completedEarly,'early completion');
     if(!date(item.reviewedOn,'review date'))fail('Missing review date.');
     return {...item};
   },'task reviews')};

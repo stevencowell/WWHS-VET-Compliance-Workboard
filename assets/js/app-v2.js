@@ -325,7 +325,7 @@
       const value = raw === null ? { version: 1, records: {} } : JSON.parse(raw);
       if (value?.version !== 1 || !value.records || typeof value.records !== "object" || Array.isArray(value.records)) throw new Error("Invalid review store");
       for (const [key, item] of Object.entries(value.records)) {
-        if (/^vet:\d{4}:.+$/.test(key) && item && typeof item === "object" && !Array.isArray(item) && typeof item.completed === "boolean" && strictReviewDate(item.reviewedOn)) records[key] = { completed: item.completed, reviewedOn: item.reviewedOn };
+        if (/^vet:\d{4}:.+$/.test(key) && item && typeof item === "object" && !Array.isArray(item) && typeof item.completed === "boolean" && strictReviewDate(item.reviewedOn) && (item.completedEarly === undefined || typeof item.completedEarly === "boolean")) records[key] = { completed: item.completed, reviewedOn: item.reviewedOn, ...(typeof item.completedEarly === "boolean" ? { completedEarly: item.completedEarly } : {}) };
       }
     } catch (_) { /* Invalid review data cannot imply completion. Native progress stays separate. */ }
     reviewCache = { raw, readable: true, records };
@@ -334,14 +334,15 @@
   function externalReview(task, records = state.records) {
     if (!task || task.occurrenceTemplate || task.procedureOnly || ["completed","verified","not-applicable"].includes(records[task.id]?.status)) return null;
     const year = is2027Task(task) ? 2027 : 2026;
-    if (year > Number(boardTodayIso.slice(0, 4))) return null;
     const record = records[task.id] || {};
     const followDate = [strictReviewDate(record.reviewDate), strictReviewDate(record.escalationDate)].filter(Boolean).sort()[0];
     const scheduledDate = strictReviewDate(task.windowEnd) || strictReviewDate(task.dueDate) || strictReviewDate(task.windowStart);
     const taskDate = [followDate, scheduledDate].filter(Boolean).sort().at(-1);
+    const review = window.WWHS_TASK_REVIEW.resolve(window.WWHS_TASK_REVIEW.read().records, 'vet', task.id, year, boardTodayIso, taskDate);
+    if (review?.completedEarly) return review;
+    if (year > Number(boardTodayIso.slice(0, 4))) return null;
     if (strictReviewDate(task.windowStart) > boardTodayIso || taskDate > boardTodayIso) return null;
-    return window.WWHS_TASK_REVIEW.resolve(window.WWHS_TASK_REVIEW.read().records, 'vet', task.id, year, boardTodayIso, taskDate)
-      || window.WWHS_TASK_REVIEW.savedCompletion('vet', task.id, year, boardTodayIso, taskDate);
+    return review || window.WWHS_TASK_REVIEW.savedCompletion('vet', task.id, year, boardTodayIso, taskDate);
   }
   function externalReviewNote(task) {
     const review = externalReview(task);

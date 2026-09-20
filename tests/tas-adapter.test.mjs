@@ -9,6 +9,7 @@ const appScript = fs.readFileSync(new URL('../head-teacher-tas/assets/js/app.js'
 const key = 'wwhs-head-teacher-tas-workboard:v2';
 const reviewKey = 'wwhs-task-register-review:v1';
 const reviewStore = (recordKey, completed = true, reviewedOn = '2026-09-17', year = 2026) => JSON.stringify({version:1,records:{[`tas:${year}:${encodeURIComponent(recordKey)}`]:{completed,reviewedOn}}});
+const earlyReviewStore = (recordKey, completed = true, reviewedOn = '2026-09-17', year = 2026) => JSON.stringify({version:1,records:{[`tas:${year}:${encodeURIComponent(recordKey)}`]:{completed,reviewedOn,completedEarly:true}}});
 const json = value => JSON.parse(JSON.stringify(value));
 const sampleData = { window: {} };
 vm.runInNewContext(dataScript, sampleData);
@@ -447,6 +448,54 @@ test('TAS rejects invalid, future and wrong-year reviews; native completion keep
   }
   const h=harness(saved({'class-readiness::2026':completeRecord(tasks.find(item=>item.id==='class-readiness'))}),{reviewRaw:reviewStore('class-readiness::2026')});
   assert.equal(h.adapter.describeTask('class-readiness').sourceStatus,'completed');
+});
+
+test('explicit early TAS review covers later milestones and reverses without replacing native progress', () => {
+  const id='t4-year11-report-chain', recordKey=id+'::2026';
+  const native={status:'in-progress',steps:{0:true},milestones:{0:true},exceptionReason:'Keep <existing> notes',sourceChecked:false,doneConfirmed:false};
+  const raw=saved({[recordKey]:native}), h=harness(raw,{reviewRaw:earlyReviewStore(recordKey)});
+  assert.ok(tasks.find(task=>task.id===id).dueDate>'2026-09-17');
+  assert.equal(h.adapter.describeTask(id).status,'done');
+  assert.equal(h.adapter.getTaskRegister().items.find(item=>item.recordKey===recordKey).complete,true);
+  h.adapter.openTask(id);
+  assert.match(h.nodes.get('task-dialog-content').innerHTML,/Task complete · overall sign-off/);
+  assert.match(h.nodes.get('task-dialog-content').innerHTML,/Keep &lt;existing&gt; notes/);
+  assert.equal(h.storage.get(key),raw);
+  assert.equal(harness(raw,{reviewRaw:h.storage.get(reviewKey)}).adapter.describeTask(id).status,'done');
+  h.click('close-task');h.storage.set(reviewKey,earlyReviewStore(recordKey,false));h.reviewEvent();
+  assert.equal(h.adapter.describeTask(id).sourceStatus,'in-progress');
+  assert.equal(h.adapter.describeTask(id).notes,native.exceptionReason);
+  assert.equal(h.storage.get(key),raw);
+});
+
+test('explicit early TAS review supports one 2027 task without completing another cycle', () => {
+  const id='2027-t1-year-opening-readiness', recordKey=id+'::2027';
+  const raw=earlyReviewStore(recordKey,true,'2026-09-17',2027), h=harness(null,{reviewRaw:raw});
+  assert.equal(h.adapter.describeTask(id).status,'done');
+  assert.equal(h.adapter.getTaskRegister().items.find(item=>item.recordKey===recordKey).complete,true);
+  assert.equal(h.adapter.getTaskRegister().items.find(item=>item.id==='t1-year-opening-readiness').complete,false);
+  const other=tasks.find(task=>task.provisionalSchedule&&task.id!==id);
+  assert.notEqual(h.adapter.describeTask(other.id).status,'done');
+  for(const reviewRaw of [reviewStore(recordKey,true,'2026-09-17',2027),earlyReviewStore(recordKey,true,'2026-09-18',2027),earlyReviewStore(recordKey,true,'2026-09-17',2026),raw.replace('"completedEarly":true','"completedEarly":"true"')]) {
+    assert.notEqual(harness(null,{reviewRaw}).adapter.describeTask(id).status,'done');
+  }
+  const native=saved({[recordKey]:{...completeRecord(tasks.find(task=>task.id===id)),exceptionReason:'Native completion'}});
+  const completed=harness(native,{reviewRaw:raw});
+  assert.equal(completed.adapter.describeTask(id).sourceStatus,'completed');
+  assert.equal(completed.adapter.describeTask(id).notes,'Native completion');
+  assert.equal(completed.storage.get(key),native);assert.equal(h.storage.get(key),undefined);
+});
+
+test('explicit early TAS weekly review remains attached to its occurrence when the week advances', () => {
+  const recordKey='faculty-meeting-control::2026-09-21', h=harness(null,{reviewRaw:earlyReviewStore(recordKey)});
+  assert.notEqual(h.adapter.describeTask('faculty-meeting-control').status,'done');
+  assert.equal(h.adapter.getTaskRegister().items.find(item=>item.recordKey===recordKey).complete,true);
+  h.advance('2026-09-21T03:00:00Z');
+  assert.equal(h.adapter.describeTask('faculty-meeting-control').status,'done');
+  h.advance('2026-09-28T03:00:00Z');
+  assert.notEqual(h.adapter.describeTask('faculty-meeting-control').status,'done');
+  assert.equal(h.adapter.getTaskRegister().items.find(item=>item.recordKey===recordKey).complete,true);
+  assert.equal(h.storage.get(key),undefined);
 });
 
 test('native changes emit forecast updates only after a successful save', () => {

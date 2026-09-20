@@ -15,13 +15,18 @@
     const records = {};
     for (const [key, item] of Object.entries(value.records)) {
       if (!/^(vet|tas):\d{4}:.+$/.test(key) || typeof item?.completed !== 'boolean' || !date(item.reviewedOn)) throw new Error('Invalid review entry');
-      records[key] = {completed:item.completed, reviewedOn:item.reviewedOn};
+      if (item.completedEarly !== undefined && typeof item.completedEarly !== 'boolean') throw new Error('Invalid early completion');
+      records[key] = {completed:item.completed, reviewedOn:item.reviewedOn, ...(item.completedEarly === true ? {completedEarly:true} : {})};
     }
     return {version:1, records};
   }
   function resolve(records, wing, key, year, today, notBefore = '') {
-    if (Number(year) > Number(today.slice(0,4)) || notBefore > today) return null;
     const tick = records[`${wing}:${year}:${encodeURIComponent(key)}`];
+    // Only an explicit sign-off may override a future date or year. Legacy ticks
+    // retain their timing checks, and the key still identifies one occurrence.
+    if (tick?.completedEarly === true) return tick.completed === true && date(tick.reviewedOn) && tick.reviewedOn <= today
+      ? {year:Number(year), reviewedOn:tick.reviewedOn, method:'overall', completedEarly:true} : null;
+    if (Number(year) > Number(today.slice(0,4)) || notBefore > today) return null;
     return tick?.completed === true && date(tick.reviewedOn) && tick.reviewedOn >= `${year}-01-01` && tick.reviewedOn <= today && (!notBefore || tick.reviewedOn >= notBefore)
       ? {year:Number(year), reviewedOn:tick.reviewedOn, method:'overall'} : null;
   }
@@ -44,7 +49,7 @@
   }
   function note(review) {
     if (!review) return '';
-    return `Reviewed complete for ${review.year}${review.reviewedOn ? ` on ${review.reviewedOn}` : ' (review date not recorded)'}. This task and its applicable steps were confirmed complete through ${review.method === 'task-list' ? 'the saved task list' : 'the overall sign-off'}. The date records the review, not when the work was performed.`;
+    return `Reviewed complete for ${review.year}${review.reviewedOn ? ` on ${review.reviewedOn}` : ' (review date not recorded)'}. ${review.completedEarly ? 'Signed off early; the scheduled dates are unchanged. ' : ''}This task and its applicable steps were confirmed complete through ${review.method === 'task-list' ? 'the saved task list' : 'the overall sign-off'}. The date records the review, not when the work was performed.`;
   }
   function notes(existing, review) {
     const generated = note(review);

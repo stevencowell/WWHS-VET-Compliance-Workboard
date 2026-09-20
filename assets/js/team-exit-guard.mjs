@@ -1,6 +1,6 @@
 // Backup reminder: a digest-only safety receipt never changes shared progress.
-import {KEYS, DATA_KEYS, metadataKey, scopeSnapshot, snapshot} from './team-handover-core.mjs?v=area-backups-1';
-import {hydrateTeamMetadata} from './team-handover-payloads.mjs?v=area-backups-1';
+import {KEYS, DATA_KEYS, metadataKey, scopeSnapshot, snapshot} from './team-handover-core.mjs?v=early-completion-1';
+import {hydrateTeamMetadata} from './team-handover-payloads.mjs?v=early-completion-1';
 
 export const SAFETY_RECEIPT_KEY='wwhs-team-safety-receipt:v1';
 const LAUNCHPAD_JOURNAL='morning-launchpad-restore:v1';

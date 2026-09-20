@@ -34,6 +34,20 @@ function backup(storage=fixture(),extra={}){
   return createBackup({snapshot:snapshot(storage),editor:'Steve',workspaceId:'test-team',exportId:'export-one',savedAt:'2026-09-18T01:00:00.000Z',note:'Next person: check the reply.',changes:['VET task progress: 1 changed record'],...extra});
 }
 
+test('early sign-off is preserved through shared backup, scoped import and re-export',()=>{
+  const local=fixture(),reviews=JSON.parse(local.getItem(KEYS.review));
+  reviews.records['vet:2026:task'].completedEarly=true;
+  local.setItem(KEYS.review,json(reviews));
+  const file=backup(local,{scope:'vet'}),parsed=parseBackup(json(file));
+  assert.equal(parsed.data.review.records['vet:2026:task'].completedEarly,true);
+  const target=fixture(),plan=buildImportPlan(target,parsed,{firstConnection:true,scope:'vet'});
+  atomicApply(target,plan.before,plan.after);
+  assert.equal(snapshot(target).review.records['vet:2026:task'].completedEarly,true);
+  assert.equal(backup(target,{scope:'vet'}).data.review.records['vet:2026:task'].completedEarly,true);
+  file.data.review.records['vet:2026:task'].completedEarly='yes';
+  assert.throws(()=>parseBackup(file),/early completion/);
+});
+
 test('export preserves progress and excludes personal cards, email content, private links and pins',()=>{
   const file=backup(),text=json(file);
   for(const forbidden of ['PRIVATE MAIL','private.example','PERSONAL SECRET','PRIVATE TITLE','PRIVATE PLAN','PRIVATE HELP','email:private-key','private-linked'])assert.equal(text.includes(forbidden),false,forbidden);

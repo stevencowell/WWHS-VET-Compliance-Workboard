@@ -1,9 +1,9 @@
 const workStorage=()=>globalThis.WWHS_STORAGE||globalThis.localStorage;
 import {INBOX_KEY,validateInbox} from './summary-core.mjs?v=backup-flow-2';
-import {isTeamItem} from '../../assets/js/team-handover-core.mjs?v=area-backups-1';
+import {isTeamItem} from '../../assets/js/team-handover-core.mjs?v=early-completion-1';
 import {mountBackupFolderSettings} from '../../assets/js/backup-folder-ui.mjs?v=area-backups-1';
-import {BACKUP_KEYS,snapshotLaunchpad,launchpadContent,parseLaunchpadBackup,backupCounts} from './launchpad-backup.mjs?v=area-backups-1';
-import {readPreviousLaunchpadBackup} from './launchpad-backup-transaction.mjs?v=area-backups-1';
+import {BACKUP_KEYS,snapshotLaunchpad,launchpadContent,parseLaunchpadBackup,backupCounts} from './launchpad-backup.mjs?v=early-completion-1';
+import {readPreviousLaunchpadBackup} from './launchpad-backup-transaction.mjs?v=early-completion-1';
 import {choosePrivateBackupDestination} from '../../assets/js/backup-folder.mjs?v=area-backups-1';
 
 export const NOTES_BACKUP_KEY='morning-launchpad-backup-reminder:v1';

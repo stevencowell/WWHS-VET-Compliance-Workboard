@@ -26,3 +26,24 @@ test('overall sign-off is reversible and fills applicable steps without manufact
   assert.equal(review.notes(review.notes(original.exceptionReason,tick),tick),review.notes(original.exceptionReason,tick));
   assert.throws(()=>review.parse('{"version":1,"records":{"vet:2026:a":{"completed":true,"reviewedOn":"2026-02-30"}}}'));
 });
+
+test('explicit early sign-off survives parsing and applies only to its wing, year and occurrence',()=>{
+  const entry={completed:true,reviewedOn:'2026-09-20',completedEarly:true};
+  const records=review.parse(JSON.stringify({version:1,records:{'vet:2026:term4':entry,'tas:2027:setup':entry}})).records;
+  assert.deepEqual(records['vet:2026:term4'],entry);
+  assert.equal(review.resolve(records,'vet','term4',2026,'2026-09-20','2026-10-23').completedEarly,true);
+  assert.equal(review.resolve(records,'tas','setup',2027,'2026-09-20','2027-02-01').year,2027);
+  for(const args of [['tas','term4',2026],['vet','term4',2027],['vet','term4-next',2026]])assert.equal(review.resolve(records,...args,'2026-09-20'),null);
+  assert.equal(review.resolve(records,'vet','term4',2026,'2026-09-19'),null,'A future review timestamp is still invalid');
+  records['vet:2026:term4'].completed=false;
+  assert.equal(review.resolve(records,'vet','term4',2026,'2026-09-20','2026-10-23'),null);
+  assert.throws(()=>review.parse(JSON.stringify({version:1,records:{'vet:2026:term4':{...entry,completedEarly:'yes'}}})),/early completion/);
+});
+
+test('legacy ticks still cannot complete future work or a later recurrence implicitly',()=>{
+  const records={'vet:2026:task':{completed:true,reviewedOn:'2026-09-20'},'vet:2027:task':{completed:true,reviewedOn:'2026-09-20'}};
+  assert.equal(review.resolve(records,'vet','task',2026,'2026-09-20','2026-10-23'),null);
+  assert.equal(review.resolve(records,'vet','task',2027,'2026-09-20'),null);
+  assert.equal(review.resolve(records,'vet','task',2026,'2026-10-23','2026-10-23'),null);
+  assert.equal(review.resolve(records,'vet','task',2026,'2026-09-20').method,'overall');
+});

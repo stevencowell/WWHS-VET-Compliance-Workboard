@@ -1,5 +1,5 @@
 // Full source register and year-specific overall task sign-off.
-import './task-review.js?v=compression-storage-1';
+import './task-review.js?v=early-completion-1';
 export const REVIEW_KEY = 'wwhs-task-register-review:v1';
 const browserStorage = () => window.WWHS_STORAGE || localStorage;
 export function readReview(raw) {
@@ -134,7 +134,7 @@ export function createTaskRegister({wing, label, getAdapter, getSavedItems = () 
     counts.textContent=`Showing ${filtered.length} of ${items.length} entries for ${year.value==='all'?'all listed years':year.value}. ${snapshot.roleLabel || ''}${snapshot.roleLabel?'.':''}`;
     breakdown.textContent=`In the selected year / area: ${registerEntrySummary(items) || 'no entries'}.`;
     const datedYearLoaded=snapshot.items.some(item=>item.year===year.value&&registerDate(item));
-    reviewNote.textContent=`${year.value!=='all'&&!datedYearLoaded?'No dated calendar is loaded for this year. Only continuing duties and other explicitly listed controls are shown. ':''}Reviewed complete signs off this task and all its applicable checklist steps, whether you used the card or completed the work elsewhere. The card shows a dated completion note and retains your existing notes. Untick to restore the earlier checklist. The date records your review, not when the work happened; evidence and verifier details are not invented. Each tick belongs to its labelled year and occurrence; 2026 ticks do not complete 2027 work. Ongoing duties still repeat.`;
+    reviewNote.textContent=`${year.value!=='all'&&!datedYearLoaded?'No dated calendar is loaded for this year. Only continuing duties and other explicitly listed controls are shown. ':''}Reviewed complete signs off this task and all its applicable checklist steps, whether you used the card or completed the work elsewhere. The card shows a dated completion note and retains your existing notes. Untick to restore the earlier checklist. The date records your review, not when the work happened; evidence and verifier details are not invented. Each tick belongs to its labelled year and occurrence; 2026 ticks do not complete 2027 work. Ongoing duties still repeat. You can mark future work complete early once all applicable work is done; scheduled dates stay unchanged.`;
     list.replaceChildren();
     if (!filtered.length) list.append(node('p','No entries match these filters. Try All entries or All listed years.'));
     for (const item of filtered) {
@@ -148,20 +148,20 @@ export function createTaskRegister({wing, label, getAdapter, getSavedItems = () 
       main.append(node('p',[item.year==='ongoing'?`Ongoing duty · review ${item.reviewYear}`:item.year,entryLabels[registerEntryKind(item)][0],item.area,item.owner].filter(Boolean).join(' · '),{class:'register-meta'}));
       main.append(node('p',item.schedule?.label || 'Timing needs checking',{class:'register-timing'}));
       const date=registerDate(item), past=date&&date<today;
-      const status=item.sourceComplete?`Workboard status: ${item.status}`:item.personalDone?'Done in your saved task list':item.tick?.completed?`Reviewed complete for ${item.reviewYear} · ${item.tick.reviewedOn}`:past?'Past date — review the record':item.historyOnly?'Historical record — review completion':item.inFocus?'Included in the current forecast':item.procedureOnly?'Procedure guide':item.schedule?.kind==='trigger'?'Bring forward when the trigger occurs':'Outside the current forecast';
+      const status=item.sourceComplete?`Workboard status: ${item.status}`:item.personalDone?'Done in your saved task list':item.tick?.completed?`Reviewed complete${item.tick.completedEarly?' early':''} for ${item.reviewYear} · ${item.tick.reviewedOn}`:past?'Past date — review the record':item.historyOnly?'Historical record — review completion':item.inFocus?'Included in the current forecast':item.procedureOnly?'Procedure guide':item.schedule?.kind==='trigger'?'Bring forward when the trigger occurs':'Outside the current forecast';
       main.append(node('p',status,{class:'register-status'}));
       if(!item.reviewComplete&&item.gaps?.length){const gaps=node('details',undefined,{class:'register-gap'});gaps.append(node('summary',`${item.gaps.length} ${item.gaps.length===1?'check':'checks'} needed`));const ul=node('ul');item.gaps.forEach(gap=>ul.append(node('li',gap)));gaps.append(ul);main.append(gaps);}
       const control=node('label',undefined,{class:'register-tick'});
       const checkbox=node('input',undefined,{type:'checkbox','aria-label':`Reviewed complete for ${item.reviewYear}: ${item.title}`});
       checkbox.checked=item.reviewComplete;
       const future=item.reviewYear>Number(today.slice(0,4))||!!date&&date>today;
-      checkbox.disabled=blocked||item.procedureOnly||item.sourceComplete||item.personalDone||future;
+      checkbox.disabled=blocked||item.procedureOnly||item.sourceComplete||item.personalDone;
       checkbox.addEventListener('change',()=>{
         const completed=checkbox.checked;
-        if(save({version:1,records:{...review.records,[item.key]:{completed,reviewedOn:today}}})) {message.textContent=completed?`Reviewed complete for ${item.reviewYear}: ${item.title}.`:`Review tick removed: ${item.title}.`;render();}
+        if(save({version:1,records:{...review.records,[item.key]:{completed,reviewedOn:today,...(completed&&future?{completedEarly:true}:{})}}})) {message.textContent=completed?`Reviewed complete${future?' early':''} for ${item.reviewYear}: ${item.title}.${future?' Scheduled dates are unchanged.':''}`:`Review tick removed: ${item.title}.`;render();}
         else {checkbox.checked=!completed;checkbox.disabled=true;}
       });
-      control.append(checkbox,node('span',item.procedureOnly?'Reference only':future?'Future work':item.sourceComplete?'Complete in workboard':item.personalDone?'Done in task list':`Reviewed complete · ${item.reviewYear}`));
+      control.append(checkbox,node('span',item.procedureOnly?'Reference only':item.sourceComplete?'Complete in workboard':item.personalDone?'Done in task list':item.tick?.completedEarly?`Reviewed complete early · ${item.reviewYear}`:future?`Mark complete early · ${item.reviewYear}`:`Reviewed complete · ${item.reviewYear}`));
       if(item.tick?.completed&&(item.sourceComplete||item.personalDone)){
         const remove=node('button','Remove review tick',{type:'button','aria-label':`Remove review tick: ${item.title}`});
         remove.disabled=blocked;

@@ -385,11 +385,12 @@
     const dates = [task.dueDate, ...(task.milestones || []).map(item=>item.date), key.split('::')[1]]
       .filter(value=>window.WWHS_TASK_REVIEW.date(value) && value.startsWith(`${year}-`)).sort();
     const notBefore = dates.at(-1) || '';
-    if (notBefore > currentIso) return null;
     // Historical baseline reviews used the task id before occurrence records
     // were available. Keep that identity so existing ticks can be reopened.
-    return window.WWHS_TASK_REVIEW.resolve(window.WWHS_TASK_REVIEW.read().records, 'tas', task.historyOnly ? task.id : key, year, currentIso, notBefore)
-      || window.WWHS_TASK_REVIEW.savedCompletion('tas', key, year, currentIso, notBefore);
+    const review = window.WWHS_TASK_REVIEW.resolve(window.WWHS_TASK_REVIEW.read().records, 'tas', task.historyOnly ? task.id : key, year, currentIso, notBefore);
+    if (review?.completedEarly) return review;
+    if (notBefore > currentIso) return null;
+    return review || window.WWHS_TASK_REVIEW.savedCompletion('tas', key, year, currentIso, notBefore);
   }
 
   function reviewedKeys() {

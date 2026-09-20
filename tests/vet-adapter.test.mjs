@@ -9,6 +9,7 @@ const source = fs.readFileSync(new URL('assets/js/app-v2.js', root), 'utf8');
 const key = 'wwhs-vet-compliance-workboard:v3';
 const reviewKey = 'wwhs-task-register-review:v1';
 const reviewStore = (id, completed = true, reviewedOn = '2026-09-18', year = 2026) => JSON.stringify({version:1,records:{[`vet:${year}:${encodeURIComponent(id)}`]:{completed,reviewedOn}}});
+const earlyReviewStore = (id, completed = true, reviewedOn = '2026-09-18', year = 2026) => JSON.stringify({version:1,records:{[`vet:${year}:${encodeURIComponent(id)}`]:{completed,reviewedOn,completedEarly:true}}});
 const state = (records = {}, extra = {}) => ({schemaVersion:3, linkDefaultsVersion:2, records, ...extra});
 
 function harness(saved = null, options = {}) {
@@ -278,6 +279,47 @@ test('native complete, verified and not-applicable records take priority over ex
     assert.doesNotMatch(h.api.statusPill(task),/outside this app/);assert.equal(h.adapter.describeTask(task.id).notes,'Native note');
     assert.equal(h.adapter.getTaskRegister().items.find(item=>item.id===task.id).complete,true);
   }
+  assert.equal(h.writes,0);
+});
+
+test('explicit early VET review completes later work and unticks without replacing native progress', () => {
+  const id='t4-01-year11-final-outcomes';
+  const native={status:'waiting',reviewDate:'2026-10-30',escalationDate:'2026-11-02',waitingForRole:'VET Coordinator',exceptionSummary:'Keep <existing> notes',stepChecks:{0:true},sourceChecked:false,doneWhenConfirmed:false};
+  const h=harness(state({[id]:native}),{now:'2026-09-18T01:00:00Z',reviewRaw:earlyReviewStore(id)});
+  const task=h.api.taskById(id), raw=h.storage.get(key), before=JSON.stringify(h.api.getState());
+  assert.ok(task.dueDate>'2026-09-18');
+  assert.equal(h.api.externalReview(task).completedEarly,true);
+  assert.equal(h.adapter.describeTask(id).sourceStatus,'completed-externally');
+  assert.equal(h.adapter.getTaskRegister().items.find(item=>item.id===id).complete,true);
+  h.api.openTask(id);
+  assert.match(h.elements.get('task-dialog-content').innerHTML,/Task complete · overall sign-off/);
+  assert.match(h.elements.get('task-dialog-content').innerHTML,/Keep &lt;existing&gt; notes/);
+  assert.equal(h.storage.get(key),raw);assert.equal(JSON.stringify(h.api.getState()),before);assert.equal(h.writes,0);
+  const reloaded=harness(raw,{now:'2026-09-18T01:00:00Z',reviewRaw:h.storage.get(reviewKey)});
+  assert.equal(reloaded.adapter.describeTask(id).status,'done');
+  h.storage.set(reviewKey,earlyReviewStore(id,false));
+  assert.equal(h.api.externalReview(task),null);
+  assert.equal(h.adapter.describeTask(id).sourceStatus,'waiting');
+  assert.equal(h.adapter.describeTask(id).notes,native.exceptionSummary);
+  assert.equal(h.storage.get(key),raw);assert.equal(JSON.stringify(h.api.getState()),before);assert.equal(h.writes,0);
+});
+
+test('explicit early VET review is limited to its future task and year and keeps legacy guards', () => {
+  const h=harness(null,{now:'2026-09-18T01:00:00Z'}), [task,other]=h.data.operatingCycle2027.tasks;
+  h.storage.set(reviewKey,earlyReviewStore(task.id,true,'2026-09-18',2027));
+  assert.equal(h.api.externalReview(task).completedEarly,true);
+  assert.equal(h.adapter.describeTask(task.id).status,'done');
+  assert.equal(h.adapter.getTaskRegister().items.find(item=>item.id===task.id).complete,true);
+  assert.equal(h.api.externalReview(other),null);
+  assert.equal(h.api.externalReview({...task,operatingYear:2026,id:h.data.taskRegister.tasks[0].id}),null);
+  for(const raw of [reviewStore(task.id,true,'2026-09-18',2027),earlyReviewStore(task.id,true,'2026-09-19',2027),earlyReviewStore(task.id,true,'2026-09-18',2026),earlyReviewStore(task.id,true,'2026-09-18',2027).replace('"completedEarly":true','"completedEarly":"true"')]) {
+    h.storage.set(reviewKey,raw);assert.equal(h.api.externalReview(task),null);
+  }
+  h.storage.set(reviewKey,earlyReviewStore(task.id,true,'2026-09-18',2027));
+  h.api.getState().records[task.id]={status:'verified',exceptionSummary:'Native verified result',stepChecks:{0:true}};
+  assert.equal(h.api.externalReview(task),null);
+  assert.equal(h.adapter.describeTask(task.id).sourceStatus,'verified');
+  assert.equal(h.adapter.describeTask(task.id).notes,'Native verified result');
   assert.equal(h.writes,0);
 });
 
