@@ -63,13 +63,13 @@ test('failed and nested atomic imports preserve prior reminder and pending confi
 
 test('invalid state rolls back both data and reminder metadata',async()=>{
   const f=await fixture();start(f);offer(f);const before=f.storage.getItem(KEY);
-  assert.throws(()=>f.storage.atomic(()=>{f.storage.setItem(DATA,'[]');f.storage.setItem('not_a_finance_key','{}');}),/Only Finance/);
+  assert.throws(()=>f.storage.atomic(()=>{f.storage.setItem(DATA,'[]');f.storage.setItem('not_a_finance_key','{}');}),/not in the expected Finance Studio format/);
   assert.equal(f.storage.getItem(KEY),before);assert.equal(f.reminder.status().canConfirm,true);
 });
 
 test('async import callbacks are rejected before invocation',async()=>{
   const f=await fixture();let called=false;
-  assert.throws(()=>f.storage.atomic(async()=>{called=true;}),/synchronous/);assert.equal(called,false);
+  assert.throws(()=>f.storage.atomic(async()=>{called=true;}),/cannot save all its changes together/);assert.equal(called,false);
 });
 
 test('turning optional warning off persists without clearing backup-needed state or dirty-save status',async()=>{

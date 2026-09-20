@@ -13,19 +13,19 @@ test('task-help context validates exact identities, source dates, bounded conten
 
 test('valid unknown native context gets useful preparation while a card without context or guidance has no profile',()=>{
   const profile=getTaskHelpProfile(item({taskHelp:context({taskId:'future-task',canonicalTaskId:'future-task'})}));
-  assert.equal(profile.profileId,'source-task-preparation');assert.match(profile.deliverable,/preparation pack/);
+  assert.equal(profile.profileId,'source-task-preparation');assert.match(profile.deliverable,/draft or checklist/);
   assert.equal(getTaskHelpProfile({title:'An unrelated note'}),null);assert.throws(()=>buildTaskHelpPrompt({title:'An unrelated note'}),/no task-specific help/);
   assert.notEqual(getTaskHelpProfile(item()).profileId,'source-task-preparation');
 });
 
 test('native help keeps exact occurrence, current personal action and recorded next step separate',()=>{
   const prompt=buildTaskHelpPrompt(item());
-  assert.match(prompt,/Occurrence record: a-01-confirm-authority-set::2026/);assert.match(prompt,/Personal card action: Prepare a source comparison table/);
+  assert.match(prompt,/Saved task record: a-01-confirm-authority-set::2026/);assert.match(prompt,/Personal card action: Prepare a source comparison table/);
   assert.match(prompt,/Recorded source next step: Open the current NESA timetable/);assert.match(prompt,/Source publication \/ checked-date label: 2026-08-26/);
   assert.match(prompt,/planning windows, not independently verified deadlines/);assert.match(prompt,/Recorded blocked \/ waiting state: Yes/);
   assert.match(prompt,/https:\/\/www\.nsw\.gov\.au/);assert.match(prompt,/Do not automatically send messages/);
   const later=buildTaskHelpPrompt(item({action:'Use my newest action',taskHelp:context({recordKey:'a-01-confirm-authority-set::2027',cycle:'2027',nextStep:'Check the replacement RTO guidance.'})}));
-  assert.match(later,/Occurrence record: a-01-confirm-authority-set::2027/);assert.match(later,/Personal card action: Use my newest action/);assert.match(later,/Check the replacement RTO guidance/);
+  assert.match(later,/Saved task record: a-01-confirm-authority-set::2027/);assert.match(later,/Personal card action: Use my newest action/);assert.match(later,/Check the replacement RTO guidance/);
   assert.doesNotMatch(later,/Personal card action: Prepare a source comparison table/);
 });
 

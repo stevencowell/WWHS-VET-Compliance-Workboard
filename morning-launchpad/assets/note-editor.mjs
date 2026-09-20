@@ -1,4 +1,4 @@
-import {safeUrl} from './summary-core.mjs?v=18';
+import {safeUrl} from './summary-core.mjs?v=plain-language-1';
 
 // Build a fresh allowlisted tree; pasted markup never enters the live editor directly.
 export function cleanNoteHtml(html){

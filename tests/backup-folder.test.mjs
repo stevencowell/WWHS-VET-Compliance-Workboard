@@ -86,8 +86,8 @@ test('each direct private backup creates a new timestamped file and keeps older 
 
 test('failed file close never reports a saved backup',async()=>{
   const {folder,handle}=await configured({handle:directory('Private',{failWrite:true})});
-  await assert.rejects((await folder.destination('finance.json')).write('encrypted'),/could not be saved/);
-  const file=[...handle.files.values()][0];assert.equal(file.closed,undefined);assert.equal(file.aborted,true);assert.match(folder.state().error,/could not be saved/);
+  await assert.rejects((await folder.destination('finance.json')).write('encrypted'),/Could not save to that folder/);
+  const file=[...handle.files.values()][0];assert.equal(file.closed,undefined);assert.equal(file.aborted,true);assert.match(folder.state().error,/Could not save to that folder/);
 });
 
 test('shared backups open native Save as immediately in the configured directory',async()=>{

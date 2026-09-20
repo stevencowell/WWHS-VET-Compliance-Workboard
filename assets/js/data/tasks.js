@@ -5,7 +5,7 @@
   "schemaVersion": "1.0",
   "title": "WWHS VET Coordinator annual compliance task register",
   "asAt": "2026-08-26",
-  "scope": "Operational training-wheel register. It points staff to the authorised systems and evidence locations; it must never contain student names, USIs, assessment evidence, health information, passwords or staff credential files.",
+  "scope": "This task list links to approved systems and evidence locations. Never add student names, USIs, assessment evidence, health information, passwords or staff credential files here.",
   "authorityRule": "The live NESA Timetable of Actions, current RTO 90333 controlled guidance and authorised school systems override this register.",
   "presentationModes": {
     "newUserDefault": "Show one current task in full, followed by no more than two concise coming-next previews. Keep guidance collapsed behind Explain this.",
@@ -32,7 +32,7 @@
     },
     {
       "id": "gap-delegation",
-      "summary": "Annotated local material suggests a Coordinator/Assistant split, but formal delegation has not been verified. The Principal or authorised delegate must confirm accountable, doer and verifier roles locally."
+      "summary": "Annotated local material suggests a Coordinator/Assistant split, but formal delegation has not been verified. The Principal or authorised delegate must confirm who is responsible, who does the work and who checks it."
     },
     {
       "id": "gap-2027-dates",
@@ -50,12 +50,12 @@
       "t3-06-nesa-check-three",
       "t3-08-next-year-promotion"
     ],
-    "note": "This is a dated 2026 operating snapshot, not a permanent priority order. Refresh from live RTO notices and NESA dates."
+    "note": "These priorities were saved in 2026. Check current RTO notices and NESA dates before using them."
   },
   "tasks": [
     {
       "id": "a-01-confirm-authority-set",
-      "title": "Confirm the year's controlling sources",
+      "title": "Check the current VET guides and rules",
       "phase": "annual_setup",
       "timing": "Before the first VET action of the year; refresh whenever a source changes",
       "trigger": "New year, coordinator handover or changed RTO/NESA instruction",
@@ -69,12 +69,12 @@
       "systems": ["NESA Timetable of Actions", "VET Schools Hub", "RTO Document Library"],
       "sourceIds": ["NESA-TOA", "VET-SCHOOLS-HUB", "RTO-DOCUMENT-LIBRARY", "DOE-RTO-QM-2025-26"],
       "liveVerification": { "required": true, "check": "Confirm current year, publication date and any replacement notices." },
-      "guidance": { "why": "Every later task depends on using the current authority.", "commonTrap": "Treating a saved guide, old calendar or familiar practice as current merely because it is accessible." },
+      "guidance": { "why": "Every later task needs the current approved instructions.", "commonTrap": "Assuming a saved guide, old calendar or familiar practice is still current." },
       "applicability": { "cohorts": ["all"], "conditions": "Every school year" }
     },
     {
       "id": "a-02-build-live-calendar",
-      "title": "Build and approve the live annual VET calendar",
+      "title": "Prepare and approve the yearly VET calendar",
       "phase": "annual_setup",
       "timing": "Start of year, then after every changed date or new RTO notice",
       "trigger": "Current NESA timetable and term guides become available",
@@ -87,13 +87,13 @@
       "evidencePointerType": "versioned-calendar-location",
       "systems": ["Approved school calendar", "NESA Timetable of Actions", "VET Schools Hub"],
       "sourceIds": ["NESA-TOA", "RTO-TERM1-GUIDE-2026", "RTO-TERM2-GUIDE-2026", "RTO-TERM3-GUIDE-2026", "WWHS-CALENDAR-2026"],
-      "liveVerification": { "required": true, "check": "Reconcile each displayed date with the live source before relying on it." },
-      "guidance": { "why": "The calendar turns multiple authorities into one manageable work sequence.", "commonTrap": "Copying 2026 dates into 2027 or treating a local reminder as the controlling deadline." },
+      "liveVerification": { "required": true, "check": "Check each date against the current source before using it." },
+      "guidance": { "why": "The calendar brings requirements from different sources into one work plan.", "commonTrap": "Copying 2026 dates into 2027 or treating a local reminder as the controlling deadline." },
       "applicability": { "cohorts": ["all"], "conditions": "Every school year" }
     },
     {
       "id": "a-03-confirm-roles-access",
-      "title": "Confirm roles, deputies, access and escalation paths",
+      "title": "Confirm responsibilities, backup staff, access and help contacts",
       "phase": "annual_setup",
       "timing": "Before work is delegated and whenever staffing changes",
       "trigger": "New year, new staff, leave, changed role or system access failure",
@@ -150,7 +150,7 @@
     },
     {
       "id": "a-06-reconcile-course-codes",
-      "title": "Reconcile courses, qualifications and timetable codes",
+      "title": "Check courses, qualifications and timetable codes match",
       "phase": "annual_setup",
       "timing": "Term 1 before course entries, then after any class or course change",
       "trigger": "Annual timetable finalisation or discrepancy across systems",
@@ -343,7 +343,7 @@
     },
     {
       "id": "t1-08-monitor-support-funds",
-      "title": "Check VET Support Funds and establish expenditure tracking",
+      "title": "Check VET Support Funds and track spending",
       "phase": "term_1",
       "timing": "Term 1, then at agreed review points",
       "trigger": "SBAR/VET Support Funds become available or expenditure is planned",
@@ -442,7 +442,7 @@
     },
     {
       "id": "t2-04-finalise-usi-exceptions",
-      "title": "Finalise unresolved USI verification exceptions",
+      "title": "Resolve outstanding USI checks",
       "phase": "term_2",
       "timing": "Term 2 before later reporting and completion processes",
       "trigger": "Any learner remains unverified or rejected after the Term 1 process",
@@ -566,7 +566,7 @@
     },
     {
       "id": "t3-01-year11-work-placement",
-      "title": "Run and reconcile the Year 11 workplace-learning block",
+      "title": "Coordinate Year 11 work placement and check the records",
       "phase": "term_3",
       "timing": "2026 local working window: 24 August to 4 September",
       "trigger": "Scheduled Year 11 work-placement block",
@@ -792,7 +792,7 @@
     },
     {
       "id": "t4-02-year11-reports",
-      "title": "Complete Year 11 markbook and report reconciliation",
+      "title": "Check Year 11 markbooks and reports agree",
       "phase": "term_4",
       "timing": "2026 local working sequence: outcomes by 23 October; reports checked 28-30 October",
       "trigger": "Year 11 final markbook and reporting window",
@@ -911,7 +911,7 @@
     },
     {
       "id": "t4-08-year-end-assurance",
-      "title": "Complete year-end assurance and improvement review",
+      "title": "Complete the year-end checks and improvement review",
       "phase": "term_4",
       "timing": "After final outcomes and before handover/new-year setup",
       "trigger": "Annual delivery cycle closes",
@@ -950,7 +950,7 @@
 
     {
       "id": "c-01-rto-updates",
-      "title": "Triage weekly RTO updates, notices and changes",
+      "title": "Check weekly RTO updates and identify actions",
       "phase": "continuous",
       "timing": "Weekly and whenever an urgent RTO communication arrives",
       "trigger": "New RTO Update, notice, coordinator email or meeting instruction",
@@ -970,7 +970,7 @@
     },
     {
       "id": "c-02-team-meetings",
-      "title": "Run VET team meetings with action closure",
+      "title": "Run VET team meetings and follow up actions",
       "phase": "continuous",
       "timing": "At least once per term after the network/coordinator meeting, and as risk requires",
       "trigger": "Scheduled team meeting or material change/issue",
@@ -1008,7 +1008,7 @@
     },
     {
       "id": "c-04-cross-system-reconciliation",
-      "title": "Reconcile class lists and VET record systems",
+      "title": "Check class lists and VET records agree",
       "phase": "continuous",
       "timing": "At scheduled checkpoints, after enrolment changes, before reports/outcomes and at close",
       "trigger": "Cross-check date, data change or discrepancy",
@@ -1123,7 +1123,7 @@
 
     {
       "id": "e-01-delivery-change",
-      "title": "Control a staffing, course, facility or equipment change",
+      "title": "Manage a staffing, course, facility or equipment change",
       "phase": "event_driven",
       "timing": "Before the changed arrangement is relied upon",
       "trigger": "Trainer, course, class, facility, equipment or delivery arrangement changes",
@@ -1219,7 +1219,7 @@
     },
     {
       "id": "e-06-discrepancy-corrective-action",
-      "title": "Own and close a compliance discrepancy",
+      "title": "Assign and resolve a compliance issue",
       "phase": "event_driven",
       "timing": "As soon as a mismatch or missed control is found",
       "trigger": "Audit, cross-check, report, notice or staff concern identifies a gap",
@@ -1238,7 +1238,7 @@
     },
     {
       "id": "e-07-coordinator-handover",
-      "title": "Handover the Coordinator or Assistant role",
+      "title": "Hand over the Coordinator or Assistant role",
       "phase": "event_driven",
       "timing": "Before planned leave/change where possible; immediately for an acting arrangement",
       "trigger": "Leave, role change, new appointment or succession training",

@@ -3,7 +3,7 @@
 const profiles = {
   coordination: {
     label: 'Prepare the agenda and actions',
-    summary: 'Turn the confirmed meeting or duty brief into a short running order and clear hand-backs.',
+    summary: 'Turn the confirmed meeting or duty brief into a short running order and clear follow-up actions.',
     deliverable: 'A one-page agenda or coordination brief, plus an action table: action, responsible role, confirmed date, evidence destination and next review.',
     instructions: [
       'Separate information, decisions, actions and escalations. Propose a realistic running order within the confirmed time available.',
@@ -15,8 +15,8 @@ const profiles = {
   },
   reporting: {
     label: 'Prepare the reporting checks',
-    summary: 'Organise the reporting chain, quality checks and correction hand-backs before each milestone.',
-    deliverable: 'A reporting QA checklist, milestone hand-off table and short correction/reminder template using blank or aggregate status fields.',
+    summary: 'Plan each reporting stage, quality check and correction before its due date.',
+    deliverable: 'A reporting checklist, table of who passes work to whom, and short correction or reminder template. Use blank fields or totals without personal details.',
     instructions: [
       'Separate teacher preparation, Head Teacher checking, corrections, office submission and release; use only applicable stages from the task.',
       'Turn the approved reporting guidance into checks for evidence alignment, grade process, comment style and submission state. Leave all learner-level checking in the authorised system.',
@@ -44,7 +44,7 @@ const profiles = {
     instructions: [
       'Confirm that TAS is assigned a contribution, then limit the plan to that scope and the supplied live event brief.',
       'Organise preparation, setup or coverage, supervision, communication and close-out into practical steps with confirmed owners and dates or To confirm placeholders.',
-      'List the approval, safety and consent checks for authorised staff to complete in their owner systems. Draft communication without participant or case information.'
+      'List the approval, safety and consent checks for authorised staff to complete in their official systems. Draft communication without participant or case information.'
     ],
     requiredInputs: ['Current event brief, confirmed TAS contribution and live calendar arrangements.', 'Approved event requirements and role responsibilities, using non-personal summaries only.'],
     reviewChecks: ['The event is confirmed and the plan does not create a commitment, booking or approval.', 'Safety, consent and staffing approval remain explicit human checks.']
@@ -88,19 +88,19 @@ const profiles = {
   'source-access': {
     label: 'Prepare the access review',
     summary: 'Organise an owner-led sharing review without collecting permission lists or changing access.',
-    deliverable: 'A blank access-review matrix, proposed review sequence and signed-out/unauthorised-access test checklist.',
+    deliverable: 'A blank access-review table, proposed review sequence and signed-out/unauthorised-access test checklist.',
     instructions: [
       'Separate general reference material from confidential categories using the approved information-handling rules.',
-      'Draft a review matrix for broad-link, group, legacy and external access, with owner decision and retest columns; leave account and folder details in the controlled system.',
+      'Draft a review table for broad-link, group, legacy and external access, with owner decision and retest columns; leave account and folder details in the controlled system.',
       'Prepare an owner review request and test checklist. Do not enumerate private permissions, change sharing or claim that a test was performed.'
     ],
-    requiredInputs: ['Current school access/sharing requirements and the responsible owner role.', 'Non-sensitive scope categories and approved front-door references only; no permission exports or restricted links.'],
+    requiredInputs: ['Current school access/sharing requirements and the responsible owner role.', 'Non-sensitive scope categories and approved sign-in links only; no permission exports or restricted links.'],
     reviewChecks: ['The actual owner approves every access change and verifies access after any change.', 'No account names, permission lists or sensitive descendant links are reproduced.']
   },
   calendar: {
-    label: 'Prepare the control calendar',
+    label: 'Prepare the task calendar',
     summary: 'Reconcile confirmed dates into a usable preparation and checking sequence.',
-    deliverable: 'A date reconciliation table and draft annual/term control calendar with source, owner, preparation point and checking point.',
+    deliverable: 'A table of dates to check and a draft year or term calendar showing sources, owners, preparation dates and review dates.',
     instructions: [
       'Extract only the current source’s stated year, date, time and applicable action; distinguish TAS-owned work, contributions and awareness-only entries.',
       'Flag missing, conflicting or superseded dates rather than rolling the previous year forward.',
@@ -112,7 +112,7 @@ const profiles = {
   'faculty-plan': {
     label: 'Prepare the faculty plan review',
     summary: 'Connect approved school priorities to a small, owned faculty action plan.',
-    deliverable: 'A priority-to-action matrix, a short progress discussion brief and proposed review questions.',
+    deliverable: 'A table linking priorities to actions, a short progress discussion brief and proposed review questions.',
     instructions: [
       'Compare the supplied approved faculty and school plans by priority, intended outcome and evidence requirement; flag version differences.',
       'Map agreed priorities to practical actions, responsible roles, evidence destinations and review points, leaving unconfirmed allocations blank.',
@@ -124,7 +124,7 @@ const profiles = {
   'teaching-readiness': {
     label: 'Prepare the readiness check',
     summary: 'Give staff a clear way to check programs, rotations, systems and practical readiness.',
-    deliverable: 'A blank or aggregate readiness matrix, change-point checklist and short staff hand-over brief.',
+    deliverable: 'A blank readiness table or summary without personal details, change-point checklist and short staff hand-over brief.',
     instructions: [
       'Build checks for the supplied program/rotation structure, timetable reconciliation, approved learning space and practical-area requirements.',
       'Separate readiness confirmed by an owner-system check from gaps requiring an authorised role’s action; include an evidence-reference column.',
@@ -136,7 +136,7 @@ const profiles = {
   'curriculum-assessment': {
     label: 'Prepare the program and assessment review',
     summary: 'Compare approved curriculum documents and organise the corrections needed for human sign-off.',
-    deliverable: 'A source/version comparison, outcome-to-program/assessment matrix and prioritised correction list.',
+    deliverable: 'A source/version comparison, table linking outcomes to programs and assessments and prioritised correction list.',
     instructions: [
       'Compare the supplied program or assessment schedule against the exact nominated current syllabus and school requirements; cite the relevant section for each finding.',
       'Check the documented sequence, outcomes, assessment links, registration location and change controls. Distinguish a document not supplied from a genuine gap.',
@@ -148,7 +148,7 @@ const profiles = {
   monitoring: {
     label: 'Prepare the senior monitoring review',
     summary: 'Organise a concise evidence and sign-off check for the current senior-course monitoring cycle.',
-    deliverable: 'A blank monitoring QA matrix, evidence-to-locate list and draft reminder for the responsible roles.',
+    deliverable: 'A blank monitoring checklist, evidence-to-locate list and draft reminder for the responsible roles.',
     instructions: [
       'Use the current monitoring model to map required record categories to program, assessment and sign-off checkpoints.',
       'Distinguish supplied evidence references, checks still to be performed and matters requiring the authorised reviewer’s judgement.',
@@ -160,9 +160,9 @@ const profiles = {
   capability: {
     label: 'Prepare the capability review',
     summary: 'Turn approved role requirements into a manageable training and support discussion.',
-    deliverable: 'A blank role-requirement matrix, aggregate support priorities and proposed professional-learning review plan.',
+    deliverable: 'A blank table of requirements for each role, aggregate support priorities and proposed professional-learning review plan.',
     instructions: [
-      'Map supplied current role requirements to the approved training, supervision and course-capability checks; retain verification in the owner systems.',
+      'Map supplied current role requirements to the approved training, supervision and course-capability checks; retain verification in the official systems.',
       'Prepare a discussion structure for capability support and a small set of proposed learning/mentoring actions.',
       'Include a later impact-review question for each proposed action. Do not create a personnel register or infer an individual’s training, accreditation or performance status.'
     ],
@@ -170,7 +170,7 @@ const profiles = {
     reviewChecks: ['Requirements are current and appropriate to the assigned role.', 'All individual status checks and supervisor decisions stay protected and human-led.']
   },
   resources: {
-    label: 'Prepare the resource reconciliation',
+    label: 'Prepare the resource checks',
     summary: 'Organise budget, purchasing or asset checks through the confirmed finance process.',
     deliverable: 'A blank reconciliation/action register and draft query for the finance or asset owner.',
     instructions: [
@@ -183,7 +183,7 @@ const profiles = {
   },
   'safety-review': {
     label: 'Prepare the safety and maintenance checks',
-    summary: 'Arrange the approved checks and action hand-backs for authorised staff to carry out.',
+    summary: 'Organise the approved checks and follow-up actions for authorised staff.',
     deliverable: 'A source-linked blank check/action register, staff briefing and next-review checklist.',
     instructions: [
       'Translate only the supplied current approved checklist or SOP into a practical review sequence; do not invent technical controls or repair instructions.',
@@ -223,7 +223,7 @@ const profiles = {
     deliverable: 'A staged approval/preparation/day-of/close-out checklist and draft staff planning message.',
     instructions: [
       'Confirm an actual excursion proposal and the current school workflow, lead times and approving role before planning the hand-offs.',
-      'Build a blank checklist for educational purpose, approved risk process, staffing, transport, costs, consent and support checks, with each protected record left in its owner system.',
+      'Build a blank checklist for educational purpose, approved risk process, staffing, transport, costs, consent and support checks, with each protected record left in its official system.',
       'Draft staff communication and a close-out action table. Do not book, publish, send consent material, claim approval or complete a risk assessment from missing facts.'
     ],
     requiredInputs: ['Current approved excursion procedure and a non-identifying event proposal.', 'Confirmed planning roles and source-stated lead times; no names, health data, contacts, rolls or consent records.'],
@@ -235,10 +235,10 @@ const profiles = {
     deliverable: 'A first-duty/first-week induction checklist, role-based welcome brief and blank acknowledgement/check-in plan.',
     instructions: [
       'Start with the confirmed role and current whole-school induction requirements, distinguishing what must be checked before any duty from later support.',
-      'Prepare a short navigation guide to approved teaching, emergency, attendance and support front doors, with protected access and personnel checks left to their owners.',
+      'Prepare a short navigation guide to approved teaching, emergency, attendance and support links, with protected access and personnel checks left to their owners.',
       'Include faculty practical-area induction, supervision/capability checks and proposed early check-ins. For a practicum, flag the current university agreement and supervising-role requirements for confirmation.'
     ],
-    requiredInputs: ['Current induction checklist, role type and confirmed first-duty requirements.', 'Approved staff front doors and supervising/induction roles; no personnel, credential, access-code or performance records.'],
+    requiredInputs: ['Current induction checklist, role type and confirmed first-duty requirements.', 'Approved staff sign-in links and supervising/induction roles; no personnel, credential, access-code or performance records.'],
     reviewChecks: ['The person is not described as authorised, trained or inducted before the owner confirms it.', 'The brief is usable before first duty and avoids a folder dump or sensitive access detail.']
   },
   cover: {

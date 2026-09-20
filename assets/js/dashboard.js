@@ -60,8 +60,8 @@
     {id:'sentral', title:'Sentral', detail:'School operations and reports', mark:'SE'},
     {id:'staff-calendar', title:'Staff calendar', detail:'Live school dates and events', mark:'CA'},
     {id:'tas-drive', title:'TAS Drive', detail:'Faculty documents and resources', mark:'TD'},
-    {id:'head-teacher-guide', title:'Head Teacher guide', detail:'Reference guide and local context', mark:'HT'},
-    {id:'faculty-plan', title:'Faculty Management Plan', detail:'Current plan and school alignment', mark:'FP'}
+    {id:'head-teacher-guide', title:'Head Teacher guide', detail:'Reference guide and school procedures', mark:'HT'},
+    {id:'faculty-plan', title:'Faculty Management Plan', detail:'Current faculty and school priorities', mark:'FP'}
   ];
   function favouriteHtml(favourite) {
     const system = board?.systems?.find(item => item.id === favourite.id);
@@ -86,14 +86,14 @@
     if (wing === 'vet') {
       for (const task of board?.taskRegister?.tasks || []) add({title:task.title, detail:'VET · 2026 reference task', keywords:[task.timing, ...(task.systems || []), ...(task.keywords || [])].join(' '), url:link('#task/'+encodeURIComponent(task.id))});
       for (const task of board?.operatingCycle2027?.tasks || []) add({title:task.title, detail:'VET · 2027 planning task', keywords:[task.timing, ...(task.systems || [])].join(' '), url:link('#task/'+encodeURIComponent(task.id))});
-      for (const section of board?.coordinatorReferenceGuide?.sections || []) add({title:`${section.code}. ${section.title}`, detail:'VET guide section · mapped work areas', keywords:section.covered, url:link('#systems')});
+      for (const section of board?.coordinatorReferenceGuide?.sections || []) add({title:`${section.code}. ${section.title}`, detail:'VET guide section · related tasks', keywords:section.covered, url:link('#systems')});
     } else {
       for (const task of board?.tasks || []) add({title:task.title, detail:`TAS · ${task.area} · ${board.config.operatingYear} reference`, keywords:[task.summary,task.timing, ...(task.systems || [])].join(' '), url:link('#task/'+encodeURIComponent(task.id))});
     }
     const areas = wing === 'vet' ? [
       ['VET dashboard','#vet-home','Everyday links and VET work areas'], ['VET Today','#today','Saved follow-ups and date checks'],
-      ['2027 annual cycle','#cycle-2027','Four terms and annual gates'], ['VET workflows','#workflows','Recurring and event-driven work'],
-      ['VET systems','#systems','Approved systems and reference guide'], ['VET issues','#issues','Blockers, chase dates and escalation']
+      ['2027 annual cycle','#cycle-2027','Four terms and annual setup'], ['VET workflows','#workflows','Ongoing work and tasks for when needed'],
+      ['VET systems','#systems','Approved systems and reference guide'], ['VET issues','#issues','Blocked work, follow-up dates and help needed']
     ] : [
       ['TAS dashboard','#home','Everyday links and Head Teacher work areas'], ['TAS Today','#today','Current reminders and saved follow-ups'],
       ['Faculty calendar','#calendar','School events and dates'], ['Teaching and reporting','#teaching','Programs, assessment and reports'],

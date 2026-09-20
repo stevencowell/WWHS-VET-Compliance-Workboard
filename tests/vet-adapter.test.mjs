@@ -222,7 +222,7 @@ test('existing 2026 ticks complete the checklist and prerequisites without repla
   assert.equal(descriptor.sourceStatus,'completed-externally');assert.equal(descriptor.taskHelp.sourceStatus,'completed-externally');
   assert.equal(descriptor.status,'done');assert.equal(h.api.getStatus(task),'in-progress');assert.equal(h.api.isClosed(task),true);
   assert.match(descriptor.notes,/Keep <source> & notes\n\nReviewed complete for 2026 on 2026-09-18/);
-  assert.match(h.api.statusPill(task),/Task complete · overall sign-off/);assert.match(h.api.taskCompletionActions(task),/Task complete · overall sign-off/);
+  assert.match(h.api.statusPill(task),/Task complete · reviewed/);assert.match(h.api.taskCompletionActions(task),/Task complete · reviewed/);
   const item=h.adapter.getTaskRegister().items.find(item=>item.id===task.id);
   assert.equal(item.complete,true);assert.equal(item.externallyReviewed,true);assert.equal(item.reviewedOn,'2026-09-18');
   h.api.openTask(task.id);
@@ -292,7 +292,7 @@ test('explicit early VET review completes later work and unticks without replaci
   assert.equal(h.adapter.describeTask(id).sourceStatus,'completed-externally');
   assert.equal(h.adapter.getTaskRegister().items.find(item=>item.id===id).complete,true);
   h.api.openTask(id);
-  assert.match(h.elements.get('task-dialog-content').innerHTML,/Task complete · overall sign-off/);
+  assert.match(h.elements.get('task-dialog-content').innerHTML,/Task complete · reviewed/);
   assert.match(h.elements.get('task-dialog-content').innerHTML,/Keep &lt;existing&gt; notes/);
   assert.equal(h.storage.get(key),raw);assert.equal(JSON.stringify(h.api.getState()),before);assert.equal(h.writes,0);
   const reloaded=harness(raw,{now:'2026-09-18T01:00:00Z',reviewRaw:h.storage.get(reviewKey)});
@@ -511,7 +511,7 @@ test('2027 forecast follows actual week windows and gates without inventing a se
   const week=forecast.entries.find(entry=>entry.taskId==='2027-w01-updates');
   assert.equal(week.forecast.windowStart,'2027-02-03');assert.equal(week.forecast.windowEnd,'2027-02-05');
   assert.equal(week.forecast.period,'Term 1 · Week 1 · 2027');assert.equal(week.forecast.section,'waiting');assert.equal(week.forecast.blocked,true);
-  assert.match(week.forecast.blockerReason,/prerequisite|gate/i);
+  assert.match(week.forecast.blockerReason,/earlier task|stage/i);
   assert.ok(forecast.entries.every(entry=>!entry.forecast.windowStart||entry.forecast.windowStart<='2027-02-25'));
   assert.equal(h.writes,0);
 });

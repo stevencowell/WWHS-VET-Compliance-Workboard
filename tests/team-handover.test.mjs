@@ -97,8 +97,8 @@ test('private cards colliding with incoming identities block import without writ
   }
 });
 test('duplicate origin records with different task keys fail closed',()=>{
-  const file=backup();file.data.inbox.items.push({...copy(file.data.inbox.items[0]),taskKey:'workboard:vet:second-key'});assert.throws(()=>parseBackup(file),/Duplicate team task/);
-  const local=fixture(),inbox=JSON.parse(local.getItem(KEYS.inbox));inbox.items.push({...copy(inbox.items[0]),id:'second-id',taskKey:'workboard:vet:second-key'});local.values.set(KEYS.inbox,json(inbox));assert.throws(()=>snapshot(local),/Duplicate team task/);
+  const file=backup();file.data.inbox.items.push({...copy(file.data.inbox.items[0]),taskKey:'workboard:vet:second-key'});assert.throws(()=>parseBackup(file),/duplicate tasks/);
+  const local=fixture(),inbox=JSON.parse(local.getItem(KEYS.inbox));inbox.items.push({...copy(inbox.items[0]),id:'second-id',taskKey:'workboard:vet:second-key'});local.values.set(KEYS.inbox,json(inbox));assert.throws(()=>snapshot(local),/duplicate tasks/);
 });
 test('malformed fields, unknown schemas and incomplete containers do not become blank imports',()=>{
   const valid=backup();
@@ -111,16 +111,16 @@ test('malformed fields, unknown schemas and incomplete containers do not become 
     const local=fixture();local.values.set(KEYS.vet,raw);const before=readRaw(local);
     assert.throws(()=>snapshot(local));assert.throws(()=>buildImportPlan(local,valid,{firstConnection:true}));assert.deepEqual(readRaw(local),before);
   }
-  const local=fixture();local.values.set(KEYS.inbox,'{"version":999,"items":[]}');assert.throws(()=>snapshot(local),/Invalid review list/);
-  local.values.set(KEYS.inbox,json({version:2,items:[{id:'broken',title:'Broken'}]}));assert.throws(()=>snapshot(local),/Invalid task fields/);
+  const local=fixture();local.values.set(KEYS.inbox,'{"version":999,"items":[]}');assert.throws(()=>snapshot(local),/task list could not be read/);
+  local.values.set(KEYS.inbox,json({version:2,items:[{id:'broken',title:'Broken'}]}));assert.throws(()=>snapshot(local),/Check the details for this task/);
 });
 test('revision gates reject old files, same-number forks, wrong parents and other workspaces',()=>{
   const first=backup(),second=backup(fixture(),{previous:first,exportId:'export-two'}),third=backup(fixture(),{previous:second,exportId:'export-three'});
   assert.deepEqual(checkRevision(first,null,{firstConnection:true}),{same:false,firstConnection:true});assert.throws(()=>checkRevision(first,null),/first team connection/);
   assert.equal(checkRevision(first,first).same,true);assert.equal(checkRevision(second,first).same,false);assert.equal(checkRevision(third,first).same,false);
-  assert.throws(()=>checkRevision(first,second),/older/);assert.throws(()=>checkRevision({...first,exportId:'other-export'},first),/same revision/);
-  assert.throws(()=>checkRevision({...second,parentExportId:'other-parent'},first),/different parent/);assert.throws(()=>checkRevision({...first,workspaceId:'another-team'},first,{firstConnection:true}),/different team workspace/);
-  assert.throws(()=>parseBackup({...first,parentRevision:0}),/first team file/);
+  assert.throws(()=>checkRevision(first,second),/older/);assert.throws(()=>checkRevision({...first,exportId:'other-export'},first),/same version number/);
+  assert.throws(()=>checkRevision({...second,parentExportId:'other-parent'},first),/different backup/);assert.throws(()=>checkRevision({...first,workspaceId:'another-team'},first,{firstConnection:true}),/different team workspace/);
+  assert.throws(()=>parseBackup({...first,parentRevision:0}),/first backup/);
 });
 test('unexpected nested forecast fields cannot leak private data',()=>{
   const local=fixture(),value=JSON.parse(local.getItem(KEYS.inbox));

@@ -1,4 +1,4 @@
-import { FinanceStorageError, validateRevision, validateValues } from './values.mjs';
+import { FinanceStorageError, validateRevision, validateValues } from './values.mjs?v=plain-language-1';
 
 // Hydrate before starting the legacy engine. This adapter never writes browser storage.
 // A whole-state compare-and-swap makes other tabs an explicit conflict, not a silent merge.
@@ -19,8 +19,8 @@ export async function createPrivateStorage(session, { autoFlushMs = 500, onStatu
 
   function status() { return { state: phase, revision, dirty: generation !== savedGeneration, error: lastError?.message || null, code: lastError?.code || null }; }
   function emit(next, error = null) { phase = next; lastError = error; try { onStatus(status()); } catch { /* UI observers must not break saving. */ } }
-  function requireOpen() { if (closed) throw new FinanceStorageError('closed', 'The finance workspace is locked.'); }
-  function requireMutable() { requireOpen(); if (rejectedAsyncCallbacks) throw new FinanceStorageError('async-transaction', 'Reload before editing if an asynchronous import is still running.'); }
+  function requireOpen() { if (closed) throw new FinanceStorageError('closed', 'Finance is locked.'); }
+  function requireMutable() { requireOpen(); if (rejectedAsyncCallbacks) throw new FinanceStorageError('async-transaction', 'An import is still running. Reload before editing.'); }
   function currentValues() { return stagedValues ?? values; }
   function mutate(next) { if (stagedValues !== null) stagedValues = next; else change(next); }
   function change(next) {
@@ -35,7 +35,7 @@ export async function createPrivateStorage(session, { autoFlushMs = 500, onStatu
   }
   function flush() {
     requireOpen();
-    if (stagedValues !== null) return Promise.reject(new FinanceStorageError('busy', 'Finish the synchronous import before saving.'));
+    if (stagedValues !== null) return Promise.reject(new FinanceStorageError('busy', 'Wait for the import to finish before saving.'));
     clearTimeout(timer);
     if (reloading) return Promise.reject(new FinanceStorageError('busy', 'Wait for the reload before saving.'));
     if (inFlight) return inFlight;
@@ -50,7 +50,7 @@ export async function createPrivateStorage(session, { autoFlushMs = 500, onStatu
           const saved = await session.saveState(sentRevision, sentValues);
           if (closed) return status();
           if (validateRevision(saved.revision) !== sentRevision + 1) {
-            throw new FinanceStorageError('invalid-revision', 'The saved version could not be confirmed. Export your changes before reloading.');
+            throw new FinanceStorageError('invalid-revision', 'The save could not be confirmed. Save a recovery backup before reloading.');
           }
           revision = saved.revision;
           savedGeneration = sentGeneration;
@@ -76,7 +76,7 @@ export async function createPrivateStorage(session, { autoFlushMs = 500, onStatu
     atomic(callback) {
       requireMutable();
       if (typeof callback !== 'function' || callback.constructor?.name === 'AsyncFunction') {
-        throw new FinanceStorageError('async-transaction', 'Finance imports must use a synchronous storage transaction.');
+        throw new FinanceStorageError('async-transaction', 'This import cannot save all its changes together. Nothing was imported.');
       }
       const parent = stagedValues;
       stagedValues = { ...currentValues() };
@@ -88,7 +88,7 @@ export async function createPrivateStorage(session, { autoFlushMs = 500, onStatu
           // that accidentally return a Promise. No async work is part of a transaction.
           rejectedAsyncCallbacks++;
           Promise.resolve(result).catch(() => {}).finally(() => { rejectedAsyncCallbacks--; });
-          throw new FinanceStorageError('async-transaction', 'A storage transaction cannot return a Promise.');
+          throw new FinanceStorageError('async-transaction', 'This import could not save all its changes together. Its changes were undone.');
         }
         const clean = validateValues(stagedValues);
         stagedValues = parent;
@@ -106,15 +106,15 @@ export async function createPrivateStorage(session, { autoFlushMs = 500, onStatu
     // Caller must export/review dirty changes before requesting discard. No automatic conflict override.
     async reload({ discardUnsaved = false } = {}) {
       requireOpen();
-      if (inFlight || reloading || stagedValues !== null) throw new FinanceStorageError('busy', 'Wait for the current request before reloading.');
-      if (generation !== savedGeneration && !discardUnsaved) throw new FinanceStorageError('unsaved', 'Export your unsaved changes before reloading.');
+      if (inFlight || reloading || stagedValues !== null) throw new FinanceStorageError('busy', 'Wait for saving or importing to finish before reloading.');
+      if (generation !== savedGeneration && !discardUnsaved) throw new FinanceStorageError('unsaved', 'Save a recovery backup of your unsaved changes before reloading.');
       clearTimeout(timer);
       const beforeLoad = generation;
       reloading = true;
       try {
         const saved = await session.loadState();
         requireOpen();
-        if (generation !== beforeLoad) throw new FinanceStorageError('unsaved', 'New edits arrived during reload. They have been kept; export them before reloading.');
+        if (generation !== beforeLoad) throw new FinanceStorageError('unsaved', 'New edits arrived while reloading. They are still here. Save a recovery backup before reloading again.');
         const clean = validateValues(saved.values);
         const nextRevision = validateRevision(saved.revision);
         values = clean; revision = nextRevision; generation = 0; savedGeneration = 0;
@@ -124,8 +124,8 @@ export async function createPrivateStorage(session, { autoFlushMs = 500, onStatu
     },
     close({ discardUnsaved = false } = {}) {
       if (closed) return;
-      if (stagedValues !== null) throw new FinanceStorageError('busy', 'Finish the current import before locking finance.');
-      if (!discardUnsaved && (generation !== savedGeneration || inFlight)) throw new FinanceStorageError('unsaved', 'Save or export your changes before locking finance.');
+      if (stagedValues !== null) throw new FinanceStorageError('busy', 'Wait for the import to finish before locking Finance.');
+      if (!discardUnsaved && (generation !== savedGeneration || inFlight)) throw new FinanceStorageError('unsaved', 'Save your changes or a recovery backup before locking Finance.');
       clearTimeout(timer); closed = true; values = Object.create(null); emit('closed');
     },
   });

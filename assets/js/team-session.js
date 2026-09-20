@@ -39,10 +39,10 @@
     const state=read(scope);
     try{if(browserStorage().getItem('morning-launchpad-restore:v1')!==null)return 'A Launchpad backup is being opened or needs recovery. Open Launchpad before saving shared progress.';}catch{}
     if(hasJournal())return 'A handover was interrupted. Open Team handover to recover it before saving.';
-    if(state.blocked)return 'The team session record could not be read. Open Team handover before saving shared progress.';
+    if(state.blocked)return 'Your shared backup record could not be read. Open Team handover to check it before saving.';
     if(state.active&&state.active.id!==bootSessions[scope])return 'The team session changed in another tab. Keep any draft text, then reload this page.';
-    if(state.active?.phase==='exporting')return 'A handover file is being saved. Finish the handover or return to editing from Team handover.';
-    return 'This is a view-only team snapshot. Open Team handover and import the latest shared file to start editing.';
+    if(state.active?.phase==='exporting')return 'A backup is being saved. Finish saving, or choose Return to editing on the backup page.';
+    return 'This copy is view-only. Use Open backup, choose the latest shared file, then Open for editing.';
   }
   function allowWrite(key,next) {
     // Shared inbox/review writes may affect either area. Check each changed

@@ -116,8 +116,8 @@ test('the tab that opened the active editing session can save shared progress',(
 test('a prepared export blocks further operational changes until the handover is resolved',()=>{
   const state=metadata({...editing(),phase:'exporting'});state.pendingExport={exportId:'pending-file'};
   const h=harness({teamState:state});assert.equal(h.guard.isEditing(),false);
-  const vet=h.value(KEYS.vet);vet.records.task.exceptionSummary='Too late for this export';denied(h,KEYS.vet,vet,/handover file is being saved/i);
-  const inbox=h.value(KEYS.inbox);inbox.items[0].noteText='Too late for this export';denied(h,KEYS.inbox,inbox,/handover file is being saved/i);
+  const vet=h.value(KEYS.vet);vet.records.task.exceptionSummary='Too late for this export';denied(h,KEYS.vet,vet,/backup is being saved/i);
+  const inbox=h.value(KEYS.inbox);inbox.items[0].noteText='Too late for this export';denied(h,KEYS.inbox,inbox,/backup is being saved/i);
 });
 test('an already-open editor loses write access immediately when exporting begins',()=>{
   const h=harness({teamState:metadata(editing())});assert.equal(h.guard.isEditing(),true);

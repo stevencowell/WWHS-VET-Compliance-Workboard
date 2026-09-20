@@ -29,7 +29,7 @@ const snapshot=page=>page.evaluate(keys=>Object.fromEntries(keys.map(key=>[key,l
     assert.ok(await panel.evaluate(node=>Boolean(node.compareDocumentPosition(document.querySelector('#task-dialog .step-list'))&Node.DOCUMENT_POSITION_FOLLOWING)));
     assert.equal(await dialog.getByRole('heading',{name:'Suggested steps',exact:true}).count(),1);
     await page.screenshot({path:path.join(output,'direct-sources-vet-handbook-desktop.png')});
-    const [audit]=await Promise.all([context.waitForEvent('page'),panel.getByRole('link',{name:/View this task/}).click()]);
+    const [audit]=await Promise.all([context.waitForEvent('page'),panel.getByRole('link',{name:/View source details/}).click()]);
     audit.on('pageerror',error=>errors.push(error.message));
     await audit.waitForLoadState('domcontentloaded');
     await audit.locator('#task-list .card').first().waitFor();

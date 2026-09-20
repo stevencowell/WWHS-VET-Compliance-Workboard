@@ -1,5 +1,5 @@
 // Manual team handover only. This module never reads files or sends data anywhere.
-import {INBOX_KEY, EDITABLE, validateInbox, validDate, validWorkOrigin, mergeWorkboardImports} from '../../morning-launchpad/assets/summary-core.mjs';
+import {INBOX_KEY, EDITABLE, validateInbox, validDate, validWorkOrigin, mergeWorkboardImports} from '../../morning-launchpad/assets/summary-core.mjs?v=plain-language-1';
 
 export const KEYS = Object.freeze({
   vet:'wwhs-vet-compliance-workboard:v3', tas:'wwhs-head-teacher-tas-workboard:v2',
@@ -83,7 +83,7 @@ function record(value,wing,strict){
   return result;
 }
 function vetData(value,{strict=false}={}){
-  if(!object(value)||value.schemaVersion!==3)fail('Unrecognised saved VET schema. Nothing has been replaced.');
+  if(!object(value)||value.schemaVersion!==3)fail('This VET backup format is not supported. Nothing has been replaced.');
   if(strict)keys(value,['schemaVersion',...VET_FIELDS],'VET handover');
   if(strict&&VET_FIELDS.some(key=>!own(value,key)))fail('The VET handover is incomplete.');
   const records=map(field(value,'records',{}),item=>record(item,'vet',strict),'VET records');
@@ -117,7 +117,7 @@ function vetData(value,{strict=false}={}){
   return {schemaVersion:3,records,assignments,gaps,eventOccurrences};
 }
 function tasData(value,{strict=false}={}){
-  if(!object(value)||value.schemaVersion!==2)fail('Unrecognised saved TAS schema. Nothing has been replaced.');
+  if(!object(value)||value.schemaVersion!==2)fail('This TAS backup format is not supported. Nothing has been replaced.');
   if(strict)keys(value,['schemaVersion',...TAS_FIELDS],'TAS handover');
   if(strict&&TAS_FIELDS.some(key=>!own(value,key)))fail('The TAS handover is incomplete.');
   const records=map(field(value,'records',{}),item=>record(item,'tas',strict),'TAS records');
@@ -145,7 +145,7 @@ function tasData(value,{strict=false}={}){
   return {schemaVersion:2,records,weekly,eventOccurrences,scheduleOverrides};
 }
 function reviewData(value,{strict=false}={}){
-  if(!object(value)||value.version!==1)fail('Unrecognised saved review schema. Nothing has been replaced.');
+  if(!object(value)||value.version!==1)fail('This completion-tick format is not supported. Nothing has been replaced.');
   if(strict)keys(value,['version','records'],'review handover');
   if(strict&&!own(value,'records'))fail('The review handover is incomplete.');
   return {version:1,records:map(field(value,'records',{}),(item,key)=>{
@@ -178,7 +178,7 @@ function portableItem(item){
 }
 function portableInbox(raw){
   const inbox=validateInbox(raw),items=inbox.items.filter(isTeamItem).map(portableItem);
-  if(new Set(items.map(originIdentity)).size!==items.length)fail('Duplicate team task occurrences. Resolve them before handing over.');
+  if(new Set(items.map(originIdentity)).size!==items.length)fail('The shared list has duplicate tasks. Check the duplicates before saving the backup.');
   return {version:2,items,workboardImports:mergeWorkboardImports(inbox.workboardImports)};
 }
 function validatePortableInbox(value){
@@ -192,7 +192,7 @@ function validatePortableInbox(value){
     if(!Array.isArray(item.dirty)||item.dirty.some(key=>!TEAM_DIRTY_FIELDS.includes(key))||!Array.isArray(item.dependsOn)||item.dependsOn.some(key=>!/^workboard:(vet|tas):.+/.test(key))||item.taskHelp?.links?.length)fail('Private task fields are not allowed in a team handover.');
   });
   const checked=validateInbox(JSON.stringify({...value,items:value.items.map((item,index)=>({...item,id:`handover-${index}`}))}));
-  if(new Set(checked.items.map(originIdentity)).size!==checked.items.length)fail('Duplicate team task occurrences.');
+  if(new Set(checked.items.map(originIdentity)).size!==checked.items.length)fail('The shared list has duplicate tasks.');
   return {version:2,items:checked.items.map(portableItem),workboardImports:mergeWorkboardImports(value.workboardImports)};
 }
 function validateData(value){
@@ -226,9 +226,9 @@ function metadata(value){
   keys(value,META_FIELDS,'team handover');if(own(value,'scope')&&!['vet','tas'].includes(value.scope))fail('Unrecognised backup area.');identity(value.workspaceId,150);identity(value.exportId,150);
   if(!Number.isSafeInteger(value.revision)||value.revision<1)fail('Invalid team file revision.');
   if(value.revision===1){
-    if(value.parentRevision!==null||value.parentExportId!==null)fail('The first team file cannot have a parent revision.');
+    if(value.parentRevision!==null||value.parentExportId!==null)fail('The first backup has an unexpected earlier-version link.');
   }else if(!Number.isSafeInteger(value.parentRevision)||value.parentRevision!==value.revision-1||typeof value.parentExportId!=='string')fail('Invalid parent revision.');
-  if(value.parentExportId!==null){identity(value.parentExportId,150);if(value.parentExportId===value.exportId)fail('A team file cannot be its own parent.');}
+  if(value.parentExportId!==null){identity(value.parentExportId,150);if(value.parentExportId===value.exportId)fail('The backup incorrectly lists itself as its earlier version.');}
   timestamp(value.savedAt,'team file save time',{empty:false});bounded(value.savedBy,100,'editor name',{required:true});bounded(value.note,2000,'handover note');
   if(!Array.isArray(value.changes)||value.changes.length>2000)fail('Invalid changed-task summary.');
   value.changes.forEach(item=>bounded(item,500,'changed-task summary',{required:true}));
@@ -247,7 +247,7 @@ export function parseBackup(input){
 }
 export function createBackup({snapshot:data,previous=null,editor,note='',workspaceId,exportId=globalThis.crypto.randomUUID(),savedAt=new Date().toISOString(),changes=[],scope=previous?.scope}){
   if(previous&&(!Number.isSafeInteger(previous.revision)||previous.revision<1||!previous.exportId||!previous.workspaceId))fail('Invalid previous team file.');
-  if(previous&&workspaceId&&workspaceId!==previous.workspaceId)fail('The workspace must stay the same for the next revision.');
+  if(previous&&workspaceId&&workspaceId!==previous.workspaceId)fail('The next backup must belong to the same shared work.');
   return parseBackup({...(scope?{scope}:{}),kind:'WWHS-TEAM-HANDOVER',schemaVersion:1,workspaceId:previous?.workspaceId||workspaceId||globalThis.crypto.randomUUID(),
     revision:previous?previous.revision+1:1,parentRevision:previous?.revision??null,parentExportId:previous?.exportId??null,
     exportId,savedAt,savedBy:editor,note,changes,data:scopeSnapshot(data,scope)});
@@ -259,10 +259,10 @@ export function checkRevision(input,lastFile,{firstConnection=false}={}){
   if(payload.workspaceId!==lastFile.workspaceId)fail('This file belongs to a different team workspace.');
   if(payload.revision<lastFile.revision)fail('This team file is older than the revision already opened here.');
   if(payload.revision===lastFile.revision){
-    if(payload.exportId!==lastFile.exportId)fail('These team files have the same revision but different edits. Choose the team’s authoritative file before continuing.');
+    if(payload.exportId!==lastFile.exportId)fail('Two copies have the same version number but different changes. Agree with your colleague which file to use.');
     return {same:true,firstConnection:false};
   }
-  if(payload.revision===lastFile.revision+1&&payload.parentExportId!==lastFile.exportId)fail('This next revision came from a different parent file. Resolve the competing handovers first.');
+  if(payload.revision===lastFile.revision+1&&payload.parentExportId!==lastFile.exportId)fail('This version was made from a different backup. Agree with your colleague which file to use first.');
   // A single-parent file cannot prove the ancestry of skipped revisions.
   // The manual file selection remains necessary; no concurrent snapshots merge.
   return {same:false,firstConnection:false};
@@ -272,13 +272,13 @@ function reconcileInbox(raw,incoming,createId,scope){
   const oldById=new Map(saved.items.map(item=>[item.id,item])),team=new Map(),privateItems=[];
   for(const item of checked.items){
     if(isTeamItem(item)){
-      const key=originIdentity(item);if(team.has(key))fail('This browser has duplicate team task occurrences.');team.set(key,item);
+      const key=originIdentity(item);if(team.has(key))fail('The shared list on this browser has duplicate tasks.');team.set(key,item);
     }else privateItems.push(item);
   }
   const incomingByIdentity=new Map(incoming.items.map(item=>[originIdentity(item),item]));
   const aliases=new Map(incoming.items.map(item=>[item.taskKey,team.get(originIdentity(item))?.taskKey||item.taskKey]));
   for(const item of privateItems){
-    if(incomingByIdentity.has(originIdentity(item))||incoming.items.some(next=>next.taskKey===item.taskKey))fail('An incoming team task matches a private task in this browser. Keep the private task intact and resolve its team classification before importing.');
+    if(incomingByIdentity.has(originIdentity(item))||incoming.items.some(next=>next.taskKey===item.taskKey))fail('A shared task matches a private task here. Keep the private task and check which area it belongs to before opening this backup.');
   }
   const items=[],usedIds=new Set(checked.items.map(item=>item.id));let added=0,updated=0,removed=0;
   for(const existing of checked.items){
@@ -297,7 +297,7 @@ function reconcileInbox(raw,incoming,createId,scope){
   }
   for(const item of incomingByIdentity.values()){
     const id=createId();identity(id,150);
-    if(usedIds.has(id))fail('A new team task ID collided with an existing task. Retry the import.');usedIds.add(id);
+    if(usedIds.has(id))fail('A new task could not be given a unique reference. Try opening the backup again.');usedIds.add(id);
     items.push({...clone(item),id,dependsOn:item.dependsOn.map(key=>aliases.get(key)||key)});added++;
   }
   const workboardImports=mergeWorkboardImports(checked.workboardImports,incoming.workboardImports);
@@ -332,20 +332,20 @@ function assertCurrent(storage,expected){
 }
 function readJournal(storage){
   const raw=storage.getItem(KEYS.journal);if(raw===null)return null;
-  let value;try{value=JSON.parse(raw);}catch{fail('The unfinished team import journal could not be read. Keep this browser data intact for recovery.');}
+  let value;try{value=JSON.parse(raw);}catch{fail('The interrupted backup record could not be read. Keep your browser data for recovery.');}
   keys(value,['version','transactionId','phase','before','after'],'team import recovery');
   if(value.version!==1||!['prepared','committed'].includes(value.phase))fail('Unrecognised team import recovery journal.');
   identity(value.transactionId,150);transactionMaps(value.before,value.after);return {raw,value};
 }
 function assertJournalOwner(storage,journal){
   const current=readJournal(storage);
-  if(!current||current.value.transactionId!==journal.transactionId)fail('Another tab changed the team recovery journal. No competing transaction has been replaced.');
+  if(!current||current.value.transactionId!==journal.transactionId)fail('Another tab changed the recovery record. Its work has not been replaced.');
 }
 function rollback(storage,journal){
   assertJournalOwner(storage,journal);
   for(const key of Object.keys(journal.before)){
     const current=storage.getItem(key);
-    if(current!==journal.before[key]&&current!==journal.after[key])fail('Saved progress changed during recovery. The recovery copy has been kept; no conflicting values were replaced.');
+    if(current!==journal.before[key]&&current!==journal.after[key])fail('Progress changed during recovery. The recovery copy is kept, and the newer work was not replaced.');
   }
   for(const [key,value] of Object.entries(journal.before)){
     assertJournalOwner(storage,journal);
@@ -375,13 +375,13 @@ export function atomicApply(storage,before,after,{transactionId=globalThis.crypt
     assertCurrent(storage,before);
     const expected={...before};
     for(const [key,value] of Object.entries(after)){
-      if(storage.getItem(KEYS.journal)!==prepared)fail('Another tab changed the team recovery journal.');
+      if(storage.getItem(KEYS.journal)!==prepared)fail('Another tab changed the recovery record.');
       assertCurrent(storage,expected);
       if(value!==before[key])writeValue(storage,key,value);
       expected[key]=value;
     }
     assertCurrent(storage,after);
-    if(storage.getItem(KEYS.journal)!==prepared)fail('Another tab changed the team recovery journal.');
+    if(storage.getItem(KEYS.journal)!==prepared)fail('Another tab changed the recovery record.');
     storage.setItem(KEYS.journal,JSON.stringify({...journal,phase:'committed'}));
   }catch(error){
     let recoveryError;

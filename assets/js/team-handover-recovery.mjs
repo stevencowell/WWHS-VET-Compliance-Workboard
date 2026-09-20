@@ -1,7 +1,7 @@
 // Portable safety copies and explicit reconnect plans. No browser store is
 // written here; the caller previews the plan, then uses the guarded transaction.
-import {KEYS,metadataKey,scopeSnapshot,readRaw,snapshot,parseBackup,createBackup,buildImportPlan} from './team-handover-core.mjs?v=early-completion-1';
-import {archiveTeamState,prepareTeamMetadata} from './team-handover-payloads.mjs?v=early-completion-1';
+import {KEYS,metadataKey,scopeSnapshot,readRaw,snapshot,parseBackup,createBackup,buildImportPlan} from './team-handover-core.mjs?v=plain-language-1';
+import {archiveTeamState,prepareTeamMetadata} from './team-handover-payloads.mjs?v=plain-language-1';
 
 export const SAFETY_KIND='WWHS-TEAM-SAFETY-BACKUP';
 const MAX_SIZE=12000000;
@@ -60,7 +60,7 @@ export function buildReconnectPlan(storage,input,{editor,editing=true,allowUnver
       note:'New local team connection restored from a safety backup.',changes:[]});
     lineage='fresh-safety';
   }else{
-    if(connection.unavailable&&!allowUnverifiedLineage)fail('The old team connection cannot be verified. Review and confirm reconnecting to this trusted file before continuing.');
+    if(connection.unavailable&&!allowUnverifiedLineage)fail('We cannot check this against your previous backup. Confirm that this is the shared file you want to open.');
     payload=scope?parseBackup({...source.file,scope,data:scopeSnapshot(source.data,scope)}):source.file;
     lineage=connection.unavailable?'unverified-reconnect':connection.lastFile?'existing-team':'first-connection';
   }

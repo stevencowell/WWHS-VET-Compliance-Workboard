@@ -147,8 +147,8 @@ test('TAS saved occurrence links remain read-only and return to the same list', 
   const {event}=h.clickLink('#task/class-readiness?record='+encodeURIComponent(recordKey));
   assert.equal(event.defaultPrevented,true);
   const html=h.nodes.get('task-dialog-content').innerHTML;
-  assert.match(html,/Recorded occurrence · read only/);
-  assert.match(html,/<strong>Occurrence:<\/strong> 2025/);
+  assert.match(html,/Saved task record · read only/);
+  assert.match(html,/<strong>Period:<\/strong> 2025/);
   assert.match(html,/<strong>Saved status:<\/strong> Task complete/);
   assert.doesNotMatch(html,/id="task-record-form"|data-task-step=/);
   h.click('close-task');
@@ -458,7 +458,7 @@ test('explicit early TAS review covers later milestones and reverses without rep
   assert.equal(h.adapter.describeTask(id).status,'done');
   assert.equal(h.adapter.getTaskRegister().items.find(item=>item.recordKey===recordKey).complete,true);
   h.adapter.openTask(id);
-  assert.match(h.nodes.get('task-dialog-content').innerHTML,/Task complete · overall sign-off/);
+  assert.match(h.nodes.get('task-dialog-content').innerHTML,/Task complete · reviewed/);
   assert.match(h.nodes.get('task-dialog-content').innerHTML,/Keep &lt;existing&gt; notes/);
   assert.equal(h.storage.get(key),raw);
   assert.equal(harness(raw,{reviewRaw:h.storage.get(reviewKey)}).adapter.describeTask(id).status,'done');

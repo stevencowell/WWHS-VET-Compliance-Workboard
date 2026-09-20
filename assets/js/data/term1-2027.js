@@ -26,7 +26,7 @@
     { number: 2, start: "2027-02-08", end: "2027-02-12", theme: "Confirm learner and provider records" },
     { number: 3, start: "2027-02-15", end: "2027-02-19", theme: "Resolve pathways and plan placements" },
     { number: 4, start: "2027-02-22", end: "2027-02-26", theme: "Run the first full reconciliation" },
-    { number: 5, start: "2027-03-01", end: "2027-03-05", theme: "Complete the first formal data-control point" },
+    { number: 5, start: "2027-03-01", end: "2027-03-05", theme: "Complete the first formal data check" },
     { number: 6, start: "2027-03-08", end: "2027-03-12", theme: "Test assessment and evidence readiness" },
     { number: 7, start: "2027-03-15", end: "2027-03-19", theme: "Check trainer and placement controls" },
     { number: 8, start: "2027-03-22", end: "2027-03-26", theme: "Reconcile progress before term close" },
@@ -39,10 +39,10 @@
     { number: 2, start: "2027-05-03", end: "2027-05-07", theme: "Confirm qualification, RTO and SBAT states" },
     { number: 3, start: "2027-05-10", end: "2027-05-14", theme: "Close USI exceptions and reconcile active records" },
     { number: 4, start: "2027-05-17", end: "2027-05-21", theme: "Enter only authorised competency data" },
-    { number: 5, start: "2027-05-24", end: "2027-05-28", theme: "Run learner feedback and team-action controls" },
+    { number: 5, start: "2027-05-24", end: "2027-05-28", theme: "Check learner feedback and team actions" },
     { number: 6, start: "2027-05-31", end: "2027-06-04", theme: "Assure evidence before Semester 1 reports" },
     { number: 7, start: "2027-06-07", end: "2027-06-11", theme: "Start next-year delivery and staffing planning" },
-    { number: 8, start: "2027-06-14", end: "2027-06-18", theme: "Run the current second data-control point" },
+    { number: 8, start: "2027-06-14", end: "2027-06-18", theme: "Complete the second data check" },
     { number: 9, start: "2027-06-21", end: "2027-06-25", theme: "Audit Stage 6 entries before the hard cut-off" },
     { number: 10, start: "2027-06-28", end: "2027-07-02", theme: "Meet the 30 June control and close Term 2" }
   ];
@@ -51,11 +51,11 @@
     { number: 1, start: "2027-07-20", end: "2027-07-23", theme: "Refresh HSC, RTO and local dates" },
     { number: 2, start: "2027-07-26", end: "2027-07-30", theme: "Reconcile progressive outcomes and evidence" },
     { number: 3, start: "2027-08-02", end: "2027-08-06", theme: "Confirm next-year promotion authority" },
-    { number: 4, start: "2027-08-09", end: "2027-08-13", theme: "Prepare workplace-learning and completion controls" },
+    { number: 4, start: "2027-08-09", end: "2027-08-13", theme: "Prepare workplace-learning and completion checks" },
     { number: 5, start: "2027-08-16", end: "2027-08-20", theme: "Open the verified workplace-learning window" },
-    { number: 6, start: "2027-08-23", end: "2027-08-27", theme: "Convert coordinator updates into owned action" },
+    { number: 6, start: "2027-08-23", end: "2027-08-27", theme: "Turn coordinator updates into assigned actions" },
     { number: 7, start: "2027-08-30", end: "2027-09-03", theme: "Prepare HSC estimates from the authorised cohort" },
-    { number: 8, start: "2027-09-06", end: "2027-09-10", theme: "Run the current third data-control point" },
+    { number: 8, start: "2027-09-06", end: "2027-09-10", theme: "Complete the third data check" },
     { number: 9, start: "2027-09-13", end: "2027-09-17", theme: "Close HSC delivery and exit-survey controls" },
     { number: 10, start: "2027-09-20", end: "2027-09-24", theme: "Assure Term 3 and hand over to final outcomes" }
   ];
@@ -67,7 +67,7 @@
     { number: 4, start: "2027-11-01", end: "2027-11-05", theme: "Close applicable Year 9 short-course entries" },
     { number: 5, start: "2027-11-08", end: "2027-11-12", theme: "Close Year 12 markbook and evidence states" },
     { number: 6, start: "2027-11-15", end: "2027-11-19", theme: "Confirm the 2028 Hub and trainer-readiness plan" },
-    { number: 7, start: "2027-11-22", end: "2027-11-26", theme: "Close support-fund and outstanding finance controls" },
+    { number: 7, start: "2027-11-22", end: "2027-11-26", theme: "Finish support-fund and outstanding finance checks" },
     { number: 8, start: "2027-11-29", end: "2027-12-03", theme: "Archive and roll over controlled markbooks" },
     { number: 9, start: "2027-12-06", end: "2027-12-10", theme: "Test records, privacy and improvement actions" },
     { number: 10, start: "2027-12-13", end: "2027-12-17", theme: "Complete year-end assurance" },
@@ -121,7 +121,7 @@
       sourceIds: currentSourceIds(options.sourceIds || original.sourceIds),
       liveVerification: {
         required: true,
-        check: options.liveCheck || "Confirm the current 2027 source, date and owner-system state. Do not carry a 2026 date forward."
+        check: options.liveCheck || "Check the current 2027 source, date and official record. Do not carry a 2026 date forward."
       },
       independentVerificationRequired: options.independentVerificationRequired === true,
       deadlineState: options.deadlineState || "confirm-current",
@@ -227,7 +227,7 @@
   const eventTemplates = [
     eventTemplate("c-07-workplace-learning-control", {
       order: 5,
-      title: "Run a separate workplace-learning occurrence",
+      title: "Start a new work-placement record",
       independentVerificationRequired: true,
       sourceIds: ["DOE-WPL-PROCEDURE", "DOE-WPL-FORMS", "RTO-DOCUMENT-LIBRARY", "WWHS-VET-SHARED"],
       liveCheck: "Confirm the actual placement dates, course-specific requirement, approved provider/host route and current Department procedure before starting this occurrence.",
@@ -288,7 +288,7 @@
 
   const setupTasks = [
     customTask({
-      id: "2027-g00-rollover", title: "Preserve 2026 and open the 2027 workspace", gate: 1, order: 0,
+      id: "2027-g00-rollover", title: "Keep 2026 records and start 2027", gate: 1, order: 0,
       timing: "Term 4 2026 or before the first 2027 VET action",
       trigger: "Annual rollover or incoming role handover", priority: "critical", dependencies: [], roles: principalGateRoles,
       independentVerificationRequired: true,
@@ -343,7 +343,7 @@
       gate: 2, order: 90, timing: "Before staff and learner induction", dependencies: ["2027-g01-authority", "2027-g06-delivery"], roles: leadershipRoles
     }),
     customTask({
-      id: "2027-g10-activate", title: "Authorise the 2027 Term 1 operating cycle", gate: 2, order: 100,
+      id: "2027-g10-activate", title: "Approve the start of the 2027 Term 1 plan", gate: 2, order: 100,
       timing: "After the source, calendar, role, delivery and controlled-resource gates are closed",
       trigger: "All essential pre-year readiness controls are ready for independent verification",
       priority: "critical", dependencies: ["2027-g02-calendar", "2027-g03-roles", "2027-g07-codes", "2027-g08-assessment", "2027-g09-startup-brief"],
@@ -476,7 +476,7 @@
       const assuranceId = `${prefix}-term-assurance`;
       focusIds.push(assuranceId);
       weekTasks.push(customTask({
-        id: assuranceId, title: "Complete the Term 1 assurance and Term 2 handover", lane: "assurance", gate, week: 10, order: baseOrder + 40,
+        id: assuranceId, title: "Complete Term 1 checks and hand over to Term 2", lane: "assurance", gate, week: 10, order: baseOrder + 40,
         timing: `Week 10, ${displayRange(week)}: complete after current term-close instructions are checked`,
         trigger: "End of Term 1 assurance point", priority: "critical",
         dependencies: [updateId, "2027-w08-reconcile", "2027-w08-evidence", "2027-w09-exceptions", "2027-w09-assessment", "2027-w10-team-actions"],
@@ -503,7 +503,7 @@
 
     const closeId = `${prefix}-close`;
     weekTasks.push(customTask({
-      id: closeId, title: `Verify Week ${definition.week} closure and open the next control point`, lane: "weekly", gate, week: definition.week, order: baseOrder + 90,
+      id: closeId, title: `Check Week ${definition.week} is complete and start the next week`, lane: "weekly", gate, week: definition.week, order: baseOrder + 90,
       timing: `By the end of Week ${definition.week}: verify completed, waiting and handed-back work`,
       trigger: `Week ${definition.week} control close`, dependencies: [updateId, ...focusIds], hardDependencies: [updateId, ...focusIds], roles: leadershipRoles,
       independentVerificationRequired: true,
@@ -537,32 +537,32 @@
           { suffix: "team-actions", canonicalId: "c-02-team-meetings", title: "Accept the Term 1 handover and open Term 2 team actions", dependencies: ["2027-w10-term-assurance"] }
         ],
         2: [
-          { suffix: "qualification", canonicalId: "t2-01-confirm-rto-qualification", title: "Confirm the current RTO and qualification state", dependencies: ["2027-g06-delivery", "2027-g07-codes"] },
-          { suffix: "sbat", canonicalId: "t2-02-sbat-status", title: "Confirm current apprenticeship and traineeship states", dependencies: ["2027-g03-roles", "2027-g07-codes"] }
+          { suffix: "qualification", canonicalId: "t2-01-confirm-rto-qualification", title: "Confirm the current RTO and qualification", dependencies: ["2027-g06-delivery", "2027-g07-codes"] },
+          { suffix: "sbat", canonicalId: "t2-02-sbat-status", title: "Confirm current apprenticeship and traineeship status", dependencies: ["2027-g03-roles", "2027-g07-codes"] }
         ],
         3: [
-          { suffix: "usi-exceptions", canonicalId: "t2-04-finalise-usi-exceptions", title: "Close or formally own every unresolved USI exception", dependencies: ["2027-w02-usi"] },
-          { suffix: "reconcile", canonicalId: "c-04-cross-system-reconciliation", title: "Reconcile active learner, qualification and provider records", dependencies: ["2027-t2-w02-qualification", "2027-t2-w03-usi-exceptions"] }
+          { suffix: "usi-exceptions", canonicalId: "t2-04-finalise-usi-exceptions", title: "Resolve outstanding USI checks or assign follow-up", dependencies: ["2027-w02-usi"] },
+          { suffix: "reconcile", canonicalId: "c-04-cross-system-reconciliation", title: "Check current learner, qualification and provider records agree", dependencies: ["2027-t2-w02-qualification", "2027-t2-w03-usi-exceptions"] }
         ],
         4: [
           { suffix: "competencies", canonicalId: "t2-03-enter-competencies", title: "Enter only current, assessor-authorised competency data", trigger: "The current 2027 assessor-authorised competency and NESA/RTO data-control point", dependencies: ["2027-g08-assessment", "2027-w06-evidence", "2027-t2-w03-reconcile"], independentVerificationRequired: true, sourceIds: ["NESA-TOA", "RTO-DOCUMENT-LIBRARY", "NESA-VET-UNITS", "NESA-VET-ASSESSMENT", "EVIDENCE-CENTRAL"] },
           { suffix: "evidence", canonicalId: "c-03-evidence-feedback-assurance", title: "Sample the evidence and feedback trail before data entry", dependencies: ["2027-g08-assessment"] }
         ],
         5: [
-          { suffix: "questionnaire", canonicalId: "t2-05-learner-questionnaire", title: "Run the current applicable learner-questionnaire process", dependencies: ["2027-w01-onboarding"] },
+          { suffix: "questionnaire", canonicalId: "t2-05-learner-questionnaire", title: "Run the current learner questionnaire if required", dependencies: ["2027-w01-onboarding"] },
           { suffix: "team-meeting", canonicalId: "c-02-team-meetings", title: "Run the Term 2 VET team action meeting", dependencies: ["2027-t2-w01-team-actions"] }
         ],
         6: [
           { suffix: "reports", canonicalId: "t2-06-finalise-semester-one-reports", title: "Finalise Semester 1 VET reports from supported evidence", dependencies: ["2027-t2-w04-competencies", "2027-t2-w04-evidence", "2027-t2-w03-reconcile"] },
-          { suffix: "report-reconcile", canonicalId: "c-04-cross-system-reconciliation", title: "Reconcile reports, markbook, evidence and NESA states", dependencies: ["2027-t2-w06-reports"] }
+          { suffix: "report-reconcile", canonicalId: "c-04-cross-system-reconciliation", title: "Check reports, markbooks, evidence and NESA records agree", dependencies: ["2027-t2-w06-reports"] }
         ],
         7: [
           { suffix: "next-year-plan", canonicalId: "t2-08-plan-next-year-delivery", title: "Start 2028 delivery, authority and staffing planning", dependencies: ["2027-g04-profile", "2027-g05-trainers", "2027-g06-delivery"] },
           { suffix: "trainer-currency", canonicalId: "c-05-industry-currency", title: "Review trainer currency and professional-learning actions", dependencies: ["2027-g05-trainers"] }
         ],
         8: [
-          { suffix: "nesa-check", canonicalId: "t2-07-nesa-check-two", title: "Complete the current second NESA/RTO data control", dependencies: ["2027-t2-w02-qualification", "2027-t2-w04-competencies", "2027-t2-w06-report-reconcile"], independentVerificationRequired: true },
-          { suffix: "sbat-monitor", canonicalId: "c-06-sbat-monitoring", title: "Reconcile applicable SBAT monitoring and reporting", dependencies: ["2027-t2-w02-sbat"] }
+          { suffix: "nesa-check", canonicalId: "t2-07-nesa-check-two", title: "Complete the second NESA/RTO data check", dependencies: ["2027-t2-w02-qualification", "2027-t2-w04-competencies", "2027-t2-w06-report-reconcile"], independentVerificationRequired: true },
+          { suffix: "sbat-monitor", canonicalId: "c-06-sbat-monitoring", title: "Check SBAT monitoring and reporting agree, where required", dependencies: ["2027-t2-w02-sbat"] }
         ],
         9: [
           {
@@ -615,12 +615,12 @@
             ],
             doneWhen: "The live owner system shows the correct aggregate Stage 6 VET entry state by 30 June and every unresolved matter is formally escalated without exposing learner data."
           },
-          { suffix: "term-reconcile", canonicalId: "c-04-cross-system-reconciliation", title: "Complete the Term 2 data and reporting reconciliation", dependencies: ["2027-t2-w06-report-reconcile", "2027-t2-w08-nesa-check", "2027-t2-w10-entry-cutoff"] }
+          { suffix: "term-reconcile", canonicalId: "c-04-cross-system-reconciliation", title: "Check Term 2 data and reports agree", dependencies: ["2027-t2-w06-report-reconcile", "2027-t2-w08-nesa-check", "2027-t2-w10-entry-cutoff"] }
         ]
       },
       assurance: {
         suffix: "term-assurance",
-        title: "Complete the Term 2 assurance and Term 3 handover",
+        title: "Complete Term 2 checks and hand over to Term 3",
         trigger: "End of Term 2 assurance point",
         dependencies: ["2027-t2-w06-reports", "2027-t2-w07-next-year-plan", "2027-t2-w08-nesa-check", "2027-t2-w10-entry-cutoff", "2027-t2-w10-term-reconcile"],
         doneWhen: "Term 2 has a verified privacy-safe assurance summary, the 30 June control is closed, no exception is ownerless, and current-source Term 3 actions have been handed over."
@@ -635,7 +635,7 @@
       focus: {
         1: [
           { suffix: "progressive", canonicalId: "t3-03-progressive-outcomes", title: "Check progressive outcomes against retained evidence", dependencies: ["2027-t2-w04-competencies", "2027-t2-w06-report-reconcile"] },
-          { suffix: "exam-entry", canonicalId: "t3-04-hsc-exam-entry", title: "Verify the live HSC VET examination-entry state", dependencies: ["2027-g07-codes", "2027-t2-w10-term-assurance"], independentVerificationRequired: true }
+          { suffix: "exam-entry", canonicalId: "t3-04-hsc-exam-entry", title: "Verify current HSC VET examination entries", dependencies: ["2027-g07-codes", "2027-t2-w10-term-assurance"], independentVerificationRequired: true }
         ],
         2: [
           { suffix: "evidence", canonicalId: "c-03-evidence-feedback-assurance", title: "Sample current evidence and feedback before outcome work", dependencies: ["2027-g08-assessment", "2027-t3-w01-progressive"] },
@@ -646,36 +646,36 @@
           { suffix: "trainer-currency", canonicalId: "c-05-industry-currency", title: "Review trainer readiness for current and proposed delivery", dependencies: ["2027-g05-trainers"] }
         ],
         4: [
-          { suffix: "placement-ready", canonicalId: "c-07-workplace-learning-control", title: "Confirm the current workplace-learning block and preparation controls", dependencies: ["2027-w03-placement-plan"] },
+          { suffix: "placement-ready", canonicalId: "c-07-workplace-learning-control", title: "Confirm current work-placement dates and preparation checks", dependencies: ["2027-w03-placement-plan"] },
           { suffix: "completion-risk", canonicalId: "t3-09-hsc-schedule-and-delivery-check", title: "Identify HSC delivery and completion risks early enough to act", dependencies: ["2027-g08-assessment", "2027-t3-w01-progressive"] }
         ],
         5: [
-          { suffix: "work-placement", canonicalId: "t3-01-year11-work-placement", title: "Verify the current Year 11 workplace-learning occurrence and controls", dependencies: ["2027-t3-w04-placement-ready"], applicability: { cohorts: ["learners with a verified 2027 workplace-learning occurrence"], conditions: "Only when the actual WWHS/provider dates, course requirement and learner readiness are confirmed in authorised systems" }, liveCheck: "Confirm the actual 2027 WWHS placement dates, provider arrangement, course-specific hours and current Department procedure. This Week 5 scaffold is a verification gate, not authority for the placement date." }
+          { suffix: "work-placement", canonicalId: "t3-01-year11-work-placement", title: "Verify current Year 11 work-placement arrangements and checks", dependencies: ["2027-t3-w04-placement-ready"], applicability: { cohorts: ["learners with a verified 2027 workplace-learning occurrence"], conditions: "Only when the actual WWHS/provider dates, course requirement and learner readiness are confirmed in authorised systems" }, liveCheck: "Confirm the actual 2027 WWHS placement dates, provider arrangement, course-specific hours and current Department procedure. This Week 5 scaffold is a verification gate, not authority for the placement date." }
         ],
         6: [
-          { suffix: "meeting-follow-up", canonicalId: "t3-02-meeting-follow-up", title: "Convert current coordinator updates into owned action", dependencies: ["2027-t3-w01-open"], applicability: { cohorts: ["current VET team"], conditions: "Whenever a current 2027 RTO, NESA, WWHS or coordinator instruction creates action" } },
-          { suffix: "team-meeting", canonicalId: "c-02-team-meetings", title: "Run the Term 3 team meeting and verify hand-backs", dependencies: ["2027-t3-w06-meeting-follow-up"] }
+          { suffix: "meeting-follow-up", canonicalId: "t3-02-meeting-follow-up", title: "Turn current coordinator updates into assigned actions", dependencies: ["2027-t3-w01-open"], applicability: { cohorts: ["current VET team"], conditions: "Whenever a current 2027 RTO, NESA, WWHS or coordinator instruction creates action" } },
+          { suffix: "team-meeting", canonicalId: "c-02-team-meetings", title: "Run the Term 3 team meeting and check follow-up actions", dependencies: ["2027-t3-w06-meeting-follow-up"] }
         ],
         7: [
           { suffix: "hsc-estimates", canonicalId: "t3-05-hsc-estimates", title: "Prepare and submit current HSC VET examination estimates", trigger: "The live 2027 NESA Timetable of Actions opens the applicable estimate action", dependencies: ["2027-t3-w01-exam-entry", "2027-t3-w02-reconcile"], independentVerificationRequired: true, sourceIds: ["NESA-TOA", "NESA-VET-ASSESSMENT", "RTO-DOCUMENT-LIBRARY"], applicability: { cohorts: ["applicable 2027 HSC VET examination entrants"], conditions: "Only where the live NESA action and authorised entrant state require an estimate" } },
           { suffix: "evidence-recheck", canonicalId: "c-03-evidence-feedback-assurance", title: "Recheck the evidence trail before HSC estimate and outcome closure", dependencies: ["2027-t3-w02-evidence"] }
         ],
         8: [
-          { suffix: "nesa-check", canonicalId: "t3-06-nesa-check-three", title: "Complete the current third NESA/RTO data control", dependencies: ["2027-t3-w01-progressive", "2027-t3-w07-hsc-estimates", "2027-t3-w02-reconcile"], independentVerificationRequired: true },
-          { suffix: "reconcile", canonicalId: "c-04-cross-system-reconciliation", title: "Reconcile the third data-control result across owner systems", dependencies: ["2027-t3-w08-nesa-check"] }
+          { suffix: "nesa-check", canonicalId: "t3-06-nesa-check-three", title: "Complete the third NESA/RTO data check", dependencies: ["2027-t3-w01-progressive", "2027-t3-w07-hsc-estimates", "2027-t3-w02-reconcile"], independentVerificationRequired: true },
+          { suffix: "reconcile", canonicalId: "c-04-cross-system-reconciliation", title: "Check the third data-check result agrees across official systems", dependencies: ["2027-t3-w08-nesa-check"] }
         ],
         9: [
-          { suffix: "exit-survey", canonicalId: "t3-07-exit-survey", title: "Run the current applicable RTO exit-survey process", dependencies: ["2027-w01-onboarding"] },
+          { suffix: "exit-survey", canonicalId: "t3-07-exit-survey", title: "Run the current RTO exit survey if required", dependencies: ["2027-w01-onboarding"] },
           { suffix: "hsc-delivery", canonicalId: "t3-09-hsc-schedule-and-delivery-check", title: "Close HSC assessment-schedule and delivery exceptions", dependencies: ["2027-t3-w04-completion-risk", "2027-t3-w08-reconcile"] }
         ],
         10: [
-          { suffix: "term-reconcile", canonicalId: "c-04-cross-system-reconciliation", title: "Complete the Term 3 outcomes and completion reconciliation", dependencies: ["2027-t3-w05-work-placement", "2027-t3-w08-reconcile", "2027-t3-w09-hsc-delivery"] },
-          { suffix: "improvement", canonicalId: "c-09-validation-improvement", title: "Own validation, audit and improvement actions before Term 4", dependencies: ["2027-g08-assessment", "2027-t3-w10-term-reconcile"], independentVerificationRequired: true }
+          { suffix: "term-reconcile", canonicalId: "c-04-cross-system-reconciliation", title: "Check Term 3 outcomes and completion records agree", dependencies: ["2027-t3-w05-work-placement", "2027-t3-w08-reconcile", "2027-t3-w09-hsc-delivery"] },
+          { suffix: "improvement", canonicalId: "c-09-validation-improvement", title: "Assign validation, audit and improvement actions before Term 4", dependencies: ["2027-g08-assessment", "2027-t3-w10-term-reconcile"], independentVerificationRequired: true }
         ]
       },
       assurance: {
         suffix: "term-assurance",
-        title: "Complete the Term 3 assurance and Term 4 handover",
+        title: "Complete Term 3 checks and hand over to Term 4",
         trigger: "End of Term 3 assurance point",
         dependencies: ["2027-t3-w05-work-placement", "2027-t3-w07-hsc-estimates", "2027-t3-w08-nesa-check", "2027-t3-w09-hsc-delivery", "2027-t3-w10-term-reconcile", "2027-t3-w10-improvement"],
         doneWhen: "Term 3 has a verified privacy-safe assurance summary, HSC and completion exceptions are owned, and the final-outcome work has been accepted by the Term 4 roles."
@@ -692,19 +692,19 @@
           { suffix: "year11-outcomes", canonicalId: "t4-01-year11-final-outcomes", title: "Finalise Year 11 outcomes and placement hours against current dates", dependencies: ["2027-t3-w05-work-placement", "2027-t3-w10-term-reconcile", "2027-t3-w02-evidence"] }
         ],
         2: [
-          { suffix: "year11-reports", canonicalId: "t4-02-year11-reports", title: "Complete the current Year 11 markbook and report reconciliation", dependencies: ["2027-t4-w01-year11-outcomes"], applicability: { cohorts: ["current Year 11 VET learners"], conditions: "Complete to the verified 2027 WWHS reporting calendar and supported assessor evidence" } },
-          { suffix: "evidence", canonicalId: "c-03-evidence-feedback-assurance", title: "Verify evidence and feedback supporting final report states", dependencies: ["2027-t3-w02-evidence"] }
+          { suffix: "year11-reports", canonicalId: "t4-02-year11-reports", title: "Check current Year 11 markbooks and reports agree", dependencies: ["2027-t4-w01-year11-outcomes"], applicability: { cohorts: ["current Year 11 VET learners"], conditions: "Complete to the verified 2027 WWHS reporting calendar and supported assessor evidence" } },
+          { suffix: "evidence", canonicalId: "c-03-evidence-feedback-assurance", title: "Verify the evidence and feedback behind final reports", dependencies: ["2027-t3-w02-evidence"] }
         ],
         3: [
           { suffix: "final-data", canonicalId: "t4-03-year12-year10-final-data", title: "Finalise current Year 12 and Year 10 VET data", dependencies: ["2027-t3-w10-term-reconcile", "2027-t4-w02-evidence"], independentVerificationRequired: true, guidance: { why: "Final data must match supported assessor evidence and the current NESA/RTO action state.", commonTrap: "Using a prior-year calendar date or forcing system agreement where evidence does not support the outcome." } },
-          { suffix: "reconcile", canonicalId: "c-04-cross-system-reconciliation", title: "Reconcile final data across authorised owner systems", dependencies: ["2027-t4-w03-final-data"] }
+          { suffix: "reconcile", canonicalId: "c-04-cross-system-reconciliation", title: "Check final data agrees across official systems", dependencies: ["2027-t4-w03-final-data"] }
         ],
         4: [
           { suffix: "year9-entries", canonicalId: "t4-04-year9-short-course-entries", title: "Complete applicable Year 9 short-course entries", dependencies: ["2027-w06-short-course"] },
           { suffix: "sbat-monitor", canonicalId: "c-06-sbat-monitoring", title: "Close current-year SBAT monitoring exceptions", dependencies: ["2027-t2-w08-sbat-monitor"] }
         ],
         5: [
-          { suffix: "year12-markbook", canonicalId: "t4-05-year12-markbook-closure", title: "Close Year 12 markbook and Evidence Central states", dependencies: ["2027-t4-w03-final-data", "2027-t4-w03-reconcile"], applicability: { cohorts: ["current Year 12 VET learners"], conditions: "Close only after the current owner-system outcomes, retained evidence and RTO/NESA requirements agree" } },
+          { suffix: "year12-markbook", canonicalId: "t4-05-year12-markbook-closure", title: "Close Year 12 markbook and Evidence Central records", dependencies: ["2027-t4-w03-final-data", "2027-t4-w03-reconcile"], applicability: { cohorts: ["current Year 12 VET learners"], conditions: "Close only after the current owner-system outcomes, retained evidence and RTO/NESA requirements agree" } },
           { suffix: "privacy", canonicalId: "c-08-records-privacy-control", title: "Check final-record access and privacy before closure", dependencies: ["2027-g03-roles"] }
         ],
         6: [
@@ -717,20 +717,20 @@
         ],
         8: [
           { suffix: "markbook-rollover", canonicalId: "t4-07-markbook-rollover", title: "Archive and roll over VET markbooks safely", dependencies: ["2027-t4-w01-year11-outcomes", "2027-t4-w05-year12-markbook"] },
-          { suffix: "reconcile", canonicalId: "c-04-cross-system-reconciliation", title: "Complete the pre-assurance annual reconciliation", dependencies: ["2027-t4-w04-year9-entries", "2027-t4-w05-year12-markbook", "2027-t4-w08-markbook-rollover"] }
+          { suffix: "reconcile", canonicalId: "c-04-cross-system-reconciliation", title: "Check annual records agree before the final review", dependencies: ["2027-t4-w04-year9-entries", "2027-t4-w05-year12-markbook", "2027-t4-w08-markbook-rollover"] }
         ],
         9: [
           { suffix: "records-privacy", canonicalId: "c-08-records-privacy-control", title: "Test annual records, privacy, retention and access controls", dependencies: ["2027-t4-w05-privacy", "2027-t4-w08-markbook-rollover"] },
-          { suffix: "validation", canonicalId: "c-09-validation-improvement", title: "Close or own validation and improvement findings", dependencies: ["2027-g08-assessment", "2027-t3-w10-improvement"], independentVerificationRequired: true }
+          { suffix: "validation", canonicalId: "c-09-validation-improvement", title: "Resolve validation and improvement findings or assign follow-up", dependencies: ["2027-g08-assessment", "2027-t3-w10-improvement"], independentVerificationRequired: true }
         ],
         10: [
-          { suffix: "year-assurance", canonicalId: "t4-08-year-end-assurance", title: "Complete the current year-end assurance and improvement review", dependencies: ["2027-t4-w03-final-data", "2027-t4-w08-markbook-rollover", "2027-t4-w09-records-privacy", "2027-t4-w09-validation"], independentVerificationRequired: true, sourceIds: ["WWHS-VET-SHARED", "RTO-DOCUMENT-LIBRARY", "ASQA-PRACTICE", "DOE-WPL-PROCEDURE"] }
+          { suffix: "year-assurance", canonicalId: "t4-08-year-end-assurance", title: "Complete the year-end checks and improvement review", dependencies: ["2027-t4-w03-final-data", "2027-t4-w08-markbook-rollover", "2027-t4-w09-records-privacy", "2027-t4-w09-validation"], independentVerificationRequired: true, sourceIds: ["WWHS-VET-SHARED", "RTO-DOCUMENT-LIBRARY", "ASQA-PRACTICE", "DOE-WPL-PROCEDURE"] }
         ],
         11: []
       },
       assurance: {
         suffix: "year-close",
-        title: "Close 2027 and hand verified carry-overs to the 2028 source gate",
+        title: "Close 2027 and hand over checked unfinished work for 2028",
         trigger: "Final student day and annual handover",
         dependencies: ["2027-t4-w06-next-year-hub", "2027-t4-w06-trainer-ready", "2027-t4-w07-fund-acquittal", "2027-t4-w10-year-assurance"],
         doneWhen: "The 2027 privacy-safe annual snapshot is preserved, every genuine carry-over has an owner/verifier/chase point, and no 2027 completion has been copied into the clean 2028 source gate."
@@ -892,7 +892,7 @@
       const closeId = `${prefix}-close`;
       built.push(customTask({
         id: closeId,
-        title: week.number === definition.weeks.length && definition.term === 4 ? "Verify the final 2027 closure and release the clean 2028 source gate" : `Verify Term ${definition.term} Week ${week.number} closure and open the next control point`,
+        title: week.number === definition.weeks.length && definition.term === 4 ? "Verify the 2027 close and prepare to check 2028 sources" : `Check Term ${definition.term} Week ${week.number} is complete and start the next stage`,
         term: definition.term,
         lane: "weekly",
         gate,
@@ -932,15 +932,15 @@
     { number: 1, term: 1, label: "Sources & roles" },
     { number: 2, term: 1, label: "Delivery ready" },
     { number: 3, term: 1, label: "Learners ready" },
-    { number: 4, term: 1, label: "First assurance" },
-    { number: 5, term: 1, label: "Delivery assurance" },
+    { number: 4, term: 1, label: "First review" },
+    { number: 5, term: 1, label: "Delivery review" },
     { number: 6, term: 1, label: "Term 1 close" },
     { number: 7, term: 2, label: "Mid-year data & reports" },
     { number: 8, term: 2, label: "30 June & Term 2 close" },
     { number: 9, term: 3, label: "HSC & progressive outcomes" },
     { number: 10, term: 3, label: "Term 3 close" },
     { number: 11, term: 4, label: "Final outcomes & records" },
-    { number: 12, term: 4, label: "Annual assurance & handover" }
+    { number: 12, term: 4, label: "Annual review & handover" }
   ];
 
   const terms = [
@@ -952,11 +952,11 @@
 
   const operatingCycle2027 = {
     id: "wwhs-vet-2027-full-year-cycle",
-    title: "Run 2027 · full-year operating cycle",
+    title: "2027 plan · the full year",
     operatingYear: 2027,
     state: "2027 OPERATING CYCLE — CURRENT NESA/RTO/WWHS SOURCES AND SHARED TEAM STATE REQUIRE ACTIVATION",
     calendar: {
-      basis: "NSW Department of Education 2027 Eastern division dates; WWHS is not listed as a late-start Western division school. Confirm against the WWHS staff calendar before activation.",
+      basis: "NSW Department of Education 2027 Eastern division dates; WWHS is not listed as a late-start Western division school. Check against the WWHS staff calendar before starting.",
       sourceUrl: "https://education.nsw.gov.au/schooling/calendars/2027",
       lateStartListUrl: "https://education.nsw.gov.au/schooling/calendars/late-start-schools",
       staffSetupStart: "2027-01-28",
@@ -969,12 +969,12 @@
     sourceFamilies: {
       "NESA-TOA": {
         title: "Current NESA Timetable of Actions",
-        note: "The 2027 edition must be verified when published. The live NESA page controls; no 2026 date is inherited.",
+        note: "Check the 2027 edition when published. Use current NESA dates; do not carry 2026 dates forward.",
         url: "https://www.nsw.gov.au/education-and-training/nesa/key-dates/timetable-of-actions"
       },
       "RTO-DOCUMENT-LIBRARY": {
         title: "Current RTO 90333 controlled guidance",
-        note: "Open the authenticated RTO Document Library and record the current 2027 guide/version or a waiting owner and chase date.",
+        note: "Sign in to the RTO Document Library. Record the current 2027 guide and version, or who will follow it up and when.",
         url: workboard.staffLinks?.["document-library"] || ""
       },
       "VET-SCHOOLS-HUB": {
@@ -984,7 +984,7 @@
       },
       "WWHS-VET-SHARED": {
         title: "Current WWHS VET calendar and approved local controls",
-        note: "Confirm the 2027 WWHS/Sentral calendar and current approved local locations before activation.",
+        note: "Check the 2027 WWHS/Sentral calendar and approved school record locations before starting.",
         url: workboard.staffLinks?.["wwhs-drive"] || ""
       }
     },
@@ -999,8 +999,8 @@
     eventTemplates,
     interruptWorkflows: ["safety-incident", "placement", "confirm-delivery", "onboard-learners", "corrective-action", "handover"],
     sourceWarnings: [
-      "At 30 August 2026 the public NESA page still exposed only the 2026 Timetable of Actions; each affected 2027 action remains source-gated.",
-      "Current 2027 RTO coordinator term guides and the WWHS staff calendar must be verified before activation.",
+      "On 30 August 2026, the public NESA page showed only the 2026 Timetable of Actions. Check the 2027 source before starting each affected task.",
+      "Check the current 2027 RTO coordinator term guides and WWHS staff calendar before starting.",
       "The Principal or authorised delegate must confirm the local Head Teacher VET, Coordinator, Assistant, deputy and verifier split.",
       "No 2026 VET deadline has been copied into 2027.",
       "The 30 June Stage 6 VET entry cut-off comes from current NESA ACE Rule 14.2; all cohort details and corrections stay in Schools Online.",

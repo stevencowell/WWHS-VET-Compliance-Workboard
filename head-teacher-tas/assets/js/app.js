@@ -34,10 +34,10 @@
   };
 
   const areaMeta = {
-    calendar: { label: "Calendar", route: "calendar", intro: "Exact 2026 dates first, then the recurring controls that keep them current." },
-    teaching: { label: "Teaching & reporting", route: "teaching", intro: "Curriculum, programs, assessment, reporting and course-quality controls." },
+    calendar: { label: "Calendar", route: "calendar", intro: "Check the dated tasks, then the regular calendar checks." },
+    teaching: { label: "Teaching & reporting", route: "teaching", intro: "Check curriculum, programs, assessment, reporting and course quality." },
     faculty: { label: "Faculty operations", route: "faculty", intro: "Meetings, planning, budget, facilities, plant, chemicals and resources." },
-    people: { label: "People & safety", route: "people", intro: "Staff readiness, student support and urgent or event-driven workflows." }
+    people: { label: "People & safety", route: "people", intro: "Manage staff readiness, student support and urgent or unexpected work." }
   };
 
   const phaseLabels = {
@@ -351,12 +351,12 @@
   }
 
   function cycleLabel(task) {
-    if (task.dueDate) return `${task.dueDate.slice(0, 4)} operating cycle`;
+    if (task.dueDate) return `${task.dueDate.slice(0, 4)} work plan`;
     const cycle = taskCycle(task);
     if (cycle === "week") return `Week beginning ${shortDate(weekKey())}`;
     if (cycle === "term") return termKey().toUpperCase().replace("-", " · ");
-    if (cycle === "event") return "Current occurrence";
-    return `${currentDate.getFullYear()} operating cycle`;
+    if (cycle === "event") return "Current task record";
+    return `${currentDate.getFullYear()} work plan`;
   }
 
   function currentTermLabel() {
@@ -487,11 +487,11 @@
       sourceStateKey: data.config.storageKey, horizonDays,
       termKey: term, weekBeginning: weekKey(), schoolWeek: null,
       mode: !available ? "unavailable" : operatingYearIsCurrent ? "current" : "reference-only",
-      title: "Head Teacher TAS forecast",
+      title: "Head Teacher TAS scheduled work",
       note: !available
-        ? "Saved TAS progress is unavailable or changed in another tab. Copy any unsaved work, then reload before using the forecast."
+        ? "Saved TAS progress is unavailable or changed in another tab. Copy any unsaved work, then reload to see your task list."
         : !operatingYearIsCurrent
-          ? `The dated calendar is a ${data.config.operatingYear} reference. Refresh it before forecasting ${currentDate.getFullYear()} work.`
+          ? `The dated calendar is a ${data.config.operatingYear} reference. Refresh it before planning ${currentDate.getFullYear()} work.`
           : `2026 calendar checked ${data.config.calendarChecked}. The 2027 dates are provisional copies of the 2026 day and month unless confirmed by you. Check the current staff calendar and NESA source. Term ${termNumber} uses an approximate calendar grouping; school week is not configured. Past dates without a recorded status need confirmation; they are not assumed to be missed work.`
     };
     if (context.mode !== "current") return { entries: [], context };
@@ -597,12 +597,12 @@
       const status = review ? 'completed' : reference ? task.historyOnly ? "reference" : "procedure" : !available ? "unavailable" : record?.status || "not-reviewed";
       const period = key.split("::").slice(1).join("::");
       const schedule = scheduleFor(task);
-      if (olderOccurrence) schedule.label = `Recorded occurrence: ${period}. ${task.timing || "No separate due date recorded."}`;
+      if (olderOccurrence) schedule.label = `Saved task record: ${period}. ${task.timing || "No separate due date recorded."}`;
       if (olderOccurrence && task.dueDate && occurrenceYear(key) !== task.dueDate.slice(0, 4)) {
         delete schedule.startDate;
         delete schedule.endDate;
         schedule.kind = "undated";
-        schedule.label = `Recorded occurrence: ${period}. The captured calendar dates belong to ${task.dueDate.slice(0, 4)}; no separate date is confirmed for this occurrence.`;
+        schedule.label = `Saved task record: ${period}. The captured calendar dates belong to ${task.dueDate.slice(0, 4)}; no separate date is confirmed for this task record.`;
       }
       const gaps = [];
       if (task.provisionalSchedule && !task.scheduleConfirmed) gaps.push('Planning dates use the same day and month as 2026. Open this card to edit or confirm them against the current source.');
@@ -664,12 +664,12 @@
       sourceNote: `2026 school calendar last checked ${data.config.calendarChecked}. The 29 recurring dated tasks are carried into 2027 using the same day and month as provisional planning dates. Open a 2027 card to edit dates or record your source confirmation. Ongoing duties remain separate.`,
       items,
       coverageNotes: [
-        "This register includes every task defined in the workboard, its saved occurrences and the five weekly scan controls. It is not proof that every school obligation has been captured.",
-        "The live staff calendar, Head Teacher guide and current local procedures still need reconciliation with this saved catalogue. Confirm each duty's owner and applicability.",
+        "This list includes all workboard tasks, saved task records and five weekly checks. Check current school requirements for any duties still missing.",
+        "Check this list against the current staff calendar, Head Teacher guide and school procedures. Confirm who is responsible and which duties apply.",
         "Event procedures rely on staff recognising the event. A described trigger is not an automatic notification from a school system.",
         "Some annual records also describe term reviews or change triggers. Closing that record does not schedule each later review.",
         "NESA dates are school deadlines. Confirm applicable courses and each faculty hand-off with the authorised submitting or certifying role; this catalogue does not give the Head Teacher that authority.",
-        "The five weekly scans are available on Today; they are not generated by the 21-day forecast.",
+        "Open Today for the five weekly checks. They are separate from the 21-day task list.",
         "Historical calendar rows and protected procedures are retained as reference; protected cases stay in their authorised systems.",
         'The 2027 schedule is a planning baseline, not a verified 2027 school calendar. Check weekends, term dates, event applicability and current NESA deadlines. Your date changes stay in this browser and are included in the TAS workboard backup.'
       ]
@@ -686,7 +686,7 @@
     const labels = {
       "calendar-current": ["Current date", "good"],
       "current-local": ["Recent local artefact · confirm owner", "warn"],
-      "front-door-current": ["Current front door", "good"],
+      "front-door-current": ["Current sign-in page", "good"],
       mapped: ["Mapped hand-off", "good"],
       mixed: ["Check current method", "warn"],
       "verify-live": ["Verify live", "warn"],
@@ -697,7 +697,7 @@
   }
 
   function statusPill(task) {
-    if (overallReview(task)) return `<span class="pill status completed">Task complete · overall sign-off</span>`;
+    if (overallReview(task)) return `<span class="pill status completed">Task complete · reviewed</span>`;
     if (task.historyOnly) return `<span class="pill status muted">2026 baseline</span>`;
     if (task.procedureOnly) return `<span class="pill status muted">Procedure only</span>`;
     if (!hasReviewedRecord(task)) return `<span class="pill status muted">Not reviewed here</span>`;
@@ -748,13 +748,13 @@
     const available = validKey && forecastStorageAvailable();
     const record = available ? reviewedRecord(task,key) : null, review = available ? overallReview(task,key) : null;
     lastTaskTrigger = document.activeElement;
-    taskDialogContent.innerHTML = `<header class="dialog-head"><div><p class="eyebrow">Recorded occurrence · read only</p><h2 id="task-dialog-title">${esc(task.title)}</h2></div><button class="dialog-close" type="button" data-action="close-task" aria-label="Close task">×</button></header>
-      <div class="dialog-body"><p><strong>Occurrence:</strong> ${esc(validKey ? key.split("::").slice(1).join("::") : "Unavailable")}</p><p><strong>Saved status:</strong> ${esc(!available ? "Unavailable — reload to check saved progress" : record ? statusMeta[record.status]?.label || record.status : "Not reviewed here")}</p>
-      <p>This is the saved occurrence, separate from the current cycle. It does not alter the official school record.</p>${review ? `<p>${esc(window.WWHS_TASK_REVIEW.note(review))}</p>` : ""}${record?.exceptionReason ? `<p>${esc(record.exceptionReason)}</p>` : ""}
+    taskDialogContent.innerHTML = `<header class="dialog-head"><div><p class="eyebrow">Saved task record · read only</p><h2 id="task-dialog-title">${esc(task.title)}</h2></div><button class="dialog-close" type="button" data-action="close-task" aria-label="Close task">×</button></header>
+      <div class="dialog-body"><p><strong>Period:</strong> ${esc(validKey ? key.split("::").slice(1).join("::") : "Unavailable")}</p><p><strong>Saved status:</strong> ${esc(!available ? "Unavailable — reload to check saved progress" : record ? statusMeta[record.status]?.label || record.status : "Not reviewed here")}</p>
+      <p>This past task record is separate from the current task and the official school record.</p>${review ? `<p>${esc(window.WWHS_TASK_REVIEW.note(review))}</p>` : ""}${record?.exceptionReason ? `<p>${esc(record.exceptionReason)}</p>` : ""}
       ${taskSourcePanel(task,key.split("::")[1]?.slice(0,4))}<section class="dialog-section"><h3>Actions</h3><p class="section-help">Source links open current destinations; they do not reconstruct the source as it was at the time.</p><ol class="action-list">${task.steps.map((step, index) => `<li><div class="history-step"><span class="step-number">${record?.steps?.[index] ? "✓" : index + 1}</span><span>${esc(step)}</span></div>${stepGuidance(task, index)}</li>`).join("")}</ol></section>
       ${task.milestones?.length ? `<section class="dialog-section"><h3>Captured calendar milestones</h3>${guidanceLinks(window.TAS_STEP_GUIDANCE?.forMilestone(task))}<ul>${task.milestones.map((item, index) => `<li>${record?.milestones?.[index] ? "✓ " : ""}${esc(item.date)} · ${esc(item.label)}</li>`).join("")}</ul></section>` : ""}
-      <section class="owner-systems"><h3>Open the owner system</h3><div class="system-buttons">${systemButtons(task)}</div><p>${esc(task.privacy)}</p></section>
-      <div class="dialog-actions"><button class="button quiet" type="button" data-action="close-task">Close occurrence</button></div></div>`;
+      <section class="owner-systems"><h3>Open the official system</h3><div class="system-buttons">${systemButtons(task)}</div><p>${esc(task.privacy)}</p></section>
+      <div class="dialog-actions"><button class="button quiet" type="button" data-action="close-task">Close record</button></div></div>`;
     taskDialog.showModal();
   }
 
@@ -773,7 +773,7 @@
     const available = forecastStorageAvailable();
     const checked = available && (safeObject(state.weekly[week])[index] === true || Boolean(weeklyReview(index,week)));
     lastTaskTrigger = document.activeElement;
-    taskDialogContent.innerHTML = `<header class="dialog-head"><div><p class="eyebrow">Saved weekly scan · read only</p><h2 id="task-dialog-title">${esc(data.weeklyChecks[index])}</h2></div><button class="dialog-close" type="button" data-action="close-task" aria-label="Close task">×</button></header><div class="dialog-body"><p>Week beginning ${esc(week)}.</p><p>${!available ? "Saved progress is unavailable; reload to check it." : checked ? "Ticked in this browser." : "Not ticked in this browser."}</p><p>This is a local review reminder, separate from this week's scan and official school records. Links open the current source, not a historical copy.</p>${taskSourcePanel({id:`weekly-scan-${index}`},week.slice(0,4))}${guidanceLinks(window.TAS_STEP_GUIDANCE?.forWeekly(index))}<button class="button quiet" type="button" data-action="close-task">Close occurrence</button></div>`;
+    taskDialogContent.innerHTML = `<header class="dialog-head"><div><p class="eyebrow">Saved weekly scan · read only</p><h2 id="task-dialog-title">${esc(data.weeklyChecks[index])}</h2></div><button class="dialog-close" type="button" data-action="close-task" aria-label="Close task">×</button></header><div class="dialog-body"><p>Week beginning ${esc(week)}.</p><p>${!available ? "Saved progress is unavailable; reload to check it." : checked ? "Ticked in this browser." : "Not ticked in this browser."}</p><p>This is a local review reminder, separate from this week's scan and official school records. Links open the current source, not a historical copy.</p>${taskSourcePanel({id:`weekly-scan-${index}`},week.slice(0,4))}${guidanceLinks(window.TAS_STEP_GUIDANCE?.forWeekly(index))}<button class="button quiet" type="button" data-action="close-task">Close record</button></div>`;
     taskDialog.showModal();
   }
 
@@ -826,14 +826,14 @@
       ["calendar", "Calendar", "School dates, reporting milestones and annual planning."],
       ["teaching", "Teaching & reporting", "Programs, assessment, reporting and course quality."],
       ["faculty", "Faculty operations", "Meetings, budget, equipment and workshop resources."],
-      ["people", "People & safety", "Staff support, safety and event-driven procedures."],
+      ["people", "People & safety", "Staff support, safety and procedures for when needed."],
       ["reference", "Systems & documents", "School portals, staff sources and reference material."]
     ];
     routeContent.innerHTML = `<div class="page-wrap dash-tas-home">
       ${pageHeader("YOUR WORK PATHWAYS", "Head Teacher TAS", "Move straight into the part of the job you need.")}
       <nav class="dash-workareas" aria-label="Head Teacher work areas">${areas.map(([href, label, description]) => `<a class="dash-workarea" data-area="${esc(href)}" href="#${href}"><span class="dash-workarea-icon">${window.WWHS_DASHBOARD?.icon?.(href) || ""}</span><span class="dash-workarea-copy"><strong>${esc(label)}</strong><span>${esc(description)}</span></span><span class="dash-workarea-arrow" aria-hidden="true">→</span></a>`).join("")}</nav>
       ${yearBanner()}
-      <details class="standing-panel"><summary>Using this workboard</summary><p>Use Today for date reminders and local follow-ups. Detailed guidance is available when you open a task. “Not reviewed here” means no progress has been recorded in this browser; it does not mean the work was missed.</p><p>Official records stay in the school systems. This browser saves only your local workboard progress.</p><a class="text-link" href="../#home">Choose another wing →</a></details>
+      <details class="standing-panel"><summary>Using this workboard</summary><p>Use Today for date reminders and local follow-ups. Detailed guidance is available when you open a task. “Not reviewed here” means no progress has been recorded in this browser; it does not mean the work was missed.</p><p>Official records stay in the school systems. This browser saves only your local workboard progress.</p><a class="text-link" href="../#home">Choose another section →</a></details>
     </div>`;
   }
 
@@ -872,9 +872,9 @@
       ${yearBanner()}
       <section class="coming-section"><div class="section-heading"><div><h2>Recorded follow-ups</h2><p>${followUps.length ? `${followUps.length} open item${followUps.length === 1 ? "" : "s"} you have recorded here.` : "No follow-ups recorded in this browser. Your school systems remain the record."}</p></div></div>${followUps.length ? `<div class="coming-list">${followUps.map((task, index) => comingRow(task, index + 1)).join("")}</div>` : ""}</section>
       ${justCompleted.length ? `<section class="coming-section"><div class="section-heading"><h2>Just completed</h2></div><div class="coming-list">${justCompleted.map((task, index) => comingRow(task, index + 1, "All checklist boxes ticked")).join("")}</div></section>` : ""}
-      <section class="coming-section"><div class="section-heading"><div><h2>Upcoming dates to check</h2><p>Confirm dates in the live staff calendar. The 2027 dates follow the 2026 pattern until confirmed by you.</p></div></div>${upcoming.length ? `<div class="coming-list">${upcoming.map((task, index) => comingRow(task, index + 1, `${task.provisionalSchedule ? planningLabel(task) : 'Listed'} · ${shortDate(reminderDate(task))}`)).join("")}</div>` : `<p class="empty-line">${operatingYearIsCurrent ? "No later dates are listed in this calendar snapshot." : "Refresh the school calendar before using dates for this year."}</p>`}</section>
+      <section class="coming-section"><div class="section-heading"><div><h2>Upcoming dates to check</h2><p>Confirm dates in the live staff calendar. The 2027 dates follow the 2026 pattern until confirmed by you.</p></div></div>${upcoming.length ? `<div class="coming-list">${upcoming.map((task, index) => comingRow(task, index + 1, `${task.provisionalSchedule ? planningLabel(task) : 'Listed'} · ${shortDate(reminderDate(task))}`)).join("")}</div>` : `<p class="empty-line">${operatingYearIsCurrent ? "No later dates are saved in this calendar." : "Refresh the school calendar before using dates for this year."}</p>`}</section>
       ${unreviewedPast.length ? `<details class="standing-panel"><summary>Review past dates (${unreviewedPast.length} not reviewed here)</summary><p>These dates have passed, but this browser has no recorded status. They are not assumed to be missed work. Check the school record before adding a status.</p><div class="coming-list">${unreviewedPast.map((task, index) => comingRow(task, index + 1)).join("")}</div></details>` : ""}
-      <details class="standing-panel"><summary>Five-minute weekly scan · ${completedChecks} checks recorded</summary><p>Week beginning ${shortDate(week)}. These ticks are local reminders. A tick covered by an overall sign-off can be reopened from the full task register.</p>
+      <details class="standing-panel"><summary>Five-minute weekly scan · ${completedChecks} checks recorded</summary><p>Week beginning ${shortDate(week)}. These ticks are browser reminders. To undo a completion review, untick Reviewed complete under All TAS tasks.</p>
         <div class="weekly-checks">${data.weeklyChecks.map((label, index) => `<div class="weekly-check"><label><input type="checkbox" data-weekly-check="${index}" ${checks[index] ? "checked" : ""} ${weeklyReview(index,week) ? "disabled" : ""}><span>${esc(label)}</span></label>${guidanceLinks(window.TAS_STEP_GUIDANCE?.forWeekly(index))}<details class="weekly-source-details"><summary>Sources for this weekly check</summary>${taskSourcePanel({id:`weekly-scan-${index}`})}</details></div>`).join("")}</div>
       </details>
     </div>`;
@@ -913,13 +913,13 @@
     const controls = data.tasks.filter(task => task.area === "calendar" && !task.dueDate);
 
     routeContent.innerHTML = `<div class="page-wrap">
-      ${pageHeader(`${calendarYear} CONTROL CALENDAR`, "Dates, milestones and lead time", "2026 dates are the source baseline. The 2027 plan uses the same day and month until you confirm or adjust them.", `<button class="button secondary compact" type="button" data-action="launch-system" data-system-id="staff-calendar">Open live calendar ↗</button>`)}
+      ${pageHeader(`${calendarYear} TASK CALENDAR`, "Dates and preparation time", "2026 dates are the source baseline. The 2027 plan uses the same day and month until you confirm or adjust them.", `<button class="button secondary compact" type="button" data-action="launch-system" data-system-id="staff-calendar">Open live calendar ↗</button>`)}
       <label class="calendar-year">Calendar year <select id="tas-calendar-year"><option value="2026" ${calendarYear === '2026' ? 'selected' : ''}>2026 source baseline</option><option value="2027" ${calendarYear === '2027' ? 'selected' : ''}>2027 planning schedule</option></select></label>
       ${yearBanner()}
       <section class="calendar-callout"><div><span>Source calendar checked</span><strong>26 August 2026</strong></div><p>Open a 2027 task to edit its planning dates. Weekend dates need checking. Changes are saved in this browser and included in your TAS backup.</p><button type="button" data-action="open-task" data-task-id="annual-calendar-control">Annual refresh process</button></section>
       <section class="timeline-section"><div class="section-heading"><div><h2>${selectedIsCurrent ? "Current and coming" : `${calendarYear} dated schedule`}</h2><p>${upcoming.length} listed task${upcoming.length === 1 ? "" : "s"}. Dates alone do not confirm whether work is complete.</p></div></div><div class="timeline">${upcoming.map(calendarItem).join("") || `<p class="empty-line">No later dates remain.</p>`}</div></section>
       ${elapsed.length ? `<details class="elapsed"><summary>Earlier ${calendarYear} dates (${elapsed.length})</summary><div class="timeline compact-timeline">${elapsed.map(calendarItem).join("")}</div></details>` : ""}
-      <section class="timeline-section"><div class="section-heading"><div><h2>Calendar controls</h2><p>These keep the dates current rather than adding more dates.</p></div></div><div class="card-grid">${controls.map(taskCard).join("")}</div></section>
+      <section class="timeline-section"><div class="section-heading"><div><h2>Keep the calendar current</h2><p>Use these checks to keep school dates up to date.</p></div></div><div class="card-grid">${controls.map(taskCard).join("")}</div></section>
     </div>`;
   }
 
@@ -1015,7 +1015,7 @@
       closed: { label: "recorded closed", title: "Recorded closed tasks", tasks: trackableTasks.filter(isClosed) },
       critical: { label: "recorded critical follow-ups", title: "Recorded critical follow-ups", tasks: trackableTasks.filter(task => hasReviewedRecord(task) && task.priority === "critical" && !isClosed(task)) },
       unreviewed: { label: "not reviewed here", title: "Tasks not reviewed here", tasks: trackableTasks.filter(task => !hasReviewedRecord(task)) },
-      triggered: { label: "event-driven workflows", title: "Event-driven workflows", tasks: allTasks.filter(task => task.phase === "triggered") }
+      triggered: { label: "tasks for when needed", title: "Event-driven workflows", tasks: allTasks.filter(task => task.phase === "triggered") }
     };
     const filter = new URLSearchParams(location.hash.split("?")[1] || "").get("filter");
     const selected = Object.prototype.hasOwnProperty.call(groups, filter) ? groups[filter] : null;
@@ -1027,9 +1027,9 @@
       ${area === "people" ? privacyBanner() : ""}
       <nav class="area-summary" aria-label="Filter tasks by status">${Object.entries(groups).map(([key, group]) => `<a href="#${esc(area)}?filter=${key}" ${filter === key ? 'aria-current="true"' : ""}><strong>${group.tasks.length}</strong> ${esc(group.label)}</a>`).join("")}</nav>
       ${selected ? `<section class="task-section"><div class="section-heading"><div><h2>${esc(selected.title)}</h2><p>${selectedTasks.length} matching task${selectedTasks.length === 1 ? "" : "s"}.</p></div><a class="button secondary compact" href="#${esc(area)}">Show all</a></div><div class="card-grid">${selectedTasks.map(taskCard).join("") || `<div class="empty-state"><h3>No matching tasks</h3><p>${query ? "Clear the search or choose Show all." : "There are no tasks in this category."}</p></div>`}</div></section>` : `
-      <section class="task-section"><div class="section-heading"><div><h2>${area === "teaching" ? "Core teaching controls" : area === "faculty" ? "Operating controls" : "Planned people controls"}</h2><p>${state.mode === "guided" ? "Open one task and follow it step by step." : "Fast view—open only the detail you need."}</p></div></div><div class="card-grid">${core.map(taskCard).join("") || emptySearch()}</div></section>
-      ${earlier.length ? `<details class="elapsed"><summary>Earlier 2026 controls (${earlier.length})</summary><div class="card-grid compact-card-grid">${earlier.map(taskCard).join("")}</div></details>` : ""}
-      ${historyFiltered.length ? `<details class="elapsed history-panel"><summary>Term 1–2 2026 baseline and annual pattern (${historyFiltered.length})</summary><p>Read-only history for handover and future-year planning. It is not retrospective non-compliance.</p><div class="card-grid compact-card-grid">${historyFiltered.map(taskCard).join("")}</div></details>` : ""}
+      <section class="task-section"><div class="section-heading"><div><h2>${area === "teaching" ? "Teaching checks" : area === "faculty" ? "Routine work" : "Planned staff tasks"}</h2><p>${state.mode === "guided" ? "Open one task and follow it step by step." : "Open a task for its steps and details."}</p></div></div><div class="card-grid">${core.map(taskCard).join("") || emptySearch()}</div></section>
+      ${earlier.length ? `<details class="elapsed"><summary>Earlier 2026 tasks (${earlier.length})</summary><div class="card-grid compact-card-grid">${earlier.map(taskCard).join("")}</div></details>` : ""}
+      ${historyFiltered.length ? `<details class="elapsed history-panel"><summary>Term 1–2 2026 baseline and annual pattern (${historyFiltered.length})</summary><p>Past tasks for handover and planning. A blank status does not mean the work was missed.</p><div class="card-grid compact-card-grid">${historyFiltered.map(taskCard).join("")}</div></details>` : ""}
       ${triggered.length ? `<section class="task-section triggered-section"><div class="section-heading"><div><h2>Use only when triggered</h2><p>These interrupt normal work when the event occurs.</p></div></div><div class="card-grid">${triggered.map(taskCard).join("")}</div></section>` : ""}
       `}
     </div>`;
@@ -1045,7 +1045,7 @@
       <p class="eyebrow">${esc(phaseLabels[task.phase] || task.timing)}</p>
       <h3>${esc(task.title)}</h3>
       <p>${esc(task.summary)}</p>
-      <div class="task-card-foot"><span>${esc(task.dueDate ? dueLabel(task) : task.timing)}<small>${esc(task.historyOnly ? "Read-only annual pattern" : cycleLabel(task))}</small></span><div class="task-card-actions">${taskCompletionActions(task)}<button class="button quiet compact" type="button" data-action="open-task" data-task-id="${esc(task.id)}">${task.historyOnly ? "View baseline" : "Open task"}</button></div></div>
+      <div class="task-card-foot"><span>${esc(task.dueDate ? dueLabel(task) : task.timing)}<small>${esc(task.historyOnly ? "Read-only annual pattern" : cycleLabel(task))}</small></span><div class="task-card-actions">${taskCompletionActions(task)}<button class="button quiet compact" type="button" data-action="open-task" data-task-id="${esc(task.id)}">${task.historyOnly ? "View reference" : "Open task"}</button></div></div>
     </article>`;
   }
 
@@ -1058,7 +1058,7 @@
       ${privacyBanner()}
       <section class="source-boundary"><div><strong>${currentCount}</strong><span>links available</span></div><div><strong>${localCount}</strong><span>need a link</span></div><p>A saved link may open a search or portal. It does not verify the destination, access or current document version.</p></section>
       ${groups.map(group => systemGroup(group)).join("")}
-      <section class="source-audit"><div class="section-heading"><div><h2>What controls this workboard</h2><p>Four source layers, with a clear authority boundary.</p></div></div><div class="source-grid">${data.sourceGroups.map(sourceCard).join("")}</div></section>
+      <section class="source-audit"><div class="section-heading"><div><h2>Sources for this workboard</h2><p>Check the source responsible for each requirement.</p></div></div><div class="source-grid">${data.sourceGroups.map(sourceCard).join("")}</div></section>
       <details class="retired-panel"><summary>Retired or reference-only items</summary><ul>${data.retiredItems.map(item => `<li>${esc(item)}</li>`).join("")}</ul></details>
       ${handoverPanel()}
     </div>`;
@@ -1088,7 +1088,7 @@
   }
 
   function sourceCard(item) {
-    const label = item.status === "current" ? "Current" : item.status === "restricted" ? "Restricted" : "Mixed currency";
+    const label = item.status === "current" ? "Current" : item.status === "restricted" ? "Restricted" : "Check document dates";
     const mapped={calendar:['WWHS-STAFF-CALENDAR','NESA-TOA-2026-MAY'],guide:['WWHS-HT-DOC','TAS-FACULTY-PLAN'],drive:[], 'owner-systems':[]};
     const systems=item.id==='drive'?['tas-drive']:item.id==='owner-systems'?['sentral','nesa-actions','mypl']:[];
     const links=(window.WWHS_TASK_SOURCES?.directory(mapped[item.id]||[])||'')+guidanceLinks(systems.map(id=>({systemId:id,label:`Open ${data.systems.find(system=>system.id===id)?.label || id}`,hint:'Use the authorised account to open the current record.'})));
@@ -1167,7 +1167,7 @@
         ${task.milestones ? `<section class="dialog-section"><h3>Milestones</h3><p class="section-help">${task.historyOnly ? "Captured 2026 sequence for handover and planning. Rebuild it from the live calendar each year." : "Tick each dated hand-off only after it is complete in the owner system."}</p>${guidanceLinks(window.TAS_STEP_GUIDANCE?.forMilestone(task))}<ol class="milestone-list">${task.milestones.map((item, index) => task.historyOnly ? `<li>${record.milestones?.[index] ? "✓ " : ""}<time datetime="${esc(item.date)}">${esc(longDate(item.date))}</time><span>${esc(item.label)}</span></li>` : `<li class="${record.milestones?.[index] ? "is-done" : ""}"><label><input type="checkbox" data-task-milestone="${index}" data-task-id="${esc(task.id)}" ${record.milestones?.[index] ? "checked" : ""} ${review ? "disabled" : ""}><time datetime="${esc(item.date)}">${esc(longDate(item.date))}</time><span>${esc(item.label)}</span></label></li>`).join("")}</ol></section>` : ""}
         ${taskSourcePanel(task)}<section class="dialog-section"><h3>${task.historyOnly ? "Captured process" : task.procedureOnly ? "Procedure steps" : "Suggested steps"}</h3><p class="section-help">Open the source beside the step. Staff destinations may require sign-in; Drive searches are labelled. ${task.historyOnly ? "Links open current sources, not historical copies." : "Opening a link does not tick the step."}</p><ol class="action-list">${task.steps.map((step, index) => task.historyOnly || task.procedureOnly ? `<li><div class="history-step"><span class="step-number">${review ? "✓" : index + 1}</span><span>${esc(step)}</span></div>${stepGuidance(task, index)}</li>` : `<li><label><input type="checkbox" data-task-step="${index}" data-task-id="${esc(task.id)}" ${record.steps?.[index] ? "checked" : ""} ${review ? "disabled" : ""}><span class="step-number">${index + 1}</span><span>${esc(step)}</span></label>${stepGuidance(task, index)}</li>`).join("")}</ol></section>
         <section class="done-when"><span>Done when</span><p>${esc(task.doneWhen)}</p></section>
-        <section class="owner-systems"><h3>Open the owner system</h3><div class="system-buttons">${systemButtons(task)}</div><p>${esc(task.privacy)}</p></section>
+        <section class="owner-systems"><h3>Open the official system</h3><div class="system-buttons">${systemButtons(task)}</div><p>${esc(task.privacy)}</p></section>
         <details class="guidance-details" ${guidanceOpen ? "open" : ""}><summary>Explain this in plain English</summary><div><p><strong>Why it matters:</strong> ${esc(task.why)}</p><p><strong>Common trap:</strong> ${esc(task.trap)}</p></div></details>
         <details class="source-details"><summary>Source and currency</summary><div><p><strong>${esc(task.source)}</strong></p>${guidanceLinks(window.TAS_STEP_GUIDANCE?.forSource(task))}<p>${sourcePill(task)} Current owner-system information overrides an old copied document or folder.</p></div></details>
         ${completionForm(task, record)}
@@ -1178,9 +1178,9 @@
 
   function completionForm(task, record) {
     const review = overallReview(task);
-    if (review) return `<section class="completion-panel"><h3>Task complete · overall sign-off</h3><p>All applicable steps are covered by this sign-off. Untick Reviewed complete in the full register to restore the earlier checklist. A completion recorded in your task list is reopened there.</p><form id="task-record-form" data-task-id="${esc(task.id)}"><div class="form-grid"><label class="check-line"><input type="checkbox" checked disabled><span>Applicable source checks covered by the overall sign-off.</span></label><label class="check-line"><input type="checkbox" checked disabled><span>Done when result confirmed through the overall sign-off.</span></label><label class="span-two"><span>Existing notes and completion record</span><textarea name="exceptionReason" rows="5">${esc(window.WWHS_TASK_REVIEW.notes(record.exceptionReason,review))}</textarea></label></div><p>Existing evidence references and verifier details are retained. None are invented by this sign-off.</p><p class="form-error" role="alert" hidden></p><div class="dialog-actions"><button class="button secondary" type="submit" name="commit" value="save">Save notes</button><button class="button quiet" type="button" data-action="close-task">Close</button></div></form></section>`;
+    if (review) return `<section class="completion-panel"><h3>Task complete · reviewed</h3><p>This review covers all applicable steps. To undo it, untick Reviewed complete under All TAS tasks. If you marked it Done in your task list, reopen it there.</p><form id="task-record-form" data-task-id="${esc(task.id)}"><div class="form-grid"><label class="check-line"><input type="checkbox" checked disabled><span>The review includes the source checks that apply.</span></label><label class="check-line"><input type="checkbox" checked disabled><span>The review confirms the “Done when” result.</span></label><label class="span-two"><span>Existing notes and completion record</span><textarea name="exceptionReason" rows="5">${esc(window.WWHS_TASK_REVIEW.notes(record.exceptionReason,review))}</textarea></label></div><p>Existing evidence references and verifier details are retained. None are invented by this sign-off.</p><p class="form-error" role="alert" hidden></p><div class="dialog-actions"><button class="button secondary" type="submit" name="commit" value="save">Save notes</button><button class="button quiet" type="button" data-action="close-task">Close</button></div></form></section>`;
     if (task.historyOnly) {
-      return `<section class="completion-panel procedure-only"><div><h3>Read-only 2026 baseline</h3><p>This past sequence is retained for handover and future-year planning. Use Reviewed complete in the full task register to record a retrospective sign-off. Refresh the annual calendar before creating the next live sequence.</p></div></section>`;
+      return `<section class="completion-panel procedure-only"><div><h3>Read-only 2026 reference</h3><p>Use these past tasks for handover and planning. Tick Reviewed complete under All TAS tasks to record work you have checked. Confirm the new calendar before starting the next year.</p></div></section>`;
     }
     if (task.procedureOnly) {
       return `<section class="completion-panel procedure-only"><div><h3>Procedure only — no case tracking here</h3><p>Complete the protected record in the authorised system. This workboard deliberately saves no status, initials, reference or case note for this workflow.</p></div><div class="dialog-actions"><button class="button quiet" type="button" data-action="close-task">Close procedure</button></div></section>`;
@@ -1195,7 +1195,7 @@
         <label class="span-two"><span>Exception or not-applicable reason (if used)</span><textarea name="exceptionReason" maxlength="200000" rows="2" placeholder="Privacy-safe summary only">${esc(record.exceptionReason || "")}</textarea></label>
       </div>
       <p class="form-error" role="alert" hidden></p>
-      <div class="dialog-actions"><button class="button secondary" type="submit" name="commit" value="save">Save progress</button><button class="button primary" type="submit" name="commit" value="verify">Verify and close</button>${taskCycle(task) === "event" && isClosed(task) ? `<button class="button secondary" type="button" data-action="reset-occurrence" data-task-id="${esc(task.id)}">Start next occurrence</button>` : ""}<button class="button quiet" type="button" data-action="close-task">Close</button></div>
+      <div class="dialog-actions"><button class="button secondary" type="submit" name="commit" value="save">Save progress</button><button class="button primary" type="submit" name="commit" value="verify">Verify and close</button>${taskCycle(task) === "event" && isClosed(task) ? `<button class="button secondary" type="button" data-action="reset-occurrence" data-task-id="${esc(task.id)}">Start next record</button>` : ""}<button class="button quiet" type="button" data-action="close-task">Close</button></div>
     </form></section>`;
   }
 
@@ -1311,12 +1311,12 @@
   function openSettings() {
     lastSettingsTrigger = document.activeElement;
     const localSystems = data.systems.filter(system => system.kind === "local");
-    settingsContent.innerHTML = `<header class="dialog-head"><div><p class="eyebrow">LOCAL WORKSPACE SETUP</p><h2 id="settings-title">Pace and approved staff links</h2></div><button class="dialog-close" type="button" data-action="close-settings" aria-label="Close settings">×</button></header>
+    settingsContent.innerHTML = `<header class="dialog-head"><div><p class="eyebrow">BROWSER SETTINGS</p><h2 id="settings-title">Pace and approved staff links</h2></div><button class="dialog-close" type="button" data-action="close-settings" aria-label="Close settings">×</button></header>
       <div class="dialog-body"><form id="settings-form">
         <section class="settings-section"><h3>How this browser should open</h3><div class="form-grid"><label><span>Default pace</span><select name="mode"><option value="guided" ${state.mode === "guided" ? "selected" : ""}>One step at a time</option><option value="fast" ${state.mode === "fast" ? "selected" : ""}>Full workboard</option></select></label><label class="check-line"><input type="checkbox" name="guidance" ${state.guidance ? "checked" : ""}><span>Keep plain-English guidance available in tasks.</span></label></div></section>
-        <section class="settings-section"><h3>Approved staff links</h3><p>Every public or work-account front door is already connected. Sensitive Google locations use signed-in search routes until their sharing is restricted. Any approved replacement stays on this browser and is excluded from backups.</p><div class="local-link-list">${localSystems.map(system => `<label><span>${esc(system.label)}</span><input type="url" name="link:${esc(system.id)}" value="${esc(state.links[system.id] || system.url || "")}"><small>${esc(system.purpose)}</small></label>`).join("")}</div></section>
-        <aside class="settings-warning"><strong>Do not paste sensitive deep links</strong><p>Use approved staff front doors or controlled hubs. Student, health, incident, personnel, leave, finance, key and confidential locations stay out of this browser.</p></aside>
-        <div class="dialog-actions"><button class="button primary" type="submit">Save workspace setup</button><button class="button quiet" type="button" data-action="close-settings">Cancel</button></div>
+        <section class="settings-section"><h3>Approved staff links</h3><p>Standard public and staff links are included. Some Google links open a search so private locations stay protected. Approved replacements stay in this browser and are left out of workboard backups.</p><div class="local-link-list">${localSystems.map(system => `<label><span>${esc(system.label)}</span><input type="url" name="link:${esc(system.id)}" value="${esc(state.links[system.id] || system.url || "")}"><small>${esc(system.purpose)}</small></label>`).join("")}</div></section>
+        <aside class="settings-warning"><strong>Keep confidential links out of this app</strong><p>Use approved staff sign-in pages or shared hubs. Student, health, incident, personnel, leave, finance, key and confidential locations stay out of this browser.</p></aside>
+        <div class="dialog-actions"><button class="button primary" type="submit">Save settings</button><button class="button quiet" type="button" data-action="close-settings">Cancel</button></div>
       </form></div>`;
     settingsDialog.showModal();
   }
@@ -1338,7 +1338,7 @@
     }
     settingsStateDirty = true;
     settingsDialog.close();
-    toast("Workspace setup saved on this browser");
+    toast("Settings saved in this browser");
   }
 
   function openUrgentWorkflow() {
@@ -1547,7 +1547,7 @@
       }
       taskStateDirty = true;
       taskDialog.close();
-      toast("Next occurrence is ready to begin");
+      toast("The next record is ready to begin");
     }
   });
 
@@ -1627,7 +1627,7 @@
     if (event.target.matches("[data-weekly-check]")) {
       const week = weekKey();
       const index = event.target.dataset.weeklyCheck;
-      if (weeklyReview(index,week)) { event.target.checked=true; toast('This scan is covered by the overall sign-off. Untick Reviewed complete in the full register to reopen it.'); return; }
+      if (weeklyReview(index,week)) { event.target.checked=true; toast('This check is covered by the completion review. Untick Reviewed complete under All TAS tasks to reopen it.'); return; }
       const previous = state.weekly[week];
       state.weekly[week] = { ...safeObject(state.weekly[week]), [index]: event.target.checked };
       if (!saveState()) {

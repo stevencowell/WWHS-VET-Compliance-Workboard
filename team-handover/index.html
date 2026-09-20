@@ -10,19 +10,19 @@
   <header class="workspace-header"><a class="workspace-brand" href="../#home"><span class="workspace-mark" aria-hidden="true">◒</span> WWHS workboards</a><nav class="workspace-areas" aria-label="Workspace areas"><a href="../#vet-home">VET</a><a href="../head-teacher-tas/#home">TAS</a><a href="../morning-launchpad/">Launchpad</a></nav></header>
   <main id="handover-main">
     <p id="area-label" class="eyebrow">SHARED PROGRESS</p><h1 id="backup-title">Backups</h1>
-    <p id="backup-intro" class="handover-intro">Open the latest backup for this area when you start; save your changes when you finish.</p>
+    <p id="backup-intro" class="handover-intro">Start: open the latest backup. Finish: save your changes.</p>
     <nav class="handover-shortcuts" aria-label="Open and save shared progress"><a id="handover-import-link" href="#import-backup">Open backup…</a><a id="handover-save-link" href="#save-backup">Save backup…</a></nav>
     <div id="handover-message" role="status" aria-live="polite"></div>
-    <section id="history-warning" class="handover-card" hidden><h2>Your current work can still be saved</h2><p id="history-warning-copy"></p><p>Save a safety copy below, then open the latest shared backup to reconnect. The old handover record will be kept for recovery.</p><button id="retry-recovery" type="button">Check again</button></section>
+    <section id="history-warning" class="handover-card" hidden><h2>Your current work can still be saved</h2><p id="history-warning-copy"></p><p>Save a safety copy first. Then open the latest shared backup. Your old copy will be kept.</p><button id="retry-recovery" type="button">Check again</button></section>
     <section id="save-panel" class="handover-card" tabindex="-1">
       <h2>Save backup</h2><p id="save-counts">Checking saved progress…</p>
-      <p id="backup-includes" class="small">Includes this area’s saved task notes, progress, checklists and dates. Other areas stay separate. Save any open task notes first.</p>
+      <p id="backup-includes" class="small">Includes saved task notes, progress, checklists and dates for this area. Save any open notes first.</p>
       <div id="setup-section" hidden><p>Create the first shared backup from the progress on this computer.</p><details><summary>Saved by</summary><label for="setup-editor">Name or initials (optional)</label><input id="setup-editor" maxlength="80" autocomplete="name" placeholder="Your name"></details><button id="create-team" type="button" class="primary">Save backup…</button></div>
       <div id="active-session" hidden><details><summary>Add a handover note (optional)</summary><textarea id="handover-note" maxlength="1000" rows="3" aria-label="Handover note" placeholder="Anything your colleague needs to know"></textarea></details><button id="finish-session" type="button" class="primary">Save backup…</button></div>
       <div id="snapshot-session" hidden><p id="snapshot-copy"></p><button id="save-safety" type="button" class="primary">Save backup…</button><p class="small">This creates a dated safety copy. It does not replace the current shared handover file.</p></div>
-      <div id="pending-session" hidden><p id="pending-copy"></p><div class="handover-actions"><button id="download-again" type="button">Save backup again…</button><button id="confirm-finish" type="button" class="primary" disabled>It’s in Google Drive — finish</button></div><p class="small">After saving, let Google Drive finish syncing before handing over to your colleague. The website cannot check cloud syncing.</p><button id="resume-editing" type="button" class="text-button">Return to editing</button></div>
+      <div id="pending-session" hidden><p id="pending-copy"></p><div class="handover-actions"><button id="download-again" type="button">Save backup again…</button><button id="confirm-finish" type="button" class="primary" disabled>It’s in Google Drive — finish</button></div><p class="small">Wait for Google Drive to finish syncing before your colleague starts. This site cannot check that for you.</p><button id="resume-editing" type="button" class="text-button">Return to editing</button></div>
       <p id="save-receipt" role="status" aria-live="polite"></p>
-      <div id="save-fallback" hidden><p>You can still preserve the progress on this computer without changing the shared file.</p><button id="save-current-safety" type="button">Save a separate safety copy…</button></div>
+      <div id="save-fallback" hidden><p>Save a separate copy of your current work. The shared file will stay unchanged.</p><button id="save-current-safety" type="button">Save a separate safety copy…</button></div>
       <div id="safety-receipt" hidden><p>Download started. Check that the file is in Downloads or Files before closing.</p><button id="confirm-safety" type="button">I have the backup file</button></div>
     </section>
     <section id="start-section" class="handover-card" tabindex="-1" hidden>
@@ -30,7 +30,7 @@
       <div id="team-file-browser"></div>
       <section id="file-preview" class="file-preview" hidden aria-label="Selected backup preview"><h3 id="preview-heading"></h3><p id="preview-copy"></p><p id="preview-counts"></p><p id="preview-note"></p><p id="preview-warning"></p></section>
       <details><summary>Who is working? (optional)</summary><label for="editor-name">Name or initials</label><input type="text" id="editor-name" maxlength="80" autocomplete="name" placeholder="Your name"></details>
-      <p id="open-replaces" class="small">Opening replaces this area’s progress on this computer. A recovery copy is kept first. Choose the latest file and take turns editing; there is no automatic sync.</p>
+      <p id="open-replaces" class="small">Opening replaces this area’s progress on this computer and keeps the old copy for recovery. Use the latest file and take turns editing. Changes do not sync automatically.</p>
       <div class="handover-actions"><button id="start-session" type="button" class="primary" disabled>Open for editing</button><button id="view-file" type="button" disabled>Open to view only</button><button id="cancel-open" type="button">Cancel</button></div>
     </section>
     <details id="backup-settings" class="handover-card"><summary>Backup settings and previous copies</summary>
@@ -41,10 +41,10 @@
       <section id="recovery-section" hidden><h3>Before the last opened backup</h3><p>This copy preserves the saved progress that was replaced.</p><button id="download-recovery" type="button">Save previous copy…</button></section>
       <details id="recent-changes"><summary>Current backup details</summary><h3 id="status-title">Checking this browser…</h3><p id="status-copy"></p><dl id="snapshot-facts"></dl><p id="last-note"></p><ul id="changes-list"></ul></details>
       <details id="handover-storage-details" hidden><summary>Browser storage details</summary><p id="handover-storage-total"></p><ul id="handover-storage-sizes"></ul></details>
-      <p class="small">Shared files contain staff task records, not private email chains or Finance. Keep them in the restricted staff folder. Folder choices apply to this browser only.</p>
+      <p class="small">Keep shared backups in the staff-only folder. They contain task records, not private emails or Finance. Folder choices are remembered in this browser only.</p>
     </details>
   </main>
-  <script src="../assets/vendor/lz-string-1.5.0.js"></script><script src="../assets/js/workboard-storage.js?v=area-backups-1"></script>
-  <script src="../assets/js/team-session.js?v=area-backups-1"></script><script type="module" src="../assets/js/team-exit-guard.mjs?v=workspace-navigation-2"></script><script type="module" src="../assets/js/team-storage-report.mjs?v=area-backups-1"></script><script type="module" src="../assets/js/team-handover.mjs?v=early-completion-1"></script>
+  <script src="../assets/vendor/lz-string-1.5.0.js"></script><script src="../assets/js/workboard-storage.js?v=plain-language-1"></script>
+  <script src="../assets/js/team-session.js?v=plain-language-1"></script><script type="module" src="../assets/js/team-exit-guard.mjs?v=plain-language-1"></script><script type="module" src="../assets/js/team-storage-report.mjs?v=area-backups-1"></script><script type="module" src="../assets/js/team-handover.mjs?v=plain-language-1"></script>
 </body>
 </html>

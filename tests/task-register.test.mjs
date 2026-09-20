@@ -15,7 +15,7 @@ assert.equal(matchesRegisterView({...item,schedule:{kind:'window',startDate:'202
 assert.equal(matchesRegisterView({...item,procedureOnly:true},'past','2026-09-17'),false);
 const mixed=[item,{...item,id:'week-1',entryKind:'scheduled'},{...item,id:'week-2',entryKind:'scheduled'},{...item,id:'event',entryKind:'event'},{...item,id:'guide',entryKind:'event',procedureOnly:true}];
 assert.deepEqual(registerEntryCounts(mixed),{core:1,scheduled:2,procedure:1,event:1});
-assert.equal(registerEntrySummary(mixed),'1 core duty · 2 scheduled occurrences · 1 procedure guide · 1 saved event');
+assert.equal(registerEntrySummary(mixed),'1 main duty · 2 scheduled tasks · 1 how-to guide · 1 saved event');
 assert.equal(registerEntryKind({entryKind:'unknown'}),'core');
 assert.equal(matchesRegisterView(mixed[4],'event','2026-09-17'),false);
 assert.equal(matchesRegisterView(mixed[4],'reference','2026-09-17'),true);

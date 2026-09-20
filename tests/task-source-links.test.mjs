@@ -44,7 +44,7 @@ test('2027 uses its own current source routes and clearly labels 2026 background
   assert.ok(helper.refsFor('vet',task,extras(task)).some(s=>s.id==='RTO-DOCUMENT-LIBRARY'&&s.url.includes('powerapps')));
   const generated=allVet.find(t=>t.operatingYear===2027&&!t.canonicalTaskId);
   const generatedHtml=helper.panel('vet',generated,extras(generated));
-  assert.match(generatedHtml,/workboard planning control/);
+  assert.match(generatedHtml,/This checklist helps you plan the work/);
   assert.doesNotMatch(generatedHtml,/task=2027-/);
 });
 

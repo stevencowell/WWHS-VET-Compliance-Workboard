@@ -17,7 +17,7 @@ export function installTeamEntry({wing,base,header}) {
   const footer=make('div',undefined,{class:'team-entry-actions'});
   const close=make('button','Close',{type:'button',class:'team-entry-guide',autofocus:''});
   footer.append(make('a','Open backup…',{href:`${handover}#import-backup`,class:'team-entry-guide'}),make('a','Save backup…',{href:`${handover}#save-backup`,class:'team-entry-primary'}),close);
-  dialog.append(title,description,make('p','Open the latest backup before changing device. Save a backup when you finish so your colleague can open your latest progress.'),make('p','Your personal Launchpad and Finance have separate private backups. Google Drive syncs files saved in its folders; this website does not sync changes automatically.',{class:'team-entry-small'}),footer);
+  dialog.append(title,description,make('p','Starting on another device? Open the latest backup. When you finish, save a backup for your colleague.'),make('p','Launchpad and Finance use separate private backups. Save shared work in Google Drive. Changes are not shared automatically.',{class:'team-entry-small'}),footer);
   document.body.append(dialog);
   guide.addEventListener('click',()=>{if(!dialog.open)dialog.showModal();});
   close.addEventListener('click',()=>dialog.close());
@@ -30,7 +30,7 @@ export function installTeamEntry({wing,base,header}) {
     const waiting=editing&&window.WWHS_TEAM_EXIT_GUARD?.status()==='changed';
     const version=info?`Version ${info.revision} · ${info.savedBy} · ${new Date(info.savedAt).toLocaleDateString('en-AU')}. `:'';
     heading.textContent=blocked?'Check your team session':waiting?'Changes to back up':editing?`Editing as ${state.active.editor}`:state?.managed?'Your saved team progress':'Saved on this browser';
-    description.textContent=message||(blocked?helper?.reason(wing)||'Check the recovery information before continuing.':waiting?'Changes are waiting for handover. Finish and save the backup to your shared Google Drive folder before closing.':editing?`${version}Finish and save a backup to share your changes.`:state?.managed?`${version}Open the latest file before editing. This copy is view-only.`:'Open the latest shared backup to bring in your team’s notes and completion ticks.');
+    description.textContent=message||(blocked?helper?.reason(wing)||'Open Review issue before continuing.':waiting?'Save your changes to the shared Google Drive folder before closing.':editing?`${version}Finish and save a backup to share your changes.`:state?.managed?`${version}Open the latest file before editing. This copy is view-only.`:'Open the latest shared backup to see your team’s progress.');
     banner.dataset.state=blocked?'blocked':waiting?'needed':editing?'editing':'viewing';
     banner.title=blocked?description.textContent:'';
     saveLink.title='Save the progress on this computer';

@@ -1,11 +1,11 @@
-import {KEYS,DATA_KEYS,metadataKey,scopeSnapshot,readRaw,snapshot,createBackup,parseBackup} from './team-handover-core.mjs?v=early-completion-1';
-import {applyTeamTransaction,recoverTeamTransaction} from './team-handover-transaction.mjs?v=early-completion-1';
-import {prepareTeamMetadata,hydrateTeamMetadata,inspectTeamMetadata} from './team-handover-payloads.mjs?v=early-completion-1';
-import {createSafetyBackup,parseTeamFile,buildReconnectPlan,prepareReconnectPlan} from './team-handover-recovery.mjs?v=early-completion-1';
+import {KEYS,DATA_KEYS,metadataKey,scopeSnapshot,readRaw,snapshot,createBackup,parseBackup} from './team-handover-core.mjs?v=plain-language-1';
+import {applyTeamTransaction,recoverTeamTransaction} from './team-handover-transaction.mjs?v=plain-language-1';
+import {prepareTeamMetadata,hydrateTeamMetadata,inspectTeamMetadata} from './team-handover-payloads.mjs?v=plain-language-1';
+import {createSafetyBackup,parseTeamFile,buildReconnectPlan,prepareReconnectPlan} from './team-handover-recovery.mjs?v=plain-language-1';
 import {downloadDestination} from './save-backup-file.mjs?v=backup-flow-2';
-import {getBackupFolder} from './backup-folder.mjs?v=area-backups-1';
-import {mountBackupFolderSettings} from './backup-folder-ui.mjs?v=area-backups-1';
-import {mountBackupFileBrowser} from './backup-file-browser.mjs?v=area-backups-1';
+import {getBackupFolder} from './backup-folder.mjs?v=plain-language-1';
+import {mountBackupFolderSettings} from './backup-folder-ui.mjs?v=plain-language-1';
+import {mountBackupFileBrowser} from './backup-file-browser.mjs?v=plain-language-1';
 
 const $=id=>document.getElementById(id),home=new URL('../../',import.meta.url);
 const wing=new URLSearchParams(location.search).get('wing')==='tas'?'tas':'vet',label=wing.toUpperCase(),metaKey=metadataKey(wing);
@@ -14,9 +14,9 @@ mountBackupFolderSettings($('team-backup-folder'),{scope:wing});
 document.documentElement.dataset.workspace=wing;
 document.title=`${label} backups`;
 $('area-label').textContent=`${label} · SHARED PROGRESS`;$('backup-title').textContent=`${label} backups`;
-$('backup-intro').textContent=`Open the latest ${label} backup when you start; save your changes when you finish.`;
-$('backup-includes').textContent=`Includes ${label} task notes, progress, checklists and dates. The other area, personal notes and Finance stay separate. Save any open task notes first.`;
-$('open-replaces').textContent=`Opening replaces this computer’s ${label} progress only. A recovery copy is kept first. Choose the latest file and take turns editing; there is no automatic sync.`;
+$('backup-intro').textContent=`Start: open the latest ${label} backup. Finish: save your changes.`;
+$('backup-includes').textContent=`Includes saved ${label} notes, progress, checklists and dates only. Save any open notes first.`;
+$('open-replaces').textContent=`Opening replaces ${label} progress on this computer and keeps the old copy for recovery. Use the latest file and take turns editing. Changes do not sync automatically.`;
 const workDestination=new URL(new URLSearchParams(location.search).get('wing')==='tas'?'head-teacher-tas/#home':'#vet-home',home).href;
 let selected=null,selectedBefore=null,busy=true,inspection=null,currentData=null,saveAttemptId=null,safetyAttempt=null;
 const stamp=value=>Number.isFinite(Date.parse(value))?new Intl.DateTimeFormat('en-AU',{dateStyle:'medium',timeStyle:'short',timeZone:'Australia/Sydney'}).format(new Date(value)):'Unknown date';
@@ -74,17 +74,17 @@ async function render(){
   $('save-counts').textContent=currentData?count(currentData):'Current progress needs checking before it can be saved.';
   const damaged=!healthy||interrupted||(active?.phase==='exporting'&&!pending);
   $('history-warning').hidden=!damaged&&!problem;
-  $('history-warning-copy').textContent=problem||(!healthy?'Part of the previous handover history is unavailable in this browser. The current task records are stored separately.':'An interrupted backup needs checking. A safety copy preserves the readable records currently on this computer.');
+  $('history-warning-copy').textContent=problem||(!healthy?'An earlier backup record is missing. Your current task records are stored separately.':'A backup was interrupted. Save a safety copy of the work that can still be read.');
   $('setup-section').hidden=damaged||!!meta;
   $('active-session').hidden=damaged||active?.phase!=='editing';
   $('pending-session').hidden=!pending||interrupted;
   $('snapshot-session').hidden=!damaged&&(!meta||!!active);
-  $('snapshot-copy').textContent=damaged?`Save the ${label} progress currently on this computer before reconnecting.`:'You are viewing a shared copy. You can save a safety backup of it without opening another file.';
+  $('snapshot-copy').textContent=damaged?`Save the ${label} progress currently on this computer before reconnecting.`:'You are viewing shared progress. You can save a separate safety copy here.';
   $('pending-copy').textContent=pending?`Backup prepared ${stamp(pending.savedAt)}. Save it, then confirm it is in the shared Drive folder.`:'';
   $('resume-editing').hidden=!!active?.firstFile;
   $('recovery-section').hidden=!meta?.recovery?.data;
   const details=pending||inspection.stored?.lastFile;
-  $('status-title').textContent=damaged?'Handover history needs reconnecting':!meta?'Working on this computer':pending?'Backup ready to save':active?'Editing shared progress':'Viewing shared progress';
+  $('status-title').textContent=damaged?'Open the latest shared backup':!meta?'Working on this computer':pending?'Backup ready to save':active?'Editing shared progress':'Viewing shared progress';
   $('status-copy').textContent=active?.editor?`Editing as ${active.editor}.`:'';
   $('snapshot-facts').replaceChildren();
   if(details)for(const [title,value] of [['Version',String(details.revision)],['Saved by',details.savedBy||'Unknown'],['Created',stamp(details.savedAt)]]){const wrap=document.createElement('div'),dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent=title;dd.textContent=value;wrap.append(dt,dd);$('snapshot-facts').append(wrap);}
@@ -104,14 +104,14 @@ async function checkDestination(destination,payload,{safety=false}={}){
   if(safety)throw Error('Please save this safety copy with a new filename. The existing file has not been changed.');
   let old;try{old=parseBackup(existing);}catch{throw Error('That location contains a different kind of file. Choose a new filename; the existing file has not been changed.');}
   if(old.scope!==payload.scope)throw Error('That file belongs to a different backup area. Choose a new filename; nothing has been overwritten.');
-  if(old.workspaceId!==payload.workspaceId||![payload.parentExportId,payload.exportId].includes(old.exportId))throw Error('The file in that folder is a different or newer handover. It has not been overwritten. Open the latest shared backup, or save a safety copy with a new filename.');
+  if(old.workspaceId!==payload.workspaceId||![payload.parentExportId,payload.exportId].includes(old.exportId))throw Error('That file is different or newer, so it was not replaced. Open the latest shared backup, or save a safety copy with a new name.');
   return existing;
 }
 async function savePreparedFile(payload,destination,before){
   assertExpected(before);const expectedText=await checkDestination(destination,payload);assertExpected(before);
-  let result;try{result=await destination.write(contents(payload),{expectedText,verify:()=>assertExpected(before)});}catch(error){throw Error('The file could not be saved there, or changed while saving. Your task progress and prepared backup are kept. Try again or use Download instead of Save as in Backup settings.');}
+  let result;try{result=await destination.write(contents(payload),{expectedText,verify:()=>assertExpected(before)});}catch(error){throw Error('Could not save the file. Your work and prepared backup are kept. Try again, or choose Download instead of Save as in Backup settings.');}
   assertExpected(before);saveAttemptId=payload.exportId;
-  $('save-receipt').textContent=result.saved?'Backup saved to the location you chose. If it is in your Google Drive folder, wait for syncing, then finish below.':'Download started. Find the file in Downloads or Files, put it in the shared Google Drive folder, then finish below.';
+  $('save-receipt').textContent=result.saved?'Backup saved. If you saved in Google Drive, wait for syncing, then finish below.':'Find the download in Downloads or Files. Move it to the shared Google Drive folder, then finish below.';
   say('Backup prepared. Your current task progress has been kept.');
 }
 async function saveMeta(before,next){
@@ -187,8 +187,8 @@ async function selectFile(file){
   $('preview-heading').textContent=parsed.type==='safety'?'Safety backup':`Shared backup · version ${parsed.file.revision}`;
   $('preview-copy').textContent=`Saved ${stamp(parsed.file.savedAt)} by ${parsed.file.savedBy}. Nothing has changed yet.`;
   $('preview-counts').textContent=count(parsed.data);$('preview-note').textContent=parsed.file.note||'';
-  $('preview-warning').textContent=parsed.type==='safety'?'This safety copy will become a new shared starting point. Your current progress and old handover record will be kept for recovery.':plan.lineage==='unverified-reconnect'?'The old connection cannot be checked. Only open this if it is your trusted shared file. Current progress and the old record will be kept.':inspection?.stored?.active?'Opening this file replaces the current editing copy. Its saved progress will be kept in a recovery copy first.':plan.skipsRevisions?'This skips some shared versions. Check that you chose the newest file.':'Opening this backup keeps a recovery copy of the current saved progress first.';
-  $('file-preview').hidden=false;say('File checked. Review it, then choose Open for editing or Open to view only.');
+  $('preview-warning').textContent=parsed.type==='safety'?'This safety copy will start a new shared backup. Your current work and old backup record will be kept for recovery.':plan.lineage==='unverified-reconnect'?'We cannot check this against the old backup. Open it only if you trust the file. Your current work and old record will be kept.':inspection?.stored?.active?'This will replace your current editing copy. Its saved work will be kept for recovery first.':plan.skipsRevisions?'This skips some shared versions. Check that you chose the newest file.':'Opening this backup keeps a recovery copy of the current saved progress first.';
+  $('file-preview').hidden=false;say('Check the file details, then choose Open for editing or Open to view only.');
 }
 const fileBrowser=mountBackupFileBrowser($('team-file-browser'),{scope:wing,onFile:async file=>{await run(()=>selectFile(file))();},onError:error=>{clearSelection();say(error.message||String(error),true);enableControls(!busy);}});
 async function openSelected(editing){

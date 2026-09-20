@@ -77,7 +77,7 @@ test('full source upgrades and repeated imports preserve progress and do not add
 
 test('source size and summary types are checked without silently cutting text',()=>{
   for(const fields of [{source:'x'.repeat(200001)},{sourceSummary:'x'.repeat(4001)},{sourceSummary:null},{sourceSummary:{html:'<img>'}}])
-    assert.throws(()=>validateInbox(JSON.stringify({version:2,items:[rich(fields)]})),/Invalid task fields/);
+    assert.throws(()=>validateInbox(JSON.stringify({version:2,items:[rich(fields)]})),/Check the details for this task/);
   const boundary=rich({source:'x'.repeat(200000),sourceSummary:'x'.repeat(4000)});
   assert.equal(validateInbox(JSON.stringify({version:2,items:[boundary]})).items[0].source.length,200000);
   const text='Note : Long source\nPlease review\n'+'A'.repeat(30000)+'\nFinal reply';

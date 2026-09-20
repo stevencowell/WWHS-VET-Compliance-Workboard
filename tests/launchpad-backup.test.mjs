@@ -119,7 +119,7 @@ test('all multi-key writes finish only after the durable recovery copy exists',a
 test('a native write failure rolls all records back without a second large localStorage copy',async()=>{
   const s=fixture(),before=snapshotLaunchpad(s),after={...before,[K.theme]:'light',[K.links]:'[]'},o=options();
   s.fail=(key,value)=>{if(key===K.theme&&value==='light')throw new DOMException('Full','QuotaExceededError');};
-  await assert.rejects(applyLaunchpadRestore(s,before,after,o),/previous records.*restored/);
+  await assert.rejects(applyLaunchpadRestore(s,before,after,o),/previous work.*restored/);
   assert.deepEqual(snapshotLaunchpad(s),before);assert.equal(s.getItem(RESTORE_KEY),null);assert.equal(o.backend.records.size,0);
 });
 test('successful replacement retains the previous complete private file, including for one changed key',async()=>{
@@ -131,7 +131,7 @@ test('successful replacement retains the previous complete private file, includi
 test('failure to retain the previous copy leaves committed recovery available until a successful retry',async()=>{
   const s=fixture(),before=snapshotLaunchpad(s),after={...before,[K.theme]:'light'},o=options(),save=o.backend.savePrevious;
   o.backend.savePrevious=async()=>{throw Error('Unavailable');};
-  await assert.rejects(applyLaunchpadRestore(s,before,after,{...o,preservePrevious:true}),/recovery must finish/);
+  await assert.rejects(applyLaunchpadRestore(s,before,after,{...o,preservePrevious:true}),/previous work still needs to be saved/);
   assert.equal(s.getItem(K.theme),'light');assert.ok(s.getItem(RESTORE_KEY));assert.deepEqual((await readLaunchpadRecovery(s,o)).recovery.before,before);
   o.backend.savePrevious=save;await recoverLaunchpadRestore(s,o);assert.equal(s.getItem(RESTORE_KEY),null);assert.deepEqual((await readPreviousLaunchpadBackup(o)).records,before);
 });
@@ -174,8 +174,8 @@ test('native-origin matches retain local IDs and keys and remap incoming depende
 test('duplicate native occurrences or cross-origin key collisions are rejected during preview without writes',()=>{
   const origin={wing:'vet',taskId:'task',recordKey:'task::2026',route:'#task/task',cycle:'2026'},one=enrich({id:'one',taskKey:'workboard:vet:one',title:'One',action:'Check',origin,workstream:'vet'}),s=storage({[K.inbox]:json(tasks([one]))});
   const duplicate={...one,id:'duplicate',taskKey:'workboard:vet:duplicate'},collision={...one,id:'collision',origin:{...origin,taskId:'other',recordKey:'other::2026',route:'#task/other'}};
-  assert.throws(()=>planLaunchpadRestore(s,parseLaunchpadBackup(json(tasks([one,duplicate])))),/Duplicate team task occurrences/);
-  assert.throws(()=>planLaunchpadRestore(s,parseLaunchpadBackup(json(tasks([collision])))),/Duplicate task keys/);assert.equal(s.attempts.length,0);
+  assert.throws(()=>planLaunchpadRestore(s,parseLaunchpadBackup(json(tasks([one,duplicate])))),/shared list has duplicate tasks/);
+  assert.throws(()=>planLaunchpadRestore(s,parseLaunchpadBackup(json(tasks([collision])))),/Two tasks use the same matching reference/);assert.equal(s.attempts.length,0);
 });
 test('distinct private notes retaining the same native origin keep their own identities and content',()=>{
   const origin={wing:'vet',taskId:'task',recordKey:'task::2026',route:'#task/task',cycle:'2026'};

@@ -32,7 +32,7 @@
       status: "verified",
       url: "https://waggawagga-h.schools.nsw.gov.au/",
       purpose: "Current public school information, events, subject-selection pages and published faculty content.",
-      note: "Use the approved school publishing process for changes; this is the public front door, not the editing system."
+      note: "Use the approved school process to publish changes. This link opens the public website."
     },
     {
       id: "nesa-actions",
@@ -82,7 +82,7 @@
       status: "front-door",
       url: "https://classroom.google.com/",
       purpose: "Approved class resources and learning delivery.",
-      note: "Select the education.nsw.gov.au account when Google asks; no device-specific account slot is assumed."
+      note: "Choose your education.nsw.gov.au account when Google asks."
     },
     {
       id: "mandatory-reporting",
@@ -152,7 +152,7 @@
       status: "front-door",
       url: "https://drive.google.com/drive/folders/1YF4o3wcF-D75PHfXECqnKX3u4TVPsJnq",
       purpose: "Approved schedules, task templates and amendment trail.",
-      note: "Direct school folder for the 2026 assessment-schedules folder. Confirm full-faculty completeness before relying on it."
+      note: "Direct school folder for the 2026 assessment-schedules folder. Check that every faculty course is included."
     },
     {
       id: "program-register",
@@ -162,7 +162,7 @@
       status: "front-door",
       url: "https://drive.google.com/drive/folders/1KeWrYpZiFXpV8Ot2xkbSksxKLlY0g7ta",
       purpose: "Current program versions, registration and monitoring locations.",
-      note: "Direct school folder for the B3 hub. Confirm the canonical current register before relying on legacy Program Builder material."
+      note: "Direct school folder for the B3 hub. Confirm the current approved register before using older Program Builder material."
     },
     {
       id: "finance-system",
@@ -172,7 +172,7 @@
       status: "front-door",
       url: "https://selfservice.det.nsw.edu.au/irj/portal",
       purpose: "Budget, purchase approval, orders, claims and acquittals.",
-      note: "Department SAP front door from the current reference guide. Sign in through the staff account; keep amounts and supplier details in the owner system."
+      note: "Open Department SAP with your staff account. Keep amounts and supplier details in SAP."
     },
     {
       id: "whs-system",
@@ -212,7 +212,7 @@
       status: "front-door",
       url: "https://onguardv3.com.au/",
       purpose: "Approved equipment-safety learning and completion status.",
-      note: "Current vendor login front door. Confirm the WWHS subscription and required module mapping after sign-in."
+      note: "Open the provider’s sign-in page. Check the WWHS subscription and required modules after signing in."
     }
   ];
 
@@ -220,7 +220,7 @@
     {
       id: "t1-year-opening-readiness",
       title: "Open the year with classes, programs and practical rooms ready",
-      summary: "Reconcile the live timetable, current programs, staff access and practical-area controls before normal delivery gathers pace.",
+      summary: "Check the current timetable, programs, staff access and practical-area safety before teaching begins.",
       area: "calendar", phase: "term_1", historyOnly: true, priority: "critical", dueDate: "2026-02-02", timing: "Students first day · 2 February 2026",
       owner: "Head Teacher TAS with class teachers", verifier: "Executive / timetable and WHS delegates as applicable", systemIds: ["sentral", "staff-calendar", "program-register", "whs-system"],
       source: "2026 Staff School Calendar + Guide B1/B3/B9–B12/B18/B20/B30", sourceState: "calendar-current",
@@ -238,7 +238,7 @@
     },
     {
       id: "t1-student-review-cycle",
-      title: "Reconcile the Term 1 review, wellbeing and assembly cycle",
+      title: "Check Term 1 review, wellbeing and assembly duties",
       summary: "Check the live roster before each event and complete only the contribution assigned to TAS or the Head Teacher.",
       area: "calendar", phase: "term_1", historyOnly: true, priority: "routine", dueDate: "2026-02-18", timing: "18 February to 1 April 2026 · applicability must be checked",
       applicability: "Only where the current roster or executive role matrix assigns TAS or the Head Teacher a contribution.",
@@ -266,7 +266,7 @@
     },
     {
       id: "t1-vet-white-card-handoff",
-      title: "Check and hand off the Term 1 White Card overlap",
+      title: "Check TAS duties for Term 1 White Card training",
       summary: "Confirm whether the 10–11 March White Card activity affects TAS, then route all VET delivery and compliance work to the VET workboard.",
       area: "calendar", phase: "term_1", historyOnly: true, priority: "routine", dueDate: "2026-03-10", timing: "10–11 March 2026 · VET overlap",
       applicability: "Only where TAS rooms, staffing, students or timetable are affected.",
@@ -307,7 +307,7 @@
     },
     {
       id: "t1-nesa-disability-provisions",
-      title: "Check TAS applicability for the NESA disability-provisions deadline",
+      title: "Check whether TAS needs to act on NESA disability provisions",
       summary: "Confirm whether TAS has an action for 2 April and who holds the authorised submission role.",
       area: "calendar", phase: "term_1", historyOnly: true, priority: "high", dueDate: "2026-04-02", timing: "2 April 2026 · applicability and owner must be checked live",
       applicability: "Only if a current NESA action and school role allocation require a TAS contribution.",
@@ -326,7 +326,7 @@
     },
     {
       id: "t2-year12-report-chain",
-      title: "Run the Term 2 Year 12 report checking chain",
+      title: "Check and submit Term 2 Year 12 reports",
       summary: "Move the Year 12 report process through Head Teacher check, office hand-off and issue.",
       area: "teaching", phase: "term_2", historyOnly: true, priority: "high", dueDate: "2026-04-29", timing: "HT 29 Apr · office 6 May · issue 15 May",
       milestones: [
@@ -344,7 +344,7 @@
     },
     {
       id: "t2-student-review-cycle",
-      title: "Reconcile the Term 2 review, wellbeing and assembly cycle",
+      title: "Check Term 2 review, wellbeing and assembly duties",
       summary: "Check each live event and complete only the TAS or Head Teacher contribution shown in the current roster.",
       area: "calendar", phase: "term_2", historyOnly: true, priority: "routine", dueDate: "2026-05-06", timing: "6 May to 1 July 2026 · applicability must be checked",
       applicability: "Only where the current roster or executive role matrix assigns TAS or the Head Teacher a contribution.",
@@ -369,7 +369,7 @@
     },
     {
       id: "t2-vet-placement-handoff",
-      title: "Check and hand off the Term 2 Year 12 work-placement overlap",
+      title: "Check TAS duties for Term 2 Year 12 work placement",
       summary: "Control any TAS timetable or staffing impact, then use the VET workboard for the 18–29 May placement process.",
       area: "calendar", phase: "term_2", historyOnly: true, priority: "routine", dueDate: "2026-05-18", timing: "18–29 May 2026 · VET overlap",
       applicability: "Only where TAS classes, staffing, rooms or school operations are affected.",
@@ -387,7 +387,7 @@
     },
     {
       id: "t2-year11-report-chain",
-      title: "Run the Term 2 Year 11 report checking chain",
+      title: "Check and submit Term 2 Year 11 reports",
       summary: "Move Year 11 reports through Head Teacher check, office hand-off and issue.",
       area: "teaching", phase: "term_2", historyOnly: true, priority: "high", dueDate: "2026-05-21", timing: "HT 21 May · office 29 May · issue 5 Jun",
       milestones: [
@@ -405,7 +405,7 @@
     },
     {
       id: "t2-year8-report-chain",
-      title: "Run the Term 2 Year 8 report checking chain",
+      title: "Check and submit Term 2 Year 8 reports",
       summary: "Complete Year 8 checks, office hand-off and the common Years 7–10 issue milestone.",
       area: "teaching", phase: "term_2", historyOnly: true, priority: "routine", dueDate: "2026-05-26", timing: "HT 26 May · office 2 Jun · issue 3 Jul",
       milestones: [
@@ -423,7 +423,7 @@
     },
     {
       id: "t2-year9-report-chain",
-      title: "Run the Term 2 Year 9 report checking chain",
+      title: "Check and submit Term 2 Year 9 reports",
       summary: "Complete Year 9 checks, office hand-off and the common Years 7–10 issue milestone.",
       area: "teaching", phase: "term_2", historyOnly: true, priority: "routine", dueDate: "2026-05-29", timing: "HT 29 May · office 5 Jun · issue 3 Jul",
       milestones: [
@@ -441,7 +441,7 @@
     },
     {
       id: "t2-year7-report-chain",
-      title: "Run the Term 2 Year 7 report checking chain",
+      title: "Check and submit Term 2 Year 7 reports",
       summary: "Complete the captured Head Teacher and issue milestones, and confirm the office hand-off live because it was not captured in the audit.",
       area: "teaching", phase: "term_2", historyOnly: true, priority: "routine", dueDate: "2026-06-02", timing: "HT 2 Jun · office date check live · issue 3 Jul",
       milestones: [
@@ -458,7 +458,7 @@
     },
     {
       id: "t2-year10-report-chain",
-      title: "Run the Term 2 Year 10 report checking chain",
+      title: "Check and submit Term 2 Year 10 reports",
       summary: "Complete Year 10 checks, office hand-off and the common Years 7–10 issue milestone.",
       area: "teaching", phase: "term_2", historyOnly: true, priority: "routine", dueDate: "2026-06-05", timing: "HT 5 Jun · office 12 Jun · issue 3 Jul",
       milestones: [
@@ -495,7 +495,7 @@
     },
     {
       id: "t3-year12-report-chain",
-      title: "Run the Year 12 report checking chain",
+      title: "Check and submit Year 12 reports",
       summary: "Quality-check TAS reports before the Head Teacher and office milestones, then confirm issue.",
       area: "teaching", phase: "term_3", priority: "critical", dueDate: "2026-08-28", timing: "HT check 28 Aug · office 4 Sept · issue 18 Sept",
       milestones: [
@@ -537,7 +537,7 @@
     },
     {
       id: "student-review-cycle",
-      title: "Prepare for the assigned student-review and assembly cycle",
+      title: "Prepare for assigned student reviews and assemblies",
       summary: "Use the live calendar to confirm which review or assembly work TAS must support, then prepare only that contribution.",
       area: "calendar", phase: "term_3", priority: "routine", dueDate: "2026-09-02", timing: "Next: Year 9/12 review and Excellence Assembly on 2 September",
       applicability: "Only where the current roster or executive role matrix assigns TAS or the Head Teacher a contribution.",
@@ -586,7 +586,7 @@
     },
     {
       id: "t4-year11-report-chain",
-      title: "Run the Year 11 report checking chain",
+      title: "Check and submit Year 11 reports",
       summary: "Check Year 11 reports and grades across the Head Teacher, office and issue milestones.",
       area: "teaching", phase: "term_4", priority: "high", dueDate: "2026-10-16", timing: "HT/DP hand-off 16 Oct · NESA grades submission 21 Oct · report office 23 Oct · issue 6 Nov",
       milestones: [
@@ -609,7 +609,7 @@
     },
     {
       id: "t4-year10-report-chain",
-      title: "Run the Year 10 report and grade chain",
+      title: "Check and submit Year 10 reports and grades",
       summary: "Check reports, then complete the separate NESA grade hand-off and office milestone.",
       area: "teaching", phase: "term_4", priority: "high", dueDate: "2026-11-04", timing: "HT 4 Nov · grades 5 Nov · office 11 Nov",
       milestones: [
@@ -632,7 +632,7 @@
     },
     {
       id: "t4-year9-report-chain",
-      title: "Run the Year 9 report checking chain",
+      title: "Check and submit Year 9 reports",
       summary: "Complete faculty checks before the 16 November Head Teacher and 23 November office milestones.",
       area: "teaching", phase: "term_4", priority: "routine", dueDate: "2026-11-16", timing: "HT 16 Nov · office 23 Nov",
       milestones: [
@@ -649,7 +649,7 @@
     },
     {
       id: "t4-year7-report-chain",
-      title: "Run the Year 7 report checking chain",
+      title: "Check and submit Year 7 reports",
       summary: "Complete faculty checks before the 19 November Head Teacher and 26 November office milestones.",
       area: "teaching", phase: "term_4", priority: "routine", dueDate: "2026-11-19", timing: "HT 19 Nov · office 26 Nov",
       milestones: [
@@ -685,7 +685,7 @@
     },
     {
       id: "t4-year8-report-chain",
-      title: "Run the Year 8 report checking chain",
+      title: "Check and submit Year 8 reports",
       summary: "Complete faculty checks before the 24 November Head Teacher and 1 December office milestones.",
       area: "teaching", phase: "term_4", priority: "routine", dueDate: "2026-11-24", timing: "HT 24 Nov · office 1 Dec",
       milestones: [
@@ -702,7 +702,7 @@
     },
     {
       id: "t4-report-release",
-      title: "Reconcile Years 7–10 report release",
+      title: "Check Years 7–10 reports are ready to issue",
       summary: "Confirm all TAS reporting chains are closed before the common issue date.",
       area: "teaching", phase: "term_4", priority: "high", dueDate: "2026-12-18", timing: "Years 7–10 reports issued 18 December 2026",
       owner: "Head Teacher TAS", verifier: "School reporting coordinator", systemIds: ["sentral", "staff-calendar"],
@@ -734,8 +734,8 @@
     },
     {
       id: "hsc-analysis-cycle",
-      title: "Start the HSC RAP/SCOUT improvement cycle",
-      summary: "After results release, convert protected HSC data into a small set of owned teaching actions.",
+      title: "Review HSC results in RAP/SCOUT and plan improvements",
+      summary: "After results are released, use HSC data securely to agree on a few teaching actions and who will carry them out.",
       area: "teaching", phase: "term_4", priority: "routine", dueDate: "2026-12-16", timing: "HSC results 16 December 2026; analysis continues into annual setup",
       owner: "Head Teacher TAS and HSC teachers", verifier: "Senior curriculum/data lead", systemIds: ["scout", "sentral", "tas-drive"],
       source: "2026 Staff School Calendar + Guide B2/B23/B26", sourceState: "calendar-current",
@@ -811,7 +811,7 @@
     {
       id: "source-sharing-review",
       title: "Restrict and retest the Head Teacher Drive sharing",
-      summary: "Review and restrict broad link-sharing on A–D and sensitive descendants; linked staff hubs do not replace permissions.",
+      summary: "Review who can open the A–D folders and confidential files within them. Restrict broad sharing where needed; staff links do not control access.",
       area: "people", phase: "annual", priority: "critical", timing: "Immediate setup gate; review annually and after access changes",
       owner: "Head Teacher TAS / Drive owner", verifier: "Principal or authorised information owner", systemIds: ["tas-drive"],
       source: "Read-only permission audit on 26 August 2026", sourceState: "critical-gap",
@@ -829,7 +829,7 @@
     },
     {
       id: "annual-calendar-control",
-      title: "Build the annual Head Teacher control calendar",
+      title: "Prepare the yearly Head Teacher calendar",
       summary: "Reconcile the live Staff Calendar, current NESA actions and faculty calendar at the start of each year.",
       area: "calendar", phase: "annual", priority: "high", timing: "Year start, then after any published change",
       owner: "Head Teacher TAS", verifier: "Executive / calendar owner", systemIds: ["staff-calendar", "nesa-actions", "sentral"],
@@ -848,7 +848,7 @@
     },
     {
       id: "annual-plan-alignment",
-      title: "Review the Faculty Management Plan and school-plan alignment",
+      title: "Check the Faculty Management Plan against the school plan",
       summary: "Review the 2026–2029 faculty plan and turn agreed priorities into clear actions and evidence.",
       area: "faculty", phase: "annual", priority: "high", timing: "Annual setup, term review and material change",
       owner: "Head Teacher TAS", verifier: "Principal or school-improvement delegate", systemIds: ["faculty-plan", "tas-drive"],
@@ -866,7 +866,7 @@
     },
     {
       id: "annual-rosters-rhythm",
-      title: "Confirm rosters, meeting rhythm and faculty responsibilities",
+      title: "Confirm rosters, meeting times and faculty responsibilities",
       summary: "Reconcile Head Teacher duties, assemblies, meetings, playground/bus duties and current faculty responsibilities.",
       area: "people", phase: "annual", priority: "high", timing: "Year/term start and after staffing or timetable change",
       owner: "Head Teacher TAS", verifier: "Executive / roster owner", systemIds: ["staff-calendar", "sentral", "tas-drive"],
@@ -885,7 +885,7 @@
     {
       id: "class-readiness",
       title: "Complete the TAS class-readiness check",
-      summary: "Make sure every class has its people, systems, safety and learning foundations before practical work gathers pace.",
+      summary: "Check staffing, access, safety and learning materials for every class before practical work starts.",
       area: "teaching", phase: "annual", priority: "high", timing: "Year/term start and after any class or timetable change",
       owner: "Head Teacher TAS and class teachers", verifier: "Head Teacher TAS", systemIds: ["sentral", "google-classroom", "onguard", "program-register"],
       source: "Guide B1/B4/B9–B12/B18/B20/B30", sourceState: "mixed",
@@ -903,7 +903,7 @@
     },
     {
       id: "technology-rotations",
-      title: "Set and reconcile Technology Mandatory rotations",
+      title: "Plan and check Technology Mandatory rotations",
       summary: "Keep Years 7–8 rotations, teachers, rooms and the live timetable aligned throughout the year.",
       area: "teaching", phase: "annual", priority: "high", timing: "Annual timetable setup and whenever a class, room or rotation changes",
       owner: "Head Teacher TAS", verifier: "Timetabler / executive delegate", systemIds: ["sentral", "tas-drive"],
@@ -922,8 +922,8 @@
     },
     {
       id: "program-currency",
-      title: "Verify programs, registration and syllabus currency",
-      summary: "Confirm every TAS class is using a current syllabus-aligned program with an active registration trail.",
+      title: "Check programs, teaching records and syllabuses are current",
+      summary: "Check that every TAS class uses a current program matched to the syllabus, with teaching registration kept up to date.",
       area: "teaching", phase: "annual", priority: "high", timing: "Year start, syllabus/course change and monitoring cycle",
       owner: "Class teacher; Head Teacher TAS assures", verifier: "Head Teacher TAS / curriculum delegate", systemIds: ["nesa-curriculum", "program-register"],
       source: "Guide B3/B17/B28–B29", sourceState: "mixed",
@@ -941,7 +941,7 @@
     },
     {
       id: "assessment-governance",
-      title: "Approve and control TAS assessment schedules and tasks",
+      title: "Approve and maintain TAS assessment schedules and tasks",
       summary: "Check the annual schedule, every task issue point and any change before it reaches students.",
       area: "teaching", phase: "annual", priority: "high", timing: "Before annual publication, before each task and whenever a date changes",
       owner: "Head Teacher TAS", verifier: "Executive / assessment owner", systemIds: ["assessment-schedules", "sentral", "nesa-curriculum"],
@@ -961,7 +961,7 @@
     },
     {
       id: "senior-monitoring",
-      title: "Assure senior-course monitoring and sign-off",
+      title: "Check senior-course monitoring and sign-off",
       summary: "Keep Stage 6 monitoring current, controlled and ready for the required school sign-off.",
       area: "teaching", phase: "ongoing", priority: "high", timing: "Throughout delivery and before each reporting/assurance point",
       owner: "Senior course teacher; Head Teacher TAS monitors", verifier: "Principal or authorised delegate", systemIds: ["program-register", "nesa-curriculum"],
@@ -979,7 +979,7 @@
     },
     {
       id: "subject-selection-cycle",
-      title: "Run the TAS subject-selection information cycle",
+      title: "Prepare TAS subject-selection information",
       summary: "Keep handbooks, presentations, fees and authorised offerings accurate across the selection window.",
       area: "teaching", phase: "term_3", priority: "high", timing: "Before the annual selection window and after any offering change",
       owner: "Head Teacher TAS", verifier: "Subject-selection lead / Principal delegate", systemIds: ["staff-calendar", "tas-drive", "vet-workboard"],
@@ -1017,7 +1017,7 @@
     },
     {
       id: "reporting-assurance",
-      title: "Set the faculty reporting and markbook assurance process",
+      title: "Set the process for checking reports and markbooks",
       summary: "Give staff one current, consistent route for markbooks, grades, comments, checks and corrections.",
       area: "teaching", phase: "annual", priority: "high", timing: "Before each reporting cycle and after reporting-system change",
       owner: "Head Teacher TAS", verifier: "School reporting coordinator", systemIds: ["sentral", "tas-drive"],
@@ -1036,8 +1036,8 @@
     },
     {
       id: "capability-training",
-      title: "Review mandatory training, PDPs and faculty capability",
-      summary: "Check status and support needs without building a shadow personnel register.",
+      title: "Review mandatory training, PDPs and staff development needs",
+      summary: "Check staff readiness and support needs. Keep personnel records in the approved system.",
       area: "people", phase: "annual", priority: "high", timing: "Annual PDP cycle, term review and before an expiry or new duty",
       owner: "Individual staff member and Head Teacher supervisor", verifier: "Principal / capability owner", systemIds: ["mypl", "tas-drive"],
       source: "Guide A10/C3–C5/C24–C25", sourceState: "mixed",
@@ -1056,7 +1056,7 @@
     {
       id: "faculty-meeting-control",
       title: "Run faculty meetings and close the actions",
-      summary: "Use each meeting to make decisions, assign work and verify the hand-back.",
+      summary: "Use each meeting to make decisions, assign work and check completed actions.",
       area: "faculty", phase: "ongoing", cycle: "week", priority: "routine", timing: "Current weekly meeting rhythm; verify the 2026 day/time",
       owner: "Head Teacher TAS", verifier: "Head Teacher TAS / executive where required", systemIds: ["staff-calendar", "tas-drive"],
       source: "Guide C27; current 2026 meeting records observed", sourceState: "current-local",
@@ -1073,7 +1073,7 @@
     },
     {
       id: "budget-procurement",
-      title: "Control the faculty budget, purchasing, stock and fees",
+      title: "Manage the faculty budget, purchasing, stock and fees",
       summary: "Plan, approve and reconcile faculty resources through the current finance and asset systems.",
       area: "faculty", phase: "ongoing", priority: "high", timing: "Annual allocation, every purchase/claim and term reconciliation",
       owner: "Head Teacher TAS within delegation", verifier: "Principal / finance delegate", systemIds: ["finance-system", "tas-drive"],
@@ -1149,7 +1149,7 @@
     },
     {
       id: "workshop-routine",
-      title: "Run the practical-area safety and fault routine",
+      title: "Check practical-area safety and report faults",
       summary: "Make the every-lesson check, fault escalation and equipment training visible and consistent.",
       area: "faculty", phase: "ongoing", priority: "critical", timing: "Every practical lesson; faults handled immediately",
       owner: "Class teacher; Head Teacher TAS assures", verifier: "Head Teacher TAS / WHS owner", systemIds: ["onguard", "workshop-maintenance", "whs-system"],
@@ -1187,7 +1187,7 @@
     },
     {
       id: "stocktake-disposal",
-      title: "Complete annual stocktake, asset reconciliation and disposal",
+      title: "Complete the annual stocktake, asset checks and disposal",
       summary: "Reconcile rooms and equipment to the official asset process before year close.",
       area: "faculty", phase: "term_4", priority: "high", timing: "Annual stocktake cycle; exact central date to confirm",
       owner: "Head Teacher TAS / asset custodian", verifier: "Finance or asset delegate", systemIds: ["finance-system", "tas-drive"],
@@ -1206,8 +1206,8 @@
     },
     {
       id: "ag-farm-audit",
-      title: "Confirm and complete the applicable Agriculture/farm audit",
-      summary: "Establish the current animal-welfare/farm assurance requirement before treating the old Drive material as an active process.",
+      title: "Check whether an Agriculture/farm audit is required and complete it",
+      summary: "Confirm current animal-welfare and farm-check requirements before using older Drive material.",
       area: "faculty", phase: "annual", priority: "high", timing: "Current annual or event-driven audit cycle; authority and date to confirm",
       applicability: "Only if the current Agriculture/farm operation and authorised audit regime apply to WWHS TAS.",
       owner: "Agriculture/farm lead and Head Teacher TAS", verifier: "Principal / authorised animal-welfare or audit role", systemIds: ["tas-drive", "staff-calendar"],
@@ -1246,7 +1246,7 @@
     {
       id: "new-staff-induction",
       title: "Induct a new, relieving or practicum TAS staff member",
-      summary: "Give the person the smallest safe pathway to teach, supervise and find current information.",
+      summary: "Help new staff teach and supervise safely, and find current information.",
       area: "people", phase: "triggered", priority: "high", timing: "Before first duty/class and during the first weeks",
       owner: "Head Teacher TAS", verifier: "Principal / induction owner", systemIds: ["sentral", "mypl", "tas-drive", "onguard"],
       source: "Guide D12/C5/C22 + 2019/2022 induction material", sourceState: "critical-gap",

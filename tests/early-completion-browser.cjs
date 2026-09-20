@@ -32,7 +32,7 @@ const reviewKey='wwhs-task-register-review:v1';
    const records=await page.evaluate(key=>JSON.parse((window.WWHS_STORAGE||localStorage).getItem(key)).records,reviewKey);
    assert.deepEqual(records[key],{completed:true,reviewedOn:'2026-09-20',completedEarly:true});
    await row.locator('h3 a').click();const dialog=page.locator('#task-dialog');await dialog.waitFor({state:'visible'});
-   assert.match(await dialog.innerText(),/Task complete · overall sign-off/);
+   assert.match(await dialog.innerText(),/Task complete · reviewed/);
    assert.match(await dialog.locator(wing==='vet'?'textarea[name="exceptionSummary"]':'textarea[name="exceptionReason"]').inputValue(),/Signed off early/);
    const steps=dialog.locator(wing==='vet'?'.step-list input[type=checkbox]':'.action-list input[type=checkbox]');
    assert.ok(await steps.count()>0);assert.equal(await steps.evaluateAll(nodes=>nodes.every(node=>node.checked)),true);

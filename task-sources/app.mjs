@@ -1,11 +1,11 @@
-import { orderTasks, taskGroup } from './model.mjs';
+import { orderTasks, taskGroup } from './model.mjs?v=plain-language-1';
 
 const byId = id => document.getElementById(id);
 const views = ['tasks', 'sources', 'watch', 'findings'];
 const labels = {
   'specific-citation': 'Specific source found',
-  'broad-source-only': 'Precise citation needed',
-  'inferred-local-control': 'Local review control',
+  'broad-source-only': 'Exact source needed',
+  'inferred-local-control': 'School checklist',
 };
 const sourceAliases = {
   'PUBLIC-NESA-TOA': 'NESA-TOA-2026-MAY',
@@ -74,9 +74,9 @@ function empty(container, message = 'No matches. Try another keyword or reset th
 function reviewButton(row, count) {
   const note = element('div', 'review-action');
   note.append(element('strong', '', `Review needed · ${count} ${count === 1 ? 'finding' : 'findings'}`));
-  const button = element('button', 'small-button', 'See review findings');
+  const button = element('button', 'small-button', 'See what needs checking');
   button.type = 'button';
-  button.setAttribute('aria-label', `See review findings for ${row.title}`);
+  button.setAttribute('aria-label', `See what needs checking for ${row.title}`);
   button.addEventListener('click', () => {
     selectedTask = row;
     byId('search').value = '';
@@ -102,20 +102,20 @@ function taskCard(row, position) {
   if (related.length) card.append(reviewButton(row, related.length));
   const details = element('details', 'details');
   if (focusedTaskId === row.id) details.open = true;
-  details.append(element('summary', '', 'Source evidence and 2027 check'));
+  details.append(element('summary', '', 'Source and 2027 check'));
   const grid = element('div', 'detail-grid');
   for (const fields of [
-    [['Why it appears', row.sourceBasis], ['Gap or correction', row.sourceGap || 'No additional gap recorded for this mapping.']],
+    [['Why it appears', row.sourceBasis], ['Gap or correction', row.sourceGap || 'No other gap noted.']],
     [['What to check for 2027', row.nextYearCheck], ['When to check', row.checkWhen]],
   ]) {
     const column = element('div');
-    fields.forEach(([heading, content]) => column.append(element('h4', '', heading), element('p', '', content || 'Confirm against the current source before use.')));
+    fields.forEach(([heading, content]) => column.append(element('h4', '', heading), element('p', '', content || 'Check the current source first.')));
     grid.append(column);
   }
   details.append(grid);
   if (Array.isArray(row.milestones2026) && row.milestones2026.length) {
     const milestones = element('div', 'source-evidence');
-    milestones.append(element('h4', '', 'Recorded 2026 milestones'));
+    milestones.append(element('h4', '', '2026 key dates'));
     const list = element('ul', 'milestone-list');
     for (const milestone of row.milestones2026) {
       const item = element('li');
@@ -129,11 +129,11 @@ function taskCard(row, position) {
     const block = element('div', 'source-evidence');
     const heading = element('h4');
     heading.append(sourceLink(reference.url, reference.linkTitle || reference.title || reference.id));
-    block.append(heading, element('p', 'source-id', reference.id), element('p', '', reference.relationship || 'Supporting source'), element('p', '', reference.locator || 'Exact source passage still to confirm.'), element('p', 'muted', reference.verification || 'Current source version still to confirm.'));
+    block.append(heading, element('p', 'source-id', reference.id), element('p', '', reference.relationship || 'Supporting source'), element('p', '', reference.locator || 'Exact source section still needed.'), element('p', 'muted', reference.verification || 'Check that this is the latest version.'));
     if (reference.statusNote) block.append(element('p', 'muted', reference.statusNote));
     details.append(block);
   }
-  if (!(row.evidenceRefs || []).length) details.append(element('p', 'muted', 'A task-level citation still needs to be added.'));
+  if (!(row.evidenceRefs || []).length) details.append(element('p', 'muted', 'The exact source for this task is still needed.'));
   details.append(element('p', 'source-id', `Task reference: ${row.id}`));
   card.append(details);
   return card;
@@ -172,16 +172,18 @@ function sourceCard(source) {
   const tags = element('div', 'tags');
   tags.append(element('span', 'tag', String(source.group || 'Source record').replace(/^\d+\s+/, '')));
   const title = element('h3'); title.append(sourceLink(source.url, source.linkTitle || source.title));
-  card.append(tags, title, element('p', 'source-id', `${source.id} · ${source.taskCount || 0} mapped entries across the register`));
+  card.append(tags, title, element('p', 'muted', `${source.taskCount || 0} tasks use this source.`));
+  const more = element('details', 'details');
+  more.append(element('summary', '', 'Checks and source details'));
   const details = element('dl', 'source-details');
   addField(details, 'Record type', source.countingUnit);
-  addField(details, 'Mapping basis', source.verification || 'Current original and version still to confirm.');
+  addField(details, 'What was checked', source.verification || 'Check the original document and its current version.');
   if (source.liveVerification && source.liveVerification !== source.verification) addField(details, 'Latest public check', source.liveVerification);
   addField(details, 'Current edition', source.currentEdition);
   addField(details, '2027 availability', source.status2027);
-  addField(details, 'Next check', source.nextYearCheck || 'Locate the current approved equivalent before use.');
+  addField(details, 'Next check', source.nextYearCheck || 'Find the current approved version before use.');
   addField(details, 'Check when', source.checkWhen || 'Before affected work and whenever the source changes.');
-  card.append(details);
+  more.append(details, element('p', 'source-id', source.id));card.append(more);
   return card;
 }
 
@@ -212,7 +214,7 @@ function renderWatch() {
     const details = element('dl', 'source-details');
     addField(details, 'Check when', item.checkWhen);
     addField(details, 'What to do', item.action);
-    addField(details, 'Schedule basis', item.scheduleBasis);
+    addField(details, 'About these dates', item.scheduleBasis);
     card.append(details);
     const sourceDetails = element('details', 'details');
     sourceDetails.append(element('summary', '', 'Source locations and 2027 availability'));
@@ -263,13 +265,16 @@ function renderFindings() {
     tags.append(element('span', 'tag', finding.wing || 'VET / TAS'), element('span', 'tag review', finding.certainty || 'Review finding'));
     card.append(tags, element('h3', '', finding.title || finding.issue || 'Source review needed'));
     const details = element('dl', 'source-details');
-    if (finding.title && finding.issue !== finding.title) addField(details, 'Finding', finding.issue);
-    addField(details, 'Source evidence', finding.evidence);
-    addField(details, 'Recommended action', finding.action);
-    addField(details, 'Affected tasks', finding.taskIds);
+    if (finding.title && finding.issue !== finding.title) addField(details, 'What needs checking', finding.issue);
+    addField(details, 'Next step', finding.action);
     card.append(details);
+    const evidence = element('details', 'details'), evidenceFields = element('dl', 'source-details');
+    evidence.append(element('summary', '', 'Sources and affected tasks'));
+    addField(evidenceFields, 'Source evidence', finding.evidence);
+    addField(evidenceFields, 'Affected tasks', finding.taskIds);
+    evidence.append(evidenceFields);card.append(evidence);
     if (finding.sourceUrl) { const paragraph = element('p'); paragraph.append(sourceLink(finding.sourceUrl, 'Open supporting source')); card.append(paragraph); }
-    if (finding.id) card.append(element('p', 'source-id', `Finding reference: ${finding.id}`));
+    if (finding.id) evidence.append(element('p', 'source-id', `Finding reference: ${finding.id}`));
     container.append(card);
   }
   countMessage(filtered.length, `of ${data.findings.length} review findings`, ' · task definitions have not yet been changed');
@@ -330,7 +335,7 @@ window.addEventListener('hashchange', () => setView(location.hash.slice(1), fals
 
 async function initialise() {
   try {
-    const response = await fetch('./data.json?v=direct-sources-1');
+    const response = await fetch('./data.json?v=plain-language-1');
     if (!response.ok) throw new Error('Source register unavailable');
     data = await response.json();
     if (![data.rows, data.sources, data.watch, data.findings].every(Array.isArray)) throw new Error('Source register incomplete');
@@ -354,7 +359,7 @@ async function initialise() {
     setView(activeView, false);
   } catch {
     byId('error').hidden = false;
-    byId('error').textContent = 'The source register could not be loaded. Please refresh the page, or return to the VET or TAS section and try again.';
+    byId('error').textContent = 'Could not load the sources. Refresh this page and try again.';
     byId('result-count').textContent = 'Source register unavailable';
   }
 }

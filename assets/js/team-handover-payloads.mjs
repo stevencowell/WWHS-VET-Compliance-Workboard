@@ -1,5 +1,5 @@
 // Immutable, private browser copies. Only small references enter localStorage.
-import {parseBackup,snapshot} from './team-handover-core.mjs?v=early-completion-1';
+import {parseBackup,snapshot} from './team-handover-core.mjs?v=plain-language-1';
 
 const DB_NAME='wwhs-team-handover-payloads', STORE='payloads', MAX_SIZE=12000000;
 const INFO=['scope','workspaceId','revision','parentRevision','parentExportId','exportId','savedAt','savedBy','note','changes'];
@@ -9,7 +9,7 @@ const fail=message=>{throw new Error(message);};
 const copy=value=>JSON.parse(JSON.stringify(value));
 const info=value=>Object.fromEntries(INFO.filter(key=>value[key]!==undefined).map(key=>[key,value[key]]));
 function reference(value,kind){
-  if(!object(value)||value.version!==1||value.kind!==kind||typeof value.id!=='string'||!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,149}$/.test(value.id)||Object.keys(value).some(key=>!['version','id','kind'].includes(key)))fail('The saved team file reference is invalid. Keep this browser data intact for recovery.');
+  if(!object(value)||value.version!==1||value.kind!==kind||typeof value.id!=='string'||!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,149}$/.test(value.id)||Object.keys(value).some(key=>!['version','id','kind'].includes(key)))fail('The saved backup record is damaged or unsupported. Keep your browser data for recovery.');
   return value;
 }
 function validate(value,kind){
@@ -29,8 +29,8 @@ function validate(value,kind){
 }
 function metadata(value){
   if(value===null)return null;
-  if(!object(value)||value.version!==1||!value.lastFile?.workspaceId||!Number.isInteger(value.lastFile.revision)||value.lastFile.revision<1)fail('The team session record cannot be read. Keep this browser data intact for recovery.');
-  if(value.active!=null&&(!object(value.active)||!['editing','exporting'].includes(value.active.phase)))fail('The active team session is invalid. Keep this browser data intact for recovery.');
+  if(!object(value)||value.version!==1||!value.lastFile?.workspaceId||!Number.isInteger(value.lastFile.revision)||value.lastFile.revision<1)fail('The shared backup record cannot be read. Keep your browser data for recovery.');
+  if(value.active!=null&&(!object(value.active)||!['editing','exporting'].includes(value.active.phase)))fail('The current editing record is damaged or unsupported. Keep your browser data for recovery.');
   if(value.recovery!=null&&!object(value.recovery))fail('The local recovery record is invalid.');
   return copy(value);
 }
@@ -69,20 +69,20 @@ function indexedDBBackend(){
 let defaultBackend;
 function backendFor(options){
   const backend=options.backend===undefined?(defaultBackend??=indexedDBBackend()):options.backend;
-  if(!backend||['put','get'].some(key=>typeof backend[key]!=='function'))fail('This browser cannot keep the private team file copies. Your saved progress is unchanged.');
+  if(!backend||['put','get'].some(key=>typeof backend[key]!=='function'))fail('This browser cannot save a recovery copy. Your saved progress is unchanged.');
   return backend;
 }
 async function read(ref,kind,options){
   reference(ref,kind);let body;
-  try{body=await backendFor(options).get(ref.id);}catch(error){throw new Error('The private team file copy could not be opened. Your saved progress has been kept.',{cause:error});}
-  if(!body)fail('A private team file copy is missing. Keep this browser data intact; the handover cannot continue safely.');
-  if(!object(body)||body.version!==1||body.id!==ref.id||body.kind!==kind||Object.keys(body).some(key=>!['version','id','kind','value'].includes(key)))fail('The private team file copy is invalid. Your saved progress has been kept.');
+  try{body=await backendFor(options).get(ref.id);}catch(error){throw new Error('A backup copy could not be opened. Your saved progress is kept.',{cause:error});}
+  if(!body)fail('A backup copy needed for recovery is missing. Keep your browser data. Save a safety copy, then open the latest shared backup.');
+  if(!object(body)||body.version!==1||body.id!==ref.id||body.kind!==kind||Object.keys(body).some(key=>!['version','id','kind','value'].includes(key)))fail('A backup copy is damaged or unsupported. Your saved progress is kept.');
   return copy(validate(body.value,kind));
 }
 async function restore(container,field,refField,kind,options){
   if(own(container,refField)){
     const value=await read(container[refField],kind,options);
-    if(own(container,field)&&JSON.stringify(container[field])!==JSON.stringify(value))fail('The private team file copy does not match its saved record. Your saved progress has been kept.');
+    if(own(container,field)&&JSON.stringify(container[field])!==JSON.stringify(value))fail('The backup copy and its record do not match. Your saved progress is kept.');
     container[field]=value;
   }else if(own(container,field))validate(container[field],kind);
 }
@@ -90,7 +90,7 @@ export async function hydrateTeamMetadata(input,options={}){
   const result=metadata(input);if(!result)return null;
   if(result.active){
     await restore(result.active,'baselineData','baselineRef','snapshot',options);
-    if(!result.active.firstFile&&!own(result.active,'baselineData'))fail('The team session baseline is missing. Your saved progress has been kept.');
+    if(!result.active.firstFile&&!own(result.active,'baselineData'))fail('The copy from the start of this session is missing. Your saved progress is kept.');
   }
   if(result.recovery){
     await restore(result.recovery,'data','dataRef','snapshot',options);
@@ -133,12 +133,12 @@ export async function inspectTeamMetadata(input,options={}){
   const checks=[
     ['baseline',async()=>{
       if(!partial.active)return;
-      if(!object(partial.active)||!['editing','exporting'].includes(partial.active.phase))fail('The active team session is invalid. Keep this browser data intact for recovery.');
+      if(!object(partial.active)||!['editing','exporting'].includes(partial.active.phase))fail('The current editing record is damaged or unsupported. Keep your browser data for recovery.');
       parseBackup({kind:'WWHS-TEAM-HANDOVER',schemaVersion:1,workspaceId:'session-validation',revision:1,parentRevision:null,parentExportId:null,
         exportId:own(partial.active,'id')?partial.active.id:'session-validation',savedBy:own(partial.active,'editor')?partial.active.editor:'Local inspection',
         savedAt:own(partial.active,'startedAt')?partial.active.startedAt:'2026-01-01T00:00:00.000Z',note:'',changes:[],data:empty});
       await restore(partial.active,'baselineData','baselineRef','snapshot',options);
-      if(!partial.active.firstFile&&!own(partial.active,'baselineData'))fail('The team session baseline is missing. Your saved progress has been kept.');
+      if(!partial.active.firstFile&&!own(partial.active,'baselineData'))fail('The copy from the start of this session is missing. Your saved progress is kept.');
     },()=>{if(object(partial.active))delete partial.active.baselineData;}],
     ['recovery',async()=>{
       if(!partial.recovery)return;
@@ -163,7 +163,7 @@ async function store(value,kind,ref,options){
   if(ref)return reference(ref,kind); // Hydration has already verified its exact value.
   const next=reference({version:1,id:(options.createId||(()=>globalThis.crypto.randomUUID()))(),kind},kind);
   try{await backendFor(options).put({...next,value:copy(value)});}
-  catch(error){throw new Error('The browser could not save the private team file copy, so no saved progress was changed.',{cause:error});}
+  catch(error){throw new Error('Could not save a recovery copy. Your saved progress is unchanged.',{cause:error});}
   return next;
 }
 export async function prepareTeamMetadata(input,options={}){

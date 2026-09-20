@@ -6,17 +6,17 @@ const TOPICS = [
   },
   {
     id: 'categories', label: 'Check categories',
-    description: 'Prepare a careful review of transaction categories.',
+    description: 'Check that transactions have suitable categories.',
     task: 'Help me review transaction classification. Explain how to distinguish income, purchases, internal transfers, refunds and loan repayments. Propose a small review checklist and a cautious reusable rule only when the evidence supports it. Ambiguous entries must remain unconfirmed. Never infer a merchant, purpose or tax treatment from an aggregate total.',
   },
   {
     id: 'budget', label: 'Build a workable budget',
-    description: 'Turn a confirmed income and cost picture into a manageable plan.',
+    description: 'Make a plan using confirmed income and costs.',
     task: 'Help me build or review a realistic household budget. Separate observed spending, my chosen limits and forecast suggestions. Allow for irregular bills and a buffer. Ask for confirmed take-home income, commitments and coverage gaps only if needed. Do not replace my existing budget choices with historical averages or treat a suggested saving as money already available.',
   },
   {
     id: 'statements', label: 'Check statement coverage',
-    description: 'Identify missing periods, duplicates and reconciliation steps.',
+    description: 'Check missing periods, duplicates and statement balances.',
     task: 'Help me check whether my imported statements provide a reliable picture. Give me a simple sequence to check date coverage, missing accounts or periods, duplicates, transfer pairs and opening/closing balances. Transaction totals alone do not establish a current account balance. Ask for a redacted statement summary only when necessary; do not request passwords, card numbers or online banking access.',
   },
   {
@@ -103,23 +103,23 @@ export function buildSafeFinanceSummary(transactions = []) {
 }
 
 function summaryText(summary) {
-  if (!summary || typeof summary !== 'object') return 'No usable aggregate summary was supplied.';
+  if (!summary || typeof summary !== 'object') return 'No usable totals summary was supplied.';
   const lines = [];
   const from = validDate(summary.from), to = validDate(summary.to);
-  if (from && to && from <= to) lines.push(`Observed date coverage: ${from} to ${to}. This does not establish complete statement coverage.`);
+  if (from && to && from <= to) lines.push(`Dates in these records: ${from} to ${to}. This does not establish complete statement coverage.`);
   const transactionCount = count(summary.transactionCount);
   if (transactionCount !== null) lines.push(`Usable transaction records: ${transactionCount}.`);
   const money = new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD', minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const income = nonNegativeNumber(summary.income), spending = nonNegativeNumber(summary.spending);
-  if (income !== null) lines.push(`Recorded income included by the current classification: ${money.format(income)}.`);
-  if (spending !== null) lines.push(`Recorded spending included by the current classification: ${money.format(spending)}.`);
+  if (income !== null) lines.push(`Recorded income under the current categories: ${money.format(income)}.`);
+  if (spending !== null) lines.push(`Recorded spending under the current categories: ${money.format(spending)}.`);
   const excluded = count(summary.transferRowsExcluded);
-  if (excluded !== null) lines.push(`Rows already classified as internal or sinking-fund transfers excluded from these totals: ${excluded}. Unrecognised transfers may still need checking.`);
+  if (excluded !== null) lines.push(`Transfers between accounts or to funds set aside, excluded from these totals: ${excluded}. Unrecognised transfers may still need checking.`);
   const uncategorised = count(summary.uncategorisedCount);
   if (uncategorised !== null) lines.push(`Uncategorised non-transfer records: ${uncategorised}.`);
   const ignored = count(summary.ignoredRows);
-  if (ignored !== null && ignored > 0) lines.push(`Records omitted from this summary because their amount or date was invalid: ${ignored}.`);
-  lines.push('These are transaction-history aggregates, not verified balances, forecast income, available cash or confirmed tax deductions. Classification exclusion flags are respected. No merchant names, account names or raw transactions are included.');
+  if (ignored !== null && ignored > 0) lines.push(`Records left out because their amount or date was invalid: ${ignored}.`);
+  lines.push('These are totals from past transactions, not verified balances, forecast income, available cash or confirmed tax deductions. Records marked to exclude from income or spending are left out of those totals. No business names, account names or individual transactions are included.');
   return lines.join('\n');
 }
 
@@ -136,7 +136,7 @@ export function buildFinancePrompt(topic, { includeSummary = false, summary } = 
     'Finish with one manageable next action. Draft or explain only; do not change records, submit forms, move money, contact anyone or claim to have taken action.',
   ];
   if (includeSummary === true) {
-    parts.push('Aggregate summary I chose to include for review:', summaryText(summary));
+    parts.push('Totals summary I chose to include for review:', summaryText(summary));
   } else {
     parts.push('No personal financial figures or records are included in this request. Begin with a useful structure; ask for the smallest necessary input if required.');
   }

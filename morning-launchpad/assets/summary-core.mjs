@@ -1,5 +1,5 @@
 // Local text processing only. No network requests or embedded personal records.
-import {normaliseTaskHelpContext} from '../../assets/js/task-help.mjs?v=full-register-1';
+import {normaliseTaskHelpContext} from '../../assets/js/task-help.mjs?v=plain-language-1';
 export const INBOX_KEY = 'morning-launchpad-summary:v1';
 export const LEGACY_PLAN_KEY = 'morning-launchpad-routine:v1';
 export const LIMIT = 1000000;
@@ -8,9 +8,9 @@ export const SOURCE_SUMMARY_LIMIT = 4000;
 export const WORKSTREAMS = {personal:'Personal',vet:'VET',tas:'TAS'};
 
 export function mergeWorkboardImports(current=[],incoming=[]) {
-  for(const entries of [current,incoming])if(!Array.isArray(entries)||entries.length>2000||entries.some(value=>typeof value!=='string'||value.length>2004||!/^(?:vet|tas):[\s\S]+$/.test(value)||!value.slice(4).trim()))throw new Error('Invalid workboard import history');
+  for(const entries of [current,incoming])if(!Array.isArray(entries)||entries.length>2000||entries.some(value=>typeof value!=='string'||value.length>2004||!/^(?:vet|tas):[\s\S]+$/.test(value)||!value.slice(4).trim()))throw new Error('The history of imported workboard tasks could not be read.');
   const merged=[...new Set([...current,...incoming])];
-  if(merged.length>2000)throw new Error('The workboard import history is full. Export a task backup before continuing.');
+  if(merged.length>2000)throw new Error('The history of imported workboard tasks is full. Save a backup before continuing.');
   return merged;
 }
 
@@ -32,21 +32,21 @@ export function clearEmailImports(inbox) {
 }
 
 export function normaliseForecastContext(input) {
-  if(!input||typeof input!=='object'||Array.isArray(input))throw new Error('Invalid workboard forecast context');
+  if(!input||typeof input!=='object'||Array.isArray(input))throw new Error('The saved schedule details could not be read.');
   const context={wing:input.wing,date:input.date,role:input.role??'',roleLabel:input.roleLabel??'',year:String(input.year??''),sourceYear:String(input.sourceYear??''),sourceAsAt:input.sourceAsAt??'',horizonDays:input.horizonDays,mode:input.mode,title:input.title??'',note:input.note??''};
   if(!['vet','tas'].includes(context.wing)||!context.date||!validDate(context.date)||!['current','reference-only','unavailable'].includes(context.mode)||!Number.isInteger(context.horizonDays)||context.horizonDays<1||context.horizonDays>366||
     !/^\d{4}$/.test(context.year)||!/^\d{4}$|^$/.test(context.sourceYear)||
-    ['role','roleLabel','sourceAsAt','title','note'].some(key=>typeof context[key]!=='string'||context[key].length>(key==='note'?2000:300)))throw new Error('Invalid workboard forecast context');
+    ['role','roleLabel','sourceAsAt','title','note'].some(key=>typeof context[key]!=='string'||context[key].length>(key==='note'?2000:300)))throw new Error('The saved schedule details could not be read.');
   return context;
 }
 
 function normaliseForecast(input,context,{managed=false,active=true}={}) {
-  if(!input||typeof input!=='object'||Array.isArray(input))throw new Error('Invalid workboard forecast');
+  if(!input||typeof input!=='object'||Array.isArray(input))throw new Error('The saved task schedule could not be read.');
   const result={version:1,managed,active,section:input.section,kind:input.kind??'scheduled',reason:input.reason??'Scheduled by your workboard',
     scheduledDate:input.scheduledDate??null,windowStart:input.windowStart??null,windowEnd:input.windowEnd??null,period:input.period??'',
     sourceStatus:input.sourceStatus??'review',blocked:input.blocked??false,blockerReason:input.blockerReason??'',asOf:context.date,
     role:context.role,roleLabel:context.roleLabel,year:context.year,sourceYear:context.sourceYear,horizonDays:context.horizonDays};
-  if(!validForecast(result))throw new Error('Invalid workboard forecast');
+  if(!validForecast(result))throw new Error('The saved task schedule could not be read.');
   return result;
 }
 
@@ -72,14 +72,14 @@ export function sourceCompleted(item) {
 export async function reconcileForecast(inbox,{entries=[],resolved=[],context:input}) {
   const context=normaliseForecastContext(input);
   if(context.mode!=='current')return {inbox,context,changed:false,skipped:true,added:0,updated:0,retired:0,suppressed:0};
-  if(!Array.isArray(entries)||!Array.isArray(resolved)||entries.length>300||resolved.length>300)throw new Error('The workboard forecast is too large.');
+  if(!Array.isArray(entries)||!Array.isArray(resolved)||entries.length>300||resolved.length>300)throw new Error('The workboard schedule has too many tasks.');
   const identity=descriptor=>`${descriptor.wing}:${descriptor.recordKey}`;
   const scheduled=new Map(),sources=new Map();
   for(const descriptor of [...resolved,...entries]){
-    if(descriptor?.wing!==context.wing||!validWorkOrigin({wing:descriptor.wing,taskId:descriptor.taskId,recordKey:descriptor.recordKey,route:descriptor.route,cycle:String(descriptor.cycle??'')}))throw new Error('Invalid task identity in the workboard forecast.');
+    if(descriptor?.wing!==context.wing||!validWorkOrigin({wing:descriptor.wing,taskId:descriptor.taskId,recordKey:descriptor.recordKey,route:descriptor.route,cycle:String(descriptor.cycle??'')}))throw new Error('A scheduled task could not be identified. Open the original workboard and try again.');
     sources.set(identity(descriptor),descriptor);
   }
-  for(const descriptor of entries){if(scheduled.has(identity(descriptor)))throw new Error('Duplicate occurrence in the workboard forecast.');scheduled.set(identity(descriptor),descriptor);}
+  for(const descriptor of entries){if(scheduled.has(identity(descriptor)))throw new Error('The same task appears twice in the workboard schedule.');scheduled.set(identity(descriptor),descriptor);}
   let added=0,updated=0,retired=0,suppressed=0;
   let imports=mergeWorkboardImports(inbox.workboardImports);
   const seen=new Set();
@@ -99,7 +99,7 @@ export async function reconcileForecast(inbox,{entries=[],resolved=[],context:in
       const previous=original.forecast;
       const blocked=source?.forecast?.blocked??(['waiting','blocked'].includes(sourceStatus)?true:source?false:previous.blocked);
       forecast=normaliseForecast({...previous,sourceStatus,blocked,blockerReason:source?.forecast?.blockerReason??(blocked?previous.blockerReason:''),
-        reason:hasPersonalWork(original)?'Outside the current forecast. Your own work and notes are kept here.':'No longer in the current forecast. Kept with your notes and history.'},context,{managed:previous.managed,active:false});
+        reason:hasPersonalWork(original)?'Not in the current schedule. Your work and notes are kept here.':'No longer in the current schedule. Kept with your notes and history.'},context,{managed:previous.managed,active:false});
       if(previous.active)retired++;
     }
     const refreshed={...original,forecast,taskHelp:source?.taskHelp?normaliseTaskHelpContext(source.taskHelp):original.taskHelp};
@@ -135,7 +135,7 @@ export function validWorkOrigin(origin) {
 }
 
 export async function workboardTaskKey(wing,recordKey) {
-  if(!['vet','tas'].includes(wing)||typeof recordKey!=='string'||!recordKey.trim()||recordKey.length>2000)throw new Error('This workboard task has an invalid identity.');
+  if(!['vet','tas'].includes(wing)||typeof recordKey!=='string'||!recordKey.trim()||recordKey.length>2000)throw new Error('This workboard task could not be identified. Open the original task and try again.');
   const prefix=`workboard:${wing}:`;
   if(prefix.length+recordKey.length<=150&&!recordKey.startsWith('sha256:'))return prefix+recordKey;
   const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(recordKey));
@@ -146,7 +146,7 @@ export async function workboardTaskKey(wing,recordKey) {
 export async function createTrackedWork(descriptor) {
   const {wing,taskId,recordKey,route}=descriptor;
   const origin={wing,taskId,recordKey,route,cycle:String(descriptor.cycle??'')};
-  if(!validWorkOrigin(origin))throw new Error('This workboard task has an invalid source link.');
+  if(!validWorkOrigin(origin))throw new Error('The link to the original workboard task could not be read.');
   const title=String(descriptor.title||'').trim();
   const action=String(descriptor.action||'Review the task and choose the next action.').trim();
   const noteText=String(descriptor.notes||'');
@@ -308,15 +308,15 @@ export function enrich(item) {
 }
 export function validateInbox(raw) {
   if (raw === null) return {version:2, items:[], importedAt:null, briefing:'',workboardImports:[],forecastContexts:{}};
-  if (typeof raw !== 'string' || raw.length > 8 * LIMIT) throw new Error('Review file is too large');
+  if (typeof raw !== 'string' || raw.length > 8 * LIMIT) throw new Error('This task file is too large.');
   const value = JSON.parse(raw);
-  if (![1,2].includes(value?.version) || !Array.isArray(value.items) || value.items.length > 300) throw new Error('Invalid review list');
-  if (value.briefing !== undefined && (typeof value.briefing !== 'string' || value.briefing.length > 150000)) throw new Error('Invalid briefing');
-  if (value.reviewDate !== undefined && !validDate(value.reviewDate)) throw new Error('Invalid review date');
+  if (![1,2].includes(value?.version) || !Array.isArray(value.items) || value.items.length > 300) throw new Error('This task list could not be read.');
+  if (value.briefing !== undefined && (typeof value.briefing !== 'string' || value.briefing.length > 150000)) throw new Error('The email summary could not be read.');
+  if (value.reviewDate !== undefined && !validDate(value.reviewDate)) throw new Error('The summary date could not be read.');
   const workboardImports=mergeWorkboardImports(value.workboardImports);
-  if(value.forecastContexts!==undefined&&(!value.forecastContexts||typeof value.forecastContexts!=='object'||Array.isArray(value.forecastContexts)))throw new Error('Invalid workboard forecast contexts');
+  if(value.forecastContexts!==undefined&&(!value.forecastContexts||typeof value.forecastContexts!=='object'||Array.isArray(value.forecastContexts)))throw new Error('The saved schedule details could not be read.');
   const forecastContexts={};
-  for(const[wing,context]of Object.entries(value.forecastContexts||{})){if(!['vet','tas'].includes(wing)||context?.wing!==wing)throw new Error('Invalid workboard forecast contexts');forecastContexts[wing]=normaliseForecastContext(context);}
+  for(const[wing,context]of Object.entries(value.forecastContexts||{})){if(!['vet','tas'].includes(wing)||context?.wing!==wing)throw new Error('The saved schedule details could not be read.');forecastContexts[wing]=normaliseForecastContext(context);}
   const items = value.items.map(enrich);
   for (const x of items) {
     x.taskHelp=normaliseTaskHelpContext(x.taskHelp);
@@ -333,11 +333,11 @@ export function validateInbox(raw) {
       !Array.isArray(x.relatedTitles) || x.relatedTitles.length > 10 || x.relatedTitles.some(t=>typeof t !== 'string' || t.length > 300) ||
       !Array.isArray(x.dependsOn) || x.dependsOn.length > 20 || x.dependsOn.some(t=>typeof t !== 'string' || !t || t.length > 150 || t === x.taskKey) ||
       !Array.isArray(x.planAliases) || x.planAliases.length > 300 || x.planAliases.some(a=>!a || typeof a.id !== 'string' || a.id.length>160 || typeof a.title !== 'string' || a.title.length>1200) ||
-      !Array.isArray(x.dirty) || x.dirty.some(key => !EDITABLE.includes(key))) throw new Error('Invalid task fields: '+ (typeof x.title === 'string' ? x.title : 'untitled'));
+      !Array.isArray(x.dirty) || x.dirty.some(key => !EDITABLE.includes(key))) throw new Error('Check the details for this task: '+ (typeof x.title === 'string' ? x.title : 'untitled'));
   }
-  if (new Set(items.map(x=>x.id)).size !== items.length) throw new Error('Duplicate task IDs');
+  if (new Set(items.map(x=>x.id)).size !== items.length) throw new Error('Two tasks use the same reference. Keep the file so it can be checked.');
   const keys=items.map(x=>x.taskKey).filter(Boolean);
-  if (new Set(keys).size !== keys.length) throw new Error('Duplicate task keys');
+  if (new Set(keys).size !== keys.length) throw new Error('Two tasks use the same matching reference. Keep the file so it can be checked.');
   return {...value, version:2, items,workboardImports,forecastContexts};
 }
 export function mergeInbox(existing, incoming) {
@@ -366,7 +366,7 @@ export function mergeInbox(existing, incoming) {
       for (const key of dirty) merged[key]=old[key];
       items[index]=merged; updated++;
     } else {
-      if (items.length >= 300) throw new Error('The review list is full. Export a backup before removing old entries.');
+      if (items.length >= 300) throw new Error('The task list is full. Save a backup before removing old items.');
       items.push({...next,createdOn:next.createdOn||todaySydney(),id:crypto.randomUUID(),selected:false});added++;
     }
   }
@@ -487,7 +487,7 @@ export function migrateToPins(inbox,rawPlan,today=todaySydney()) {
       }
       days=plan.days;
     }
-  }catch {warning='Older daily plans could not be read. The original is kept under Export older daily plans.';}
+  }catch {warning='Older daily plans could not be read. Use Save older daily plans to keep a copy.';}
   const progress=reconcilePlans(inbox.items,days,today);
   const items=progress.items.map((item,i)=>{
     // A task marked done directly in the review list must remain done.
@@ -505,7 +505,7 @@ export function migrateToPins(inbox,rawPlan,today=todaySydney()) {
       items.push(enrich({id,taskKey:`personal:${id}`,personal:true,title:(split?.[1]||'My saved task').slice(0,300),action:(split?.[2]||key).slice(0,800),source:`Saved daily plan — ${date}\n${key}`,reason:'From your saved daily plan',url:safeUrl(task.url),links:safeUrl(task.url)?[task.url]:[],status:task.state==='done'?'done':'review',group:task.state==='deferred'?'later':'ready',pinnedDate:date===today&&task.state==='todo'?today:null,planAliases:[{id:task.id,title:task.title.slice(0,1200)}]}));
     }
   }
-  if(skipped)warning=`${skipped} older tasks remain in Export older daily plans because the task list is full.`;
+  if(skipped)warning=`${skipped} older tasks are still in your earlier plans because the task list is full. Use Save older daily plans to keep a copy.`;
   const consolidated=consolidateDuplicates(items);
   return {inbox:{...inbox,items:consolidated.items,pinWorkflowVersion:1},changed:true,warning};
 }

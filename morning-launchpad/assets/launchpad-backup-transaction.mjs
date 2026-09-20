@@ -1,5 +1,5 @@
 // Private, browser-local recovery. Portable handover files never contain this data.
-import {BACKUP_KEYS, RESTORE_KEY,createLaunchpadBackup} from './launchpad-backup.mjs?v=early-completion-1';
+import {BACKUP_KEYS, RESTORE_KEY,createLaunchpadBackup} from './launchpad-backup.mjs?v=plain-language-1';
 const KEYS={journal:RESTORE_KEY}, DATA_KEYS=Object.values(BACKUP_KEYS);
 
 const LOCK_NAME='wwhs-team-handover-transaction:v2';
@@ -11,19 +11,19 @@ const ALLOWED_KEYS=[...DATA_KEYS], MAX_VALUE=12000000;
 const object=value=>!!value&&typeof value==='object'&&!Array.isArray(value);
 const fail=message=>{throw new Error(message);};
 function transactionId(value){
-  if(typeof value!=='string'||!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,149}$/.test(value))fail('The Launchpad recovery reference is invalid.');
+  if(typeof value!=='string'||!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,149}$/.test(value))fail('The Launchpad recovery reference could not be read.');
   return value;
 }
 function validateMaps(before,after){
   const validValue=value=>value===null||typeof value==='string'&&value.length<=MAX_VALUE;
   if(!object(before)||!object(after)||!Object.keys(after).length||Object.keys(before).length!==Object.keys(after).length||
-    Object.keys(after).some(key=>!ALLOWED_KEYS.includes(key)||!Object.hasOwn(before,key)||!validValue(before[key])||!validValue(after[key])))fail('The Launchpad storage change is invalid. Nothing has been saved.');
+    Object.keys(after).some(key=>!ALLOWED_KEYS.includes(key)||!Object.hasOwn(before,key)||!validValue(before[key])||!validValue(after[key])))fail('This Launchpad change could not be checked. Nothing has been saved.');
 }
 function assertCurrent(storage,expected){
-  for(const [key,value] of Object.entries(expected))if(storage.getItem(key)!==value)fail('Saved records changed in another tab. Reload and reopen the latest Launchpad file before continuing.');
+  for(const [key,value] of Object.entries(expected))if(storage.getItem(key)!==value)fail('Your saved work changed in another tab. Reload and open the latest Launchpad backup before continuing.');
 }
 function assertNoJournal(storage){if(storage.getItem(KEYS.journal)!==null)fail('An unfinished Launchpad backup needs recovery before another change.');}
-function assertMarker(storage,raw){if(storage.getItem(KEYS.journal)!==raw)fail('Another tab changed the Launchpad recovery marker. Its work has been protected.');}
+function assertMarker(storage,raw){if(storage.getItem(KEYS.journal)!==raw)fail('Another tab changed the Launchpad recovery details. Its work has been kept.');}
 function writeValue(storage,key,value){if(value===null)storage.removeItem(key);else storage.setItem(key,value);}
 const changedKeys=(before,after)=>Object.keys(after).filter(key=>before[key]!==after[key]);
 const valueSize=(key,value)=>value===null?0:key.length+value.length;
@@ -42,14 +42,14 @@ function markerText(id,phase){
   return JSON.stringify({version:2,transactionId:id,phase})+(phase==='prepared'?' ':'');
 }
 function parseMarker(raw){
-  let value;try{value=JSON.parse(raw);}catch{fail('The Launchpad recovery marker could not be read. Keep this browser data intact for recovery.');}
-  if(!object(value))fail('The Launchpad recovery marker is invalid. Keep this browser data intact for recovery.');
+  let value;try{value=JSON.parse(raw);}catch{fail('The Launchpad recovery details could not be read. Do not clear this browser’s data.');}
+  if(!object(value))fail('The Launchpad recovery details could not be checked. Do not clear this browser’s data.');
 
-  if(value.version!==2||Object.keys(value).some(key=>!['version','transactionId','phase'].includes(key))||!['prepared','committed'].includes(value.phase))fail('This Launchpad recovery marker is not supported. Keep this browser data intact for recovery.');
+  if(value.version!==2||Object.keys(value).some(key=>!['version','transactionId','phase'].includes(key))||!['prepared','committed'].includes(value.phase))fail('These Launchpad recovery details cannot be used by this version. Do not clear this browser’s data.');
   transactionId(value.transactionId);return value;
 }
 function validateBody(value,id){
-  if(!object(value)||value.version!==2||value.transactionId!==id||Object.keys(value).some(key=>!['version','transactionId','before','after','preservePrevious'].includes(key))||value.preservePrevious!==undefined&&typeof value.preservePrevious!=='boolean')fail('The saved Launchpad recovery copy is invalid. No conflicting progress has been replaced.');
+  if(!object(value)||value.version!==2||value.transactionId!==id||Object.keys(value).some(key=>!['version','transactionId','before','after','preservePrevious'].includes(key))||value.preservePrevious!==undefined&&typeof value.preservePrevious!=='boolean')fail('The Launchpad recovery copy could not be checked. Your newer work has not been replaced.');
   transactionId(value.transactionId);validateMaps(value.before,value.after);return value;
 }
 function quota(error){return error?.name==='QuotaExceededError'||/quota|storage.+full/i.test(error?.message||'');}
@@ -63,13 +63,13 @@ function indexedDBBackend(){
     if(connection)return connection;
     connection=new Promise((resolve,reject)=>{
       const factory=globalThis.indexedDB;
-      if(!factory){reject(new Error('IndexedDB is unavailable'));return;}
+      if(!factory){reject(new Error('This browser cannot open its recovery storage.'));return;}
       let request,settled=false;
       const rejectOnce=error=>{if(!settled){settled=true;reject(error);}};
       try{request=factory.open(DB_NAME,1);}catch(error){rejectOnce(error);return;}
       request.onupgradeneeded=()=>{if(!request.result.objectStoreNames.contains(STORE_NAME))request.result.createObjectStore(STORE_NAME,{keyPath:'transactionId'});};
-      request.onerror=()=>rejectOnce(request.error||new Error('The recovery database could not be opened'));
-      request.onblocked=()=>rejectOnce(new Error('Another page is blocking the recovery database'));
+      request.onerror=()=>rejectOnce(request.error||new Error('The saved recovery copies could not be opened'));
+      request.onblocked=()=>rejectOnce(new Error('Another page is preventing access to the recovery copies'));
       request.onsuccess=()=>{
         const db=request.result;
         if(settled){db.close();return;}
@@ -86,8 +86,8 @@ function indexedDBBackend(){
         try{transaction=mode==='readwrite'?db.transaction(STORE_NAME,mode,{durability:'strict'}):db.transaction(STORE_NAME,mode);}
         catch(error){if(error?.name!=='TypeError'&&error?.name!=='NotSupportedError')throw error;transaction=db.transaction(STORE_NAME,mode);}
         transaction.oncomplete=()=>resolve(result);
-        transaction.onabort=()=>reject(transaction.error||request?.error||new Error('The recovery database change was cancelled'));
-        transaction.onerror=()=>reject(transaction.error||request?.error||new Error('The recovery database change failed'));
+        transaction.onabort=()=>reject(transaction.error||request?.error||new Error('The change to the recovery copy was cancelled'));
+        transaction.onerror=()=>reject(transaction.error||request?.error||new Error('The recovery copy could not be updated'));
         request=operation(transaction.objectStore(STORE_NAME));
         request.onsuccess=()=>{result=request.result;};
       }catch(error){try{transaction?.abort();}catch{}reject(error);}
@@ -104,12 +104,12 @@ function indexedDBBackend(){
 let defaultBackend;
 function backendFor(options){
   const backend=options.backend===undefined?(defaultBackend??=indexedDBBackend()):options.backend;
-  if(!backend||['put','get','delete'].some(method=>typeof backend[method]!=='function'))fail('This browser cannot keep the recovery copy needed for a Launchpad import. Your records are unchanged.');
+  if(!backend||['put','get','delete'].some(method=>typeof backend[method]!=='function'))fail('This browser cannot save the recovery copy needed to open a Launchpad backup. Your saved work has not changed.');
   return backend;
 }
 async function withLock(options,action){
   const locks=options.locks===undefined?globalThis.navigator?.locks:options.locks;
-  if(typeof locks?.request!=='function')fail('This browser cannot protect a Launchpad backup across tabs. Use an up-to-date browser with this page opened securely. Your records are unchanged.');
+  if(typeof locks?.request!=='function')fail('This browser cannot safely open a backup while other tabs may be editing. Use an up-to-date browser and the website’s https:// address. Your saved work has not changed.');
   let entered=false;
   try{
     return await locks.request(LOCK_NAME,{mode:'exclusive',ifAvailable:true},lock=>{
@@ -117,7 +117,7 @@ async function withLock(options,action){
     });
   }catch(error){
     if(entered)throw error;
-    throw failure('This browser could not protect the Launchpad backup across tabs. Your records are unchanged.',error);
+    throw failure('The backup could not be opened safely while other tabs may be editing. Your saved work has not changed.',error);
   }
 }
 async function deleteOwned(backend,id){try{await backend.delete(id);return false;}catch{return true;}}
@@ -127,7 +127,7 @@ function rollbackValues(storage,body,rawMarker){
   const expected={};
   for(const key of Object.keys(body.before)){
     const current=storage.getItem(key);
-    if(current!==body.before[key]&&current!==body.after[key])fail('Records changed while opening the backup was interrupted. No conflicting values were replaced; the recovery copy has been kept.');
+    if(current!==body.before[key]&&current!==body.after[key])fail('Your work changed after opening the backup was interrupted. Your newer work has not been replaced. The recovery copy has been kept.');
     expected[key]=current;
   }
   // Return space released by growing keys before restoring keys that had shrunk.
@@ -145,7 +145,7 @@ async function clearCommitted(storage,body,rawMarker,backend){
       await backend.savePrevious(body);
     }
     assertMarker(storage,rawMarker);assertCurrent(storage,body.after);storage.removeItem(KEYS.journal);
-  }catch(error){throw failure('The backup was opened, but recovery must finish protecting its previous copy. Your private recovery copy has been kept. Choose Retry recovery.',error,{recoveryRequired:true});}
+  }catch(error){throw failure('The backup opened, but the copy of your previous work still needs to be saved. Your private recovery copy has been kept. Choose Retry recovery.',error,{recoveryRequired:true});}
   // The marker must disappear first: a crash may leave an unused private copy,
   // but must never leave a recovery marker pointing to a deleted copy.
   return {committed:true,cleanupPending:await deleteOwned(backend,body.transactionId)};
@@ -156,9 +156,9 @@ export async function applyLaunchpadRestore(storage,beforeInput,afterInput,optio
   // Callers cannot alter the plan while a Web Lock or database write is awaited.
   const before={...beforeInput},after={...afterInput};
   const teamGuard={...(options.teamGuard||captureLaunchpadTeamGuard(storage))};
-  if(TEAM_GUARD_KEYS.some(key=>!Object.hasOwn(teamGuard,key)||teamGuard[key]!==null&&typeof teamGuard[key]!=='string')||Object.keys(teamGuard).length!==TEAM_GUARD_KEYS.length)fail('The shared work session could not be checked. Your saved records are unchanged.');
+  if(TEAM_GUARD_KEYS.some(key=>!Object.hasOwn(teamGuard,key)||teamGuard[key]!==null&&typeof teamGuard[key]!=='string')||Object.keys(teamGuard).length!==TEAM_GUARD_KEYS.length)fail('The shared work session could not be checked. Your saved work has not changed.');
   const checkTeam=()=>{
-    if(teamGuard[TEAM_GUARD_KEYS[1]]!==null||TEAM_GUARD_KEYS.some(key=>storage.getItem(key)!==teamGuard[key]))fail('The shared work session changed in another tab. Reload before opening this backup. Your saved records are unchanged.');
+    if(teamGuard[TEAM_GUARD_KEYS[1]]!==null||TEAM_GUARD_KEYS.some(key=>storage.getItem(key)!==teamGuard[key]))fail('The shared work session changed in another tab. Reload before opening this backup. Your saved work has not changed.');
   };
   return withLock(options,async()=>{
     checkTeam();assertNoJournal(storage);assertCurrent(storage,before);
@@ -166,21 +166,21 @@ export async function applyLaunchpadRestore(storage,beforeInput,afterInput,optio
     if(changed.length<=1&&!options.preservePrevious){
       if(changed.length){
         try{writeValue(storage,changed[0],after[changed[0]]);}
-        catch(error){throw failure('This browser could not save the change. Your saved records are unchanged.',error);}
+        catch(error){throw failure('This browser could not save the change. Your saved work has not changed.',error);}
       }
       return {committed:true,cleanupPending:false};
     }
     const backend=backendFor(options),id=transactionId((options.createId||(()=>globalThis.crypto.randomUUID()))());
     const body={version:2,transactionId:id,before,after,...(options.preservePrevious?{preservePrevious:true}:{})};
     try{await backend.put(body);}
-    catch(error){throw failure('The browser could not save the recovery copy, so the import did not start and your records are unchanged.',error);}
+    catch(error){throw failure('The browser could not save a recovery copy. The backup was not opened and your saved work has not changed.',error);}
     try{
       // Both native progress and another marker may have changed during IDB work.
       checkTeam();assertNoJournal(storage);assertCurrent(storage,before);
     }catch(error){await deleteOwned(backend,id);throw error;}
     const prepared=markerText(id,'prepared'),committed=markerText(id,'committed');
     try{storage.setItem(KEYS.journal,prepared);}
-    catch(error){await deleteOwned(backend,id);throw failure('The browser could not reserve the small recovery marker. The import did not start and your records are unchanged.',error);}
+    catch(error){await deleteOwned(backend,id);throw failure('The browser could not save the recovery details. The backup was not opened and your saved work has not changed.',error);}
     try{
       checkTeam();assertMarker(storage,prepared);assertCurrent(storage,before);
       const expected={...before};
@@ -195,7 +195,7 @@ export async function applyLaunchpadRestore(storage,beforeInput,afterInput,optio
       try{rollbackValues(storage,body,prepared);}
       catch(recoveryError){throw failure('The import did not finish and recovery is required. Its private recovery copy has been kept.',recoveryError,{recoveryRequired:true});}
       const cleanupPending=await deleteOwned(backend,id);
-      throw failure(quota(error)?'There was not enough browser storage to finish the import. Your previous records have been restored.':'The import could not finish. Your previous records have been restored.',error,{cleanupPending});
+      throw failure(quota(error)?'There was not enough browser storage to finish the import. Your previous work has been restored.':'The import could not finish. Your previous work has been restored.',error,{cleanupPending});
     }
     return clearCommitted(storage,body,committed,backend);
   });
@@ -209,9 +209,9 @@ export async function recoverLaunchpadRestore(storage,options={}){
 
     const backend=backendFor(options);let body;
     try{body=await backend.get(marker.transactionId);}
-    catch(error){throw failure('The private recovery copy could not be opened. Saved records and its recovery marker have been kept.',error,{recoveryRequired:true});}
+    catch(error){throw failure('The private recovery copy could not be opened. Your saved work and recovery details have been kept.',error,{recoveryRequired:true});}
     assertMarker(storage,raw);
-    if(!body)throw failure('The private recovery copy is missing. Saved records and its recovery marker have been kept; another import cannot start yet.',null,{recoveryRequired:true});
+    if(!body)throw failure('The private recovery copy is missing. Your saved work and recovery details have been kept. Another backup cannot be opened yet.',null,{recoveryRequired:true});
     validateBody(body,marker.transactionId);
     if(marker.phase==='committed'){
       // A later external edit is never overwritten to make an old commit match.
@@ -220,7 +220,7 @@ export async function recoverLaunchpadRestore(storage,options={}){
       return {status:'committed',cleanupPending:result.cleanupPending};
     }
     try{rollbackValues(storage,body,raw);}
-    catch(error){throw failure('Recovery could not finish. Saved records and the private recovery copy have been kept for another attempt. '+error.message,error,{recoveryRequired:true});}
+    catch(error){throw failure('Recovery could not finish. Your saved work and private recovery copy have been kept so you can try again. '+error.message,error,{recoveryRequired:true});}
     return {status:'rolled-back',cleanupPending:await deleteOwned(backend,marker.transactionId)};
   });
 }

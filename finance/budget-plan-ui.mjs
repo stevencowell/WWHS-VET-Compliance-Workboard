@@ -1,4 +1,4 @@
-import {validateBudgetPlan, upcomingPlan} from './budget-plan.mjs';
+import {validateBudgetPlan, upcomingPlan} from './budget-plan.mjs?v=plain-language-1';
 
 const PLAN_KEY='finance_studio_budget_plan_v1';
 const money=value=>new Intl.NumberFormat('en-AU',{style:'currency',currency:'AUD'}).format(value);
@@ -17,7 +17,7 @@ function details(title,body){const node=el('details',undefined,'plan-details');n
 export function setupBudgetPlanUi({engine,storage,sample=false}){
   const host=document.getElementById('budgetPlanPanel');
   const header=el('div',undefined,'card-header'),heading=el('div');
-  heading.append(el('p','YOUR PAYMENT PLAN','eyebrow'),el('h2','Bills and set-asides'),el('p','Keep regular payments and money moved between your accounts in view.','helper'));
+  heading.append(el('p','YOUR PAYMENT PLAN','eyebrow'),el('h2','Bills and set-asides'),el('p','See regular payments and transfers between your accounts.','helper'));
   const open=button('Import budget plan','importBudgetPlan','btn btn-primary');open.disabled=sample;
   header.append(heading,open);
   const input=el('input');input.type='file';input.accept='.json,application/json';input.id='budgetPlanFile';input.hidden=true;input.disabled=sample;
@@ -30,15 +30,15 @@ export function setupBudgetPlanUi({engine,storage,sample=false}){
   function loadSaved(){
     savedPlan=null;loadError='';
     try{const raw=storage.getItem(PLAN_KEY);if(raw&&raw!=='null')savedPlan=validateBudgetPlan(JSON.parse(raw));}
-    catch(error){loadError='The saved payment plan could not be read. Keep an encrypted backup before importing a replacement. '+error.message;}
+    catch(error){loadError='The saved payment plan could not be read. Save an encrypted backup before replacing it. '+error.message;}
   }
   function refresh(){loadSaved();renderSaved();}
   function renderSaved(){
     content.replaceChildren();
     if(loadError)content.append(el('p',loadError,'plan-warning'));
-    if(!savedPlan){content.append(el('p',sample?'Budget-plan imports are available in your private workspace. Leave the sample to use your own records.':'Import a prepared budget-plan file to review its annual targets and payment schedule. Your statements are imported separately.','helper'));return;}
+    if(!savedPlan){content.append(el('p',sample?'Budget-plan imports are available in your private workspace. Leave the sample to use your own records.':'Import a budget-plan file to review annual targets and scheduled payments. Import statements separately.','helper'));return;}
     content.append(el('p',savedPlan.title,'plan-title'),el('p',`Source information: ${dateLabel(savedPlan.sourceAsOf)} · Budget year: ${dateLabel(savedPlan.financialYearStart)} to ${dateLabel(savedPlan.financialYearEnd)}`,'helper'));
-    content.append(el('p','This is a partial plan for review. These are scheduled instructions, not evidence of payments made or money available. Account matching and opening set-aside balances still need checking.','plan-warning'));
+    content.append(el('p','This plan is incomplete and needs checking. Scheduled payments do not show what has been paid or what money is available. Check account matches and opening amounts set aside.','plan-warning'));
     const controls=el('div',undefined,'plan-controls'),date=el('input');date.type='date';date.id='planAsOf';date.value=asOf;date.className='control';
     const windowSelect=el('select');windowSelect.id='planDays';windowSelect.className='control';for(const n of [30,60,90]){const option=el('option',`${n} days`);option.value=n;windowSelect.append(option);}windowSelect.value=String(days);
     controls.append(labelled('Starting from',date),labelled('Look ahead',windowSelect));content.append(controls);
@@ -53,16 +53,16 @@ export function setupBudgetPlanUi({engine,storage,sample=false}){
           ['Transfers out',result.totals.transfersOut,'Holding, offset, savings and car / rego'],
           ['Transfers back',result.totals.transfersBack,'From holding — not income'],
         ]){const card=el('div',undefined,'plan-total');card.append(el('span',label),el('strong',money(amount)),el('small',note));cards.append(card);}
-        forecast.append(cards,el('p',`${dateLabel(result.asOf)} to ${dateLabel(result.throughDate)} · Transfers are shown separately to avoid counting them as spending. Dates follow the register, and may differ from bill due dates.`, 'helper'));
+        forecast.append(cards,el('p',`${dateLabel(result.asOf)} to ${dateLabel(result.throughDate)} · Transfers are separate from spending. These are register dates; bill due dates may differ.`, 'helper'));
         if(result.occurrences.length)forecast.append(table(['Scheduled date','Payment / purpose','Movement','From → to','Amount'],result.occurrences.map(row=>[dateLabel(row.date),row.title,typeLabels[row.type],`${row.from} → ${row.to}`,money(row.amount)])));
-        else forecast.append(el('p','No instructions fall within this date window.','helper'));
+        else forecast.append(el('p','No payments or transfers are scheduled in these dates.','helper'));
         const assumptions=el('div');result.assumptions.forEach(note=>assumptions.append(el('p',note,'helper')));forecast.append(details('How these dates are calculated',assumptions));
       }catch(error){forecast.append(el('p',error.message,'plan-warning'));}
     }
     date.addEventListener('change',()=>{asOf=date.value;forecastRows();});windowSelect.addEventListener('change',()=>{days=Number(windowSelect.value);forecastRows();});forecastRows();
     const scheduleList=table(['Instruction','Movement','From → to','Amount / frequency','Starts','Ends'],savedPlan.schedules.map(row=>[row.title,typeLabels[row.type],`${row.from} → ${row.to}`,`${money(row.amount)} / ${row.frequency}`,dateLabel(row.startDate),row.endDate?dateLabel(row.endDate):'Ongoing']));
-    content.append(details(`All ${savedPlan.schedules.length} register instructions`,scheduleList));
-    const notes=el('div');notes.append(el('p',`Account labels awaiting matching: ${savedPlan.accountMappings.map(row=>row.label).join(', ')||'None supplied'}.`,'helper'));
+    content.append(details(`All ${savedPlan.schedules.length} scheduled payments and transfers`,scheduleList));
+    const notes=el('div');notes.append(el('p',`Accounts still to match: ${savedPlan.accountMappings.map(row=>row.label).join(', ')||'None supplied'}.`,'helper'));
     savedPlan.notes.forEach(note=>notes.append(el('p',note,'helper')));savedPlan.sources.forEach(source=>notes.append(el('p',`${source.kind}: ${source.name}`,'helper')));
     content.append(details('Sources and items to review',notes));
   }
@@ -81,7 +81,7 @@ export function setupBudgetPlanUi({engine,storage,sample=false}){
     const close=button('Cancel','cancelBudgetPlan');close.addEventListener('click',closeReview);
     const top=el('div',undefined,'card-header');top.append(reviewHeading,close);dialog.append(top,el('p',candidate.title,'plan-title'));
     dialog.append(el('p',`Source information: ${dateLabel(candidate.sourceAsOf)} · ${dateLabel(candidate.financialYearStart)} to ${dateLabel(candidate.financialYearEnd)}`,'helper'));
-    dialog.append(el('p','Nothing is selected yet. Choose the annual targets you want to use. This is a partial budget: check income, everyday costs and other bills separately. Statements and other saved records will be preserved.','plan-warning'));
+    dialog.append(el('p','Choose the annual targets to use; none are selected yet. This is a partial budget, so check income, everyday costs and other bills separately. Your statements and other saved records stay unchanged.','plan-warning'));
     const sourceNotes=el('div');candidate.notes.forEach(note=>sourceNotes.append(el('p',note,'helper')));candidate.sources.forEach(source=>sourceNotes.append(el('p',`${source.kind}: ${source.name}`,'helper')));dialog.append(details('Read source notes and assumptions',sourceNotes));
     const update=()=>{error.hidden=true;updatePreview();};
     function selectionRows(lines,isReference=false){
@@ -89,7 +89,7 @@ export function setupBudgetPlanUi({engine,storage,sample=false}){
         const choice=el('input');choice.type='checkbox';choice.className='plan-line-select';choice.setAttribute('aria-label',`Use ${line.category}: ${line.item}${isReference?' historical estimate':''}`);
         const amount=el('input');amount.type='number';amount.min='0';amount.max='100000000';amount.step='0.01';amount.value=String(line.annual_budget);amount.className='control plan-amount';amount.setAttribute('aria-label',`Annual amount for ${line.category}: ${line.item}${isReference?' historical estimate':''}`);
         const unsupported=line.basis==='unsupported-fallback';choice.disabled=unsupported;amount.disabled=unsupported;
-        const note=el('div');note.append(el('strong',unsupported?'Unsupported fallback · cannot import':isReference?'Historical estimate · check before use':'Proposed from payment register'),el('p',line.notes,'helper'));
+        const note=el('div');note.append(el('strong',unsupported?'No supporting source · cannot import':isReference?'Older estimate · check before use':'Suggested from payment register'),el('p',line.notes,'helper'));
         selected.push({choice,amount,line});
         choice.addEventListener('change',()=>{reviewed.input.checked=false;replace.input.checked=false;update();});
         amount.addEventListener('input',()=>{reviewed.input.checked=false;update();});
@@ -97,8 +97,8 @@ export function setupBudgetPlanUi({engine,storage,sample=false}){
       }));
     }
     dialog.append(el('h3','Proposed annual targets'),selectionRows(candidate.budgetLines));
-    if(candidate.referenceBudget.length){const historical=el('div');historical.append(el('p','These targets came from the old app and are not a confirmed current budget. Select one only after checking its amount. Choose either the proposed target or the historical target for the same item.','helper'),selectionRows(candidate.referenceBudget,true));dialog.append(details(`${candidate.referenceBudget.length} historical reference lines`,historical));}
-    dialog.append(el('p',`${candidate.schedules.length} payment instructions will be saved separately, including transfers. Start dates are treated as the first occurrence; end dates are inclusive. No instruction is marked as paid or funded.`, 'helper'));
+    if(candidate.referenceBudget.length){const historical=el('div');historical.append(el('p','These old-app estimates are not a confirmed current budget. Check each amount before selecting it. For each item, choose either the suggested target or the older estimate.','helper'),selectionRows(candidate.referenceBudget,true));dialog.append(details(`${candidate.referenceBudget.length} older estimates`,historical));}
+    dialog.append(el('p',`${candidate.schedules.length} scheduled payments and transfers will be saved separately. Each starts on its start date and includes its end date. None is marked as paid or funded.`, 'helper'));
     const mode=el('select');mode.id='budgetPlanMode';mode.className='control';for(const [value,label] of [['merge','Keep other budget targets'],['replace','Replace the entire budget']]){const option=el('option',label);option.value=value;mode.append(option);}mode.addEventListener('change',()=>{replace.input.checked=false;updatePreview();});dialog.append(labelled('How to apply selected targets',mode));
     const reviewed=checkbox('I have checked the selected annual amounts.','budgetAmountsReviewed');reviewed.input.addEventListener('change',update);
     const replace=checkbox('Replace all existing budget targets with just my selected lines.','budgetReplaceConfirmed');replace.input.addEventListener('change',update);

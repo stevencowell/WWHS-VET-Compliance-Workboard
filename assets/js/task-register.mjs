@@ -14,7 +14,7 @@ export function registerEntryKind(item) {
 export function registerEntryCounts(items) {
   return items.reduce((counts,item) => { counts[registerEntryKind(item)]++; return counts; }, {core:0,scheduled:0,procedure:0,event:0});
 }
-const entryLabels = {core:['core duty','core duties'],scheduled:['scheduled occurrence','scheduled occurrences'],procedure:['procedure guide','procedure guides'],event:['saved event','saved events']};
+const entryLabels = {core:['main duty','main duties'],scheduled:['scheduled task','scheduled tasks'],procedure:['how-to guide','how-to guides'],event:['saved event','saved events']};
 export function registerEntrySummary(items) {
   return Object.entries(registerEntryCounts(items)).filter(([,count])=>count).map(([kind,count])=>`${count} ${entryLabels[kind][count===1?0:1]}`).join(' · ');
 }
@@ -45,17 +45,17 @@ const node = (tag, text, attrs = {}) => {
 };
 const sydneyToday = () => new Intl.DateTimeFormat('en-CA', {timeZone:'Australia/Sydney'}).format(new Date());
 const button = (text, action) => { const result = node('button', text, {type:'button'}); result.addEventListener('click', action); return result; };
-const views = {all:'All entries',core:'Core duties',scheduled:'Scheduled occurrences',event:'Saved events',reference:'Procedure guides',open:'Not yet reviewed complete',past:'Past dates to review',focus:'Current focus',later:'Later dates',recurring:'Recurring duties',trigger:'Triggered or undated',gaps:'Needs checking',complete:'Completed / reviewed'};
+const views = {all:'All entries',core:'Main duties',scheduled:'Scheduled tasks',event:'Saved events',reference:'How-to guides',open:'Not yet complete',past:'Past dates to check',focus:'Current task list',later:'Later dates',recurring:'Repeating duties',trigger:'As needed / no date set',gaps:'Needs checking',complete:'Completed'};
 
 export function createTaskRegister({wing, label, getAdapter, getSavedItems = () => []}) {
   const panel = node('details', undefined, {class:'workspace-register'});
-  const summary = node('summary', `Full ${label} task register · all dates`);
+  const summary = node('summary', `All ${label} tasks · all dates`);
   panel.append(summary);
-  const body = node('section', undefined, {'aria-label':`Full ${label} task register`});
-  body.append(node('h2', `Full ${label} task register`), node('p', 'See every task loaded in this workboard, including past dates, later work and duties triggered by an event. A past date means check the record; it does not prove the work was missed.'));
+  const body = node('section', undefined, {'aria-label':`All ${label} tasks`});
+  body.append(node('h2', `All ${label} tasks`), node('p', 'Past, current and upcoming tasks. Check past dates against your records—the work may already be done.'));
   const sourceNote = node('p', '', {class:'register-source'});
   const coverage = node('details', undefined, {class:'register-coverage'});
-  coverage.append(node('summary', 'Coverage check — what still needs confirming'));
+  coverage.append(node('summary', 'What still needs checking'));
   const coverageList = node('ul'); coverage.append(coverageList);
   body.append(sourceNote, coverage);
   const filters = node('div', undefined, {class:'register-filters'});
@@ -67,11 +67,17 @@ export function createTaskRegister({wing, label, getAdapter, getSavedItems = () 
   for (const [text, control] of [['Year',year],['Term / area',area],['Show',view],['Search all listed tasks',search]]) { const wrapper = node('label', text); wrapper.append(control); filters.append(wrapper); }
   const counts = node('p','',{class:'register-counts',role:'status','aria-live':'polite'});
   const breakdown = node('p','',{class:'register-counts','aria-label':'Entry types in the selected year and area'});
-  const countNote = node('p',wing==='vet' ? '2026 lists core duties once, including duties that repeat. The 2027 plan expands repeat work into scheduled occurrences. Procedure guides are reference instructions; saved events are separate items started in this browser. The two annual totals are not a like-for-like count of responsibilities.' : 'Core duties are listed once, including duties that repeat. Scheduled occurrences are individual planned repetitions; procedure guides are reference instructions.',{class:'register-review-note'});
+  const countHelp = node('details',undefined,{class:'register-coverage'});
+  countHelp.append(node('summary','How tasks are counted'),node('p',wing==='vet' ? '2026 counts each main duty once. In 2027, repeating duties have a task for each date, so the totals differ. How-to guides explain the steps; saved events are tasks you have added.' : 'Main duties are counted once. Scheduled tasks show each planned repeat. How-to guides explain the steps.',{class:'register-review-note'}));
   const message = node('p','',{class:'register-message',role:'status','aria-live':'polite'});
   const reviewNote = node('p','',{class:'register-review-note'});
   const list = node('div',undefined,{class:'register-list'});
-  body.append(filters, counts, breakdown, countNote, reviewNote, message, list);
+  const reviewHelp = node('details',undefined,{class:'register-coverage'});
+  reviewHelp.append(node('summary','More about completion ticks'));
+  const reviewRules = node('ul');
+  for(const text of ['Each tick covers this task and its checklist for the year shown, including work done elsewhere.','Your notes are kept. Unticking restores the earlier checklist.','The recorded date is when you ticked the task, not when you did the work.','Keep the required evidence and verifier details; the tick does not add them.','Repeating duties still need doing next time. Dates and next year’s tasks stay unchanged.'])reviewRules.append(node('li',text));
+  reviewHelp.append(reviewRules);
+  body.append(filters, counts, breakdown, countHelp, reviewNote, reviewHelp, message, list);
   const backup = node('details',undefined,{class:'register-backup'});
   backup.append(node('summary','Back up or restore review ticks'));
   const exportButton = button('Back up review ticks', () => {
@@ -92,11 +98,11 @@ export function createTaskRegister({wing, label, getAdapter, getSavedItems = () 
       }
       const merged = {...review.records};
       for (const [key,value] of Object.entries(restored.records)) if (!merged[key] || value.reviewedOn > merged[key].reviewedOn) merged[key] = value;
-      if (save({version:1,records:merged})) { message.textContent='Review backup merged. Existing ticks with the same or a later review date were kept.'; render(); }
+      if (save({version:1,records:merged})) { message.textContent='Ticks added from the backup. Newer or same-date ticks were kept.'; render(); }
     } catch (error) { message.textContent=`Could not restore: ${error.message} Saved review ticks are unchanged.`; }
     finally {file.value='';}
   });
-  backup.append(node('p','These ticks stay in this browser. The backup contains VET and TAS review ticks only; existing task and workboard backups remain separate.'),exportButton,file);
+  backup.append(node('p','This file backs up only VET and TAS completion ticks. Use Save backup at the top for the rest of your work.'),exportButton,file);
   body.append(backup); panel.append(body);
   let snapshot, review = {version:1,records:{}}, raw = null, blocked = false;
   function load() {
@@ -120,7 +126,7 @@ export function createTaskRegister({wing, label, getAdapter, getSavedItems = () 
       const key = reviewKey(wing,item,reviewYear), tick=review.records[key];
       const appliesToYear=item.year !== 'ongoing' || reviewYear === snapshot.currentYear;
       const personalDone=appliesToYear&&!!item.recordKey&&saved.some(task=>task.origin?.wing===wing&&task.origin.recordKey===item.recordKey&&task.status==='done');
-      const schedule=appliesToYear?item.schedule:{kind:item.schedule?.kind||'undated',label:`Continuing duty — ${reviewYear} occurrence dates are not loaded. Open the source task for its timing rule.`};
+      const schedule=appliesToYear?item.schedule:{kind:item.schedule?.kind||'undated',label:`Repeating duty — ${reviewYear} dates are not loaded. Open the task to check when it is needed.`};
       const signedOff = globalThis.WWHS_TASK_REVIEW.resolve(review.records,wing,item.recordKey || item.id,reviewYear,sydneyToday(),registerDate({schedule}));
       return {...item,schedule,statusAppliesToYear:appliesToYear,inFocus:appliesToYear&&item.inFocus,reviewYear,key,tick:signedOff?tick:undefined,sourceComplete:appliesToYear&&item.complete&&!item.externallyReviewed,personalDone,reviewComplete:!!signedOff || appliesToYear&&item.complete || personalDone};
     });
@@ -130,11 +136,11 @@ export function createTaskRegister({wing, label, getAdapter, getSavedItems = () 
     const today=sydneyToday(), items=getItems(), query=search.value.trim().toLocaleLowerCase('en-AU');
     const filtered=items.filter(item=>matchesRegisterView(item,view.value,today)&&(!query||[item.title,item.area,item.owner,item.schedule?.label,...(item.gaps||[])].join(' ').toLocaleLowerCase('en-AU').includes(query)));
     for (const option of view.options) option.textContent=`${views[option.value]} (${items.filter(item=>matchesRegisterView(item,option.value,today)).length})`;
-    summary.textContent=`Full ${label} task register · all dates`;
+    summary.textContent=`All ${label} tasks · all dates`;
     counts.textContent=`Showing ${filtered.length} of ${items.length} entries for ${year.value==='all'?'all listed years':year.value}. ${snapshot.roleLabel || ''}${snapshot.roleLabel?'.':''}`;
-    breakdown.textContent=`In the selected year / area: ${registerEntrySummary(items) || 'no entries'}.`;
+    breakdown.textContent=`This selection: ${registerEntrySummary(items) || 'no entries'}.`;
     const datedYearLoaded=snapshot.items.some(item=>item.year===year.value&&registerDate(item));
-    reviewNote.textContent=`${year.value!=='all'&&!datedYearLoaded?'No dated calendar is loaded for this year. Only continuing duties and other explicitly listed controls are shown. ':''}Reviewed complete signs off this task and all its applicable checklist steps, whether you used the card or completed the work elsewhere. The card shows a dated completion note and retains your existing notes. Untick to restore the earlier checklist. The date records your review, not when the work happened; evidence and verifier details are not invented. Each tick belongs to its labelled year and occurrence; 2026 ticks do not complete 2027 work. Ongoing duties still repeat. You can mark future work complete early once all applicable work is done; scheduled dates stay unchanged.`;
+    reviewNote.textContent=`${year.value!=='all'&&!datedYearLoaded?'Dates are not loaded for this year; only the listed duties appear. ':''}Tick Reviewed complete when the task and its checklist are finished. You can tick future work off early. Untick to undo.`;
     list.replaceChildren();
     if (!filtered.length) list.append(node('p','No entries match these filters. Try All entries or All listed years.'));
     for (const item of filtered) {
@@ -148,7 +154,7 @@ export function createTaskRegister({wing, label, getAdapter, getSavedItems = () 
       main.append(node('p',[item.year==='ongoing'?`Ongoing duty · review ${item.reviewYear}`:item.year,entryLabels[registerEntryKind(item)][0],item.area,item.owner].filter(Boolean).join(' · '),{class:'register-meta'}));
       main.append(node('p',item.schedule?.label || 'Timing needs checking',{class:'register-timing'}));
       const date=registerDate(item), past=date&&date<today;
-      const status=item.sourceComplete?`Workboard status: ${item.status}`:item.personalDone?'Done in your saved task list':item.tick?.completed?`Reviewed complete${item.tick.completedEarly?' early':''} for ${item.reviewYear} · ${item.tick.reviewedOn}`:past?'Past date — review the record':item.historyOnly?'Historical record — review completion':item.inFocus?'Included in the current forecast':item.procedureOnly?'Procedure guide':item.schedule?.kind==='trigger'?'Bring forward when the trigger occurs':'Outside the current forecast';
+      const status=item.sourceComplete?`Workboard status: ${item.status}`:item.personalDone?'Done in your saved task list':item.tick?.completed?`Reviewed complete${item.tick.completedEarly?' early':''} for ${item.reviewYear} · ${item.tick.reviewedOn}`:past?'Past date — review the record':item.historyOnly?'Past task — check if it is done':item.inFocus?'In your current task list':item.procedureOnly?'Procedure guide':item.schedule?.kind==='trigger'?'Do this when needed':'Not in your current task list';
       main.append(node('p',status,{class:'register-status'}));
       if(!item.reviewComplete&&item.gaps?.length){const gaps=node('details',undefined,{class:'register-gap'});gaps.append(node('summary',`${item.gaps.length} ${item.gaps.length===1?'check':'checks'} needed`));const ul=node('ul');item.gaps.forEach(gap=>ul.append(node('li',gap)));gaps.append(ul);main.append(gaps);}
       const control=node('label',undefined,{class:'register-tick'});
@@ -166,7 +172,7 @@ export function createTaskRegister({wing, label, getAdapter, getSavedItems = () 
         const remove=node('button','Remove review tick',{type:'button','aria-label':`Remove review tick: ${item.title}`});
         remove.disabled=blocked;
         remove.addEventListener('click',()=>{
-          if(save({version:1,records:{...review.records,[item.key]:{completed:false,reviewedOn:today}}})) {message.textContent=`Review tick removed: ${item.title}. Its separately recorded completion is unchanged.`;render();}
+          if(save({version:1,records:{...review.records,[item.key]:{completed:false,reviewedOn:today}}})) {message.textContent=`Review tick removed: ${item.title}. Its other completion record is unchanged.`;render();}
         });
         main.append(remove);
       }

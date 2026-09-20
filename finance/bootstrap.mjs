@@ -1,14 +1,14 @@
-import {createLocalVault} from './security/local-vault.mjs?v=backup-flow-2';
-import {createPrivateStorage} from './security/private-storage.mjs';
+import {createLocalVault} from './security/local-vault.mjs?v=plain-language-1';
+import {createPrivateStorage} from './security/private-storage.mjs?v=plain-language-1';
 import {sampleDataset} from './sample.mjs';
-import {FINANCE_PROMPT_TOPICS,buildFinancePrompt,buildSafeFinanceSummary} from './prompts.mjs';
-import {validateBudgetPlan} from './budget-plan.mjs';
-import {setupBudgetPlanUi} from './budget-plan-ui.mjs';
+import {FINANCE_PROMPT_TOPICS,buildFinancePrompt,buildSafeFinanceSummary} from './prompts.mjs?v=plain-language-1';
+import {validateBudgetPlan} from './budget-plan.mjs?v=plain-language-1';
+import {setupBudgetPlanUi} from './budget-plan-ui.mjs?v=plain-language-1';
 import {createFinanceBackupReminder} from './backup-reminder.mjs';
 import {downloadDestination} from '../assets/js/save-backup-file.mjs?v=backup-flow-2';
-import {choosePrivateBackupDestination,getBackupFolder} from '../assets/js/backup-folder.mjs?v=area-backups-1';
-import {mountBackupFolderSettings} from '../assets/js/backup-folder-ui.mjs?v=area-backups-1';
-import {mountBackupFileBrowser} from '../assets/js/backup-file-browser.mjs?v=area-backups-1';
+import {choosePrivateBackupDestination,getBackupFolder} from '../assets/js/backup-folder.mjs?v=plain-language-1';
+import {mountBackupFolderSettings} from '../assets/js/backup-folder-ui.mjs?v=plain-language-1';
+import {mountBackupFileBrowser} from '../assets/js/backup-file-browser.mjs?v=plain-language-1';
 import {createWorkspaceNavigationAllowance} from '../assets/js/workspace-navigation.mjs?v=workspace-navigation-2';
 
 if(window.self!==window.top)throw new Error('Open Finance Studio directly to use this workspace.');
@@ -47,9 +47,9 @@ function renderBackupReminder() {
   $('financeBackupToolbar').dataset.state=panel.dataset.state;
   $('financeBackupToolbarStatus').textContent=panel.dataset.state==='error'?'Save needs attention':state.canConfirm?'Check your downloaded file':state.needsBackup?'Backup recommended':state.confirmedAt?'Backup up to date':'Private encrypted backup';
   let message;
-  if(state.confirming)message='Recording your backup confirmation in this encrypted workspace…';
+  if(state.confirming)message='Saving your backup confirmation…';
   else if(state.canConfirm)message='Check Files or Downloads for the encrypted backup, then confirm below.';
-  else if(!state.enabled)message='Backup reminders are off. Your records still need occasional encrypted backups; alerts for changes that have not saved remain on.';
+  else if(!state.enabled)message='Backup reminders are off. Save an encrypted backup occasionally. Warnings about unsaved changes stay on.';
   else if(state.needsBackup)message=fatalSaveError||storage?.status().dirty?'Your latest changes need a private encrypted backup. Check the save status above too.':'Your changes are saved in this browser. A private encrypted backup is recommended before you leave.';
   else if(state.confirmedAt)message=`You confirmed an encrypted backup on ${new Date(state.confirmedAt).toLocaleString('en-AU')}. New edits will start the reminder again.`;
   else message='Backup reminders are on for new changes. No backup has been confirmed here yet.';
@@ -96,8 +96,8 @@ async function openWorkspace(isSample=false) {
   engineAttempted=true;
   await loadScript('./vendor/chart.js/chart.umd.js');
   await loadScript('./classification-config.js');
-  await loadScript('./transfer-classification.js');
-  await loadScript('./main.js?v=backup-flow-2');
+  await loadScript('./transfer-classification.js?v=plain-language-1');
+  await loadScript('./main.js?v=plain-language-1');
   engine=window.FinanceEngine;
   window.addEventListener('finance-ai-help',event=>openPrompt(event.detail?.topic||'spending'));
   window.addEventListener('finance-data-changed',updateCoverage);
@@ -171,7 +171,7 @@ const problem=document.createElement('div');problem.id='saveProblem';problem.cla
 problem.innerHTML='<strong>Your latest edits need attention.</strong> <span id="saveProblemMessage"></span><div class="inline-actions"><button class="btn btn-secondary" id="retrySave">Try saving again</button><button class="btn btn-secondary" id="reloadSaved">Reload saved records</button></div>';
 document.querySelector('.workspace-status').after(problem);
 $('retrySave').addEventListener('click',async()=>{try{for(const [k,v] of rejectedWrites)window.FINANCE_STORAGE.setItem(k,v);await storage.flush();await vault.exportBackup({expectedRevision:storage.status().revision});fatalSaveError=null;reportStatus(storage.status());}catch(error){reportStatus({state:error.code==='conflict'?'conflict':'error',error:error.message});}});
-$('reloadSaved').addEventListener('click',()=>{if(confirm('Reload the saved records? Any unsaved edits in this tab will be discarded. Download a recovery backup first.')){resetting=true;fatalSaveError=null;$('financeWorkspace').hidden=true;storage.close({discardUnsaved:true});vault.lock();location.reload();}});
+$('reloadSaved').addEventListener('click',()=>{if(confirm('Reload the saved records? This discards unsaved edits in this tab. Save a recovery backup first.')){resetting=true;fatalSaveError=null;$('financeWorkspace').hidden=true;storage.close({discardUnsaved:true});vault.lock();location.reload();}});
 
 $('vaultForm').addEventListener('submit',async event=>{
   event.preventDefault();if(starting||previousSaving||resetting)return;
@@ -289,6 +289,6 @@ window.addEventListener('beforeunload',event=>{
 });
 // A back/forward cache entry must never restore an already-unlocked financial screen.
 window.addEventListener('pageshow',event=>{if(event.persisted)location.reload();});
-try{vault=await createLocalVault();await showGate();try{if(sessionStorage.getItem('finance_ui_start_error')){sessionStorage.removeItem('finance_ui_start_error');$('gateMessage').textContent='Finance could not finish opening. The page has been safely reset; your saved encrypted records are unchanged. Try again, or keep a copy of your backup if this continues.';}}catch{}}catch(error){$('gateTitle').textContent='Private storage is unavailable.';$('gateDescription').textContent=error.message;$('gateMessage').textContent='You can still explore the separate sample workspace, or restore an encrypted backup below.';}
+try{vault=await createLocalVault();await showGate();try{if(sessionStorage.getItem('finance_ui_start_error')){sessionStorage.removeItem('finance_ui_start_error');$('gateMessage').textContent='Finance could not open. The page has reset; your saved encrypted records are unchanged. Try again. If this keeps happening, keep a copy of your backup.';}}catch{}}catch(error){$('gateTitle').textContent='Private storage is unavailable.';$('gateDescription').textContent=error.message;$('gateMessage').textContent='You can still explore the separate sample workspace, or restore an encrypted backup below.';}
 if(location.hash==='#import-backup')showBackupImport();
 if(vault)await refreshPreviousBackup();

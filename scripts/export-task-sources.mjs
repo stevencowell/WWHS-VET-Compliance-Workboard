@@ -1,6 +1,6 @@
 // Publish selected task/source metadata only. Original source files stay local.
 import {readFile, writeFile} from 'node:fs/promises';
-import {orderTasks} from '../task-sources/model.mjs';
+import {orderTasks} from '../task-sources/model.mjs?v=plain-language-1';
 
 if (!process.argv[2]) throw new Error('Supply the reviewed local audit JSON path.');
 const audit = JSON.parse(await readFile(process.argv[2], 'utf8'));
@@ -51,5 +51,5 @@ const publicWording = (_key, value) => typeof value === 'string' ? value
 const serialised = JSON.stringify(publicData,publicWording,2) + '\n';
 if (/"(?:localPath|localCopy|publicCheck|correctionsRaw|repositoryLocator|codeLocator)"|\b[A-Z]:[\\/]|AppData[\\/]/i.test(serialised)) throw new Error('Private audit metadata detected in public output.');
 if (publicData.rows.length !== 126 || new Set(publicData.rows.map(row=>row.rowKey)).size !== 126) throw new Error('Task inventory does not reconcile.');
-await writeFile(new URL('../task-sources/data.json',import.meta.url),serialised);
+await writeFile(new URL('../task-sources/data.json?v=plain-language-1',import.meta.url),serialised);
 console.log(`Exported ${publicData.rows.length} tasks and ${publicData.sources.length} source records; original files and local audit metadata excluded.`);

@@ -26,7 +26,7 @@
       referenceYear: 2026,
       operationalStart: "2026-08-26",
       currentTerm: "2026 reference",
-      currentWeek: "Frozen 26 August snapshot",
+      currentWeek: "Saved 26 August reference",
       storageKey: "wwhs-vet-compliance-workboard:v3",
       releaseState: "PUBLIC TRAINING PREVIEW — OFFICIAL SYSTEMS REMAIN THE RECORD"
     },
@@ -68,7 +68,7 @@
         roles: ["coordinator", "assistant"], owner: "Coordinator", verifier: "Coordinator / Principal delegate", system: "wwhs-drive", source: "WWHS 2026 working calendar + current RTO communication",
         steps: ["Open the original meeting material and RTO communication.", "Separate information, actions, deadlines, decisions and escalations.", "Assign each action to the responsible role rather than defaulting everything to the coordinator.", "Brief affected staff and confirm the official destination for each action.", "Track closure and retain the approved meeting/action record."],
         doneWhen: "Minutes/actions are stored in the approved location, affected staff have been briefed and every action has an owner and follow-up date.",
-        why: "Meetings only improve compliance when instructions become owned, verifiable work.", commonTrap: "Saving meeting notes without translating them into actions or checking later RTO updates."
+        why: "Meeting actions need a responsible person, follow-up and a completion check.", commonTrap: "Saving meeting notes without translating them into actions or checking later RTO updates."
       },
       {
         id: "t3-reconcile-evidence",

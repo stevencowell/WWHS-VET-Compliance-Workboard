@@ -1,10 +1,10 @@
 const workStorage=()=>globalThis.WWHS_STORAGE||globalThis.localStorage;
 // One planning surface. Specialist records remain owned by their existing workboards.
-import '../../morning-launchpad/assets/summary-import.mjs?v=early-completion-1';
-import {installLaunchpadBackupReminder} from '../../morning-launchpad/assets/backup-reminder.mjs?v=workspace-navigation-2';
-import {INBOX_KEY, validateInbox, taskSection, todaySydney} from '../../morning-launchpad/assets/summary-core.mjs?v=email-cleanup-1';
-import {createTaskRegister} from './task-register.mjs?v=early-completion-1';
-import {installTeamEntry} from './team-entry.mjs?v=area-backups-1';
+import '../../morning-launchpad/assets/summary-import.mjs?v=plain-language-1';
+import {installLaunchpadBackupReminder} from '../../morning-launchpad/assets/backup-reminder.mjs?v=plain-language-1';
+import {INBOX_KEY, validateInbox, taskSection, todaySydney} from '../../morning-launchpad/assets/summary-core.mjs?v=plain-language-1';
+import {createTaskRegister} from './task-register.mjs?v=plain-language-1';
+import {installTeamEntry} from './team-entry.mjs?v=plain-language-1';
 
 const base = new URL('../../', import.meta.url);
 const wing = document.body.dataset.workboard || 'launchpad';
@@ -69,19 +69,19 @@ if (wing !== 'launchpad') {
   const main = document.getElementById('main-content');
   host = el('section', undefined, {class: 'workspace-home', 'aria-label': `${label} assigned work and notes`});
   const welcome = el('div', undefined, {class: 'workspace-welcome'});
-  welcome.append(el('p', `YOUR WORKSPACE · ${label}`, {class: 'eyebrow'}), el('h1', `${label}, with your day in view.`), el('p', 'Your scheduled duties and follow-ups appear here automatically. Review the next step and keep your notes with the work.'));
+  welcome.append(el('p', `YOUR WORKSPACE · ${label}`, {class: 'eyebrow'}), el('h1', `${label}, with your day in view.`), el('p', 'Your tasks and follow-ups, with a place for notes.'));
   forecastPanel = el('section', undefined, {class: 'workspace-forecast', 'aria-label': 'Scheduled work', 'aria-live': 'polite'});
   forecastHeading = el('h2', 'Checking the work schedule…');
-  forecastNote = el('p', 'Using the dates, duties and recorded progress already held in this workboard.');
+  forecastNote = el('p', 'Checking your task dates and saved progress.');
   forecastCount = el('p', '', {class: 'workspace-forecast-count'});
   const refreshForecast = el('button', 'Refresh schedule', {type: 'button', class: 'workspace-setup'});
   refreshForecast.addEventListener('click', () => enqueue(refreshScheduledWork));
   forecastPanel.append(forecastHeading, forecastNote, forecastCount, refreshForecast);
   board = el('summary-import', undefined, {'data-workstream': wing, 'data-scope': wing, id: 'shared-work'});
   fullRegister = createTaskRegister({wing,label,getAdapter:()=>window.WWHS_WORKBOARD_ADAPTER,getSavedItems:()=>board.inbox?.items||[]});
-  const scopeNote = el('p','The task count below is your current focus, not everything left this year. Open the full register for past dates, later work and triggered duties.',{class:'workspace-focus-note'});
+  const scopeNote = el('p',`This is your current task list. Open All ${label} tasks to see the full year.`,{class:'workspace-focus-note'});
   const sourceAccess = el('p',undefined,{class:'workspace-source-access'});
-  sourceAccess.append(el('a','Task sources & 2027 checks →',{href:new URL(`task-sources/?wing=${wing}`,base).href}),el('span',' The ordered 2026 list, its source evidence and where to check for 2027.'));
+  sourceAccess.append(el('a','Task sources & 2027 checks →',{href:new URL(`task-sources/?wing=${wing}`,base).href}),el('span',' Source documents for the tasks and what to check for 2027.'));
   host.append(welcome, flow(), scopeNote, fullRegister.element, sourceAccess, forecastPanel);
   specialist = el('details', undefined, {class: 'workspace-specialist'});
   specialistSummary = el('summary', `${label} tools, dates and recorded progress`);
@@ -212,22 +212,22 @@ async function bringRecordedWork({closedOnly = false} = {}) {
     await board.trackWork(descriptor, {silent: true});
     added++;
   }
-  if (added) board.say(`${added} recorded ${label} ${added === 1 ? 'follow-up is' : 'follow-ups are'} now in My work. Your original checklists and records are kept.`);
+  if (added) board.say(`${added} recorded ${label} ${added === 1 ? 'follow-up is' : 'follow-ups are'} now in My work. Your original records are unchanged.`);
 }
 let forecastDeferred = false;
 async function refreshScheduledWork() {
   const adapter = window.WWHS_WORKBOARD_ADAPTER;
   if (!adapter || wing === 'launchpad' || host.hidden || !board.started) return;
   if (window.WWHS_TEAM_SESSION && !window.WWHS_TEAM_SESSION.isEditing()) {
-    forecastHeading.textContent='Shared team snapshot';
-    forecastNote.textContent='Showing the last imported progress. Start a team session to refresh scheduled tasks or edit shared work.';
-    forecastCount.textContent='Use Team handover to import the latest file.';
+    forecastHeading.textContent='Viewing shared progress';
+    forecastNote.textContent='You are viewing the last backup opened. Open the latest backup for editing to make changes.';
+    forecastCount.textContent='Use Open backup at the top.';
     forecastPanel.dataset.state='paused';
     return;
   }
   if (board.blocked) {
     forecastHeading.textContent = 'Schedule refresh paused';
-    forecastNote.textContent = 'Reload saved work below before refreshing. Any text you are editing stays on this page.';
+    forecastNote.textContent = 'Reload saved work below first. Your unfinished text stays here.';
     forecastPanel.dataset.state = 'paused';
     return;
   }
@@ -275,7 +275,7 @@ async function refreshScheduledWork() {
     const section = taskSection(item, context.date);
     if (Object.hasOwn(counts, section)) counts[section]++;
   }
-  forecastCount.textContent = `${context.roleLabel ? context.roleLabel + ' · ' : ''}As at ${context.date} · ${counts.ready} to review now · ${counts.upcoming} coming up · ${counts.waiting} waiting. Cards you finish or remove stay out of your active list.`;
+  forecastCount.textContent = `${context.roleLabel ? context.roleLabel + ' · ' : ''}As at ${context.date} · ${counts.ready} to review now · ${counts.upcoming} coming up · ${counts.waiting} waiting. Finished or removed tasks stay off this list.`;
   forecastPanel.dataset.ready = 'true';
 }
 window.addEventListener('wwhs:records-updated', () => enqueue(refreshScheduledWork));

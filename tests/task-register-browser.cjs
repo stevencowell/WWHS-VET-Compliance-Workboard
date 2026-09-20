@@ -37,7 +37,7 @@ const base='http://127.0.0.1:4173',reviewKey='wwhs-task-register-review:v1';
         assert.ok(await register.locator('.register-row').count()>0);assert.ok(await register.locator('.register-row').count()<100);await area.selectOption('all');
       }else{
         await year.selectOption('2027');await view.selectOption('all');assert.ok(await register.locator('.register-row').count()>0);
-        assert.ok((await register.locator('.register-review-note').innerText()).includes('No dated calendar is loaded'));
+        assert.ok((await register.locator(':scope > section > .register-review-note').innerText()).includes('Tick Reviewed complete'));
         assert.equal(await register.locator('.register-tick input:checked').count(),0,'2026 review cannot complete future ongoing duties');
       }
       await year.selectOption('all');await view.selectOption('all');assert.equal(await register.locator('.register-row').count(),snapshot.items.length);

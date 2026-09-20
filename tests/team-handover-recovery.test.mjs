@@ -66,7 +66,7 @@ test('inspection reports missing copies independently without replacing original
   assert.equal(inspected.complete,false);assert.deepEqual(inspected.issues.map(item=>item.section),['baseline']);
   assert.equal(Object.hasOwn(inspected.hydrated.active,'baselineData'),false);
   assert.deepEqual(inspected.hydrated.recovery.data,f.data);assert.deepEqual(inspected.hydrated.pendingExport,f.meta.pendingExport);
-  await assert.rejects(hydrateTeamMetadata(compact,db.options),/copy is missing/);
+  await assert.rejects(hydrateTeamMetadata(compact,db.options),/copy needed for recovery is missing/);
   db.bodies.delete(compact.pendingExport.payloadRef.id);db.bodies.delete(compact.recovery.dataRef.id);
   const missing=await inspectTeamMetadata(raw,db.options);assert.deepEqual(missing.issues.map(item=>item.section),['baseline','recovery','pending']);
   assert.deepEqual(missing.stored,compact);assert.equal(missing.hydrated.pendingExport,null);
@@ -116,7 +116,7 @@ test('reconnect retains known revision conflicts while old refs are missing',()=
   const sameRevision=createBackup({snapshot:f.data,previous:f.file,editor:'Steve',exportId:'different-two',savedAt:when});
   const wrongParent=createBackup({snapshot:f.data,previous:sameRevision,editor:'Steve',exportId:'wrong-three',savedAt:when});
   const other=createBackup({snapshot:f.data,editor:'Steve',workspaceId:'another-team',exportId:'another-one',savedAt:when});
-  for(const [file,pattern] of [[f.file,/older/],[sameRevision,/same revision/],[wrongParent,/different parent/],[other,/different team/]]){
+  for(const [file,pattern] of [[f.file,/older/],[sameRevision,/same version number/],[wrongParent,/different backup/],[other,/different team/]]){
     assert.throws(()=>buildReconnectPlan(f.storage,file,{...reconnectOptions,allowUnverifiedLineage:true}),pattern);
   }
   assert.equal(f.storage.writes.length,0);
@@ -124,7 +124,7 @@ test('reconnect retains known revision conflicts while old refs are missing',()=
 
 test('unreadable prior connection needs explicit reconnect acknowledgement; first connection does not',()=>{
   const f=fixture();f.storage.values.set(KEYS.metadata,'PRIVATE broken metadata');
-  assert.throws(()=>buildReconnectPlan(f.storage,f.file,reconnectOptions),/Review and confirm/);
+  assert.throws(()=>buildReconnectPlan(f.storage,f.file,reconnectOptions),/Confirm that this is the shared file/);
   const plan=buildReconnectPlan(f.storage,f.file,{...reconnectOptions,allowUnverifiedLineage:true});
   assert.equal(plan.lineage,'unverified-reconnect');assert.equal(plan.before[KEYS.metadata],'PRIVATE broken metadata');
   f.storage.values.delete(KEYS.metadata);assert.equal(buildReconnectPlan(f.storage,f.file,reconnectOptions).lineage,'first-connection');
@@ -171,7 +171,7 @@ test('archive quota failure or later preparation failure never changes any live 
   for(const failingWrite of [1,2,3]){
     const f=fixture(),db=backend(),before=all(f.storage),plan=buildReconnectPlan(f.storage,f.file,reconnectOptions);let writes=0;
     const put=db.api.put;db.api.put=async body=>{if(++writes===failingWrite)throw new DOMException('Full','QuotaExceededError');await put(body);};
-    await assert.rejects(prepareReconnectPlan(plan,db.options),/no saved progress was changed/);
+    await assert.rejects(prepareReconnectPlan(plan,db.options),/saved progress is unchanged/);
     assert.deepEqual(all(f.storage),before);assert.equal(f.storage.writes.length,0);
     if(failingWrite>1)assert.equal((await readTeamArchive({version:1,id:'private-copy-1',kind:'archive'},db.options)).metadataRaw,json(f.meta));
   }
@@ -227,9 +227,9 @@ test('malformed current data refuses import or safety creation before any privat
 test('archive cannot overwrite an existing immutable body or be read as a portable payload',async()=>{
   const f=fixture(),db=backend(),value={metadataRaw:json(f.meta),data:f.data,capturedAt:when},options={backend:db.api,createId:()=> 'fixed'};
   const ref=await archiveTeamState(value,options),before=copy(db.bodies.get('fixed'));
-  await assert.rejects(archiveTeamState({...value,metadataRaw:'different'},options),/no saved progress was changed/);
+  await assert.rejects(archiveTeamState({...value,metadataRaw:'different'},options),/saved progress is unchanged/);
   assert.deepEqual(db.bodies.get('fixed'),before);assert.deepEqual(await readTeamArchive(ref,options),value);
-  await assert.rejects(readTeamArchive({...ref,kind:'handover'},options),/reference is invalid/);
+  await assert.rejects(readTeamArchive({...ref,kind:'handover'},options),/saved backup record is damaged or unsupported/);
 });
 
 
@@ -255,7 +255,7 @@ test('VET and TAS revision conflict checks remain independent',()=>{
   const tas=createBackup({snapshot:f.data,scope:'tas',editor:'Diane',workspaceId:'tas-team',exportId:'tas-one',savedAt:when});
   assert.equal(buildReconnectPlan(f.storage,tas,{...reconnectOptions,scope:'tas'}).lineage,'first-connection');
   assert.throws(()=>buildReconnectPlan(f.storage,vet,{...reconnectOptions,scope:'tas'}),/VET backup/);
-  const fork={...vet,exportId:'other-vet-one'};assert.throws(()=>buildReconnectPlan(f.storage,fork,{...reconnectOptions,scope:'vet'}),/same revision/);
+  const fork={...vet,exportId:'other-vet-one'};assert.throws(()=>buildReconnectPlan(f.storage,fork,{...reconnectOptions,scope:'vet'}),/same version number/);
 });
 test('scoped safety backups roundtrip without including the other area',()=>{
   const f=fixture(),file=createSafetyBackup({snapshot:f.data,scope:'tas',editor:'Steve',savedAt:when,snapshotId:'tas-safety'});

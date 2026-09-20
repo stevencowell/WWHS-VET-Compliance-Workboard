@@ -1,8 +1,8 @@
 <!doctype html>
-<html lang="en-AU"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'"><title>Finance Studio</title><link rel="icon" href="data:,"><link rel="stylesheet" href="./styles.css"><link rel="stylesheet" href="./studio.css?v=area-backups-1"><link rel="stylesheet" href="../assets/css/private-backup-reminder.css?v=area-backups-1"><link rel="stylesheet" href="../assets/css/backup-folder.css?v=backup-flow-2"><script src="./frame-guard.js"></script><script type="module" src="./bootstrap.mjs?v=workspace-navigation-2"></script></head><body>
+<html lang="en-AU"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'"><title>Finance Studio</title><link rel="icon" href="data:,"><link rel="stylesheet" href="./styles.css"><link rel="stylesheet" href="./studio.css?v=area-backups-1"><link rel="stylesheet" href="../assets/css/private-backup-reminder.css?v=area-backups-1"><link rel="stylesheet" href="../assets/css/backup-folder.css?v=backup-flow-2"><script src="./frame-guard.js"></script><script type="module" src="./bootstrap.mjs?v=plain-language-1"></script></head><body>
 <a class="skip-link" href="#app">Skip to finance</a>
 <header class="workspace-header"><a class="workspace-brand" href="https://stevencowell.github.io/WWHS-VET-Compliance-Workboard/morning-launchpad/"><span class="workspace-mark" aria-hidden="true">◒</span>Daily Launchpad</a><nav class="workspace-areas" aria-label="Workspace areas"><a href="https://stevencowell.github.io/WWHS-VET-Compliance-Workboard/#home">Home</a><a href="https://stevencowell.github.io/WWHS-VET-Compliance-Workboard/morning-launchpad/">Launchpad</a><a href="https://stevencowell.github.io/WWHS-VET-Compliance-Workboard/#vet-home">VET</a><a href="https://stevencowell.github.io/WWHS-VET-Compliance-Workboard/head-teacher-tas/#home">TAS</a><a href="#overview" aria-current="page">Finance</a></nav><span class="local-badge">On this browser</span></header>
-<section class="gate-wrap" id="financeGate"><div class="welcome"><p class="eyebrow">FINANCE STUDIO · YOUR PRIVATE WORKSPACE</p><h1>Your money, with room to breathe.</h1><p>A clearer view, saved on this browser.</p></div><aside class="backup-toolbar" aria-label="Finance backup controls"><div class="backup-toolbar-copy"><strong class="backup-toolbar-label">Finance</strong><span class="backup-toolbar-status">Password protected</span></div><div class="backup-toolbar-actions"><button class="btn btn-secondary" id="gateImportBackup" aria-controls="restoreVaultDetails">Open backup…</button><button class="btn btn-primary backup-toolbar-primary" id="gateSaveBackup">Save backup…</button></div></aside><div class="gate-card"><div><p class="eyebrow">A LITTLE PRIVACY</p><h2 id="gateTitle">Opening Finance Studio…</h2><p class="helper" id="gateDescription">Checking this browser for your saved workspace.</p><form id="vaultForm" hidden><label for="vaultPassword">Password<input type="password" id="vaultPassword" class="control" autocomplete="current-password" required minlength="10" maxlength="256"></label><label id="confirmPasswordLabel" hidden>Confirm password<input type="password" id="confirmPassword" class="control" autocomplete="new-password" minlength="10" maxlength="256"></label><button class="btn btn-primary" id="unlockFinance" type="submit">Unlock Finance</button></form><p class="gate-message" id="gateMessage" role="status"></p><button class="btn btn-ghost" id="trySample">Explore with sample figures</button></div><aside class="gate-aside"><h3>Your records stay private.</h3><p>Your password protects the Finance records saved in this browser. Keep a backup and its password: clearing browser data can remove this workspace.</p><p>Use Open backup to bring your records from another browser or device.</p><details id="restoreVaultDetails"><summary>Open an encrypted backup</summary><p>Choose your Finance backup (.json) and enter its password. On a phone, look in Files or Downloads. Opening a backup replaces this browser’s Finance records after your confirmation. The previous encrypted copy is kept here until the next replacement; save it elsewhere before clearing browser data.</p><div id="financeBackupFiles" tabindex="-1" aria-label="Finance backup files"></div><details id="financeGateBackupSettings"><summary>Folder options</summary></details><input type="file" id="restoreVaultFile" accept=".json" hidden><p id="financeSelectedBackup" role="status"></p><label>Backup password<input type="password" id="restoreVaultPassword" class="control" autocomplete="off"></label><div class="inline-actions"><button class="btn btn-secondary" id="restoreVault">Open backup</button><button class="btn btn-ghost" id="cancelRestoreBackup">Cancel</button></div><p id="restoreVaultMessage" role="status"></p><section id="gatePreviousBackupSection" hidden><p>The most recent replaced workspace is kept encrypted in this browser. It needs its original password.</p><button class="btn btn-ghost" id="gatePreviousBackup">Save previous copy…</button><p id="gatePreviousBackupMessage" role="status"></p></section></details></aside></div></section>
+<section class="gate-wrap" id="financeGate"><div class="welcome"><p class="eyebrow">FINANCE STUDIO · YOUR PRIVATE WORKSPACE</p><h1>Your money, with room to breathe.</h1><p>A clearer view, saved in this browser.</p></div><aside class="backup-toolbar" aria-label="Finance backup controls"><div class="backup-toolbar-copy"><strong class="backup-toolbar-label">Finance</strong><span class="backup-toolbar-status">Password protected</span></div><div class="backup-toolbar-actions"><button class="btn btn-secondary" id="gateImportBackup" aria-controls="restoreVaultDetails">Open backup…</button><button class="btn btn-primary backup-toolbar-primary" id="gateSaveBackup">Save backup…</button></div></aside><div class="gate-card"><div><p class="eyebrow">PASSWORD PROTECTED</p><h2 id="gateTitle">Opening Finance Studio…</h2><p class="helper" id="gateDescription">Checking this browser for your saved workspace.</p><form id="vaultForm" hidden><label for="vaultPassword">Password<input type="password" id="vaultPassword" class="control" autocomplete="current-password" required minlength="10" maxlength="256"></label><label id="confirmPasswordLabel" hidden>Confirm password<input type="password" id="confirmPassword" class="control" autocomplete="new-password" minlength="10" maxlength="256"></label><button class="btn btn-primary" id="unlockFinance" type="submit">Unlock Finance</button></form><p class="gate-message" id="gateMessage" role="status"></p><button class="btn btn-ghost" id="trySample">Explore with sample figures</button></div><aside class="gate-aside"><h3>Your records stay private.</h3><p>Your password protects the Finance records saved in this browser. Keep a backup and its password: clearing browser data can remove this workspace.</p><p>Use Open backup to bring your records from another browser or device.</p><details id="restoreVaultDetails"><summary>Open an encrypted backup</summary><p>Choose your Finance backup (.json), then enter its password. On a phone, check Files or Downloads. You must confirm before it replaces this browser’s Finance records. The previous encrypted copy stays here until the next replacement. Save that copy elsewhere before clearing browser data.</p><div id="financeBackupFiles" tabindex="-1" aria-label="Finance backup files"></div><details id="financeGateBackupSettings"><summary>Folder options</summary></details><input type="file" id="restoreVaultFile" accept=".json" hidden><p id="financeSelectedBackup" role="status"></p><label>Backup password<input type="password" id="restoreVaultPassword" class="control" autocomplete="off"></label><div class="inline-actions"><button class="btn btn-secondary" id="restoreVault">Open backup</button><button class="btn btn-ghost" id="cancelRestoreBackup">Cancel</button></div><p id="restoreVaultMessage" role="status"></p><section id="gatePreviousBackupSection" hidden><p>The previous workspace is kept encrypted in this browser. Use its original password to open it.</p><button class="btn btn-ghost" id="gatePreviousBackup">Save previous copy…</button><p id="gatePreviousBackupMessage" role="status"></p></section></details></aside></div></section>
 <div id="financeWorkspace" hidden>
 <div class="workspace-status"><span id="workspaceMode">Private workspace</span><span id="saveStatus" role="status">Opening…</span><button class="btn btn-ghost" id="lockFinance">Lock Finance</button></div>
 <aside class="backup-toolbar" id="financeBackupToolbar" hidden aria-label="Finance backup controls"><div class="backup-toolbar-copy"><strong class="backup-toolbar-label">Finance</strong><span class="backup-toolbar-status" id="financeBackupToolbarStatus" role="status">Private encrypted backup</span></div><div class="backup-toolbar-actions"><button class="btn btn-secondary" id="importEncryptedBackup">Open backup…</button><button class="btn btn-primary backup-toolbar-primary" id="financeSaveBackup" aria-haspopup="dialog" aria-controls="financeBackupReminder">Save backup…</button></div></aside>
@@ -12,11 +12,11 @@
 <p id="financeBackupReminderMessage" role="status"></p>
 <div class="private-backup-actions"><button class="btn btn-primary" id="downloadEncryptedBackup">Save backup…</button><button class="btn btn-ghost backup-dialog-close" id="closeFinanceBackup">Close</button></div>
 <div class="private-backup-actions" id="financeBackupConfirmation" hidden><button class="btn btn-secondary" id="confirmFinanceBackup" hidden>I’ve saved this backup</button></div>
-<details class="private-backup-more" id="financeBackupSettings"><summary>Backup settings</summary><label><input type="checkbox" id="financeBackupAlerts" checked> Remind me to back up Finance changes before leaving</label><div class="private-backup-actions"><button class="btn btn-ghost" id="downloadFinanceCopy">Download a copy instead</button></div><section id="financePreviousBackupSection" hidden><button class="btn btn-ghost" id="savePreviousBackup">Save previous copy…</button><p class="private-backup-small">The workspace before the most recent replacement. Keep its original password. This does not back up current changes.</p><p id="financePreviousBackupMessage" role="status"></p></section><p class="private-backup-small">Finance uses its own remembered backup folder, separate from Launchpad and shared VET/TAS progress.</p></details>
+<details class="private-backup-more" id="financeBackupSettings"><summary>Backup settings</summary><label><input type="checkbox" id="financeBackupAlerts" checked> Remind me to back up Finance changes before leaving</label><div class="private-backup-actions"><button class="btn btn-ghost" id="downloadFinanceCopy">Download a copy instead</button></div><section id="financePreviousBackupSection" hidden><button class="btn btn-ghost" id="savePreviousBackup">Save previous copy…</button><p class="private-backup-small">The workspace before the most recent replacement. Keep its original password. This does not back up current changes.</p><p id="financePreviousBackupMessage" role="status"></p></section><p class="private-backup-small">Finance remembers its own backup folder. Launchpad and shared VET/TAS progress use separate folders.</p></details>
 </dialog>
 <section class="welcome workspace-welcome"><p class="eyebrow">FINANCE STUDIO · A CLEARER VIEW</p><h1>Your money, with room to breathe.</h1><p>See where things stand. Choose one useful next step.</p></section>
 <div class="finance-bar"><nav class="app-nav" aria-label="Finance views"><button class="nav-btn active" data-view="overview">Overview</button><button class="nav-btn" data-view="transactions">Transactions</button><button class="nav-btn" data-view="budget">Budget</button><button class="nav-btn" data-view="planning">Planning</button><button class="nav-btn" data-view="tools">All finance tools</button></nav><button class="btn btn-ghost" id="themeToggle" aria-pressed="false">Dark appearance</button></div>
-<div class="finance-actions"><button class="btn btn-primary" id="importCsv">Import statements (CSV)</button><details id="dataTools"><summary>More data options</summary><div class="data-options"><p class="helper">Use these options for older, readable Finance Studio files. For password-protected files, choose Open backup above. Bank statements use CSV; export a CSV from your bank first if you only have a PDF.</p><button class="btn btn-secondary" id="importData">Import legacy readable snapshot…</button><button class="btn btn-secondary" id="restoreBackup">Import legacy readable backup…</button><button class="btn btn-secondary" id="exportData">Download legacy readable snapshot</button><button class="btn btn-secondary" id="backupApp">Download legacy readable backup</button><p class="helper">Legacy files are not password protected and leave out some current workspace settings. Use Save backup for a complete encrypted copy.</p></div></details><button class="btn btn-ghost" id="openAssistant">AI help</button><span class="generated-time" id="generatedTime"></span><span id="buildStamp" hidden></span><input type="file" id="importFile" accept=".json" hidden><input type="file" id="csvImportFile" accept=".csv,.txt" multiple hidden><input type="file" id="restoreBackupFile" accept=".json" hidden></div>
+<div class="finance-actions"><button class="btn btn-primary" id="importCsv">Import statements (CSV)</button><details id="dataTools"><summary>More data options</summary><div class="data-options"><p class="helper">Use these options for older Finance Studio files without a password. For encrypted files, choose Open backup above. To import bank statements, download a CSV from your bank; PDFs cannot be imported here.</p><button class="btn btn-secondary" id="importData">Import older snapshot…</button><button class="btn btn-secondary" id="restoreBackup">Import older backup…</button><button class="btn btn-secondary" id="exportData">Download readable snapshot</button><button class="btn btn-secondary" id="backupApp">Download readable backup</button><p class="helper">These readable files have no password and leave out some settings. Use Save backup for a complete encrypted copy.</p></div></details><button class="btn btn-ghost" id="openAssistant">AI help</button><span class="generated-time" id="generatedTime"></span><span id="buildStamp" hidden></span><input type="file" id="importFile" accept=".json" hidden><input type="file" id="csvImportFile" accept=".csv,.txt" multiple hidden><input type="file" id="restoreBackupFile" accept=".json" hidden></div>
 <div class="local-note" id="sampleNotice" hidden>Sample workspace · Invented figures · Changes are temporary and kept separate from your private records.</div>
 <div class="local-note" id="emptyNotice" hidden><strong>Your workspace is ready.</strong> Start by importing a bank CSV or a full backup from your existing Finance Studio.</div>
     <main class="app" id="app" tabindex="-1">
@@ -65,7 +65,7 @@
             <div class="card-header">
               <div>
                 <h2>A little clarity for today</h2>
-                <p class="helper">A plain-English readout of the current scope, main pressure points, and what deserves attention first.</p>
+                <p class="helper">See what your records show and what needs attention.</p>
               </div>
             </div>
             <div id="overviewNarrative" class="overview-story"></div>
@@ -75,7 +75,7 @@
             <div class="card-header">
               <div>
                 <h2>One useful next step</h2>
-                <p class="helper">What is loaded, how clean it is, and the fastest high-value actions to take next.</p>
+                <p class="helper">Check your records and choose what to do next.</p>
               </div>
             </div>
             <div class="overview-scope-grid" id="overviewScopePills"></div>
@@ -88,8 +88,8 @@
         <section class="card is-hidden" id="overviewInspectPanel">
           <div class="card-header">
             <div>
-              <h2 id="overviewInspectTitle">Overview Inspection</h2>
-              <p class="helper" id="overviewInspectMeta">Select Inspect on a summary card to review the transactions behind that metric.</p>
+              <h2 id="overviewInspectTitle">Overview details</h2>
+              <p class="helper" id="overviewInspectMeta">Choose Inspect on a card to see the transactions behind its total.</p>
             </div>
             <button class="btn btn-ghost" id="closeOverviewInspect">Close</button>
           </div>
@@ -119,7 +119,7 @@
           <div class="card-header">
             <div>
               <h2>Money in &amp; out over time</h2>
-              <p class="helper">Toggle series to investigate shifts in income, expenses, and net outcome.</p>
+              <p class="helper">Show or hide chart lines to compare income, spending and the difference.</p>
             </div>
             <div class="inline-toggles">
               <label><input type="checkbox" id="showIncome" checked /> Income</label>
@@ -137,7 +137,7 @@
             <div class="card-header">
               <div>
                 <h2>Spending Mix</h2>
-                <p class="helper">Which categories dominate total outflow.</p>
+                <p class="helper">See where most of your spending went.</p>
               </div>
             </div>
             <div class="chart-wrap">
@@ -149,7 +149,7 @@
             <div class="card-header">
               <div>
                 <h2>Where Money Goes</h2>
-                <p class="helper">Click a bar to jump into category detail.</p>
+                <p class="helper">Select a bar to see that category.</p>
               </div>
             </div>
             <div class="bars" id="categoryBars"></div>
@@ -161,7 +161,7 @@
             <div class="card-header">
               <div>
                 <h2>Top Merchants</h2>
-                <p class="helper">Partners receiving the highest combined spend.</p>
+                <p class="helper">Businesses where you spent the most.</p>
               </div>
             </div>
             <ol class="rank-list" id="merchantList"></ol>
@@ -171,7 +171,7 @@
             <div class="card-header">
               <div>
                 <h2>Top Income Sources</h2>
-                <p class="helper">Largest inflow contributors over the selected period.</p>
+                <p class="helper">Largest income sources in this period.</p>
               </div>
             </div>
             <ol class="rank-list" id="incomeList"></ol>
@@ -182,7 +182,7 @@
           <div class="card-header">
             <div>
               <h2>Airbnb Performance Summary</h2>
-              <p class="helper">High-level property economics and pressure points.</p>
+              <p class="helper">Review property income, costs and repayments.</p>
             </div>
           </div>
           <div class="airbnb-grid" id="airbnbSummary"></div>
@@ -193,8 +193,8 @@
         <section class="card">
           <div class="card-header">
             <div>
-              <h2>Transaction Explorer</h2>
-              <p class="helper">Search, filter, sort, and export the full transaction ledger.</p>
+              <h2>Your transactions</h2>
+              <p class="helper">Search, filter, sort or export your transactions.</p>
             </div>
           </div>
 
@@ -333,14 +333,14 @@
               </div>
             </article>
             <article class="stat-pill">
-              <p>Mortgage Principal Paid</p>
+              <p>Mortgage repayments</p>
               <strong id="transactionLoanNet">$0</strong>
               <div class="stat-pill-actions">
                 <button
                   type="button"
                   class="btn btn-ghost"
                   data-transaction-inspect="mortgage-principal"
-                  aria-label="Inspect Mortgage Principal Paid"
+                  aria-label="Inspect Mortgage repayments"
                 >
                   Inspect
                 </button>
@@ -351,8 +351,8 @@
           <section class="card inset is-hidden" id="transactionInspectPanel">
             <div class="card-header">
               <div>
-                <h3 id="transactionInspectTitle">Transaction Metric Inspection</h3>
-                <p class="helper" id="transactionInspectMeta">Select Inspect on a summary card to review the transactions behind that metric.</p>
+                <h3 id="transactionInspectTitle">Transaction details</h3>
+                <p class="helper" id="transactionInspectMeta">Choose Inspect on a card to see the transactions behind its total.</p>
               </div>
               <button class="btn btn-ghost" id="closeTransactionInspect">Close</button>
             </div>
@@ -378,7 +378,7 @@
             <div class="card-header">
               <div>
                 <h3>Transfer Summary</h3>
-                <p class="helper">Totals by transfer area and account for the current filters.</p>
+                <p class="helper">Transfers by purpose and account, using your current filters.</p>
                 <p class="helper" title="Income = money entering my system from outside. Spending = money leaving my system to outside. Transfers = money moving between my accounts.">
                   Income = money entering my system from outside | Spending = money leaving my system to outside | Transfers = money moving between my accounts
                 </p>
@@ -446,7 +446,7 @@
           <div class="card-header">
             <div>
               <h2>Your annual budget</h2>
-              <p class="helper">Edit budgets, compare with actuals, and track variance by line item.</p>
+              <p class="helper">Set budget targets and compare them with recorded spending.</p>
             </div>
           </div>
 
@@ -472,12 +472,12 @@
                 />
               </div>
             </label>
-            <button class="btn btn-primary" id="addBudgetItem">Add Line</button>
+            <button class="btn btn-primary" id="addBudgetItem">Add budget item</button>
           </div>
 
           <div class="inline-actions">
             <button class="btn btn-secondary" id="saveBudget">Save Budget</button>
-            <button class="btn btn-ghost" id="resetBudget">Rebuild from Loaded Data</button>
+            <button class="btn btn-ghost" id="resetBudget">Rebuild from transactions</button>
           </div>
           <p class="helper" id="budgetFyMeta">Budget year: calculating...</p>
           <p class="helper" id="budgetCoverageHint" hidden></p>
@@ -491,7 +491,7 @@
                   <th>Item</th>
                   <th class="align-right">Annual Budget</th>
                   <th class="align-right">Actual - This Financial Year</th>
-                  <th class="align-right">Variance</th>
+                  <th class="align-right">Difference</th>
                   <th class="align-right">% Of Annual</th>
                   <th>Actions</th>
                 </tr>
@@ -550,8 +550,8 @@
         <section class="card is-hidden" id="budgetDetailPanel">
           <div class="card-header">
             <div>
-              <h2 id="budgetDetailTitle">Budget Line Detail</h2>
-              <p class="helper">Inspect transactions mapped to this budget line actual.</p>
+              <h2 id="budgetDetailTitle">Budget item details</h2>
+              <p class="helper">See the transactions counted against this budget item.</p>
             </div>
             <button class="btn btn-ghost" id="closeBudgetDetail">Close</button>
           </div>
@@ -580,7 +580,7 @@
             <div class="card-header">
               <div>
                 <h2>Before vs After</h2>
-                <p class="helper">Cleanup impact on the active financial-year scope.</p>
+                <p class="helper">See how category corrections changed this financial year’s figures.</p>
               </div>
             </div>
             <div id="budgetDiagnosticsPills" class="detail-stats"></div>
@@ -590,7 +590,7 @@
             <div class="card-header">
               <div>
                 <h2>Budget Suggestions</h2>
-                <p class="helper">Annual suggestions from FY-to-date actuals.</p>
+                <p class="helper">Annual estimates from recorded spending. Check the period and assumptions below.</p>
               </div>
             </div>
             <div class="table-wrap">
@@ -602,8 +602,8 @@
                     <th>How Estimated</th>
                     <th>Pattern</th>
                     <th class="align-right">Actual - This Financial Year</th>
-                    <th class="align-right">Reality Budget</th>
-                    <th class="align-right">Target Budget</th>
+                    <th class="align-right">Estimated annual spending</th>
+                    <th class="align-right">Suggested annual target</th>
                   </tr>
                 </thead>
                 <tbody></tbody>
@@ -616,14 +616,14 @@
           <div class="card-header">
             <div>
               <h2>Remaining Uncategorised</h2>
-              <p class="helper">Top canonical descriptions still in Uncategorised &gt; Other after cleanup.</p>
+              <p class="helper">Most common descriptions still in Uncategorised &gt; Other after category corrections.</p>
             </div>
           </div>
           <div class="table-wrap">
             <table class="data-table" id="budgetUncategorizedTable">
               <thead>
                 <tr>
-                  <th>Canonical Description</th>
+                  <th>Grouped description</th>
                   <th class="align-right">Count</th>
                   <th class="align-right">Amount</th>
                 </tr>
@@ -636,8 +636,8 @@
         <section class="card">
           <div class="card-header">
             <div>
-              <h2>Budget vs Actual Visual</h2>
-              <p class="helper">Top categories by budget pressure.</p>
+              <h2>Budget and recorded spending</h2>
+              <p class="helper">Categories with the largest gap between budget and spending.</p>
             </div>
           </div>
           <div class="chart-wrap">
@@ -651,7 +651,7 @@
           <div class="card-header">
             <div>
               <h2>Monthly Statement Review</h2>
-              <p class="helper">Deep month-by-month analysis with trend context and key narrative insights.</p>
+              <p class="helper">Compare months and review the main changes.</p>
             </div>
             <div class="inline-actions compact">
               <select id="monthSelector" class="control"></select>
@@ -690,7 +690,7 @@
               </div>
             </section>
             <section class="card inset">
-              <h3>Insights & Opportunities</h3>
+              <h3>Changes to review</h3>
               <ul id="insightsList" class="insights-list"></ul>
             </section>
           </div>
@@ -700,7 +700,7 @@
           <div class="card-header">
             <div>
               <h2>Monthly Cashflow Table</h2>
-              <p class="helper">Switch months quickly and investigate outliers.</p>
+              <p class="helper">Choose a month to check unusual amounts.</p>
             </div>
           </div>
           <div class="table-wrap">
@@ -721,15 +721,15 @@
         </section>
       </section>
 
-      <section class="view" id="tax-view"><p class="local-note">For record preparation and accountant review. Check the ownership percentage and every mapping; loan repayments are not automatically treated as interest.</p>
+      <section class="view" id="tax-view"><p class="local-note">Prepare records for your accountant to review. Check the ownership percentage and each tax category. Loan repayments are not automatically treated as interest.</p>
         <section class="card">
           <div class="card-header">
             <div>
               <h2>Tax Expense Tracker</h2>
-              <p class="helper">Track Airbnb and General deductions separately, with a combine option when needed.</p>
+              <p class="helper">Review Airbnb and general tax expenses separately or together.</p>
             </div>
             <div class="inline-actions compact">
-              <button class="btn btn-secondary" id="taxRunAutoMap">Re-run Auto Map</button>
+              <button class="btn btn-secondary" id="taxRunAutoMap">Apply tax rules again</button>
               <button class="btn btn-primary" id="exportTaxForm">Export Accountant Pack</button>
             </div>
           </div>
@@ -743,7 +743,7 @@
               <input type="number" id="taxOwnershipShare" class="control" min="0" max="100" step="0.1" value="50" />
             </label>
             <label>
-              <span>Tax Stream View</span>
+              <span>Tax records to show</span>
               <select id="taxStreamView" class="control">
                 <option value="split">Separate (Airbnb + General)</option>
                 <option value="combined">Combined</option>
@@ -770,7 +770,7 @@
               <p class="stat-value" id="taxGeneralExpenses">$0</p>
             </article>
             <article class="stat-card">
-              <h3>Estimated Mapped for review</h3>
+              <h3>Estimated amount mapped for review</h3>
               <p class="stat-value" id="taxOwnerShare">$0</p>
             </article>
             <article class="stat-card">
@@ -787,8 +787,8 @@
         <section class="card">
           <div class="card-header">
             <div>
-              <h2>Tax Category Rollup</h2>
-              <p class="helper">Mapped to your return structure and shown by stream based on the selected Tax Stream View.</p>
+              <h2>Tax category totals</h2>
+              <p class="helper">View totals by tax category for the tax records you selected.</p>
             </div>
           </div>
           <div class="table-wrap tax-rollup-wrap">
@@ -805,7 +805,7 @@
               </colgroup>
               <thead>
                 <tr>
-                  <th>Stream</th>
+                  <th>Record group</th>
                   <th>Category</th>
                   <th>Description / Notes</th>
                   <th class="align-right">Total ($)</th>
@@ -821,8 +821,8 @@
           <section class="card inset tax-inspect-panel is-hidden" id="taxCategoryInspectPanel">
             <div class="card-header">
               <div>
-                <h3 id="taxInspectTitle">Category Inspection</h3>
-                <p class="helper" id="taxInspectMeta">Select a rollup row and click Inspect.</p>
+                <h3 id="taxInspectTitle">Category details</h3>
+                <p class="helper" id="taxInspectMeta">Choose Inspect beside a category total.</p>
               </div>
               <button class="btn btn-ghost" id="taxInspectClose">Close</button>
             </div>
@@ -839,7 +839,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr><td colspan="6">Select a rollup row and click Inspect.</td></tr>
+                  <tr><td colspan="6">Choose Inspect beside a category total.</td></tr>
                 </tbody>
               </table>
             </div>
@@ -850,8 +850,8 @@
           <section class="card">
             <div class="card-header">
               <div>
-                <h2>Tax Rule Engine</h2>
-                <p class="helper">Create specific matching rules (keyword, account, date, amount) so mapping improves automatically over time.</p>
+                <h2>Tax category rules</h2>
+                <p class="helper">Set rules to suggest tax categories by keyword, account, date or amount.</p>
               </div>
             </div>
             <form class="controls-grid tax-rule-form" id="taxRuleForm">
@@ -860,7 +860,7 @@
                 <input type="text" id="taxRuleKeyword" class="control" placeholder="e.g. MOIRA SHIRE" required />
               </label>
               <label>
-                <span>Stream</span>
+                <span>Record group</span>
                 <select id="taxRuleScope" class="control">
                   <option value="airbnb">Airbnb Property</option>
                   <option value="general">General tax records</option>
@@ -897,7 +897,7 @@
                 <thead>
                   <tr>
                     <th>Keyword</th>
-                    <th>Stream</th>
+                    <th>Record group</th>
                     <th>Category</th>
                     <th>Account</th>
                     <th>Date Window</th>
@@ -914,8 +914,8 @@
           <section class="card">
             <div class="card-header">
               <div>
-                <h2>Tax Return Preview (Live)</h2>
-                <p class="helper">This preview updates as transactions and rules change throughout the year.</p>
+                <h2>Tax summary for review</h2>
+                <p class="helper">This summary updates when you change transactions or rules.</p>
               </div>
             </div>
             <pre id="taxFormPreview" class="tax-preview"></pre>
@@ -926,15 +926,15 @@
           <section class="card">
             <div class="card-header">
               <div>
-                <h2>Unmapped Tax Expenses</h2>
-                <p class="helper">Review these to improve category accuracy.</p>
+                <h2>Expenses needing a tax category</h2>
+                <p class="helper">Check which tax category, if any, applies to each expense.</p>
               </div>
             </div>
             <div class="table-wrap">
               <table class="data-table" id="taxUnmappedTable">
                 <thead>
                   <tr>
-                    <th>Stream</th>
+                    <th>Record group</th>
                     <th>Date</th>
                     <th>Description</th>
                     <th>Account</th>
@@ -951,7 +951,7 @@
             <div class="card-header">
               <div>
                 <h2>Manual Receipt Entries</h2>
-                <p class="helper">Add non-bank expenses from receipts or manager statements.</p>
+                <p class="helper">Add expenses from receipts or manager statements that are missing from bank records.</p>
               </div>
             </div>
             <form class="controls-grid tax-manual-form" id="taxManualForm">
@@ -960,7 +960,7 @@
                 <input type="date" id="taxManualDate" class="control" required />
               </label>
               <label>
-                <span>Stream</span>
+                <span>Record group</span>
                 <select id="taxManualScope" class="control">
                   <option value="airbnb">Airbnb Property</option>
                   <option value="general">General tax records</option>
@@ -985,7 +985,7 @@
                 <thead>
                   <tr>
                     <th>Date</th>
-                    <th>Stream</th>
+                    <th>Record group</th>
                     <th>Category</th>
                     <th>Notes</th>
                     <th class="align-right">Amount</th>
@@ -1004,12 +1004,12 @@
           <div class="card-header">
             <div>
               <h2>Planning Studio</h2>
-              <p class="helper">Scenario and calculator tools for forward decisions.</p>
+              <p class="helper">Try different amounts and assumptions before making a plan.</p>
             </div>
           </div>
           <div class="planner-grid">
             <article class="planner-card">
-              <h3>Fortnightly Lifestyle Tuner</h3>
+              <h3>Fortnightly budget</h3>
               <form class="form" id="fortnightForm">
                 <label>Income per fortnight<input type="number" id="fortnightIncome" min="0" step="0.01" /></label>
                 <label>Essential spending<input type="number" id="fortnightEssential" min="0" step="0.01" /></label>
@@ -1019,7 +1019,7 @@
             </article>
 
             <article class="planner-card">
-              <h3>Savings Goal Mapper</h3>
+              <h3>Savings goal</h3>
               <form class="form" id="savingsForm">
                 <label>Goal amount<input type="number" id="savingsGoal" min="0" step="100" /></label>
                 <label>Current savings<input type="number" id="savingsCurrent" min="0" step="100" /></label>
@@ -1030,7 +1030,7 @@
             </article>
 
             <article class="planner-card">
-              <h3>Debt Payoff Accelerator</h3>
+              <h3>Debt repayments</h3>
               <form class="form" id="debtForm">
                 <label>Loan balance<input type="number" id="debtBalance" min="0" step="1000" /></label>
                 <label>Interest rate (% p.a.)<input type="number" id="debtRate" min="0" max="30" step="0.1" /></label>
@@ -1059,7 +1059,7 @@
             </article>
 
             <article class="planner-card">
-              <h3>Scenario Modeler</h3>
+              <h3>Compare scenarios</h3>
               <form class="form" id="scenarioForm">
                 <label>Scenario name<input type="text" id="scenarioName" placeholder="e.g. New Car Lease" /></label>
                 <label>Monthly cost change<input type="number" id="scenarioCostChange" step="50" value="0" /></label>
@@ -1077,8 +1077,8 @@
         <section class="card">
           <div class="card-header">
             <div>
-              <h2>Category Intelligence</h2>
-              <p class="helper">Inspect category and subcategory performance with rapid recategorization controls.</p>
+              <h2>Review categories</h2>
+              <p class="helper">Review spending by category and change categories where needed.</p>
             </div>
             <div class="inline-actions compact">
               <button class="btn btn-secondary" id="uploadStatement">Import CSV</button>
@@ -1138,7 +1138,7 @@
           <div class="card-header">
             <div>
               <h2 id="categoryDetailTitle">Category Detail</h2>
-              <p class="helper">Inspect and bulk move selected transactions.</p>
+              <p class="helper">Review transactions and change the category for several at once.</p>
             </div>
             <button class="btn btn-ghost" id="closeCategoryDetail">Close</button>
           </div>
@@ -1174,12 +1174,12 @@
         </section>
       </section>
 
-      <section class="view" id="assistant-view"><section class="card"><p class="eyebrow">AI HELP · YOU CHOOSE WHAT TO SHARE</p><h2>A useful question, ready to copy.</h2><p class="helper">Choose a task and copy a starting prompt into your preferred AI assistant. Prompts start without account details or figures. You can choose to include a brief totals summary below. Finance Studio does not send your records anywhere.</p><div class="controls-grid"><label><span>What would help?</span><select id="promptTopic" class="control"><option value="budget">Review my budget</option><option value="statements">Understand a statement</option><option value="planning">Think through a savings plan</option><option value="tax">Prepare questions for my accountant</option></select></label><label><span>Your starting prompt</span><textarea id="financePrompt" class="control" rows="7" readonly></textarea></label></div><div class="inline-actions"><button id="copyFinancePrompt" class="btn btn-primary">Copy prompt</button><span id="promptStatus" role="status"></span></div></section><div hidden>
+      <section class="view" id="assistant-view"><section class="card"><p class="eyebrow">AI HELP · YOU CHOOSE WHAT TO SHARE</p><h2>A useful question, ready to copy.</h2><p class="helper">Choose a task, review the prompt, then copy it into your AI assistant. Prompts have no account details. Figures are included only if you choose a totals summary below. Finance Studio does not send your records anywhere.</p><div class="controls-grid"><label><span>What would help?</span><select id="promptTopic" class="control"><option value="budget">Review my budget</option><option value="statements">Understand a statement</option><option value="planning">Think through a savings plan</option><option value="tax">Prepare questions for my accountant</option></select></label><label><span>Your starting prompt</span><textarea id="financePrompt" class="control" rows="7" readonly></textarea></label></div><div class="inline-actions"><button id="copyFinancePrompt" class="btn btn-primary">Copy prompt</button><span id="promptStatus" role="status"></span></div></section><div hidden>
         <section class="card">
           <div class="card-header">
             <div>
               <h2>Ask BudgetBuddy</h2>
-              <p class="helper">Use Finance mode for data insights and in-app changes. Use Chat mode for casual conversation with Buddy.</p>
+              <p class="helper">Finance mode reviews records and changes. Chat mode is for conversation.</p>
             </div>
             <p class="assistant-status" id="assistantStatus">Status: Idle</p>
           </div>
@@ -1206,7 +1206,7 @@
               <textarea id="assistantInput" class="control" placeholder="Example: Why did my net cashflow drop in January? (You can also paste or drag in a screenshot)"></textarea>
             </label>
             <label id="assistantAccountScopeField">
-              <span>Assistant Account Scope</span>
+              <span>Accounts for this question</span>
               <select id="assistantAccountFilter" class="control">
                 <option value="all">All Accounts (Combined)</option>
               </select>
@@ -1249,7 +1249,7 @@
           <div class="card-header">
             <div>
               <h2>Spending insights</h2>
-              <p class="helper">Evidence-based detection of waste risk, spend drift, and recurring cost pressure.</p>
+              <p class="helper">Check regular costs, spending changes and unusual payments.</p>
             </div>
             <div class="inline-actions compact">
               <button class="btn btn-primary" id="runAIAnalysis">Refresh Insights</button>
@@ -1262,7 +1262,7 @@
           <article class="ai-card">
             <h3>Flagged Spend (Annual)</h3>
             <p class="ai-value" id="aiFlaggedSpend">$0</p>
-            <p class="helper" id="aiFlaggedMeta">Spend currently tagged for review actions</p>
+            <p class="helper" id="aiFlaggedMeta">Spending flagged for review</p>
             <div class="ai-card-actions">
               <button
                 type="button"
@@ -1278,7 +1278,7 @@
           <article class="ai-card">
             <h3>Airbnb Loan Repayments</h3>
             <p class="ai-value" id="aiAirbnbLoanRepayments">$0</p>
-            <p class="helper">Tracked separately from flagged operational spend</p>
+            <p class="helper">Shown separately from other spending flagged for review</p>
             <div class="ai-card-actions">
               <button
                 type="button"
@@ -1292,32 +1292,32 @@
             </div>
           </article>
           <article class="ai-card">
-            <h3>Recurring Run Rate</h3>
+            <h3>Estimated annual recurring costs</h3>
             <p class="ai-value" id="aiRecurringRunRate">$0</p>
-            <p class="helper" id="aiRecurringMeta">0 active recurring merchants</p>
+            <p class="helper" id="aiRecurringMeta">0 businesses with regular payments</p>
             <div class="ai-card-actions">
               <button
                 type="button"
                 class="btn btn-ghost"
                 data-ai-inspect-kind="summary"
                 data-ai-inspect-id="recurring-run-rate"
-                aria-label="Inspect Recurring Run Rate"
+                aria-label="Inspect estimated annual recurring costs"
               >
                 Inspect
               </button>
             </div>
           </article>
           <article class="ai-card">
-            <h3>Anomaly Count</h3>
+            <h3>Unusual payments</h3>
             <p class="ai-value" id="aiAnomalyCount">0</p>
-            <p class="helper">High-impact deviations</p>
+            <p class="helper">Unusual amounts to review</p>
             <div class="ai-card-actions">
               <button
                 type="button"
                 class="btn btn-ghost"
                 data-ai-inspect-kind="summary"
                 data-ai-inspect-id="anomaly-count"
-                aria-label="Inspect Anomaly Count"
+                aria-label="Inspect Unusual payments"
               >
                 Inspect
               </button>
@@ -1333,7 +1333,7 @@
                 class="btn btn-ghost"
                 data-ai-inspect-kind="summary"
                 data-ai-inspect-id="uncategorized-expense"
-                aria-label="Inspect Uncategorized Expense"
+                aria-label="Inspect uncategorised spending"
               >
                 Inspect
               </button>
@@ -1344,8 +1344,8 @@
         <section class="card">
           <div class="card-header">
             <div>
-              <h2>Recurring Subscription Analysis</h2>
-              <p class="helper">Estimated recurring charges using strict cadence and amount-consistency checks.</p>
+              <h2>Regular payment patterns</h2>
+              <p class="helper">Estimated regular charges based on payment dates and similar amounts.</p>
             </div>
           </div>
           <div id="subscriptionInsights" class="insight-banner"></div>
@@ -1373,7 +1373,7 @@
           <div class="card-header">
             <div>
               <h2>Spending to review</h2>
-              <p class="helper">Priority-ranked actions with clear impact type (run-rate vs one-off).</p>
+              <p class="helper">Suggested reviews, with ongoing and one-off amounts shown separately.</p>
             </div>
           </div>
           <div class="savings-opportunities" id="savingsOpportunities"></div>
@@ -1382,7 +1382,7 @@
         <section class="card">
           <div class="card-header">
             <div>
-              <h2>Spending Anomalies</h2>
+              <h2>Unusual spending</h2>
               <p class="helper">Unusual spending for you to review against your records. Check recurring bills and planned payments before taking action.</p>
             </div>
           </div>
@@ -1396,8 +1396,8 @@
         <section class="card inset is-hidden" id="aiInspectPanel">
           <div class="card-header">
             <div>
-              <h3 id="aiInspectTitle">Insights Transaction Inspection</h3>
-              <p class="helper" id="aiInspectMeta">Select Inspect on a summary card, recurring charge, waste opportunity, or anomaly to review the contributing transactions.</p>
+              <h3 id="aiInspectTitle">Spending insight details</h3>
+              <p class="helper" id="aiInspectMeta">Choose Inspect on a card or suggestion to see its transactions.</p>
             </div>
             <button class="btn btn-ghost" id="closeAIInspect">Close</button>
           </div>
@@ -1415,7 +1415,7 @@
                 </tr>
               </thead>
               <tbody>
-                <tr><td colspan="6">Select Inspect on a summary card, recurring charge, waste opportunity, or anomaly to review contributing transactions.</td></tr>
+                <tr><td colspan="6">Choose Inspect on a card or suggestion to see its transactions.</td></tr>
               </tbody>
             </table>
           </div>
@@ -1424,8 +1424,8 @@
         <section class="card">
           <div class="card-header">
             <div>
-              <h2>Category Trend Deep Dive</h2>
-              <p class="helper">Inspect category trajectory and monthly momentum.</p>
+              <h2>Category trends</h2>
+              <p class="helper">See how spending in a category changed each month.</p>
             </div>
           </div>
           <label>
@@ -1444,7 +1444,7 @@
           <div class="card-header">
             <div>
               <h2>Subcategory Rules</h2>
-              <p class="helper">Keyword rules to automatically refine subcategory labels.</p>
+              <p class="helper">Use keywords to suggest subcategories automatically.</p>
             </div>
             <button class="btn btn-primary" id="addSubcategoryRule">Add Rule</button>
           </div>
@@ -1467,8 +1467,8 @@
         <section class="card">
           <div class="card-header">
             <div>
-              <h2>Merchant Resolution Queue</h2>
-              <p class="helper" id="merchantResolutionMeta">Review unresolved or suspicious merchants and save a rule for future imports.</p>
+              <h2>Businesses to check</h2>
+              <p class="helper" id="merchantResolutionMeta">Check unclear business names and save a rule for future imports.</p>
             </div>
             <button class="btn btn-ghost" id="resetMerchantReviewHidden">Reset Hidden</button>
           </div>
@@ -1521,7 +1521,7 @@
           <div class="action-plan" id="actionPlan"></div>
         </section>
       </section>
-<section class="view" id="tools-view"><div class="section-heading"><p class="eyebrow">WHEN YOU NEED THEM</p><h2>Your finance toolkit</h2><p class="helper">The familiar tools, together in one place.</p></div><div class="tool-grid"><button class="tool-card" data-go="statements"><span class="eyebrow">FINANCE STUDIO</span><strong>Statement review</strong><span>Review monthly income and spending from your imported records.</span><span aria-hidden="true">Open →</span></button><button class="tool-card" data-go="tax"><span class="eyebrow">FINANCE STUDIO</span><strong>Tax preparation</strong><span>Organise records and mapping for your accountant to review.</span><span aria-hidden="true">Open →</span></button><button class="tool-card" data-go="categories"><span class="eyebrow">FINANCE STUDIO</span><strong>Categories & rules</strong><span>Keep transaction categories consistent across future imports.</span><span aria-hidden="true">Open →</span></button><button class="tool-card" data-go="ai-insights"><span class="eyebrow">FINANCE STUDIO</span><strong>Spending insights</strong><span>Review recurring charges, unusual spending and uncategorised items.</span><span aria-hidden="true">Open →</span></button><button class="tool-card" data-go="assistant"><span class="eyebrow">FINANCE STUDIO</span><strong>AI help</strong><span>Copy a useful starting prompt. You decide what to share.</span><span aria-hidden="true">Open →</span></button><button class="tool-card" data-go="planning"><span class="eyebrow">FINANCE STUDIO</span><strong>Planning</strong><span>Explore savings, debt, lifestyle and retirement assumptions.</span><span aria-hidden="true">Open →</span></button></div></section>    </main>
+<section class="view" id="tools-view"><div class="section-heading"><p class="eyebrow">WHEN YOU NEED THEM</p><h2>Your finance toolkit</h2><p class="helper">The familiar tools, together in one place.</p></div><div class="tool-grid"><button class="tool-card" data-go="statements"><span class="eyebrow">FINANCE STUDIO</span><strong>Statement review</strong><span>Review monthly income and spending from your imported records.</span><span aria-hidden="true">Open →</span></button><button class="tool-card" data-go="tax"><span class="eyebrow">FINANCE STUDIO</span><strong>Tax preparation</strong><span>Organise records and categories for your accountant to review.</span><span aria-hidden="true">Open →</span></button><button class="tool-card" data-go="categories"><span class="eyebrow">FINANCE STUDIO</span><strong>Categories & rules</strong><span>Keep transaction categories consistent across future imports.</span><span aria-hidden="true">Open →</span></button><button class="tool-card" data-go="ai-insights"><span class="eyebrow">FINANCE STUDIO</span><strong>Spending insights</strong><span>Review recurring charges, unusual spending and uncategorised items.</span><span aria-hidden="true">Open →</span></button><button class="tool-card" data-go="assistant"><span class="eyebrow">FINANCE STUDIO</span><strong>AI help</strong><span>Copy a useful starting prompt. You decide what to share.</span><span aria-hidden="true">Open →</span></button><button class="tool-card" data-go="planning"><span class="eyebrow">FINANCE STUDIO</span><strong>Planning</strong><span>Explore savings, debt, lifestyle and retirement assumptions.</span><span aria-hidden="true">Open →</span></button></div></section>    </main>
 
     <footer class="app-footer">
       <p>Finance Studio · Saved in this browser · Keep an encrypted backup somewhere safe.</p>
@@ -1551,11 +1551,11 @@
     <div class="modal-backdrop" id="csvImportChoiceDialog" hidden>
       <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="csvImportChoiceTitle">
         <h3 id="csvImportChoiceTitle">Import CSV Data</h3>
-        <p class="helper">Choose how to handle existing data in this app. Bank statement CSVs and PayPal activity CSVs are both supported.</p>
+        <p class="helper">Choose whether to add to or replace your records. You can import bank statement or PayPal activity CSV files.</p>
         <div class="modal-copy">
-          <p><strong>Replace current transactions</strong>: replace current dataset with this CSV import.</p>
-          <p><strong>Add to current transactions</strong>: merge this CSV with your current dataset.</p>
-          <p><strong>PayPal note</strong>: if both files are imported, Finance Studio keeps the merchant-level PayPal row and removes the duplicate generic bank <code>PAYPAL ...</code> charge.</p>
+          <p><strong>Replace current transactions</strong>: replace your current transactions with these CSV records.</p>
+          <p><strong>Add to current transactions</strong>: add these CSV records to your current transactions.</p>
+          <p><strong>PayPal note</strong>: when you import both files, Finance keeps the detailed PayPal transaction and removes the matching generic bank <code>PAYPAL ...</code> charge.</p>
         </div>
         <div class="modal-actions">
           <button class="btn btn-ghost" id="csvImportCancel">Cancel</button>
@@ -1567,11 +1567,11 @@
 
     <div class="modal-backdrop" id="taxMapDialog" hidden>
       <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="taxMapTitle">
-        <h3 id="taxMapTitle">Map Transaction to Tax</h3>
+        <h3 id="taxMapTitle">Choose a tax category</h3>
         <p class="helper" id="taxMapMeta"></p>
         <div class="controls-grid" style="margin-top: 0.7rem;">
           <label>
-            <span>Stream</span>
+            <span>Record group</span>
             <select id="taxMapScope" class="control">
               <option value="airbnb">Airbnb Property</option>
               <option value="general">General tax records</option>
@@ -1594,21 +1594,21 @@
           <label><input type="checkbox" id="taxMapCreateRule" checked /> Save keyword rule for future matches</label>
         </div>
         <div class="modal-actions">
-          <button class="btn btn-secondary" id="taxMapUnmap">Unmap Transaction</button>
+          <button class="btn btn-secondary" id="taxMapUnmap">Remove tax category</button>
           <button class="btn btn-ghost" id="taxMapCancel">Cancel</button>
-          <button class="btn btn-primary" id="taxMapSave">Apply Tax Mapping</button>
+          <button class="btn btn-primary" id="taxMapSave">Apply tax category</button>
         </div>
       </div>
     </div>
 
     <div class="modal-backdrop" id="merchantResolveDialog" hidden>
       <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="merchantResolveTitle">
-        <h3 id="merchantResolveTitle">Resolve Merchant</h3>
+        <h3 id="merchantResolveTitle">Check business details</h3>
         <p class="helper" id="merchantResolveMeta"></p>
         <div class="controls-grid" style="margin-top: 0.7rem;">
           <label>
             <span>Rule Keyword</span>
-            <input type="text" id="merchantResolveKeyword" class="control" placeholder="Phrase to match future rows" />
+            <input type="text" id="merchantResolveKeyword" class="control" placeholder="Phrase to match future transactions" />
           </label>
           <label>
             <span>Category</span>

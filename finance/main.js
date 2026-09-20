@@ -311,7 +311,7 @@ function getBudgetSuggestionCadenceLabel(value = "") {
   if (normalized === "quarterly") return "Quarterly";
   if (normalized === "annually") return "Yearly";
   if (normalized === "recent trend") return "Recent trend";
-  if (normalized === "run rate") return "Run rate";
+  if (normalized === "run rate") return "Estimated ongoing cost";
   if (normalized === "observed") return "Irregular";
   return "Observed pattern";
 }
@@ -1908,7 +1908,7 @@ const ThemeController = {
     const button = document.getElementById("themeToggle");
     if (!button) return;
     const darkModeOn = this.currentTheme() === "dark";
-    button.textContent = darkModeOn ? "Light Mode" : "Dark Mode";
+    button.textContent = darkModeOn ? "Light appearance" : "Dark appearance";
     button.setAttribute("aria-pressed", darkModeOn ? "true" : "false");
   },
 };
@@ -1934,7 +1934,7 @@ function getTransferClassificationApi() {
       return cachedNodeTransferClassificationApi;
     }
     try {
-      cachedNodeTransferClassificationApi = require("./transfer-classification.js");
+      cachedNodeTransferClassificationApi = require("./transfer-classification.js?v=plain-language-1");
     } catch {
       cachedNodeTransferClassificationApi = null;
     }
@@ -2441,10 +2441,10 @@ function buildBudgetItemKey(category, item) {
 }
 
 function assertBudgetImportRecord(value, allowed, label) {
-  if (!value || Array.isArray(value) || typeof value !== "object") throw new Error(`${label} must be an object.`);
+  if (!value || Array.isArray(value) || typeof value !== "object") throw new Error(`${label} has the wrong format.`);
   const prototype = Object.getPrototypeOf(value);
   if (prototype !== null && (Object.getPrototypeOf(prototype) !== null || Object.getOwnPropertyDescriptor(prototype, "constructor")?.value?.name !== "Object")) {
-    throw new Error(`${label} must be a plain object.`);
+    throw new Error(`${label} has an unsupported format.`);
   }
   for (const key of Reflect.ownKeys(value)) {
     const descriptor = Object.getOwnPropertyDescriptor(value, key);
@@ -2467,7 +2467,7 @@ function budgetImportText(value, label, maxLength, { optional = false } = {}) {
 function budgetImportOptions(options, allowPlan = false) {
   assertBudgetImportRecord(options, allowPlan ? ["mode", "planKey", "planValue"] : ["mode"], "Budget import options");
   const mode = options.mode === undefined ? "merge" : options.mode;
-  if (mode !== "merge" && mode !== "replace") throw new Error("Choose merge or replace for the budget import.");
+  if (mode !== "merge" && mode !== "replace") throw new Error("Choose whether to keep other budget targets or replace the entire budget.");
   return mode;
 }
 
@@ -2486,10 +2486,10 @@ function previewBudgetImport(lines, options = {}) {
     const sourceId = budgetImportText(line.id, "Budget line ID", 160, { optional: true });
     const notes = budgetImportText(line.notes, "Budget notes", 4000, { optional: true });
     if (line.basis !== undefined && !["register", "historical-estimate", "needs-review"].includes(line.basis)) {
-      throw new Error("Unsupported fallback amounts cannot become approved budget targets.");
+      throw new Error("Amounts without a supporting source cannot become approved budget targets.");
     }
     if (typeof line.annual_budget !== "number" || !Number.isFinite(line.annual_budget) || line.annual_budget < 0 || line.annual_budget > 1e9) {
-      throw new Error("Each annual budget must be a finite number between 0 and 1,000,000,000.");
+      throw new Error("Enter an annual budget from 0 to 1,000,000,000.");
     }
     const normal = normalizeBudgetCategoryItem(category, item);
     if (normalizeLabel(category) === "transfers" || normal.category === "Transfers") {
@@ -2544,8 +2544,8 @@ function importBudgetOnly(lines, options = {}) {
   const mode = budgetImportOptions(options, true);
   const preview = previewBudgetImport(lines, { mode });
   const hasPlan = Object.hasOwn(options, "planValue");
-  if (Object.hasOwn(options, "planKey") && options.planKey !== STORAGE_KEYS.budgetPlan) throw new Error("Only the Finance payment-plan key can be imported.");
-  if (Object.hasOwn(options, "planKey") && !hasPlan) throw new Error("Choose a payment plan to save with this key.");
+  if (Object.hasOwn(options, "planKey") && options.planKey !== STORAGE_KEYS.budgetPlan) throw new Error("This import can only save a Finance payment plan.");
+  if (Object.hasOwn(options, "planKey") && !hasPlan) throw new Error("Choose a payment plan to save.");
   const plan = hasPlan ? validateStoredBudgetPlan(options.planValue) : null;
   const storage = getFinanceStorage();
   if (storageWritesSuppressed || financeMutationDepth || storage?.privateWorkspace !== true || typeof storage?.atomic !== "function" || typeof storage?.getItem !== "function" || typeof storage?.setItem !== "function") {
@@ -2619,7 +2619,7 @@ function generateBaselineBudgetFromActuals(transactions = [], options = {}) {
     category: suggestion.category,
     item: suggestion.item,
     annual_budget: Number(Math.max(0, toNumber(suggestion.reality_budget, 0)).toFixed(2)),
-    notes: `Reality ${currencyPrecise.format(toNumber(suggestion.reality_budget, 0))} | Target ${currencyPrecise.format(
+    notes: `Estimated annual spending ${currencyPrecise.format(toNumber(suggestion.reality_budget, 0))} | Suggested target ${currencyPrecise.format(
       toNumber(suggestion.target_budget, 0)
     )} | Method ${getBudgetSuggestionBasisLabel(suggestion.basis)} | Pattern ${getBudgetSuggestionCadenceLabel(
       suggestion.cadence
@@ -2811,10 +2811,10 @@ function assertImportFiles(files, maxBytes = MAX_IMPORT_BYTES) {
 }
 
 function importTextBytes(text, maxBytes = MAX_IMPORT_BYTES) {
-  if (typeof text !== "string") throw new Error("Import contents must be text.");
-  if (text.length > maxBytes) throw new Error(`This import exceeds the ${maxBytes / (1024 * 1024)} MB input limit.`);
+  if (typeof text !== "string") throw new Error("The import file could not be read as text.");
+  if (text.length > maxBytes) throw new Error(`Choose an import no larger than ${maxBytes / (1024 * 1024)} MB.`);
   const bytes = new TextEncoder().encode(text).byteLength;
-  if (bytes > maxBytes) throw new Error(`This import exceeds the ${maxBytes / (1024 * 1024)} MB input limit.`);
+  if (bytes > maxBytes) throw new Error(`Choose an import no larger than ${maxBytes / (1024 * 1024)} MB.`);
   return bytes;
 }
 
@@ -5092,9 +5092,9 @@ const OverviewController = {
       return "Custom range";
     }
     if (monthCount > 0) {
-      return `${monthCount} month${monthCount === 1 ? "" : "s"} in scope`;
+      return `${monthCount} month${monthCount === 1 ? "" : "s"} shown`;
     }
-    return "Current scope";
+    return "Current view";
   },
 
   buildNarrativeModel(filteredTx, filteredMonthly) {
@@ -5112,24 +5112,24 @@ const OverviewController = {
 
     if (!filteredTx.length) {
       return {
-        headline: "No transactions match the current overview scope.",
+        headline: "No transactions match your overview filters.",
         lead: `${accountLabel}. Reset filters or widen the date range to bring transactions back into view.`,
         blocks: [
           {
             title: "What happened",
-            body: "The active account or period filters narrowed the view to zero rows.",
+            body: "No transactions match the account and dates selected.",
           },
           {
-            title: "Recommended move",
-            body: "Reset the overview filters first, then re-check the transaction explorer if the dataset still looks sparse.",
+            title: "What to do next",
+            body: "Reset the overview filters. If records still seem missing, check Your transactions.",
           },
           {
-            title: "Assistant option",
+            title: "AI help",
             body: "Prepare a question about imports or filters. Review it before copying; financial totals are optional.",
           },
         ],
         pills: [
-          { label: "Scope", value: accountLabel },
+          { label: "Accounts", value: accountLabel },
           { label: "Period", value: scopeLabel },
           { label: "Coverage", value: "0 transactions" },
           { label: "Action", value: "Reset filters" },
@@ -5143,7 +5143,7 @@ const OverviewController = {
           {
             action: "ask-buddy",
             label: "AI help with this view",
-            meta: "Review a prepared question. Financial totals are optional; nothing is sent automatically.",
+            meta: "Review a prompt before copying it. Totals are optional; nothing is sent automatically.",
           },
         ],
       };
@@ -5173,7 +5173,7 @@ const OverviewController = {
 
     const savingsNarrative = Number.isFinite(metrics.savings_rate) && metrics.total_income > 0
       ? `The recorded net amount is ${formatPct(metrics.savings_rate)} of recorded income. This does not establish your available savings or current balance.`
-      : "A net-to-income percentage is not available for this view yet.";
+      : "The percentage of income left after spending is unavailable for this view.";
 
     const scopeRange =
       firstDate && lastDate
@@ -5181,22 +5181,22 @@ const OverviewController = {
         : "Date range unavailable";
     const topSpendNarrative = topCategory
       ? `${topCategory.category} is the largest expense category at ${currency.format(topCategory.expense)}.${topMerchant ? ` ${topMerchant.merchant} is the biggest merchant at ${currency.format(topMerchant.total)}.` : ""}`
-      : "There is not enough expense activity in this scope to identify a dominant spend category.";
+      : "There is not enough spending in this view to identify the largest category.";
     const budgetNarrative = biggestGap
       ? `Recorded spending on ${biggestGap.category} > ${biggestGap.item} is ${currency.format(Math.abs(biggestGap.variance))} above the suggested baseline to date. Check the assumptions before treating this as a spending limit.`
       : unbudgetedCount
       ? `${unbudgetedCount} expense line${unbudgetedCount === 1 ? "" : "s"} have no baseline amount, totalling ${currency.format(unbudgetedTotal)}. Review these before setting a budget.`
-      : "No spending above the suggested baseline appears in this financial-year comparison. Coverage and baseline assumptions still need review.";
+      : "No spending is above the suggested baseline in this financial-year view. Check which records are included and how the baseline was estimated.";
     const cleanupNarrative = uncategorized.count
-      ? `${uncategorized.count} expense transaction${uncategorized.count === 1 ? "" : "s"} remain uncategorized, representing ${currency.format(uncategorized.expense)} or ${formatPct(uncategorized.ratio * 100)} of spend.`
-      : "The current scope is fully categorized on the expense side.";
+      ? `${uncategorized.count} expense transaction${uncategorized.count === 1 ? "" : "s"} still need a category, totalling ${currency.format(uncategorized.expense)} or ${formatPct(uncategorized.ratio * 100)} of spend.`
+      : "All spending in this view has a category.";
 
     const actions = [];
     if (uncategorized.count > 0) {
       actions.push({
         action: "review-uncategorized",
-        label: `Review ${uncategorized.count} uncategorized expense transaction${uncategorized.count === 1 ? "" : "s"}`,
-        meta: `${currency.format(uncategorized.expense)} still needs cleanup before reports are fully trustworthy.`,
+        label: `Review ${uncategorized.count} uncategorised expense transaction${uncategorized.count === 1 ? "" : "s"}`,
+        meta: `${currency.format(uncategorized.expense)} needs a category check before you rely on these reports.`,
       });
     }
     if (biggestGap) {
@@ -5218,32 +5218,32 @@ const OverviewController = {
         action: "inspect-top-category",
         value: topCategory.category,
         label: `Inspect ${topCategory.category}`,
-        meta: `Jump to Category Intelligence filtered to the current biggest expense category.`,
+        meta: `Open Review categories at your largest spending category.`,
       });
     }
     if (metrics.net_position < 0 || (Number.isFinite(metrics.savings_rate) && metrics.savings_rate < 10)) {
       actions.push({
         action: "open-planning",
         label: "Open Planning Studio",
-        meta: "Run scenarios if you need to rebuild buffer or reduce pressure quickly.",
+        meta: "Try scenarios for rebuilding your buffer or reducing costs.",
       });
     }
     actions.push({
       action: "ask-buddy",
       label: "AI help with this view",
-      meta: "Review a prepared question. Financial totals are optional; nothing is sent automatically.",
+      meta: "Review a prompt before copying it. Totals are optional; nothing is sent automatically.",
     });
 
     return {
       headline,
       lead: `${accountLabel}. ${scopeLabel}. ${filteredTx.length} transaction${filteredTx.length === 1 ? "" : "s"} across ${accountCount || 1} account${accountCount === 1 ? "" : "s"}, covering ${scopeRange}. ${savingsNarrative}`,
       blocks: [
-        { title: "Main spend pressure", body: topSpendNarrative },
-        { title: "Budget signal", body: budgetNarrative },
-        { title: "Data hygiene", body: cleanupNarrative },
+        { title: "Largest spending category", body: topSpendNarrative },
+        { title: "Budget comparison", body: budgetNarrative },
+        { title: "Check categories", body: cleanupNarrative },
       ],
       pills: [
-        { label: "Scope", value: accountLabel },
+        { label: "Accounts", value: accountLabel },
         { label: "Coverage", value: `${filteredTx.length} transactions across ${accountCount || 1} account${accountCount === 1 ? "" : "s"}` },
         {
           label: "Suggested baseline (FY)",
@@ -5254,10 +5254,10 @@ const OverviewController = {
             : "No major gap",
         },
         {
-          label: "Cleanup",
+          label: "Category checks",
           value: uncategorized.count
-            ? `${uncategorized.count} uncategorized (${formatPct(uncategorized.ratio * 100)})`
-            : "Fully categorized",
+            ? `${uncategorized.count} uncategorised (${formatPct(uncategorized.ratio * 100)})`
+            : "All spending categorised",
         },
       ],
       actions: actions.length > 4 ? [...actions.slice(0, 3), actions[actions.length - 1]] : actions,
@@ -5386,16 +5386,16 @@ const OverviewController = {
         value: currency.format(metrics.net_position),
         delta: percentChange(metrics.average_monthly_net, overall.average_monthly_net),
         lowerIsBetter: false,
-        note: "Income minus expenses in the selected scope.",
+        note: "Income minus expenses in this view.",
       },
       {
         key: "savings-rate",
         label: "Savings Rate",
         value: formatPct(metrics.savings_rate),
         delta: metrics.savings_rate - overall.savings_rate,
-        suffix: "pp vs full period",
+        suffix: "percentage points compared with the full period",
         lowerIsBetter: false,
-        note: "Calculated from in-scope income and expenses.",
+        note: "Calculated from income and expenses in this view.",
       },
       {
         key: "essential-spend",
@@ -5403,7 +5403,7 @@ const OverviewController = {
         value: currency.format(metrics.essential_annual),
         delta: percentChange(metrics.essential_annual / monthCount, overall.essential_annual / overallMonths),
         lowerIsBetter: true,
-        note: "Total spent on essential categories in the selected scope.",
+        note: "Spending in categories classed as essential in this view.",
       },
       {
         key: "discretionary-spend",
@@ -5414,11 +5414,11 @@ const OverviewController = {
           overall.discretionary_annual / overallMonths
         ),
         lowerIsBetter: true,
-        note: "Total spent on non-essential categories in the selected scope.",
+        note: "Spending in categories classed as non-essential in this view.",
       },
       {
         key: "uncategorized-expenses",
-        label: "Uncategorized Expenses",
+        label: "Uncategorised expenses",
         value: currency.format(uncategorizedCurrent.expense),
         delta: percentChange(
           uncategorizedCurrent.expense / monthCount,
@@ -5435,7 +5435,7 @@ const OverviewController = {
         const isPctPoint = card.suffix;
         const deltaText = isPctPoint
           ? `${card.delta >= 0 ? "+" : ""}${card.delta.toFixed(1)} ${card.suffix}`
-          : `${card.delta >= 0 ? "+" : ""}${card.delta.toFixed(1)}% vs full-period monthly avg`;
+          : `${card.delta >= 0 ? "+" : ""}${card.delta.toFixed(1)}% compared with the full-period monthly average`;
         const trendClass =
           card.delta === 0
             ? ""
@@ -5508,8 +5508,8 @@ const OverviewController = {
     switch (metricKey) {
       case "total-income":
         return {
-          title: "Total Income Inspection",
-          meta: "Income transactions included in the current Overview scope.",
+          title: "Income details",
+          meta: "Income transactions included in this overview.",
           transactions: sortedTransactions(incomeTx),
           stats: [
             { label: "Total Income", value: currency.format(metrics.total_income) },
@@ -5520,8 +5520,8 @@ const OverviewController = {
         };
       case "total-expenses":
         return {
-          title: "Total Expenses Inspection",
-          meta: "Expense transactions included in the current Overview scope. Transfers are excluded.",
+          title: "Expense details",
+          meta: "Spending included in this overview. Transfers are excluded.",
           transactions: sortedTransactions(expenseTx),
           stats: [
             { label: "Total Expenses", value: currency.format(metrics.total_expense) },
@@ -5532,8 +5532,8 @@ const OverviewController = {
         };
       case "net-position":
         return {
-          title: "Net Position Inspection",
-          meta: "Net Position is total income minus total expenses for the current Overview scope.",
+          title: "Net position details",
+          meta: "Net position is income minus expenses in this overview.",
           transactions: sortedTransactions(financialTx),
           stats: [
             { label: "Total Income", value: currency.format(metrics.total_income) },
@@ -5548,8 +5548,8 @@ const OverviewController = {
         };
       case "savings-rate":
         return {
-          title: "Savings Rate Inspection",
-          meta: "Savings Rate is net position divided by total income for the current Overview scope.",
+          title: "Savings rate details",
+          meta: "Savings rate is net position divided by income in this overview.",
           transactions: sortedTransactions(financialTx),
           stats: [
             { label: "Savings Rate", value: formatPct(metrics.savings_rate) },
@@ -5560,8 +5560,8 @@ const OverviewController = {
         };
       case "essential-spend":
         return {
-          title: "Essential Spend Inspection",
-          meta: "Expense transactions in the essential category set used by the Overview cards.",
+          title: "Essential spending details",
+          meta: "Spending in the categories this overview treats as essential.",
           transactions: sortedTransactions(essentialTx),
           stats: [
             { label: "Essential Spend", value: currency.format(metrics.essential_annual) },
@@ -5572,8 +5572,8 @@ const OverviewController = {
         };
       case "discretionary-spend":
         return {
-          title: "Discretionary Spend Inspection",
-          meta: "Expense transactions outside the essential category set used by the Overview cards.",
+          title: "Flexible spending details",
+          meta: "Spending in categories this overview does not treat as essential.",
           transactions: sortedTransactions(discretionaryTx),
           stats: [
             { label: "Discretionary Spend", value: currency.format(metrics.discretionary_annual) },
@@ -5587,11 +5587,11 @@ const OverviewController = {
         };
       case "uncategorized-expenses":
         return {
-          title: "Uncategorized Expense Inspection",
-          meta: "Expense transactions still labeled Uncategorized in the current Overview scope.",
+          title: "Uncategorised spending details",
+          meta: "Spending in this overview that still needs a category.",
           transactions: sortedTransactions(uncategorizedTx),
           stats: [
-            { label: "Uncategorized Spend", value: currency.format(uncategorizedStats.expense) },
+            { label: "Uncategorised spending", value: currency.format(uncategorizedStats.expense) },
             { label: "Transactions", value: String(uncategorizedStats.count) },
             { label: "Average / Month", value: currency.format(avgPerMonth(uncategorizedStats.expense)) },
             { label: "Share of Expenses", value: formatPct(uncategorizedStats.ratio * 100) },
@@ -5613,8 +5613,8 @@ const OverviewController = {
     const model = this.getInspectModel();
     if (!model) {
       panel.classList.add("is-hidden");
-      title.textContent = "Overview Inspection";
-      meta.textContent = "Select Inspect on a summary card to review the transactions behind that metric.";
+      title.textContent = "Overview details";
+      meta.textContent = "Choose Inspect on a card to see the transactions behind its total.";
       stats.innerHTML = "";
       tbody.innerHTML = `<tr><td colspan="6">Select Inspect on a summary card to review contributing transactions.</td></tr>`;
       return;
@@ -5657,7 +5657,7 @@ const OverviewController = {
             `;
           })
           .join("")
-      : `<tr><td colspan="6">No matching transactions in the current Overview scope.</td></tr>`;
+      : `<tr><td colspan="6">No matching transactions in this overview.</td></tr>`;
 
     panel.classList.remove("is-hidden");
   },
@@ -5929,8 +5929,8 @@ function buildTransactionExplorerInspectModel(transactions = [], metricKey = "")
   switch (normalizedMetric) {
     case "filtered-count":
       return {
-        title: "Filtered Transactions Inspection",
-        meta: "All transactions currently matching the Transaction Explorer filters.",
+        title: "Filtered transaction details",
+        meta: "All transactions matching your current filters.",
         transactions: allRows,
         stats: [
           { label: "Transactions", value: String(allRows.length) },
@@ -5945,8 +5945,8 @@ function buildTransactionExplorerInspectModel(transactions = [], metricKey = "")
       };
     case "operating-net":
       return {
-        title: "Money Left After Spending Inspection",
-        meta: "Operating net uses only rows counted as income or spending. Internal transfers are excluded.",
+        title: "Money left after spending",
+        meta: "Income minus spending, using your current filters. Internal transfers are excluded.",
         transactions: operatingRows,
         stats: [
           {
@@ -5961,8 +5961,8 @@ function buildTransactionExplorerInspectModel(transactions = [], metricKey = "")
       };
     case "bank-net":
       return {
-        title: "Net Cash Movement Inspection",
-        meta: "Net cash movement uses every filtered row, including transfers and loan-account movements.",
+        title: "Net cash movement details",
+        meta: "Net cash movement includes all filtered transactions, including transfers and loan-account movements.",
         transactions: allRows,
         stats: [
           {
@@ -5977,8 +5977,8 @@ function buildTransactionExplorerInspectModel(transactions = [], metricKey = "")
       };
     case "income":
       return {
-        title: "Total Income Inspection",
-        meta: "Transactions currently counted as income in the Transaction Explorer filter scope.",
+        title: "Income details",
+        meta: "Transactions counted as income with your current filters.",
         transactions: incomeRows,
         stats: [
           { label: "Total Income", value: currency.format(operatingIncome) },
@@ -5989,8 +5989,8 @@ function buildTransactionExplorerInspectModel(transactions = [], metricKey = "")
       };
     case "spending":
       return {
-        title: "Total Spending Inspection",
-        meta: "Transactions currently counted as spending in the Transaction Explorer filter scope. Transfers are excluded.",
+        title: "Spending details",
+        meta: "Transactions counted as spending with your current filters. Transfers are excluded.",
         transactions: spendingRows,
         stats: [
           { label: "Total Spending", value: currency.format(operatingExpense) },
@@ -6004,11 +6004,11 @@ function buildTransactionExplorerInspectModel(transactions = [], metricKey = "")
       };
     case "mortgage-principal":
       return {
-        title: "Mortgage Principal Inspection",
-        meta: "Rows flagged as mortgage principal in the current Transaction Explorer filter scope.",
+        title: "Mortgage repayment details",
+        meta: "Transactions marked as mortgage repayments with your current filters. Principal and interest are not separated.",
         transactions: mortgageRows,
         stats: [
-          { label: "Mortgage Principal Paid", value: currency.format(mortgagePaid), className: "variance-positive" },
+          { label: "Mortgage repayments", value: currency.format(mortgagePaid), className: "variance-positive" },
           { label: "Transactions", value: String(mortgageRows.length) },
           { label: "Base / Standard", value: currency.format(mortgageBasePaid) },
           { label: "Extra / Lump", value: currency.format(mortgageExtraPaid) },
@@ -6328,8 +6328,8 @@ const TransactionsController = {
     const model = this.getInspectModel(filtered);
     if (!model) {
       panel.classList.add("is-hidden");
-      title.textContent = "Transaction Metric Inspection";
-      meta.textContent = "Select Inspect on a summary card to review the transactions behind that metric.";
+      title.textContent = "Transaction details";
+      meta.textContent = "Choose Inspect on a card to see the transactions behind its total.";
       stats.innerHTML = "";
       tbody.innerHTML = `<tr><td colspan="6">Select Inspect on a Transaction Explorer summary card to review contributing transactions.</td></tr>`;
       return;
@@ -6372,7 +6372,7 @@ const TransactionsController = {
             `;
           })
           .join("")
-      : `<tr><td colspan="6">No matching transactions in the current Transaction Explorer scope.</td></tr>`;
+      : `<tr><td colspan="6">No transactions match your current filters.</td></tr>`;
 
     panel.classList.remove("is-hidden");
   },
@@ -6570,7 +6570,7 @@ const TransactionsController = {
                     <button type="button" class="btn btn-ghost" data-tx-edit="${escapeHtml(tx.id)}">Edit</button>
                     ${
                       includeTransactionInSpending(tx)
-                        ? `<button type="button" class="btn btn-secondary" data-tx-tax="${escapeHtml(tx.id)}">Tax Map</button>`
+                        ? `<button type="button" class="btn btn-secondary" data-tx-tax="${escapeHtml(tx.id)}">Tax category</button>`
                         : ""
                     }
                   </div>
@@ -6646,7 +6646,7 @@ const BudgetController = {
       const annualBudget = toNumber(document.getElementById("budgetNewAmount").value, NaN);
 
       if (!rawCategory) {
-        UI.toast("Missing Category", "Provide a category before adding a budget line.", "error");
+        UI.toast("Missing Category", "Choose a category before adding a budget item.", "error");
         return;
       }
       if (!Number.isFinite(annualBudget) || annualBudget <= 0) {
@@ -6656,7 +6656,7 @@ const BudgetController = {
 
       const normalizedLine = normalizeBudgetCategoryItem(rawCategory, rawItem);
       if (!isOfficialCategory(normalizedLine.category)) {
-        UI.toast("Invalid Category", "Use an official category from the list.", "error");
+        UI.toast("Invalid Category", "Choose a category from the list.", "error");
         return;
       }
       if (normalizeLabel(normalizedLine.category) === "transfers") {
@@ -6697,11 +6697,11 @@ const BudgetController = {
         version: BUDGET_BASELINE_VERSION,
         signature: buildBudgetDataSignature(AppState.transactions),
       });
-      UI.toast("Budget Saved", "Budget lines were saved to local storage.", "success");
+      UI.toast("Budget updated", "Budget targets updated. Check the save status above.", "success");
     });
 
     document.getElementById("resetBudget")?.addEventListener("click", () => {
-      if (!window.confirm("Rebuild budget lines from loaded transaction data? This replaces current budget lines.")) return;
+      if (!window.confirm("Rebuild budget targets from your imported transactions? This replaces all current budget targets.")) return;
       normalizeAirbnbFinancingForSet(AppState.transactions);
       AppState.budgetDefaults = generateBaselineBudgetFromActuals(AppState.transactions);
       AppState.budgetItems = normalizeBudgetItems(JSON.parse(JSON.stringify(AppState.budgetDefaults)));
@@ -6712,7 +6712,7 @@ const BudgetController = {
         signature: buildBudgetDataSignature(AppState.transactions),
       });
       this.render();
-      UI.toast("Budget Rebuilt", "Budget lines were rebuilt from your loaded transaction data.", "success");
+      UI.toast("Budget Rebuilt", "Budget targets rebuilt from your imported transactions.", "success");
     });
 
     document.querySelector("#budgetTable tbody")?.addEventListener("input", (event) => {
@@ -6935,7 +6935,7 @@ const BudgetController = {
             `;
           })
           .join("")
-      : `<tr><td colspan="6">No matched transactions for this budget line in the current financial-year scope.</td></tr>`;
+      : `<tr><td colspan="6">No transactions match this budget item in the financial year shown.</td></tr>`;
   },
 
   refreshBudgetRow(id) {
@@ -7062,7 +7062,7 @@ const BudgetController = {
         meta.textContent = "";
         meta.hidden = true;
       }
-      tbody.innerHTML = `<tr><td colspan="3">No unbudgeted spend in the current financial-year scope.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="3">No spending without a budget target in this financial-year view.</td></tr>`;
       return;
     }
 
@@ -7122,7 +7122,7 @@ const BudgetController = {
     }
 
     hint.hidden = false;
-    hint.textContent = `Missing direct budget lines: ${uncovered
+    hint.textContent = `Categories without a budget target: ${uncovered
       .map((row) => `${row.category} (${currency.format(row.expense)})`)
       .join(", ")}.`;
   },
@@ -7168,10 +7168,10 @@ const BudgetController = {
     const moved = diagnostics?.movedOutOfUncategorized || { amount: 0, count: 0 };
     const atmWithdrawals = diagnostics?.atmWithdrawalsFy || { amount: 0, count: 0 };
     pills.innerHTML = [
-      ["Before Uncategorized", `${currency.format(toNumber(beforeUncategorized.amount, 0))} | ${toNumber(beforeUncategorized.count, 0)} tx`],
-      ["After Uncategorized", `${currency.format(toNumber(afterUncategorized.amount, 0))} | ${toNumber(afterUncategorized.count, 0)} tx`],
-      ["Moved Out Of Uncategorized", `${currency.format(toNumber(moved.amount, 0))} | ${toNumber(moved.count, 0)} tx`],
-      ["Mortgage Reclassified", currency.format(toNumber(diagnostics?.reclassifiedIntoMortgage, 0))],
+      ["Uncategorised before review", `${currency.format(toNumber(beforeUncategorized.amount, 0))} | ${toNumber(beforeUncategorized.count, 0)} tx`],
+      ["Uncategorised after review", `${currency.format(toNumber(afterUncategorized.amount, 0))} | ${toNumber(afterUncategorized.count, 0)} tx`],
+      ["Given a category", `${currency.format(toNumber(moved.amount, 0))} | ${toNumber(moved.count, 0)} tx`],
+      ["Reclassified as mortgage", currency.format(toNumber(diagnostics?.reclassifiedIntoMortgage, 0))],
       ["Internal Transfers Excluded", currency.format(toNumber(diagnostics?.markedInternalTransfers, 0))],
       ["Sinking Transfers Excluded", currency.format(toNumber(diagnostics?.markedSinkingTransfers, 0))],
       ["ATM Withdrawals (FY)", `${currency.format(toNumber(atmWithdrawals.amount, 0))} | ${toNumber(atmWithdrawals.count, 0)} tx`],
@@ -7203,7 +7203,7 @@ const BudgetController = {
             `
           )
           .join("")
-      : `<tr><td colspan="7">No budget suggestions available for the active financial-year scope.</td></tr>`;
+      : `<tr><td colspan="7">No budget suggestions are available for this financial-year view.</td></tr>`;
 
     const uncategorized = diagnostics?.remainingUncategorizedTop || [];
     uncategorizedBody.innerHTML = uncategorized.length
@@ -7218,7 +7218,7 @@ const BudgetController = {
             `
           )
           .join("")
-      : `<tr><td colspan="3">No remaining Uncategorized > Other expenses in the active financial-year scope.</td></tr>`;
+      : `<tr><td colspan="3">No expenses remain in Uncategorised > Other in this financial-year view.</td></tr>`;
   },
 
   render() {
@@ -7577,7 +7577,7 @@ const TaxController = {
 
     document.getElementById("taxRunAutoMap")?.addEventListener("click", () => {
       this.render();
-      UI.toast("Tax Mapping Refreshed", "Auto-map recalculated using current rules and overrides.", "success");
+      UI.toast("Tax Mapping Refreshed", "Tax categories updated using your rules and manual choices.", "success");
     });
 
     document.getElementById("exportTaxForm")?.addEventListener("click", () => {
@@ -7804,7 +7804,7 @@ const TaxController = {
       );
     });
     if (duplicate) {
-      UI.toast("Tax Rule", "An equivalent rule already exists.", "warning");
+      UI.toast("Tax Rule", "A matching rule already exists.", "warning");
       return;
     }
 
@@ -7818,7 +7818,7 @@ const TaxController = {
     toInput.value = "";
     minInput.value = "";
     maxInput.value = "";
-    UI.toast("Tax Rule Added", "Future matching now includes this rule.", "success");
+    UI.toast("Tax Rule Added", "This rule will be used to suggest tax categories.", "success");
   },
 
   removeTaxRule(id = "") {
@@ -7948,7 +7948,7 @@ const TaxController = {
     const createRule = document.getElementById("taxMapCreateRule");
     if (!(tx && dialog && meta && scopeSelect && keywordInput && accountInput && createRule)) return;
     if (toNumber(tx.amount, 0) >= 0) {
-      UI.toast("Tax Map", "Only expense transactions can be tax-mapped.", "warning");
+      UI.toast("Tax Map", "Only expenses can be assigned a tax category.", "warning");
       return;
     }
 
@@ -8050,7 +8050,7 @@ const TaxController = {
     this.persistTaxState();
     this.render();
     this.closeTaxMapDialog();
-    UI.toast("Tax Mapping Applied", "Transaction override saved and tax report updated.", "success");
+    UI.toast("Tax Mapping Applied", "Your tax category choice is saved and the report is updated.", "success");
   },
 
   unmapTaxMapDialog() {
@@ -8063,7 +8063,7 @@ const TaxController = {
       return;
     }
     if (toNumber(tx.amount, 0) >= 0) {
-      UI.toast("Tax Map", "Only expense transactions can be tax-unmapped.", "warning");
+      UI.toast("Tax Map", "Only expenses can have a tax category removed.", "warning");
       return;
     }
 
@@ -8097,7 +8097,7 @@ const TaxController = {
     const rules = normalizeTaxRuleRows(report?.rules || []);
     const expenseRows = getGlobalScopedTransactions(AppState.transactions).filter((tx) => toNumber(tx.amount, 0) < 0);
     if (!rules.length) {
-      tbody.innerHTML = `<tr><td colspan="8">No tax rules yet. Add one to auto-map future transactions.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="8">No tax rules yet. Add a rule to assign tax categories to future transactions.</td></tr>`;
       return;
     }
 
@@ -8248,7 +8248,7 @@ const TaxController = {
       taxCoverage.textContent =
         report.unmatched.length > 0
           ? `${report.unmatched.length} expense(s) need category review`
-          : "All tracked tax expenses are mapped to categories";
+          : "All tracked tax expenses have a category";
       taxCoverage.classList.toggle("variance-negative", report.unmatched.length > 0);
       taxCoverage.classList.toggle("variance-positive", report.unmatched.length === 0);
     }
@@ -8427,7 +8427,7 @@ const PlanningController = {
       surplus >= 0
         ? `Surplus: <strong class="variance-positive">${currency.format(
             surplus
-          )}</strong> per fortnight. Annualized potential: <strong>${currency.format(
+          )}</strong> per fortnight. Estimated annual surplus: <strong>${currency.format(
             annualProjection
           )}</strong> (${formatPct(savingsRate)} savings rate).`
         : `Deficit: <strong class="variance-negative">${currency.format(
@@ -8447,7 +8447,7 @@ const PlanningController = {
 
     const resultEl = document.getElementById("savingsResult");
     if (goal <= 0) {
-      resultEl.textContent = "Enter a goal amount to calculate timeline.";
+      resultEl.textContent = "Enter your goal amount to estimate the time needed.";
       return;
     }
     if (current >= goal) {
@@ -8468,7 +8468,7 @@ const PlanningController = {
       months += 1;
     }
     if (months >= 1200) {
-      resultEl.textContent = "Goal is not reachable within 100 years at current settings.";
+      resultEl.textContent = "These settings do not reach your goal within 100 years.";
       return;
     }
 
@@ -8519,7 +8519,7 @@ const PlanningController = {
     const accelerated = this.simulateDebt(balance, monthlyRate, minPayment + extraPayment);
     if (!accelerated) {
       resultEl.textContent =
-        "Payments are too low to reduce principal. Increase monthly payment to exceed interest.";
+        "Payments are too low to reduce the debt. The monthly payment needs to exceed interest.";
       return;
     }
 
@@ -8551,7 +8551,7 @@ const PlanningController = {
     const annualRevenue = toNumber(summary.total_revenue, toNumber(summary.income, 0));
     const annualExpenses = toNumber(summary.total_expenses, toNumber(summary.expenses, 0));
     if (annualRevenue <= 0 && annualExpenses <= 0) {
-      document.getElementById("airbnbBuffer").textContent = "No Airbnb statement activity detected in this dataset.";
+      document.getElementById("airbnbBuffer").textContent = "No Airbnb activity was found in these records.";
       return;
     }
     const monthlyRevenue = annualRevenue / 12;
@@ -8591,11 +8591,11 @@ const PlanningController = {
     const costChange = toNumber(document.getElementById("scenarioCostChange").value, NaN);
     const duration = toNumber(document.getElementById("scenarioDuration").value, NaN);
     if (!name) {
-      UI.toast("Scenario Name Missing", "Provide a scenario name before adding.", "error");
+      UI.toast("Scenario Name Missing", "Name the scenario before adding it.", "error");
       return;
     }
     if (!Number.isFinite(costChange) || !Number.isFinite(duration) || duration <= 0) {
-      UI.toast("Invalid Scenario", "Cost change and duration must be valid numbers.", "error");
+      UI.toast("Invalid Scenario", "Enter numbers for the cost change and duration.", "error");
       return;
     }
     AppState.scenarios.push({
@@ -8791,7 +8791,7 @@ const CategoryController = {
             "success"
           );
         } catch (error) {
-          UI.toast("Import Error", "Could not parse CSV file.", "error");
+          UI.toast("Import Error", "Could not read this CSV file.", "error");
         }
       };
       reader.readAsText(file);
@@ -9047,7 +9047,7 @@ const CategoryController = {
     App.recomputeDerived();
     App.renderAll();
     this.openDetail(newCategory, newSubcategory);
-    UI.toast("Transactions Updated", "Selected transactions were recategorized.", "success");
+    UI.toast("Transactions Updated", "Categories changed for the selected transactions.", "success");
   },
 
   render() {
@@ -9067,7 +9067,7 @@ const AIController = {
       setTimeout(() => {
         this.render();
         UI.hideLoading();
-        UI.toast("Insights Updated", "Financial signals refreshed.", "success");
+        UI.toast("Insights Updated", "Spending insights updated.", "success");
       }, 250);
     });
 
@@ -9189,12 +9189,12 @@ const AIController = {
     const annual = Math.max(0, toNumber(item.annualSaving, monthly * 12));
     return {
       primaryText: `${currency.format(monthly)}/mo`,
-      secondaryText: annual > 0 ? `${currency.format(annual)}/yr run-rate impact` : "Process improvement",
+      secondaryText: annual > 0 ? `${currency.format(annual)}/year estimated ongoing impact` : "A useful record check",
       actionText:
         monthly > 0
-          ? `Run-rate spend pressure: ${currency.format(monthly)} / month.`
+          ? `Estimated ongoing cost: ${currency.format(monthly)} / month.`
           : "No direct dollar estimate.",
-      reportText: `${currency.format(monthly)}/mo run-rate impact`,
+      reportText: `${currency.format(monthly)}/month estimated ongoing impact`,
     };
   },
 
@@ -9574,7 +9574,7 @@ const AIController = {
         const monthlyCost = sub.annualCost / 12;
         opportunities.push({
           inspectId: `subscription:${sub.inspectId}`,
-          title: `Audit recurring charge: ${sub.merchant}`,
+          title: `Review regular charge: ${sub.merchant}`,
           category: sub.category,
           impactType: "run_rate",
           priority: monthlyCost > 200 ? "high" : monthlyCost > 90 ? "medium" : "low",
@@ -9591,7 +9591,7 @@ const AIController = {
           },
           description: `${sub.frequency} charge averaging ${currency.format(
             sub.averageAmount
-          )}. Confirm usage and plan fit.`,
+          )}. Check whether you use the service and the plan still suits you.`,
           actions: [
             "Confirm the service was used in the last 30 days.",
             "Downgrade plan or cancel if non-essential.",
@@ -9603,7 +9603,7 @@ const AIController = {
     drift.slice(0, 5).forEach((item) => {
       opportunities.push({
         inspectId: `drift:${normalizeLabel(item.category)}`,
-        title: `Reduce spend drift: ${item.category}`,
+        title: `Review increased spending: ${item.category}`,
         category: item.category,
         impactType: "run_rate",
         priority: item.delta > 500 ? "high" : "medium",
@@ -9636,7 +9636,7 @@ const AIController = {
       .forEach((item) => {
         opportunities.push({
           inspectId: `anomaly:${item.inspectId || item.id}`,
-          title: `Review one-off high-risk charge: ${item.merchant}`,
+          title: `Review unusual one-off charge: ${item.merchant}`,
           category: item.category,
           impactType: "one_off",
           priority: "high",
@@ -9650,10 +9650,10 @@ const AIController = {
             date: item.date,
             reason: item.reason,
           },
-          description: `${item.reason} Treated as one-off unless repeated with stable cadence.`,
+          description: `${item.reason} Treated as one-off unless it repeats at regular intervals.`,
           actions: [
-            "Confirm statement legitimacy and merchant contact trail.",
-            "If valid but avoidable, set a category-level threshold alert.",
+            "Check the charge against your statement and any messages from the business.",
+            "If the charge is valid but avoidable, set a spending alert for this category.",
           ],
         });
       });
@@ -9662,7 +9662,7 @@ const AIController = {
     if (uncategorized.expense > 0 && uncategorized.ratio >= 0.05) {
       opportunities.push({
         inspectId: "uncategorized-expense",
-        title: "Fix uncategorized expense leakage",
+        title: "Check uncategorised spending",
         category: "Uncategorized",
         impactType: "run_rate",
         priority: uncategorized.ratio >= 0.1 ? "high" : "medium",
@@ -9679,8 +9679,8 @@ const AIController = {
           uncategorized.ratio * 100
         )}) of total expenses are uncategorized.`,
         actions: [
-          "Bulk recategorize top uncategorized merchants in Category Intelligence.",
-          "Create keyword rules so future imports auto-classify these transactions.",
+          "In Review categories, assign categories to the largest uncategorised businesses.",
+          "Create keyword rules to categorise these transactions in future imports.",
         ],
       });
     }
@@ -9705,7 +9705,7 @@ const AIController = {
         description: `${currency.format(cashPressure.expense)} withdrawn across ${cashPressure.count} cash transactions.`,
         actions: [
           "Set a weekly cash cap and track every withdrawal purpose.",
-          "Move routine spend to card where category visibility is retained.",
+          "Use a card for routine spending so its categories stay visible.",
         ],
       });
     }
@@ -9827,11 +9827,11 @@ const AIController = {
           const transactionIds = uniqueIds(opportunities.flatMap((item) => item.transactionIds || []));
           const transactions = sortTransactions(this.getTransactionsByIds(transactionIds));
           return {
-            title: "Flagged Spend Inspection",
+            title: "Spending flagged for review",
             meta:
-              "Union of transactions contributing to the current waste opportunities. Annual flagged spend is an estimate and some rows may contribute to multiple opportunities.",
+              "Transactions behind these spending reviews. The annual amount is an estimate; a transaction may count towards more than one suggestion.",
             transactions,
-            emptyMessage: "No transactions are currently attached to the flagged-spend opportunities in scope.",
+            emptyMessage: "No transactions match the spending flagged in this view.",
             stats: [
               { label: "Flagged Spend", value: currency.format(AppState.ai.flaggedAnnualSpend) },
               { label: "Opportunities", value: String(opportunities.length) },
@@ -9855,10 +9855,10 @@ const AIController = {
           );
           const total = sum(transactions.map((tx) => Math.abs(toNumber(tx.amount, 0))));
           return {
-            title: "Airbnb Loan Repayments Inspection",
-            meta: "Transactions treated as Airbnb loan repayments and excluded from flagged operational spend.",
+            title: "Airbnb loan repayment details",
+            meta: "Airbnb loan repayments, shown separately from other spending flagged for review.",
             transactions,
-            emptyMessage: "No Airbnb loan repayment transactions are in scope.",
+            emptyMessage: "No Airbnb loan repayments are in this view.",
             stats: [
               { label: "Loan Repayments", value: currency.format(total), className: "variance-negative" },
               { label: "Transactions", value: String(transactions.length) },
@@ -9872,10 +9872,10 @@ const AIController = {
           const transactionIds = uniqueIds(activeSubscriptions.flatMap((item) => item.transactionIds || []));
           const transactions = sortTransactions(this.getTransactionsByIds(transactionIds));
           return {
-            title: "Recurring Run Rate Inspection",
-            meta: "Transactions contributing to active recurring subscription patterns in the current Waste & Insights scope.",
+            title: "Estimated recurring cost details",
+            meta: "Transactions used to estimate current recurring costs in Spending insights.",
             transactions,
-            emptyMessage: "No active recurring subscription transactions are in scope.",
+            emptyMessage: "No current recurring subscription payments are in this view.",
             stats: [
               { label: "Recurring Run Rate", value: currency.format(AppState.ai.recurringRunRate) },
               { label: "Active Merchants", value: String(activeSubscriptions.length) },
@@ -9891,10 +9891,10 @@ const AIController = {
           const highCount = anomalies.filter((item) => item.priority === "high").length;
           const mediumCount = anomalies.filter((item) => item.priority === "medium").length;
           return {
-            title: "Anomaly Count Inspection",
-            meta: "Transactions currently flagged as anomalies in Waste & Insights, including duplicate-review cases.",
+            title: "Unusual payment details",
+            meta: "Unusual payments flagged in Spending insights, including possible duplicates.",
             transactions,
-            emptyMessage: "No anomaly transactions are currently in scope.",
+            emptyMessage: "No unusual payments are flagged in this view.",
             stats: [
               { label: "Anomalies", value: String(anomalies.length) },
               { label: "High Priority", value: String(highCount) },
@@ -9915,12 +9915,12 @@ const AIController = {
           );
           const total = sum(transactions.map((tx) => Math.abs(toNumber(tx.amount, 0))));
           return {
-            title: "Uncategorized Expense Inspection",
-            meta: "Expense transactions still left uncategorized in the current Waste & Insights scope.",
+            title: "Uncategorised spending details",
+            meta: "Spending that still needs a category in this Spending insights view.",
             transactions,
-            emptyMessage: "No uncategorized expense transactions are in scope.",
+            emptyMessage: "No spending needs a category in this view.",
             stats: [
-              { label: "Uncategorized Spend", value: currency.format(total), className: "variance-negative" },
+              { label: "Uncategorised spending", value: currency.format(total), className: "variance-negative" },
               { label: "Transactions", value: String(transactions.length) },
               { label: "Expense Ratio", value: formatPct(toNumber(AppState.ai.uncategorizedExpenseRatio, 0) * 100) },
               { label: "Date Range", value: formatDateRange(transactions) },
@@ -9937,10 +9937,10 @@ const AIController = {
       if (!item) return null;
       const transactions = sortTransactions(this.getTransactionsByIds(item.transactionIds));
       return {
-        title: `Recurring Charge Inspection - ${item.merchant}`,
-        meta: `${item.merchant} charges contributing to the recurring subscription signal in the current Waste & Insights scope.`,
+        title: `Regular charge details - ${item.merchant}`,
+        meta: `${item.merchant} charges used to estimate recurring costs in this Spending insights view.`,
         transactions,
-        emptyMessage: "No recurring transactions match this subscription signal in the current scope.",
+        emptyMessage: "No regular payments match this subscription pattern in this view.",
         stats: [
           { label: "Frequency", value: item.frequency || "--" },
           { label: "Status", value: item.status || "--" },
@@ -9980,7 +9980,7 @@ const AIController = {
         stats[2] = { label: "Flagged Charge", value: currency.format(source.amount), className: "variance-negative" };
         stats.push({ label: "Transaction Date", value: formatDate(source.date) });
       } else if (source.type === "uncategorized") {
-        stats[2] = { label: "Uncategorized Spend", value: currency.format(source.expense), className: "variance-negative" };
+        stats[2] = { label: "Uncategorised spending", value: currency.format(source.expense), className: "variance-negative" };
         stats.push({ label: "Expense Ratio", value: formatPct(toNumber(source.ratio, 0) * 100) });
       } else if (source.type === "cash-withdrawal") {
         stats[2] = { label: "Cash Withdrawn", value: currency.format(source.expense), className: "variance-negative" };
@@ -9990,10 +9990,10 @@ const AIController = {
       }
 
       return {
-        title: `Opportunity Inspection - ${item.title}`,
-        meta: `${item.description} These are the transactions contributing to this opportunity.`,
+        title: `Suggested review - ${item.title}`,
+        meta: `${item.description} These are the transactions behind this suggestion.`,
         transactions,
-        emptyMessage: "No transactions currently match this opportunity in the active scope.",
+        emptyMessage: "No transactions match this suggestion in this view.",
         stats,
       };
     }
@@ -10005,10 +10005,10 @@ const AIController = {
       if (!item) return null;
       const transactions = sortTransactions(this.getTransactionsByIds(item.transactionIds || [item.id]));
       return {
-        title: `Anomaly Inspection - ${item.merchant}`,
-        meta: `${item.reason}${transactions.length > 1 ? " Related rows are shown for duplicate/anomaly context." : ""}`,
+        title: `Unusual payment details - ${item.merchant}`,
+        meta: `${item.reason}${transactions.length > 1 ? " Related transactions are shown to help you check unusual amounts or duplicates." : ""}`,
         transactions,
-        emptyMessage: "No matching anomaly transactions are available in the current scope.",
+        emptyMessage: "No matching unusual payments are in this view.",
         stats: [
           { label: "Priority", value: capitalize(item.priority) },
           { label: "Flagged Amount", value: currency.format(item.amount), className: "variance-negative" },
@@ -10035,8 +10035,8 @@ const AIController = {
       AppState.ai.inspectKind = "";
       AppState.ai.inspectId = "";
       panel.classList.add("is-hidden");
-      title.textContent = "Insights Transaction Inspection";
-      meta.textContent = "Select Inspect on a summary card, recurring charge, waste opportunity, or anomaly to review the contributing transactions.";
+      title.textContent = "Spending insight details";
+      meta.textContent = "Choose Inspect on a card or suggestion to see its transactions.";
       stats.innerHTML = "";
       tbody.innerHTML = `<tr><td colspan="6">Select Inspect on a summary card, recurring charge, waste opportunity, or anomaly to review contributing transactions.</td></tr>`;
       return;
@@ -10079,7 +10079,7 @@ const AIController = {
             `;
           })
           .join("")
-      : `<tr><td colspan="6">${escapeHtml(model.emptyMessage || "No matching transactions in the current Waste & Insights scope.")}</td></tr>`;
+      : `<tr><td colspan="6">${escapeHtml(model.emptyMessage || "No matching transactions in this Spending insights view.")}</td></tr>`;
 
     panel.classList.remove("is-hidden");
   },
@@ -10092,17 +10092,17 @@ const AIController = {
     );
     document.getElementById("aiFlaggedMeta").textContent =
       AppState.ai.airbnbLoanRepaymentsAnnual > 0
-        ? "Operational spend tagged for review (Airbnb loan repayments excluded)"
-        : "Spend currently tagged for review actions";
+        ? "Spending flagged for review (Airbnb loan repayments excluded)"
+        : "Spending flagged for review";
     document.getElementById("aiRecurringRunRate").textContent = currency.format(AppState.ai.recurringRunRate);
-    document.getElementById("aiRecurringMeta").textContent = `${activeRecurring.length} active recurring merchant${
-      activeRecurring.length === 1 ? "" : "s"
-    }`;
+    document.getElementById("aiRecurringMeta").textContent = `${activeRecurring.length} business${
+      activeRecurring.length === 1 ? "" : "es"
+    } with regular payments`;
     document.getElementById("aiAnomalyCount").textContent = `${AppState.ai.anomalies.length}`;
     document.getElementById("aiUncategorizedSpend").textContent = currency.format(AppState.ai.uncategorizedExpense);
     document.getElementById(
       "aiUncategorizedMeta"
-    ).textContent = `${AppState.ai.uncategorizedExpenseCount} uncategorized expense transactions (${formatPct(
+    ).textContent = `${AppState.ai.uncategorizedExpenseCount} uncategorised expense transactions (${formatPct(
       AppState.ai.uncategorizedExpenseRatio * 100
     )})`;
   },
@@ -10124,7 +10124,7 @@ const AIController = {
       subscriptions.filter((item) => item.status === "Active").map((item) => item.annualCost)
     );
     banner.innerHTML = `
-      <strong>${activeCount}</strong> active recurring patterns detected. Estimated annual run rate:
+      <strong>${activeCount}</strong> current regular payment patterns found. Estimated annual cost:
       <strong>${currency.format(annualRunRate)}</strong>.
     `;
 
@@ -10163,7 +10163,7 @@ const AIController = {
     if (!container) return;
     const opportunities = AppState.ai.opportunities;
     if (!opportunities.length) {
-      container.innerHTML = `<p class="helper">No strong opportunities detected from current data.</p>`;
+      container.innerHTML = `<p class="helper">No clear suggestions were found in these records.</p>`;
       return;
     }
 
@@ -10219,7 +10219,7 @@ const AIController = {
       : AppState.ai.anomalies;
 
     if (!rows.length) {
-      container.innerHTML = `<p class="helper">No anomalies for the current filter. Planned loan repayments and fixed home insurance are excluded.</p>`;
+      container.innerHTML = `<p class="helper">No unusual payments were flagged with these filters. Planned loan repayments and fixed home insurance are excluded.</p>`;
       return;
     }
 
@@ -10274,7 +10274,7 @@ const AIController = {
     const insights = document.getElementById("categoryTrendInsights");
     if (!selectedCategory) {
       ChartManager.remove("categoryTrendCanvas");
-      insights.textContent = "Select a category to view trend trajectory and commentary.";
+      insights.textContent = "Choose a category to see how its spending changed.";
       return;
     }
 
@@ -10307,7 +10307,7 @@ const AIController = {
     });
 
     if (rows.length < 2) {
-      insights.textContent = "Not enough monthly points to derive trend insight.";
+      insights.textContent = "More months of records are needed to show a trend.";
       return;
     }
 
@@ -10430,7 +10430,7 @@ const AIController = {
       : `No merchant groups need review right now. Hidden: ${hiddenCount}.`;
 
     if (!visibleQueue.length) {
-      tbody.innerHTML = `<tr><td colspan="9">No unresolved or suspicious merchant groups in the current account scope.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="9">No unclear business names need review for these accounts.</td></tr>`;
       return;
     }
 
@@ -10526,7 +10526,7 @@ const AIController = {
 
     const keyword = String(keywordInput.value || "").trim();
     if (!normalizeRuleKeyword(keyword)) {
-      UI.toast("Keyword Needed", "Enter a merchant phrase to match future rows.", "error");
+      UI.toast("Keyword Needed", "Enter a business name or phrase to match future transactions.", "error");
       return;
     }
 
@@ -10576,14 +10576,14 @@ const AIController = {
     AppState.merchantReviewHidden = [...current];
     saveStorage(STORAGE_KEYS.merchantReviewHidden, AppState.merchantReviewHidden);
     this.render();
-    UI.toast("Merchant Hidden", "This merchant group is hidden from the review queue.", "info");
+    UI.toast("Merchant Hidden", "This business is hidden from the review list.", "info");
   },
 
   resetHiddenMerchantReviewItems() {
     AppState.merchantReviewHidden = [];
     saveStorage(STORAGE_KEYS.merchantReviewHidden, AppState.merchantReviewHidden);
     this.render();
-    UI.toast("Hidden Queue Reset", "All hidden merchant groups are visible again.", "success");
+    UI.toast("Hidden businesses shown", "All hidden merchant groups are visible again.", "success");
   },
 
   viewMerchantTransactions(key) {
@@ -10612,7 +10612,7 @@ const AIController = {
     });
     anomalies.forEach((item) => {
       actions.push({
-        title: `Review anomaly: ${item.merchant}`,
+        title: `Review unusual payment: ${item.merchant}`,
         body: `${currency.format(item.amount)} on ${formatDate(item.date)} (${item.category}).`,
       });
     });
@@ -10643,17 +10643,17 @@ const AIController = {
       `Flagged Spend (Annual): ${currency.format(AppState.ai.flaggedAnnualSpend)}`,
       `Airbnb Loan Repayments (Annual): ${currency.format(AppState.ai.airbnbLoanRepaymentsAnnual)}`,
       `Airbnb Operating Expense (Annual): ${currency.format(AppState.ai.airbnbOperatingExpenseAnnual)}`,
-      `Recurring Run Rate: ${currency.format(AppState.ai.recurringRunRate)} (${activeRecurring.length} active merchants)`,
-      `Uncategorized Expense: ${currency.format(AppState.ai.uncategorizedExpense)} (${AppState.ai.uncategorizedExpenseCount} transactions)`,
+      `Estimated annual recurring costs: ${currency.format(AppState.ai.recurringRunRate)} (${activeRecurring.length} active businesses)`,
+      `Uncategorised spending: ${currency.format(AppState.ai.uncategorizedExpense)} (${AppState.ai.uncategorizedExpenseCount} transactions)`,
       `Recurring Patterns Detected: ${AppState.ai.subscriptions.length}`,
-      `Anomalies Detected: ${AppState.ai.anomalies.length}`,
+      `Unusual payments flagged: ${AppState.ai.anomalies.length}`,
       "",
-      "Top Opportunities:",
+      "Suggested reviews:",
       ...AppState.ai.opportunities.slice(0, 5).map(
         (item, idx) => `${idx + 1}. ${item.title} - ${this.getOpportunityImpact(item).reportText} (${item.priority})`
       ),
       "",
-      "High Priority Anomalies:",
+      "Unusual payments to check first:",
       ...AppState.ai.anomalies
         .filter((item) => item.priority === "high")
         .slice(0, 5)
@@ -10812,7 +10812,7 @@ const AssistantController = {
       const modeLabel = normalized === "finance" ? "Finance mode" : "Chat mode";
       const blurb =
         normalized === "finance"
-          ? `${ASSISTANT_BRAND_NAME} is in Finance mode: data-grounded answers, plus in-app changes with confirmation/undo.`
+          ? `${ASSISTANT_BRAND_NAME} is in Finance mode: answers from your records, with changes you can confirm and undo.`
           : `${ASSISTANT_BRAND_NAME} is in Chat mode: casual conversation and general questions.`;
       this.pushMessage("assistant", `${modeLabel} enabled.\n${blurb}`);
     }
@@ -10928,7 +10928,7 @@ const AssistantController = {
     document.getElementById("assistantRemoveData")?.addEventListener("click", () => {
       this.clearPendingDataFile();
       AppState.assistant.uploadedDataContext = null;
-      UI.toast("Data File Removed", "Assistant uploaded file context cleared.", "success");
+      UI.toast("Data File Removed", "The attached file has been removed from this conversation.", "success");
     });
 
     document.getElementById("assistantAccountFilter")?.addEventListener("change", (event) => {
@@ -11175,7 +11175,7 @@ const AssistantController = {
 
   async readDocxAsText(file) {
     if (!window.mammoth || typeof window.mammoth.extractRawText !== "function") {
-      throw new Error("DOCX parser is unavailable in this build.");
+      throw new Error("Word files cannot be read in this version.");
     }
     const arrayBuffer = await file.arrayBuffer();
     const result = await window.mammoth.extractRawText({ arrayBuffer });
@@ -11185,7 +11185,7 @@ const AssistantController = {
   async readPdfAsText(file) {
     const pdfjs = window.pdfjsLib;
     if (!pdfjs || typeof pdfjs.getDocument !== "function") {
-      throw new Error("PDF parser is unavailable in this build.");
+      throw new Error("PDF files cannot be read in this version.");
     }
     const arrayBuffer = await file.arrayBuffer();
     const loadingTask = pdfjs.getDocument({ data: arrayBuffer });
@@ -11257,11 +11257,11 @@ const AssistantController = {
       else if (ext === "pdf") text = await this.readPdfAsText(file);
       else text = await this.readFileAsText(file);
       if (!String(text || "").trim()) {
-        throw new Error("No readable text was extracted from this file.");
+        throw new Error("No readable text was found in this file.");
       }
       const context = this.buildUploadedDataContext(file.name || "uploaded.csv", text, ext || "csv");
       this.setPendingDataFile(context);
-      UI.toast("Data File Attached", "Ask your question to use this file in assistant context.", "success");
+      UI.toast("Data File Attached", "Ask a question about the attached file.", "success");
     } catch (error) {
       UI.toast("Attach Failed", String(error?.message || error), "error");
     }
@@ -12207,7 +12207,7 @@ const AssistantController = {
     }
     return {
       type: "invalid",
-      message: "I could not identify the budget line. Try `Category > Item`, for example `Groceries > Groceries`.",
+      message: "I could not find the budget item. Try `Category > Item`, for example `Groceries > Groceries`.",
     };
   },
 
@@ -12868,7 +12868,7 @@ const AssistantController = {
         : "";
       return {
         ok: true,
-        message: `Applied ${changedRows.length} budget update(s) (${updatedCount} updated, ${createdCount} added).\n\nUse "Undo Last Change" if you want to revert them.${unresolvedNote}`,
+        message: `Applied ${changedRows.length} budget update(s) (${updatedCount} updated, ${createdCount} added).\n\nUse "Undo Last Change" to undo them.${unresolvedNote}`,
       };
     }
 
@@ -12891,7 +12891,7 @@ const AssistantController = {
       App.renderAll();
       return {
         ok: true,
-        message: `Applied: ${summary}\n\nUse "Undo Last Change" if you want to revert it.`,
+        message: `Applied: ${summary}\n\nUse "Undo Last Change" to undo it.`,
       };
     }
 
@@ -12933,7 +12933,7 @@ const AssistantController = {
       App.renderAll();
       return {
         ok: true,
-        message: `Applied: ${summary}\n\nUse "Undo Last Change" if you want to revert it.`,
+        message: `Applied: ${summary}\n\nUse "Undo Last Change" to undo it.`,
       };
     }
 
@@ -12955,7 +12955,7 @@ const AssistantController = {
       App.renderAll();
       return {
         ok: true,
-        message: `Applied: ${summary}\n\nUse "Undo Last Change" if you want to revert it.`,
+        message: `Applied: ${summary}\n\nUse "Undo Last Change" to undo it.`,
       };
     }
 
@@ -12971,7 +12971,7 @@ const AssistantController = {
       App.renderAll();
       return {
         ok: true,
-        message: `Applied: ${summary}\n\nUse "Undo Last Change" if you want to revert it.`,
+        message: `Applied: ${summary}\n\nUse "Undo Last Change" to undo it.`,
       };
     }
 
@@ -13006,7 +13006,7 @@ const AssistantController = {
       App.applySubcategoryRulesAndRefresh();
       return {
         ok: true,
-        message: `Applied: ${summary}\n\nUse "Undo Last Change" if you want to revert it.`,
+        message: `Applied: ${summary}\n\nUse "Undo Last Change" to undo it.`,
       };
     }
 
@@ -13023,14 +13023,14 @@ const AssistantController = {
       App.applySubcategoryRulesAndRefresh();
       return {
         ok: true,
-        message: `Applied: ${summary}\n\nUse "Undo Last Change" if you want to revert it.`,
+        message: `Applied: ${summary}\n\nUse "Undo Last Change" to undo it.`,
       };
     }
 
     if (action.type === "tx_recategorize_keyword") {
       const keywordLower = String(action.keyword || "").toLowerCase();
       if (!keywordLower) {
-        return { ok: false, message: "Keyword is missing for recategorization." };
+        return { ok: false, message: "Enter a keyword to change transaction categories." };
       }
       const normalizedTarget = canonicalizeCategorySubcategory(
         action.category,
@@ -13076,11 +13076,11 @@ const AssistantController = {
       App.renderAll();
       return {
         ok: true,
-        message: `Applied: ${summary}\n\nUse "Undo Last Change" if you want to revert it.`,
+        message: `Applied: ${summary}\n\nUse "Undo Last Change" to undo it.`,
       };
     }
 
-    return { ok: false, message: "I recognized the request but could not apply that action yet." };
+    return { ok: false, message: "I understood the request but could not apply the change." };
   },
 
   confirmPendingAction() {
@@ -13325,12 +13325,12 @@ const AssistantController = {
       "What I can do now:",
       "- Add/update/remove budget lines",
       "- Add/remove subcategory rules by keyword",
-      "- Recategorize transactions by keyword phrase",
+      "- Change transaction categories using a keyword",
       "- Rebuild budget from loaded data",
       "- Undo the last assistant-applied change",
       "",
       "What I cannot auto-edit yet:",
-      "- Edit imported source CSV files directly (changes are in-app state)",
+      "- Change your original CSV files (edits stay in this app)",
       "",
       "Try this now:",
       "`Move transactions containing netflix to Subscriptions > Streaming`",
@@ -13377,21 +13377,21 @@ const AssistantController = {
   buildClarificationHint(questionText = "") {
     const text = normalizeLabel(questionText);
     if (!text) {
-      return "Please clarify the exact scope (account, month/year, and target item).";
+      return "Which account, month or year, and item do you mean?";
     }
     if (text.includes("subscription") || text.includes("recurring")) {
-      return "Please specify: names only, auto-pay only, or amounts for a listed set of names.";
+      return "Choose names only, automatic payments only, or totals for named businesses.";
     }
     if (this.isReferenceFollowUp(questionText)) {
-      return "Please paste the exact names/list you want me to use.";
+      return "Paste the exact names you want me to use.";
     }
     if (text.includes("amount") || text.includes("total") || text.includes("sum") || text.includes("cost")) {
-      return "Please specify which merchant(s), category, or date range to total.";
+      return "Which businesses, category or dates should I total?";
     }
     if (text.includes("transaction")) {
-      return "Please specify what transaction filter to apply (merchant, category, month/year, or amount threshold).";
+      return "Which transactions should I include: business, category, dates or amount?";
     }
-    return "Please clarify the exact scope (account, month/year, and target item).";
+    return "Which account, month or year, and item do you mean?";
   },
 
   enforceNonGenericAnswer(answerText = "", questionText = "", deterministicFacts = null) {
@@ -13405,7 +13405,7 @@ const AssistantController = {
     }
 
     return [
-      "I couldn't answer that reliably from the current data context.",
+      "I couldn't answer that reliably from these records.",
       `${this.buildClarificationHint(questionText)} I'll answer directly.`,
       "Or ask: `Give me the exact prompt for this query.`",
     ].join("\n");
@@ -13977,7 +13977,7 @@ const AssistantController = {
     if (profile.year && profile.category) return `${profile.category} in ${profile.year}${subjectLabel}${accountLabel}`;
     if (profile.year) return `${profile.year}${subjectLabel}${accountLabel}`;
     if (profile.category) return `${profile.category}${subjectLabel}${accountLabel}`;
-    return `the selected dataset${subjectLabel}${accountLabel}`;
+    return `the selected records${subjectLabel}${accountLabel}`;
   },
 
   rememberQueryResult(result = null) {
@@ -14445,9 +14445,9 @@ const AssistantController = {
           return 'Use this exact prompt: `List possible subscriptions only (exclude transfers and utilities), names only, across all accounts and dates.`';
         }
         if (last.mode === "auto_pay_candidates") {
-          return 'Use this exact prompt: `Give me the expense totals for these auto-pay names, including monthly average and annualized estimate.`';
+          return 'Use this exact prompt: `Give me the expense totals for these auto-pay names, including monthly average and annualised estimate.`';
         }
-        return 'Use this exact prompt: `Give me the expense totals for these names, including monthly average and annualized estimate.`';
+        return 'Use this exact prompt: `Give me the expense totals for these names, including monthly average and annualised estimate.`';
       }
       return 'Use this exact prompt: `List possible subscriptions only (exclude transfers and utilities), names only, across all accounts and dates.`';
     }
@@ -14734,7 +14734,7 @@ const AssistantController = {
     if (topCategory) {
       lines.push(`Largest category: ${topCategory.category} (${currencyPrecise.format(topCategory.total)}).`);
     }
-    lines.push(`Total transactions in scope: ${txCount.toLocaleString("en-AU")}.`);
+    lines.push(`Total transactions included: ${txCount.toLocaleString("en-AU")}.`);
     return lines.join("\n");
   },
 
@@ -15171,7 +15171,7 @@ const AssistantController = {
         return {
           status: "invalid",
           action: null,
-          message: "I could not map any valid budget updates from that request.",
+          message: "I could not find usable budget changes in that request.",
         };
       }
       return { status: "ok", action: { type: "budget_batch_set", updates, unresolved: [] } };
@@ -15218,7 +15218,7 @@ const AssistantController = {
         return {
           status: "invalid",
           action: null,
-          message: "I need keyword, category, and subcategory to recategorize transactions.",
+          message: "I need a keyword, category and subcategory to change transaction categories.",
         };
       }
       const matchCount = (AppState.transactions || []).filter((tx) =>
@@ -15432,7 +15432,7 @@ const AssistantController = {
       return;
     }
     if (financeMode && !this.getBaseTransactions().length) {
-      UI.toast("No Account Data", "No transactions found for the selected assistant account scope.", "error");
+      UI.toast("No Account Data", "No transactions were found for the selected accounts.", "error");
       this.updateStatus();
       return;
     }
@@ -15596,7 +15596,7 @@ const App = {
     const appendBtn = document.getElementById("csvImportAppend");
 
     if (!(dialog && cancelBtn && replaceBtn && appendBtn)) {
-      return window.confirm("Add these CSV transactions to the current dataset?\n\nOK = combine accounts/data\nCancel = leave current data unchanged")
+      return window.confirm("Add these CSV transactions to your current records?\n\nOK adds them. Cancel keeps your records unchanged.")
         ? "append" : "cancel";
     }
 
@@ -15662,7 +15662,7 @@ const App = {
 
       const uniqueTransactions = dedupeTransactions(imported);
       if (!uniqueTransactions.length) {
-        throw new Error("No transactions were found. Check CSV format and try again.");
+        throw new Error("No transactions were found. Check the CSV format and try again.");
       }
 
       let mergedTransactions = uniqueTransactions;
@@ -15761,7 +15761,7 @@ const App = {
       if (
         confirmReplace &&
         !window.confirm(
-          `Restore full Finance Studio backup from ${fileName}?\n\nThis will replace the current dataset, budgets, rules, and saved local settings on this device.\n\nTransactions in backup: ${txCount}`
+          `Restore full Finance Studio backup from ${fileName}?\n\nThis replaces this browser’s transactions, budgets, rules and saved settings.\n\nTransactions in backup: ${txCount}`
         )
       ) {
         UI.toast("Restore Cancelled", "Backup restore was cancelled.", "warning");
@@ -16013,8 +16013,8 @@ const App = {
         <p class="eyebrow">Finance Studio</p>
         <h2>Import JSON or CSV to begin</h2>
         <p class="helper" style="margin-top:0.5rem;">
-          Browser security blocks automatic local file access in some environments.
-          You can load <strong>financial_overview.json</strong> or import raw bank <strong>.csv</strong> files directly.
+          Choose a file to load your records.
+          You can use <strong>financial_overview.json</strong> or bank statement <strong>.csv</strong> files.
         </p>
         <div class="inline-actions" style="justify-content:center; margin-top:1rem;">
           <button class="btn btn-primary" id="welcomeImportBtn">Select Data File</button>
@@ -16032,10 +16032,10 @@ const App = {
   },
 
   ensureValidDataset(json) {
-    if (!json || typeof json !== "object") throw new Error("JSON root is invalid.");
-    if (!Array.isArray(json.recent_transactions)) throw new Error("Missing recent_transactions array.");
+    if (!json || typeof json !== "object") throw new Error("This file is not a readable Finance snapshot.");
+    if (!Array.isArray(json.recent_transactions)) throw new Error("The snapshot is missing its transaction list (recent_transactions).");
     if (!Array.isArray(json.monthly_cashflow) && !json.recent_transactions.length) {
-      throw new Error("Missing monthly cashflow data.");
+      throw new Error("The snapshot has no monthly cashflow or transaction records.");
     }
   },
 
@@ -16057,8 +16057,8 @@ const App = {
       .sort((a, b) => a.localeCompare(b));
     if (combinedLegacy.length) {
       UI.toast(
-        "Taxonomy Warning",
-        `Legacy categories detected: ${combinedLegacy.join(", ")}`,
+        "Check category names",
+        `Older category names found: ${combinedLegacy.join(", ")}`,
         "warning"
       );
     }
@@ -16306,8 +16306,5 @@ if (typeof module === "object" && module.exports) {
 if (typeof window !== "undefined") {
   window.FinanceEngine = FinanceEngine;
 }
-
-
-
 
 

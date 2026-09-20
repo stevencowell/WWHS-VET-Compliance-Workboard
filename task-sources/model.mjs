@@ -5,7 +5,7 @@ export function taskGroup(row) {
   if (row.phase === 'annual' || row.phase === 'annual_setup') return 'Annual setup';
   const term = /^term_([1-4])$/.exec(row.phase || '');
   if (term) return `Term ${term[1]} · ${row.due2026 ? 'dated tasks' : 'confirm timing'}`;
-  if (row.phase === 'weekly') return 'Weekly review controls';
+  if (row.phase === 'weekly') return 'Weekly checks';
   if (row.phase === 'triggered' || row.phase === 'event_driven') return 'When an event occurs';
   return 'Ongoing duties';
 }

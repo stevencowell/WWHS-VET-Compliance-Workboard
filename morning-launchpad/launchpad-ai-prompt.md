@@ -1,6 +1,6 @@
 # Evernote → Daily Launchpad
 
-Upload your Evernote HTML export into the chat. Include your latest **Export task backup** JSON when updating an existing batch; it lets the AI retain task identities and your previous decisions. Ask:
+Upload your Evernote export (.html) to ChatGPT. When updating existing tasks, include the latest Launchpad file from **Save backup** so ChatGPT can recognise your tasks and keep your completion decisions. Copy the request below:
 
 > Apply the revised Email / Note Summary Master Prompt included below to my supplied Evernote export. Assess useful AI assistance for every actionable task, not only a shortlist. Produce the readable summary and a Daily Launchpad version 2 JSON task file using this schema. Preserve exact note titles, URLs and existing task keys and decisions from my backup. This is an analysis/import run, not permission to execute every task.
 

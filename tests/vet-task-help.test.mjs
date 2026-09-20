@@ -77,7 +77,7 @@ test('event occurrences use canonical identity and keep their event evidence sep
 test('activation and hard prerequisites are prepared for a human decision rather than bypassed', () => {
   const help = getVetTaskHelp(find('2027-g10-activate'));
   assert.equal(help.profileId, 'cycle-authorisation');
-  assert.match(help.deliverable, /each required control, official verification reference/);
+  assert.match(help.deliverable, /each required check, official verification reference/);
   assert.match(text(help), /Do not release the gate/);
   const dependent = scheduled.find(task => task.hardDependencies?.length && task.independentVerificationRequired);
   assert.ok(dependent);

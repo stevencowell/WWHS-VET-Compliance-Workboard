@@ -1,4 +1,4 @@
-import {enrich,linksIn,todaySydney,validDate,SOURCE_LIMIT} from './summary-core.mjs?v=email-source-1';
+import {enrich,linksIn,todaySydney,validDate,SOURCE_LIMIT} from './summary-core.mjs?v=plain-language-1';
 const months=['january','february','march','april','may','june','july','august','september','october','november','december'];
 const datePattern='(?:\\d{4}-\\d{2}-\\d{2}|\\d{1,2}/\\d{1,2}/\\d{4}|\\d{1,2}(?:st|nd|rd|th)?\\s+(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\\s+\\d{4})';
 function fullDate(raw){
@@ -41,7 +41,7 @@ export function suggestEmail(source,{subject='',instruction='',today=todaySydney
  const urgent=Boolean(deadline.date&&deadline.date<=today)||(!noRush&&/\b(?:urgent|asap|overdue|today|tomorrow)\b/i.test(evidence));
  const actionable=Boolean(direct||request);const group=waiting?'waiting':actionable?'ready':'later';
  const priority=promotional?'purple':urgent?(direct?'red':'blue'):actionable?'green':'';
- const reason=waiting?'Waiting wording detected':promotional?'Looks promotional; kept for review':urgent?'Urgent wording or a due deadline detected':direct?'Your instruction takes priority':request?'A request was found in the message':'No clear request found; kept for later review';
- const dateNote=deadline.uncertain||eventDate.uncertain?'Multiple or invalid dates found. Choose the correct dates before saving.':/\b(?:today|tomorrow|next week|next (?:Monday|Tuesday|Wednesday|Thursday|Friday))\b/i.test(evidence)?'Relative date wording found. Confirm the date against when the email was sent.':!deadline.date&&!eventDate.date?'No clear full date found. Dates remain blank.':'Dates suggested from explicit wording. Confirm they refer to your task.';
- return enrich({id:'email-preview',title,action,source:text,links:linksIn(text),url:'',instruction:direct,group,priority,nextAction:waiting?'delay':deadline.date?'date':actionable?'do':'delay',dueDate:deadline.date,eventDate:eventDate.date,reason:`Suggested by keyword rules: ${reason}.`,dateNote,score:urgent?70:actionable?30:0});
+ const reason=waiting?'The message says to wait':promotional?'Looks like a promotion; check whether you need it':urgent?'The message says it is urgent or the deadline is due':direct?'Based on what you need to do':request?'A request was found in the message':'No clear request found; kept for you to review later';
+ const dateNote=deadline.uncertain||eventDate.uncertain?'More than one date was found, or a date could not be read. Choose the correct dates before saving.':/\b(?:today|tomorrow|next week|next (?:Monday|Tuesday|Wednesday|Thursday|Friday))\b/i.test(evidence)?'The email uses wording such as “today” or “next week”. Check when it was sent before choosing a date.':!deadline.date&&!eventDate.date?'No clear date found. Add one if needed.':'Dates were found in the message. Check they apply to your task.';
+ return enrich({id:'email-preview',title,action,source:text,links:linksIn(text),url:'',instruction:direct,group,priority,nextAction:waiting?'delay':deadline.date?'date':actionable?'do':'delay',dueDate:deadline.date,eventDate:eventDate.date,reason:`Suggested from the email wording: ${reason}.`,dateNote,score:urgent?70:actionable?30:0});
 }

@@ -94,7 +94,7 @@ export function createBackupFolder({scope='private',win=window,store}={}){
     for(const area of Object.keys(BACKUP_AREAS))if(area!==scope){const saved=await records.get(area);if(saved?.handle&&await handle.isSameEntry(saved.handle))throw new Error('Each area needs its own backup folder. Please choose another folder.');}
   }
   async function select(){
-    if(!supported)throw new Error('Choosing a default folder is not available in this browser. Use Save as or Download a copy.');
+    if(!supported)throw new Error('This browser cannot remember a folder. Use Save as or Download a copy.');
     available();
     const previous=record,expected=previous?.revision??null;busy=true;error='';epoch++;notify();
     try{
@@ -226,7 +226,7 @@ export function createBackupFolder({scope='private',win=window,store}={}){
         }
         if(!file)throw new Error('A new backup filename could not be created. Use Save as instead.');
         const result=await fileDestination(file).write(text,{verify:verifyPersisted});error='';notify();return result;
-      }catch(problem){error=problem?.message===changedMessage?changedMessage:'The backup could not be saved in the selected folder. Your browser data is unchanged. Check that the folder is available, or use Save as.';notify();throw new Error(error,{cause:problem});}
+      }catch(problem){error=problem?.message===changedMessage?changedMessage:'Could not save to that folder. Your saved work is unchanged. Check the folder is available, or use Save as.';notify();throw new Error(error,{cause:problem});}
     }};
   }
   try{if(supported&&typeof win.BroadcastChannel==='function'){channel=new win.BroadcastChannel(CHANNEL);channel.onmessage=event=>{if(event.data?.scope===scope)void hydrate();};}}catch{}

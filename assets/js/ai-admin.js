@@ -30,10 +30,10 @@
       brief: "Draft a clear, courteous reminder or email for me to review.\n\nThe audience is: [staff group or role; include addresses only if needed].\nThe action I need is: [describe the request].\nThe current source and confirmed deadline are: [paste the notice or name/link the authorised source].\nThe tone and useful context are: [brief context].\n\nWrite a suitable subject and a complete, concise message. Make the requested action and confirmed deadline easy to find. Include the relevant source link where available. If the source does not establish the deadline, recipient or obligation, flag that for me before making a claim. Do not invent prior reminders, non-compliance, approvals or commitments. Return the draft here for review and do not create or send an external email or message."
     },
     {
-      id: "documents", title: "Check document currency", category: "Documents",
+      id: "documents", title: "Check documents are current", category: "Documents",
       summary: "Compare selected documents with the current nominated master.",
       output: "A comparison table showing version evidence and checks still needed.",
-      sources: ["The exact documents or links you want checked", "The current authorised master or owner library"],
+      sources: ["The exact documents or links you want checked", "The current approved master or official document library"],
       brief: "Help me check whether the selected working documents match their current authorised masters.\n\nThe documents to check are: [name/link the selected documents].\nThe authorised master or owner library is: [name/link the current source].\nThe scope of the check is: [documents, course or procedure and relevant year].\n\nCompare the available title, version, issue or review date, document owner and content against the nominated master. Report each document as 'Matches the nominated master', 'Difference found' or 'Unable to verify', with evidence and source links. A recent file modification date alone is not proof of currency. Identify broken or inaccessible links and differences that need the document owner's decision. Recommend the next check without declaring compliance. Do not replace, delete or update any document."
     },
     {
@@ -59,21 +59,21 @@
   const promptFor = job => `${roleContext}\n\n${job.brief}\n\n${sourceRules}`;
 
   function connectionNote() {
-    return `<div class="ai-connection"><span class="ai-connection-dot" aria-hidden="true"></span><div><strong>Direct activation not connected</strong><p>These buttons prepare a prompt. To start the work, paste it into Codex or ChatGPT and provide the current sources.</p></div></div>`;
+    return `<div class="ai-connection"><span class="ai-connection-dot" aria-hidden="true"></span><div><strong>Start with a copied prompt</strong><p>These buttons prepare a prompt. To start the work, paste it into Codex or ChatGPT and provide the current sources.</p></div></div>`;
   }
 
   function menu() {
-    return `<header class="ai-heading"><p class="ai-eyebrow">${wing} wing · A little less administration</p><h1 tabindex="-1" data-ai-heading>AI Admin · ${wing}</h1><p>Choose one job for your ${role} role and prepare a clear brief for Codex or ChatGPT.</p></header>
+    return `<header class="ai-heading"><p class="ai-eyebrow">${wing} wing · A little less administration</p><h1 tabindex="-1" data-ai-heading>AI Admin · ${wing}</h1><p>Choose a job, copy its prompt and add your sources in Codex or ChatGPT.</p></header>
       ${connectionNote()}
       <div class="ai-grid">${jobs.map(job => `<article class="ai-card"><div class="ai-card-meta"><span>${escapeHtml(job.category)}</span><span class="ai-ready">Prompt ready</span></div><h2>${escapeHtml(job.title)}</h2><p>${escapeHtml(job.summary)}</p><p class="ai-card-output"><strong>You get</strong> ${escapeHtml(job.output)}</p><div class="ai-actions"><button class="ai-button" type="button" data-ai-action="prepare" data-ai-job="${job.id}" aria-label="Prepare job: ${escapeHtml(job.title)}">Prepare job <span aria-hidden="true">→</span></button><button class="ai-button ai-button-secondary" type="button" data-ai-action="copy" data-ai-job="${job.id}" aria-label="Copy prompt: ${escapeHtml(job.title)}">Copy prompt</button></div></article>`).join("")}</div>
-      <aside class="ai-next"><h2>Build this up one useful job at a time</h2><p>The menu and starter prompts are ready. Each job can later gain its own agreed sources, skills and connected tools after its workflow has been tested.</p></aside>`;
+      <aside class="ai-next"><h2>Check the draft before using it</h2><p>AI prepares a draft. Check it against your current sources before sharing it or updating official records.</p></aside>`;
   }
 
   function detail(job) {
     return `<nav class="ai-back-nav" aria-label="AI Admin jobs"><button class="ai-back" type="button" data-ai-action="back" data-ai-job="${job.id}"><span aria-hidden="true">←</span> Back to jobs</button></nav>
       <header class="ai-heading"><p class="ai-eyebrow">${wing} wing · ${escapeHtml(job.category)} · Prompt ready</p><h1 tabindex="-1" data-ai-heading>${escapeHtml(job.title)}</h1><p>${escapeHtml(job.output)}</p></header>
       ${connectionNote()}
-      <div class="ai-job-layout"><section class="ai-source-panel"><h2>Have these ready</h2><ul>${job.sources.map(source => `<li>${escapeHtml(source)}</li>`).join("")}</ul><h2>Start the job</h2><ol><li>Copy the prompt.</li><li>Paste it into Codex or ChatGPT.</li><li>Replace the bracketed guidance with your sources and context, then send it there.</li></ol><p class="ai-source-note">Use sources appropriate for the connected service. This page does not collect or store your documents.</p></section>
+      <div class="ai-job-layout"><section class="ai-source-panel"><h2>Have these ready</h2><ul>${job.sources.map(source => `<li>${escapeHtml(source)}</li>`).join("")}</ul><h2>Start the job</h2><ol><li>Copy the prompt.</li><li>Paste it into Codex or ChatGPT.</li><li>Replace the bracketed guidance with your sources and context, then send it there.</li></ol><p class="ai-source-note">Only share sources the AI service is authorised to use. This page does not collect or store your documents.</p></section>
       <section class="ai-prompt-panel"><label class="ai-prompt-label"><span>Starter prompt</span><textarea class="ai-prompt" readonly spellcheck="false" rows="18" data-ai-prompt>${escapeHtml(promptFor(job))}</textarea></label><div class="ai-actions"><button class="ai-button" type="button" data-ai-action="copy" data-ai-job="${job.id}">Copy prompt</button><button class="ai-button ai-button-secondary" type="button" data-ai-action="select" data-ai-job="${job.id}">Select text</button></div><p class="ai-feedback" role="status" aria-live="polite" aria-atomic="true" data-ai-feedback>Ready to copy. You can also select and copy the text manually.</p></section></div>`;
   }
 

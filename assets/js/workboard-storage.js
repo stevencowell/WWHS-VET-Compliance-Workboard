@@ -15,7 +15,7 @@
   const keys=new Set(KEYS),PREFIX='WWHS-LZ1:',THRESHOLD=32768,MAX_LENGTH=12000000;
   const compactOnQuota=new Set([...KEYS,'wwhs-team-handover:v1','wwhs-team-handover:vet:v1','wwhs-team-handover:tas:v1','wwhs-team-handover-journal:v1','morning-launchpad-backup-reminder:v1','morning-launchpad-restore:v1','wwhs-team-safety-receipt:v1','wwhs-team-safety-receipt:v1:vet','wwhs-team-safety-receipt:v1:tas']);
   const checksum=value=>{let hash=2166136261;for(let index=0;index<value.length;index++){hash^=value.charCodeAt(index);hash=Math.imul(hash,16777619);}return(hash>>>0).toString(16).padStart(8,'0');};
-  function damaged(){throw new Error('This browser’s saved work could not be read safely. Keep the browser data and your backup file; do not clear storage.');}
+  function damaged(){throw new Error('Could not read your saved work. Keep your backup file and do not clear browser data.');}
   function decode(key,value){
     if(value===null||!keys.has(key)||!value.startsWith('WWHS-LZ'))return value;
     const match=/^WWHS-LZ1:(\d{1,8}):([a-f0-9]{8}):/.exec(value);
@@ -27,7 +27,7 @@
   function encode(key,value){
     if(value===null||!keys.has(key)||value.length<THRESHOLD)return value;
     if(value.length>MAX_LENGTH)throw new Error('This saved work is too large. Keep the backup file and split the import into smaller parts.');
-    if(!codec)throw new Error('The storage helper has not loaded. Reload this page before importing or saving.');
+    if(!codec)throw new Error('Saving is not ready. Reload this page before opening or saving a backup.');
     const packed=PREFIX+value.length+':'+checksum(value)+':'+codec.compressToUTF16(value);
     if(packed.length>=value.length)return value;
     // Refuse a write unless it can be read back exactly, including Unicode/HTML.

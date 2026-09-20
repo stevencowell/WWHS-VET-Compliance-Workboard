@@ -1,4 +1,4 @@
-import {getBackupFolder,BACKUP_AREAS} from './backup-folder.mjs?v=area-backups-1';
+import {getBackupFolder,BACKUP_AREAS} from './backup-folder.mjs?v=plain-language-1';
 import {isBackupForArea,compatibleBackupFiles} from './backup-file-types.mjs?v=area-backups-1';
 
 export function mountBackupFileBrowser(host,{scope,onFile,onError=()=>{}}){
@@ -18,7 +18,7 @@ export function mountBackupFileBrowser(host,{scope,onFile,onError=()=>{}}){
     if(file.size>240000000)throw new Error('This file is too large. Keep it and choose a supported backup.');
     let value;try{value=JSON.parse(await file.text());}catch{if(disposed||token!==sequence)return;throw new Error('This file could not be read as a backup. Your saved work is unchanged.');}
     if(disabled||disposed||token!==sequence)return;
-    if(!isBackupForArea(value,scope))throw new Error(`Choose a ${label} backup. This file belongs to another area or is not a supported backup.`);
+    if(!isBackupForArea(value,scope))throw new Error(`This is not a ${label} backup. Choose a file saved from ${label}.`);
     message.textContent=`Selected: ${file.name}`;await onFile(file);
   }
   async function refresh(){
@@ -31,7 +31,7 @@ export function mountBackupFileBrowser(host,{scope,onFile,onError=()=>{}}){
         button.addEventListener('click',async()=>{if(disabled||working)return;const token=sequence;working=true;render();try{await choose(await entry.handle.getFile(),token);}catch(error){if(token===sequence&&!disposed)report(error);}finally{working=false;render();}});
         row.append(button,details);list.append(row);
       }
-      list.hidden=!entries.length;message.textContent=entries.length?`${entries.length} ${label} backup${entries.length===1?'':'s'}. Newest first.`:`No ${label} backups found here. Browse files to open an older copy, or choose a different ${label} folder in backup options.`;
+      list.hidden=!entries.length;message.textContent=entries.length?`${entries.length} ${label} backup${entries.length===1?'':'s'}. Newest first.`:`No ${label} backups here. Use Browse files, or change the folder in backup options.`;
     }catch(error){if(token===sequence&&!disposed)report(error);}finally{working=false;render();}
   }
   show.addEventListener('click',()=>void refresh());

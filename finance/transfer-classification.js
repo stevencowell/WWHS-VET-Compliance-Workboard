@@ -93,7 +93,7 @@
         excludeFromSpending: true,
         excludeFromIncome: true,
         excludeFromBudget: true,
-        reason: "Cash withdrawal keywords matched after stronger payee rules failed.",
+        reason: "Cash withdrawal keywords matched; no more specific payee rule matched.",
       },
       {
         id: "fallback_dining_out_venue",
@@ -104,7 +104,7 @@
         family: "dining",
         regexes: [/\bhotel\b/i, /\btavern\b/i, /\bwinery\b/i, /\brestauran(?:t)?\b/i, /\bbistro\b/i, /\bcafe\b/i],
         rejectRegexes: [/\bmotor\s+inn\b/i, /\bmotel\b/i, /\bresort\b/i, /\blodge\b/i, /\baccommodation\b/i, /\bbooking\b/i],
-        reason: "Broad food-and-drink venue terms matched after stronger payee rules failed.",
+        reason: "Food and drink terms matched; no more specific payee rule matched.",
       },
       {
         id: "fallback_health_other_provider",
@@ -123,7 +123,7 @@
           /\bdentist\b/i,
           /\bpatholog(?:y|ical)?\b/i,
         ],
-        reason: "Broad health-provider terms matched after stronger payee rules failed.",
+        reason: "Health provider terms matched; no more specific payee rule matched.",
       },
       {
         id: "fallback_transport_other_vehicle",
@@ -133,7 +133,7 @@
         direction: "debit",
         family: "transport",
         regexes: [/\btyres?\b/i, /\bmechanic\b/i, /\brego\b/i, /\bregistration\b/i, /\bctp\b/i],
-        reason: "Broad vehicle-cost terms matched after stronger payee rules failed.",
+        reason: "Vehicle cost terms matched; no more specific payee rule matched.",
       },
       {
         id: "fallback_work_other",
@@ -143,7 +143,7 @@
         direction: "debit",
         family: "work",
         regexes: [/\bunion\b/i, /\bprofessional\s+membership\b/i],
-        reason: "Broad work-membership terms matched after stronger payee rules failed.",
+        reason: "Work membership terms matched; no more specific payee rule matched.",
       },
       {
         id: "fallback_pets_other",
@@ -153,7 +153,7 @@
         direction: "debit",
         family: "pets",
         regexes: [/\bveterinary\b/i, /\banimal\s+hospital\b/i, /\bpet\s+clinic\b/i],
-        reason: "Broad pet-care terms matched after stronger payee rules failed.",
+        reason: "Pet care terms matched; no more specific payee rule matched.",
       },
       {
         id: "fallback_lifestyle_other",
@@ -163,7 +163,7 @@
         direction: "debit",
         family: "lifestyle",
         regexes: [/\bhomewares?\b/i, /\bfurnitur(?:e|ings?)\b/i, /\bapparel\b/i, /\bclothing\b/i],
-        reason: "Broad lifestyle-retail terms matched after stronger payee rules failed.",
+        reason: "Lifestyle shopping terms matched; no more specific payee rule matched.",
       },
     ]);
 
@@ -1213,7 +1213,7 @@
               subcategory: loanChange.subcategory,
               ruleId: loanChange.ruleId,
               confidence: loanChange.confidence,
-              reason: "Recurring loan repayment detected from cadence and amount clustering.",
+              reason: "A regular loan repayment was identified from its timing and similar amounts.",
               isLoanPayment: true,
               excludeFromSpending: false,
               excludeFromIncome: true,
@@ -1233,7 +1233,7 @@
               subcategory: creditChange.subcategory,
               ruleId: creditChange.ruleId,
               confidence: creditChange.confidence,
-              reason: "Loan-account counterpart entry linked to a detected mortgage repayment.",
+              reason: "The matching loan-account entry was linked to a mortgage repayment.",
               isLoanPaymentCounterpart: true,
               excludeFromSpending: true,
               excludeFromIncome: true,
@@ -1252,7 +1252,7 @@
               subcategory: payeeRule.subcategory,
               ruleId: payeeRule.id,
               confidence: getCategoryRuleConfidence(payeeRule),
-              reason: payeeRule.reason || "Configured payee rule matched canonical payee text.",
+              reason: payeeRule.reason || "A saved payee rule matched the standardised payee name.",
               excludeFromSpending: payeeRule.excludeFromSpending,
               excludeFromIncome: payeeRule.excludeFromIncome,
               excludeFromBudget: payeeRule.excludeFromBudget,
@@ -1268,7 +1268,7 @@
             subcategory: defaultMatchedTransferSubcategory(amount),
             ruleId: "internal_transfer_match_pair",
             confidence: RULE_CONFIDENCE.internal_pair,
-            reason: "Matched opposite-signed transfer across tracked accounts by amount and date window.",
+            reason: "A debit and credit between tracked accounts matched by amount and nearby dates.",
             transferPairId: pairId,
             isInternalTransfer: true,
             excludeFromSpending: true,
@@ -1279,20 +1279,20 @@
           if (shouldPreserveMatchedTransferSubcategory(tx)) {
             change.subcategory = String(tx?.subcategory || "").trim() || change.subcategory;
             change.ruleId = "internal_transfer_match_preserve_specific";
-            change.reason = "Matched opposite-signed transfer across tracked accounts while preserving a more specific transfer subtype.";
+            change.reason = "A debit and credit between tracked accounts matched. The more specific transfer type was kept.";
           }
           if (sinkingRule && amount < 0) {
             change.subcategory = sinkingRule.subcategory;
             change.ruleId = sinkingRule.id;
             change.confidence = RULE_CONFIDENCE.sinking_transfer;
-            change.reason = "Named sinking-fund transfer detected on a matched internal transfer.";
+            change.reason = "This matched transfer names a fund set aside for future costs.";
             change.isSinkingTransfer = true;
             sinkingMap.set(pairId, sinkingRule.subcategory);
           } else if (sinkingMap.has(pairId) && amount > 0) {
             change.isSinkingTransfer = true;
             change.ruleId = "sinking_transfer_internal_counterpart";
             change.confidence = RULE_CONFIDENCE.sinking_transfer;
-            change.reason = "Counterpart to a named sinking-fund transfer.";
+            change.reason = "The matching entry for a transfer to a named fund set aside.";
           }
           applyClassification(tx, change, auditLog);
           return;
@@ -1306,7 +1306,7 @@
               subcategory: sinkingRule.subcategory,
               ruleId: sinkingRule.id,
               confidence: RULE_CONFIDENCE.sinking_transfer,
-              reason: "Transfer description matched a configured sinking-fund concept.",
+              reason: "The description matched a rule for transfers to a fund set aside.",
               isInternalTransfer: inferredInternalReference,
               isSinkingTransfer: true,
               excludeFromSpending: true,
@@ -1328,7 +1328,7 @@
                 subcategory: knownIncomeRule.subcategory,
                 ruleId: knownIncomeRule.id,
                 confidence: getCategoryRuleConfidence(knownIncomeRule) || RULE_CONFIDENCE.known_income,
-                reason: knownIncomeRule.reason || "Known person/payee alias matched an incoming transfer rule.",
+                reason: knownIncomeRule.reason || "A known payee name matched an incoming transfer rule.",
                 payeeLabel: tx.payee_label,
                 excludeFromSpending:
                   knownIncomeRule.excludeFromSpending === undefined ? true : knownIncomeRule.excludeFromSpending,
@@ -1349,7 +1349,7 @@
                 subcategory: "Other Income",
                 ruleId: "incoming_transfer_keyword_income",
                 confidence: RULE_CONFIDENCE.keyword_income,
-                reason: "Incoming transfer description matched a safe income keyword.",
+                reason: "The incoming transfer description matched an approved income keyword.",
                 excludeFromSpending: true,
                 excludeFromIncome: false,
                 excludeFromBudget: true,
@@ -1366,7 +1366,7 @@
                 subcategory: defaultMatchedTransferSubcategory(amount),
                 ruleId: "internal_transfer_family_inferred",
                 confidence: RULE_CONFIDENCE.internal_inferred,
-                reason: "Transfer description references another account in a tracked account family.",
+                reason: "The description refers to another tracked, related account.",
                 isInternalTransfer: true,
                 excludeFromSpending: true,
                 excludeFromIncome: true,
@@ -1384,7 +1384,7 @@
                 subcategory: "External Transfer In",
                 ruleId: "incoming_transfer_external_default",
                 confidence: RULE_CONFIDENCE.external_transfer,
-                reason: "Incoming transfer kept out of income totals until explicitly tagged as real income.",
+                reason: "This incoming transfer stays out of income totals until marked as income.",
                 excludeFromSpending: true,
                 excludeFromIncome: true,
                 excludeFromBudget: true,
@@ -1404,7 +1404,7 @@
                 subcategory: defaultMatchedTransferSubcategory(amount),
                 ruleId: "internal_transfer_family_inferred",
                 confidence: RULE_CONFIDENCE.internal_inferred,
-                reason: "Transfer description references another account in a tracked account family.",
+                reason: "The description refers to another tracked, related account.",
                 isInternalTransfer: true,
                 excludeFromSpending: true,
                 excludeFromIncome: true,
@@ -1421,7 +1421,7 @@
               subcategory: "External Transfer Out",
               ruleId: "outgoing_transfer_external_default",
               confidence: RULE_CONFIDENCE.external_transfer,
-              reason: "Outgoing transfer-like movement excluded from spending until matched to a real expense category.",
+              reason: "This likely outgoing transfer stays out of spending until matched to an expense category.",
               excludeFromSpending: true,
               excludeFromIncome: true,
               excludeFromBudget: true,
@@ -1705,7 +1705,7 @@
         totalDays: ROLLING_TWELVE_MONTH_DAYS,
         fractionElapsed: 1,
         scopeMode: "rolling_12m",
-        sourceReason: "Current financial year is too early, so suggestions use the trailing 12 months instead.",
+        sourceReason: "There is too little data for this financial year. Suggestions use the last 12 months instead.",
       };
     }
 
@@ -1740,7 +1740,7 @@
             financialYear: {
               ...previousFy,
               scopeMode: "previous_full_fy",
-              sourceReason: `${activeFy.label || "Current FY"} only has ${activeFy.daysElapsed} ${dayLabel} of data, so suggestions use the previous full FY.`,
+              sourceReason: `${activeFy.label || "This financial year"} has only ${activeFy.daysElapsed} ${dayLabel} of data. Suggestions use the previous full financial year.`,
             },
             scopeRows: previousRows,
           };

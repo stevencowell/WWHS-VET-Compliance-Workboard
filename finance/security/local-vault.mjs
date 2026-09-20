@@ -1,4 +1,4 @@
-import { FinanceStorageError, MAX_STATE_BYTES, validateRevision, validateValues } from './values.mjs';
+import { FinanceStorageError, MAX_STATE_BYTES, validateRevision, validateValues } from './values.mjs?v=plain-language-1';
 
 const FORMAT = 'finance-studio-encrypted-vault';
 const ITERATIONS = 600000;
@@ -42,18 +42,18 @@ function additionalData(record) {
 }
 function requirePassword(password, creating = false) {
   if (typeof password !== 'string' || password.length > 1024 || (creating ? password.length < 12 : password.length < 1)) {
-    throw failure('password', creating ? 'Use a password or passphrase of at least 12 characters.' : 'Enter the password for this finance vault.');
+    throw failure('password', creating ? 'Use a password or passphrase of at least 12 characters.' : 'Enter the password for this Finance workspace.');
   }
 }
 
 export async function openVaultDatabase(indexedDB, dbName) {
-  if (!indexedDB) throw failure('unsupported', 'This browser cannot provide private local storage.');
+  if (!indexedDB) throw failure('unsupported', 'This browser cannot save private Finance records.');
   const db = await new Promise((resolve, reject) => {
     const request = indexedDB.open(dbName, 1);
     request.onupgradeneeded = () => { if (!request.result.objectStoreNames.contains(STORE)) request.result.createObjectStore(STORE); };
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(failure('storage', 'Private browser storage could not be opened. Your browser may be blocking it.'));
-    request.onblocked = () => reject(failure('storage', 'Close other Finance Studio tabs before opening this vault.'));
+    request.onblocked = () => reject(failure('storage', 'Close other Finance Studio tabs before opening this workspace.'));
   });
   db.onversionchange = () => db.close();
   return {
@@ -64,7 +64,7 @@ export async function openVaultDatabase(indexedDB, dbName) {
         let value;
         request.onsuccess = () => { value = request.result ?? null; };
         transaction.oncomplete = () => resolve(value);
-        transaction.onerror = transaction.onabort = () => reject(failure('storage', 'The saved finance vault could not be read.'));
+        transaction.onerror = transaction.onabort = () => reject(failure('storage', 'The saved Finance records could not be read.'));
       });
     },
     readPrevious() { return this.read(PREVIOUS_ID); },
@@ -95,7 +95,7 @@ export async function openVaultDatabase(indexedDB, dbName) {
           }
         };
         transaction.oncomplete = () => resolve();
-        transaction.onerror = transaction.onabort = () => reject(reason || failure('storage', 'Finance could not be saved in this browser. Keep this tab open and export a backup.'));
+        transaction.onerror = transaction.onabort = () => reject(reason || failure('storage', 'Finance could not be saved in this browser. Keep this tab open and save a recovery backup.'));
       });
     },
     close() { db.close(); },
@@ -105,7 +105,7 @@ export async function openVaultDatabase(indexedDB, dbName) {
 export async function createLocalVault({ dbName = 'finance-studio-private-v1' } = {}, dependencies = {}) {
   const crypto = dependencies.crypto || globalThis.crypto;
   if (!crypto?.subtle || !crypto?.getRandomValues || !crypto?.randomUUID) {
-    throw failure('unsupported', 'Private finance needs a secure browser connection (HTTPS or localhost).');
+    throw failure('unsupported', 'Open Finance using its secure website (HTTPS) or local preview (localhost).');
   }
   const database = dependencies.database || await openVaultDatabase(globalThis.indexedDB, dbName);
   let key = null;
@@ -113,9 +113,9 @@ export async function createLocalVault({ dbName = 'finance-studio-private-v1' } 
   let epoch = 0;
   let closed = false;
   let authBusy = false;
-  function requireOpen() { if (closed) throw failure('closed', 'The finance vault is closed.'); }
-  function requireUnlocked() { requireOpen(); if (!key || !unlockedRecord) throw failure('locked', 'Unlock finance with your password first.'); }
-  function assertEpoch(started) { requireOpen(); if (started !== epoch) throw failure('locked', 'The vault was locked while the request was running.'); }
+  function requireOpen() { if (closed) throw failure('closed', 'This Finance workspace is closed.'); }
+  function requireUnlocked() { requireOpen(); if (!key || !unlockedRecord) throw failure('locked', 'Unlock Finance with your password first.'); }
+  function assertEpoch(started) { requireOpen(); if (started !== epoch) throw failure('locked', 'Finance was locked before this action finished.'); }
   async function derive(password, salt) {
     const material = await crypto.subtle.importKey('raw', encode(password), 'PBKDF2', false, ['deriveKey']);
     return crypto.subtle.deriveKey({ name: 'PBKDF2', salt: unbase64(salt), iterations: ITERATIONS, hash: 'SHA-256' }, material,
@@ -164,7 +164,7 @@ export async function createLocalVault({ dbName = 'finance-studio-private-v1' } 
       return exclusiveAuth(async () => {
         requirePassword(password, true);
         const started = epoch;
-        if (await readRecord()) throw failure('exists', 'A finance vault already exists in this browser. Unlock it or restore a backup explicitly.');
+        if (await readRecord()) throw failure('exists', 'Finance records already exist in this browser. Unlock them, or choose Open backup to replace them.');
         const metadata = newMetadata();
         const derived = await derive(password, metadata.salt);
         const saved = await encrypt({}, derived, metadata);
@@ -180,7 +180,7 @@ export async function createLocalVault({ dbName = 'finance-studio-private-v1' } 
         requirePassword(password);
         const started = epoch;
         const saved = await readRecord();
-        if (!saved) throw failure('missing', 'There is no saved finance vault in this browser yet.');
+        if (!saved) throw failure('missing', 'No Finance records are saved in this browser yet.');
         const derived = await derive(password, saved.salt);
         await decrypt(saved, derived);
         assertEpoch(started);
@@ -194,7 +194,7 @@ export async function createLocalVault({ dbName = 'finance-studio-private-v1' } 
       const started = epoch;
       const saved = await readRecord();
       if (!saved || saved.vaultId !== unlockedRecord.vaultId || saved.salt !== unlockedRecord.salt) {
-        throw failure('conflict', 'The browser vault was replaced or removed. Export your current edits before unlocking it again.');
+        throw failure('conflict', 'This browser’s saved Finance records were replaced or removed. Save a recovery backup of your edits before unlocking again.');
       }
       const values = await decrypt(saved, key);
       assertEpoch(started);
@@ -204,7 +204,7 @@ export async function createLocalVault({ dbName = 'finance-studio-private-v1' } 
     async saveState(expectedRevision, values) {
       requireUnlocked();
       validateRevision(expectedRevision);
-      if (expectedRevision >= Number.MAX_SAFE_INTEGER) throw failure('invalid-revision', 'This vault needs a fresh backup and restore before more changes.');
+      if (expectedRevision >= Number.MAX_SAFE_INTEGER) throw failure('invalid-revision', 'Save a fresh backup, then open it to replace these records before making more changes.');
       const started = epoch;
       const clean = validateValues(values);
       const saved = await encrypt(clean, key, { ...unlockedRecord, revision: expectedRevision + 1, updatedAt: new Date().toISOString() });
@@ -220,7 +220,7 @@ export async function createLocalVault({ dbName = 'finance-studio-private-v1' } 
       const started=epoch,identity=unlockedRecord;
       const saved = await readRecord();
       assertEpoch(started);
-      if (!saved) throw failure('missing', 'There is no saved finance vault to back up.');
+      if (!saved) throw failure('missing', 'There are no saved Finance records to back up.');
       if(identity&&(saved.vaultId!==identity.vaultId||saved.salt!==identity.salt)||expectedRevision!==undefined&&saved.revision!==expectedRevision){
         throw failure('conflict','Another tab changed the saved Finance workspace. Save a recovery backup of the records open here before reloading.');
       }
@@ -261,7 +261,7 @@ export async function createLocalVault({ dbName = 'finance-studio-private-v1' } 
         // A verified backup can recover a damaged local record too. The explicit replacement
         // decision is still required, and the transaction checks that record's identity/version.
         const current = await database.read();
-        if (current && !replaceExisting) throw failure('exists', 'Opening this backup will replace this browser\u2019s vault. Confirm replacement first; the previous encrypted copy will be kept.');
+        if (current && !replaceExisting) throw failure('exists', 'Opening this backup will replace this browser\u2019s Finance records. Confirm first; the previous encrypted copy will be kept.');
         const started = epoch;
         const derived = await derive(password, imported.salt);
         const values = await decrypt(imported, derived);

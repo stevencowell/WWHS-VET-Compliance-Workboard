@@ -31,12 +31,12 @@ define('calendar', ['a-02-build-live-calendar'], 'Prepare the VET calendar',
 
 define('roles-access', ['a-03-confirm-roles-access'], 'Prepare roles and access checks',
   'Make responsibilities and access gaps explicit.',
-  'A role-based responsibility and access matrix with accountable person’s role, doer, verifier, deputy and escalation route.',
+  'A table showing who is responsible, who does the work, who checks it, who provides backup and where to seek help.',
   ['Map each supplied control to the formally recorded delegation; mark unconfirmed role splits as To confirm.',
    'List access checks for the nominated systems and unresolved access requests without collecting passwords or credential files.',
    'Separate proposed deputies from approved delegations and include a practical handover check.'],
   ['Current approved delegation and role descriptions.', 'Required systems and role-based access/escalation information.'],
-  ['The Principal or authorised delegate confirms delegation and deputies.', 'The actual authorised user tests access; a drafted matrix is not proof of access.']);
+  ['The Principal or authorised delegate confirms delegation and deputies.', 'The actual authorised user tests access; a drafted table does not prove access works.']);
 
 define('school-profile', ['a-04-update-school-profile'], 'Prepare the school-profile review',
   'Identify fields that need checking against actual delivery.',
@@ -49,7 +49,7 @@ define('school-profile', ['a-04-update-school-profile'], 'Prepare the school-pro
 
 define('delivery-authority', ['a-05-confirm-delivery', 'e-02-new-course-authority'], 'Prepare delivery-authority checks',
   'Separate the planned offer from the approvals it needs.',
-  'A readiness and approval matrix for the nominated course, with unresolved authority gaps and questions for the RTO.',
+  'A readiness and approval checklist for the nominated course, with missing approvals and questions for the RTO.',
   ['Separate central RTO scope, school Authority to Deliver and actual trainer/resource readiness; one does not prove the others.',
    'Map the intended qualification and delivery arrangement to current controlled approval requirements.',
    'Prepare the supporting-document index and draft questions. Leave offer, enrolment and delivery approval to authorised people.'],
@@ -63,7 +63,7 @@ define('course-records', ['a-06-reconcile-course-codes', 't1-02-external-vet-ent
    'Trace discrepancies to the system that owns the field; do not assume correcting one system updates the others.',
    'Preserve the task’s stated cut-off and year, but mark its live confirmation separately. Draft the verifier’s check sequence, not an import file.'],
   ['Current NESA/RTO entry instructions, applicable field definitions and live deadline reference.', 'Approved de-identified discrepancy summary and current course/provider/qualification references.'],
-  ['Authorised staff inspect learner-level records in the owner systems.', 'A separate verifier confirms any correction and the official submission/status evidence.']);
+  ['Authorised staff inspect learner-level records in the official systems.', 'A separate verifier confirms any correction and the official submission/status evidence.']);
 
 define('trainer-readiness', ['a-07-trainer-readiness', 'c-05-industry-currency'], 'Prepare trainer-readiness review',
   'Organise approval and currency questions without collecting credential files.',
@@ -72,7 +72,7 @@ define('trainer-readiness', ['a-07-trainer-readiness', 'c-05-industry-currency']
    'Separate missing evidence references from an adverse finding; do not judge a trainer qualified from an incomplete summary.',
    'Identify supervision or contingency questions and propose practical actions for the authorised reviewer.'],
   ['Current controlled trainer/assessor requirements.', 'Course allocations and approved role-based status summaries; references to the controlled credential location.'],
-  ['The authorised RTO/school reviewer decides readiness and any supervision conditions.', 'Credential files and identifiable staff information remain in the approved owner system.']);
+  ['The authorised RTO/school reviewer decides readiness and any supervision conditions.', 'Credential files and identifiable staff information remain in the approved official system.']);
 
 define('local-briefing', ['a-08-publish-local-handbook'], 'Draft the staff start-up brief',
   'Turn approved procedures into clear local guidance.',
@@ -126,7 +126,7 @@ define('placement', ['t1-06-work-placement-plan', 't3-01-year11-work-placement',
    'Separate pre-placement approvals and preparation, during-placement contacts/concerns and post-placement reconciliation. Derive deadlines only from supplied instructions.',
    'Flag an active safety or welfare concern for immediate approved escalation; preparing this checklist must not delay that response. Do not approve hosts or placements.'],
   ['Current workplace-learning procedure/forms and course-specific requirements.', 'Actual placement dates and anonymous readiness/contact/attendance exception categories.'],
-  ['Responsible staff verify suitability, permissions and readiness in owner systems.', 'Authorised staff check original placement records, hours and any incident follow-up before closure.']);
+  ['Responsible staff verify suitability, permissions and readiness in official systems.', 'Authorised staff check original placement records, hours and any incident follow-up before closure.']);
 
 define('support-funds', ['t1-08-monitor-support-funds', 't4-09-support-fund-acquittal'], 'Prepare support-fund checks',
   'Compare authorised purpose, approvals and expenditure evidence.',
@@ -238,7 +238,7 @@ define('records-rollover', ['t4-07-markbook-rollover', '2027-g00-rollover'], 'Pr
 
 define('year-assurance', ['t4-08-year-end-assurance'], 'Prepare year-end assurance',
   'Bring verified controls and unresolved work into one review.',
-  'A source-linked assurance pack index, unresolved-control table and draft improvement/carry-over plan.',
+  'An index of review documents with source links, a table of unfinished checks and a draft plan for improvements and work to carry forward.',
   ['Map the supplied assurance criteria to retained official references and recorded verification status.',
    'Separate verified completion, personal completion, waiting work and evidence not yet checked.',
    'Prioritise confirmed improvement findings and carry-overs with owner roles and supported review dates; do not certify compliance.'],
@@ -265,17 +265,17 @@ define('meeting-actions', ['c-02-team-meetings', 't3-02-meeting-follow-up'], 'Pr
 
 define('evidence-review', ['c-03-evidence-feedback-assurance'], 'Prepare the evidence review',
   'Organise a review for the authorised assessor or verifier.',
-  'A source-linked sampling/checklist plan and evidence-reference matrix: located, not located in supplied index, or reviewer judgement needed.',
+  'A source-linked sampling/checklist plan and table of evidence references: located, not located in supplied index, or reviewer judgement needed.',
   ['Map the current review criteria to the supplied evidence index, feedback and annotation categories.',
    'Keep evidence you cannot access distinct from evidence confirmed absent; request the appropriate controlled reference.',
    'List questions about sufficiency, authenticity or feedback for the authorised reviewer; do not decide competency or enter marks.'],
   ['Current authorised review criteria and selected course/unit/period.', 'An approved de-identified evidence index and feedback/annotation status summary.'],
-  ['The authorised reviewer inspects actual evidence in the owner system.', 'The reviewer alone makes assessment and evidence-sufficiency judgements.']);
+  ['The authorised reviewer inspects actual evidence in the official system.', 'The reviewer alone makes assessment and evidence-sufficiency judgements.']);
 
 define('records-privacy', ['c-08-records-privacy-control'], 'Prepare records and privacy checks',
   'Check handling and access without collecting protected records.',
   'A records-location/access/retention checklist and a de-identified exception plan.',
-  ['Map record categories to their approved owner systems, authorised roles and current retention/access instructions.',
+  ['Map record categories to their approved official systems, authorised roles and current retention/access instructions.',
    'Identify inappropriate duplicates, public links or unclear access as questions for the records owner, without opening or copying sensitive files into this workboard.',
    'For a suspected active breach, direct immediate use of the approved incident route instead of delaying for this review.'],
   ['Current privacy, access and retention instructions.', 'Record categories, approved locations and anonymous access/handling concerns.'],
@@ -306,7 +306,7 @@ define('enrolment-change', ['e-03-enrolment-change'], 'Prepare enrolment-change 
    'Map consequences for course entries, provider records, induction/support, evidence and placement where the task requires them.',
    'Identify the owner for each correction and a follow-up verification step; do not assume automatic synchronisation.'],
   ['Current authorised change procedure and relevant entry deadlines.', 'Anonymous change category, confirmed date and discrepancy summary.'],
-  ['Authorised staff verify learner-level details and approval in owner systems.', 'The verifier confirms all required systems reflect the authorised change.']);
+  ['Authorised staff verify learner-level details and approval in official systems.', 'The verifier confirms all required systems reflect the authorised change.']);
 
 define('incident-response', ['e-05-incident-response'], 'Prepare incident follow-up',
   'Support the formal response without delaying urgent action.',
@@ -337,7 +337,7 @@ define('role-handover', ['e-07-coordinator-handover'], 'Prepare a role handover'
 
 define('cycle-authorisation', ['2027-g10-activate'], 'Prepare the operating-cycle decision',
   'Bring prerequisite evidence together for the authorised gate decision.',
-  'A gate-review pack listing each required control, official verification reference, unresolved condition and decision needed.',
+  'A review checklist showing each required check, official verification reference, unresolved condition and decision needed.',
   ['Use the supplied hard dependencies and activation conditions exactly; separate task completion from independent verification.',
    'List unmet or unreviewed prerequisites and the responsible roles without treating the planned start date as approval.',
    'Prepare a decision brief for the named authoriser. Do not release the gate, authorise delivery or mark any prerequisite verified.'],

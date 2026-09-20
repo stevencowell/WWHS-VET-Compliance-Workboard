@@ -28,28 +28,28 @@ function checkDataTree(value) {
   const seen = new WeakSet();
   let visited = 0;
   function visit(item, path, depth) {
-    if (++visited > 100_000 || depth > 12) fail(path, 'The data structure is too large or deeply nested.');
+    if (++visited > 100_000 || depth > 12) fail(path, 'The plan is too large or complex to import.');
     if (item === null || typeof item !== 'object') return;
-    if (seen.has(item)) fail(path, 'Circular or shared object references are not supported.');
+    if (seen.has(item)) fail(path, 'The plan reuses linked records in an unsupported way.');
     seen.add(item);
     const isArray = Array.isArray(item);
-    if (isArray && item.length > 1000) fail(path, 'An array exceeds the allowed size.');
+    if (isArray && item.length > 1000) fail(path, 'A list in the plan has too many entries.');
     const prototype = Object.getPrototypeOf(item);
     if (prototype !== (isArray ? Array.prototype : Object.prototype) && !(prototype === null && !isArray)) {
-      fail(path, 'Use plain JSON objects and arrays.');
+      fail(path, 'Use a standard JSON budget-plan file.');
     }
     const descriptors = Object.getOwnPropertyDescriptors(item);
     for (const key of Reflect.ownKeys(descriptors)) {
-      if (typeof key !== 'string' || FORBIDDEN_KEYS.has(key)) fail(path, 'Prototype or symbol keys are not allowed.');
+      if (typeof key !== 'string' || FORBIDDEN_KEYS.has(key)) fail(path, 'The plan contains unsupported field names.');
       if (isArray && key === 'length') continue;
       const descriptor = descriptors[key];
-      if (!('value' in descriptor) || !descriptor.enumerable) fail(path, 'Accessors and hidden properties are not allowed.');
-      if (isArray && !/^(?:0|[1-9]\d*)$/.test(key)) fail(path, 'Arrays cannot contain named properties.');
+      if (!('value' in descriptor) || !descriptor.enumerable) fail(path, 'The plan contains unsupported hidden or calculated fields.');
+      if (isArray && !/^(?:0|[1-9]\d*)$/.test(key)) fail(path, 'A list in the plan contains unsupported fields.');
       visit(descriptor.value, `${path}.${key}`, depth + 1);
     }
     if (isArray) {
       for (let index = 0; index < item.length; index += 1) {
-        if (!Object.hasOwn(descriptors, String(index))) fail(path, 'Sparse arrays are not allowed.');
+        if (!Object.hasOwn(descriptors, String(index))) fail(path, 'A list in the plan has missing entries.');
       }
     }
   }
@@ -57,17 +57,17 @@ function checkDataTree(value) {
 }
 
 function record(value, keys, path) {
-  if (value === null || typeof value !== 'object' || Array.isArray(value)) fail(path, 'Expected an object.');
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) fail(path, 'This part of the plan has the wrong format.');
   const own = Object.keys(value);
   if (own.length !== keys.length || own.some(key => !keys.includes(key))) {
-    fail(path, `Expected exactly these fields: ${keys.join(', ')}.`);
+    fail(path, `The required fields are: ${keys.join(', ')}.`);
   }
   return value;
 }
 
 function text(value, path, max = 200, allowEmpty = false) {
   if (typeof value !== 'string' || value.length > max || /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(value)) {
-    fail(path, `Expected text of at most ${max} characters without control characters.`);
+    fail(path, `Use readable text of no more than ${max} characters.`);
   }
   const result = value.trim();
   if (!allowEmpty && !result) fail(path, 'Text cannot be empty.');
@@ -76,23 +76,23 @@ function text(value, path, max = 200, allowEmpty = false) {
 
 function id(value, path) {
   const result = text(value, path, 80);
-  if (!/^[A-Za-z0-9][A-Za-z0-9._:-]*$/.test(result)) fail(path, 'Use a short identifier containing letters, numbers, dots, underscores, colons or hyphens.');
+  if (!/^[A-Za-z0-9][A-Za-z0-9._:-]*$/.test(result)) fail(path, 'Use an ID with letters, numbers, dots, underscores, colons or hyphens.');
   return result;
 }
 
 function array(value, path, max, mapper) {
-  if (!Array.isArray(value) || value.length > max) fail(path, `Expected an array with at most ${max} entries.`);
+  if (!Array.isArray(value) || value.length > max) fail(path, `Use a list with no more than ${max} entries.`);
   return value.map((item, index) => mapper(item, `${path}[${index}]`));
 }
 
 function choice(value, allowed, path) {
-  if (!allowed.includes(value)) fail(path, `Expected one of: ${allowed.join(', ')}.`);
+  if (!allowed.includes(value)) fail(path, `Choose one of: ${allowed.join(', ')}.`);
   return value;
 }
 
 function money(value, path, max, allowZero = true) {
   if (typeof value !== 'number' || !Number.isFinite(value) || value < 0 || (!allowZero && value === 0) || value > max) {
-    fail(path, `Expected a finite ${allowZero ? 'non-negative' : 'positive'} amount no greater than ${max}.`);
+    fail(path, `Enter an amount ${allowZero ? 'from zero' : 'above zero'} and no greater than ${max}.`);
   }
   const rounded = Math.round(value * 100) / 100;
   if ((rounded === 0 && value !== 0) || Math.abs(value - rounded) > Number.EPSILON * Math.max(1, Math.abs(value)) * 4) fail(path, 'Amounts may have at most two decimal places.');
@@ -100,10 +100,10 @@ function money(value, path, max, allowZero = true) {
 }
 
 function calendarDate(value, path) {
-  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) fail(path, 'Expected a calendar date in YYYY-MM-DD format.');
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) fail(path, 'Use a date in YYYY-MM-DD format.');
   const [year, month, day] = value.split('-').map(Number);
   if (year < 1900 || year > 2200 || month < 1 || month > 12 || day < 1 || day > daysInMonth(year, month)) {
-    fail(path, 'Expected a real calendar date between 1900 and 2200.');
+    fail(path, 'Use a valid date between 1900 and 2200.');
   }
   return { value, year, month, day, timestamp: Date.UTC(year, month - 1, day) };
 }
@@ -118,7 +118,7 @@ function unique(values, path, key) {
   const used = new Set();
   for (const value of values) {
     const token = key(value);
-    if (used.has(token)) fail(path, 'Duplicate identifiers or labels are not allowed.');
+    if (used.has(token)) fail(path, 'Each ID or label must be unique.');
     used.add(token);
   }
 }
@@ -126,7 +126,7 @@ function unique(values, path, key) {
 function validateLine(value, path, reference = false) {
   record(value, LINE_KEYS, path);
   if (!reference && value.basis !== 'register') {
-    fail(`${path}.basis`, 'Proposed targets must use register basis from direct-provider schedules. Keep historical estimates and unsupported fallbacks in referenceBudget; needs-review rows must be resolved before becoming proposed targets.');
+    fail(`${path}.basis`, 'Proposed targets must come from scheduled payments to providers. Keep older estimates and unsupported amounts in referenceBudget. Resolve items needing review before adding proposed targets.');
   }
   if (!reference && typeof value.category === 'string' && ['income', 'transfer', 'transfers', 'savings', 'investments', 'offset', 'holding'].includes(value.category.trim().toLowerCase())) {
     fail(`${path}.category`, 'Proposed expense targets cannot use an income, transfer or saving category.');
@@ -144,9 +144,9 @@ function validateSchedule(value, path) {
   record(value, SCHEDULE_KEYS, path);
   const start = calendarDate(value.startDate, `${path}.startDate`);
   const end = value.endDate === null ? null : calendarDate(value.endDate, `${path}.endDate`);
-  if (end && end.timestamp < start.timestamp) fail(`${path}.endDate`, 'End cannot precede Start.');
+  if (end && end.timestamp < start.timestamp) fail(`${path}.endDate`, 'The end date must be on or after the start date.');
   if (value.confirmed !== false) fail(`${path}.confirmed`, 'Imported schedules must remain unconfirmed.');
-  if (!Number.isInteger(value.sourceRow) || value.sourceRow < 1 || value.sourceRow > 1_000_000) fail(`${path}.sourceRow`, 'Expected a positive bounded source row number.');
+  if (!Number.isInteger(value.sourceRow) || value.sourceRow < 1 || value.sourceRow > 1_000_000) fail(`${path}.sourceRow`, 'Use a source row number from 1 to 1,000,000.');
   return {
     id: id(value.id, `${path}.id`), type: choice(value.type, TYPES, `${path}.type`),
     title: text(value.title, `${path}.title`, 240), from: text(value.from, `${path}.from`, 200), to: text(value.to, `${path}.to`, 200),
@@ -160,11 +160,11 @@ function validateSchedule(value, path) {
 export function validateBudgetPlan(value) {
   checkDataTree(value);
   record(value, ROOT_KEYS, 'plan');
-  if (value.type !== 'finance-studio-budget-plan' || value.version !== 1) fail('plan', 'Expected a Finance Studio budget plan version 1, not a transaction dataset or backup.');
+  if (value.type !== 'finance-studio-budget-plan' || value.version !== 1) fail('plan', 'Choose a Finance Studio budget-plan file (version 1). Transactions and backups use separate import options.');
   const start = calendarDate(value.financialYearStart, 'plan.financialYearStart');
   const end = calendarDate(value.financialYearEnd, 'plan.financialYearEnd');
   const span = (end.timestamp - start.timestamp) / DAY_MS + 1;
-  if (span < 1 || span > 366) fail('plan.financialYearEnd', 'The financial-year window must be ordered and no longer than 366 days.');
+  if (span < 1 || span > 366) fail('plan.financialYearEnd', 'Check the financial-year start and end dates. The period must be 1 to 366 days.');
   const result = {
     type: 'finance-studio-budget-plan', version: 1, title: text(value.title, 'plan.title', 240),
     financialYearStart: start.value, financialYearEnd: end.value, sourceAsOf: calendarDate(value.sourceAsOf, 'plan.sourceAsOf').value,
@@ -177,7 +177,7 @@ export function validateBudgetPlan(value) {
     schedules: array(value.schedules, 'plan.schedules', BUDGET_PLAN_LIMITS.schedules, validateSchedule),
     accountMappings: array(value.accountMappings, 'plan.accountMappings', BUDGET_PLAN_LIMITS.accountMappings, (item, path) => {
       record(item, ['label', 'accountId', 'confirmed'], path);
-      if (item.accountId !== null || item.confirmed !== false) fail(path, 'Imported account mappings must have accountId null and confirmed false.');
+      if (item.accountId !== null || item.confirmed !== false) fail(path, 'Account links in an imported plan must be unconfirmed, with no account assigned.');
       return { label: text(item.label, `${path}.label`, 200), accountId: null, confirmed: false };
     }),
     notes: array(value.notes, 'plan.notes', BUDGET_PLAN_LIMITS.notes, (item, path) => text(item, path, 4000)),
@@ -190,7 +190,7 @@ export function validateBudgetPlan(value) {
     const directCents = result.schedules.filter(schedule => schedule.type === 'direct-bill').reduce((total, schedule) =>
       total + occurrencesFor(schedule, range).length * Math.round(schedule.amount * 100), 0);
     const proposedCents = result.budgetLines.reduce((total, line) => total + Math.round(line.annual_budget * 100), 0);
-    if (proposedCents > directCents) fail('plan.budgetLines', 'Combined proposed targets exceed the direct-provider schedule total for this financial year. Keep transfers and historical estimates separate.');
+    if (proposedCents > directCents) fail('plan.budgetLines', 'Proposed targets exceed the scheduled provider payments for this financial year. Keep transfers and older estimates separate.');
   }
   return result;
 }
@@ -199,7 +199,7 @@ function queryRange(fromDate, toDate) {
   const from = calendarDate(fromDate, 'fromDate');
   const to = calendarDate(toDate, 'toDate');
   const days = (to.timestamp - from.timestamp) / DAY_MS + 1;
-  if (days < 1 || days > BUDGET_PLAN_LIMITS.queryDays) fail('toDate', `Use an inclusive window of 1 to ${BUDGET_PLAN_LIMITS.queryDays} days.`);
+  if (days < 1 || days > BUDGET_PLAN_LIMITS.queryDays) fail('toDate', `Choose 1 to ${BUDGET_PLAN_LIMITS.queryDays} days, counting both the start and end dates.`);
   return { from, to };
 }
 
@@ -244,7 +244,7 @@ export function scheduleOccurrences(schedule, fromDate, toDate) {
 export function upcomingPlan(plan, asOf, days = 30) {
   const validated = validateBudgetPlan(plan);
   const start = calendarDate(asOf, 'asOf');
-  if (!Number.isInteger(days) || days < 1 || days > BUDGET_PLAN_LIMITS.queryDays) fail('days', `Expected a whole number from 1 to ${BUDGET_PLAN_LIMITS.queryDays}.`);
+  if (!Number.isInteger(days) || days < 1 || days > BUDGET_PLAN_LIMITS.queryDays) fail('days', `Enter a whole number from 1 to ${BUDGET_PLAN_LIMITS.queryDays}.`);
   const throughDate = isoDate(start.timestamp + (days - 1) * DAY_MS);
   const range = queryRange(start.value, throughDate);
   const occurrences = [];
@@ -252,7 +252,7 @@ export function upcomingPlan(plan, asOf, days = 30) {
   // plans; similarly named rows are never silently merged or truncated.
   for (const schedule of validated.schedules) {
     occurrences.push(...occurrencesFor(schedule, range));
-    if (occurrences.length > BUDGET_PLAN_LIMITS.occurrences) fail('plan.schedules', 'Too many occurrences in this window; choose a shorter date window.');
+    if (occurrences.length > BUDGET_PLAN_LIMITS.occurrences) fail('plan.schedules', 'Too many scheduled payments in these dates. Choose a shorter period.');
   }
   occurrences.sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : a.scheduleId < b.scheduleId ? -1 : a.scheduleId > b.scheduleId ? 1 : 0);
   const centsByType = Object.fromEntries(TYPES.map(type => [type, 0]));
@@ -264,10 +264,10 @@ export function upcomingPlan(plan, asOf, days = 30) {
     totals: { byType, directPayments: byType['direct-bill'], transfersOut: outCents / 100,
       transfersBack: byType['from-holding'], grossMovements: Object.values(centsByType).reduce((a, b) => a + b, 0) / 100 },
     assumptions: [
-      'Planned occurrences only. These are not observed transactions or evidence of paid or funded amounts.',
-      'Start is the first occurrence; End and the displayed query boundaries are inclusive.',
-      'Monthly dates use the original day, clamped to the last day of shorter months. No bank holiday adjustment is inferred.',
-      'Transfer totals describe internal movements and must not be added to expenses or treated as income.',
+      'These are planned payments, not recorded transactions. They do not show what has been paid or funded.',
+      'Payments start on the start date. The end date and both dates shown in this view are included.',
+      'Monthly payments use the original day, or the last day of a shorter month. Dates are not adjusted for bank holidays.',
+      'Transfers move money between your accounts. Do not add them to expenses or income.',
     ],
   };
 }

@@ -18,13 +18,13 @@
   const finance = (item = "the approved allocation, commitments and expenditure records") => system("finance-system", "Open school finance", `Use the Department sign-in and finance permissions to find ${item}; confirm the current SBAR location with the finance owner.`);
   const calendar = local("approved VET calendar", "Find the calendar for the task year. Check school reporting, placement and meeting dates with their owners.");
   const schoolCalendar = system("staff-calendar", "Open the school staff calendar", "Check current reporting, assessment and meeting constraints; confirm placement dates with the placement owner.");
-  const actions = local("team action register", "Find the approved team action record and the relevant item; record role, verifier, due point and follow-up there.");
+  const actions = local("team action register", "Find the approved team action record and the relevant item; record the responsible role, checker, due date and follow-up there.");
   const roles = local("approved roles and delegations", "Find the current approved management/delegation record; confirm responsibilities with the Principal or authorised delegate.");
-  const sources = route("./task-sources/?wing=vet", "Open VET task sources", "Find the relevant task's authority and source access route; check the actual current source before acting.");
-  const issues = route("#issues", "Review authority gaps", "Review the visible source and authority gaps; keep unresolved matters owned.");
+  const sources = route("./task-sources/?wing=vet", "Open VET task sources", "Find the source for this task and check its current instructions before acting.");
+  const issues = route("#issues", "Review authority gaps", "Check missing sources or approvals and assign someone to follow them up.");
   const systems = route("#systems", "Open system and source directory", "Use the approved links for each system you are authorised to access.");
-  const work = route("#vet-home", "Open VET task list and full register", "Review waiting work and hand-offs; record only privacy-safe references here.");
-  const cycle = route("#cycle-2027", "Open the 2027 operating cycle", "Review the separately tracked control points and their prerequisite states.");
+  const work = route("#vet-home", "Open all VET tasks", "Review waiting work and hand-offs; record only privacy-safe references here.");
+  const cycle = route("#cycle-2027", "Open the 2027 plan", "Check the planned tasks and any earlier work they depend on.");
   const wpl = source("DOE-WPL-PROCEDURE", "Read workplace-learning procedure", "Check the current preparation, contact, safety, escalation and record requirements for this placement.");
   const forms = source("DOE-WPL-FORMS", "Open workplace-learning guides and forms", "Choose the current form and check the course and placement requirements before using it.");
   const privacy = source("DOE-PRIVACY", "Read Department privacy requirements", "Use the current approved privacy and incident process; do not paste confidential records into this workboard.");

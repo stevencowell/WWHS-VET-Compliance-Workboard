@@ -16,7 +16,7 @@ test('one pasted email keeps its source and suggests a request and explicit Aust
  assert.equal(validateInbox(JSON.stringify({version:2,items:[x]})).items.length,1);
 });
 test('relative wording and email timestamps never silently become calendar deadlines',()=>{
- const x=suggest('Sent: 15 September 2026\nSubject: Urgent reply\nPlease reply tomorrow.');assert.equal(x.dueDate,null);assert.equal(x.priority,'blue');assert.match(x.dateNote,/Relative/);
+ const x=suggest('Sent: 15 September 2026\nSubject: Urgent reply\nPlease reply tomorrow.');assert.equal(x.dueDate,null);assert.equal(x.priority,'blue');assert.match(x.dateNote,/when it was sent/);
  const y=suggest('Date: 16 September 2026\nSubject: Weekly update\nHere is the latest information.');assert.equal(y.dueDate,null);assert.equal(y.eventDate,null);assert.equal(y.group,'later');
 });
 test('your instruction overrides quoted requests and not-urgent wording is respected',()=>{
@@ -26,7 +26,7 @@ test('your instruction overrides quoted requests and not-urgent wording is respe
  const z=suggest('Subject: Update\nPlease review the draft.\nFrom: Earlier sender\nPlease complete by 12 September 2026.');assert.equal(z.dueDate,null);
 });
 test('conflicting or invalid dates need review and event dates stay distinct from deadlines',()=>{
- const x=suggest('Subject: Return forms\nPlease return one by 18 September 2026 and the other by 21 September 2026.');assert.equal(x.dueDate,null);assert.match(x.dateNote,/Multiple/);
+ const x=suggest('Subject: Return forms\nPlease return one by 18 September 2026 and the other by 21 September 2026.');assert.equal(x.dueDate,null);assert.match(x.dateNote,/More than one date/);
  assert.equal(suggest('Subject: Return forms\nPlease return by 31/02/2026.').dueDate,null);
  const y=suggest('Subject: Staff meeting\nPlease attend the meeting on 21 October 2026.');assert.equal(y.eventDate,'2026-10-21');assert.equal(y.dueDate,null);
 });

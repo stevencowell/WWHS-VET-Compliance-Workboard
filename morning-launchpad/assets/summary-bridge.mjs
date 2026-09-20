@@ -1,4 +1,4 @@
-import {prepareTasks} from './summary-core.mjs?v=7';
+import {prepareTasks} from './summary-core.mjs?v=plain-language-1';
 // Use the existing conflict-safe React saver for every daily-plan mutation.
 export function useSummaryBridge(React,context){
   React.useEffect(()=>{
@@ -10,7 +10,7 @@ export function useSummaryBridge(React,context){
       try{
         if(!ready||editing)throw new Error('Finish editing or reload the saved daily plan before adding priorities.');
         const additions=prepareTasks(day,request.items);
-        if(additions.length&&!save({...day,tasks:[...day.tasks,...additions]}))throw new Error('The plan could not be saved. Resolve the message in today’s plan and try again.');
+        if(additions.length&&!save({...day,tasks:[...day.tasks,...additions]}))throw new Error('The plan could not be saved. Check the message in today’s plan and try again.');
         request.result={ok:true,count:additions.length};
       }catch(error){request.result={ok:false,message:error.message};}
     }
@@ -20,7 +20,7 @@ export function useSummaryBridge(React,context){
         const matches=t=>t.id===`summary:${request.id}`||t.title===request.title||(request.planAliases||[]).some(a=>t.id===a.id||t.title===a.title);
         if(day.tasks.some(matches)){
           if(!ready||editing||day.closed)throw new Error('Reopen today’s plan and finish editing before changing this task.');
-          if(!['todo','done'].includes(request.state))throw new Error('Invalid progress');
+          if(!['todo','done'].includes(request.state))throw new Error('This task progress could not be saved.');
           if(!save({...day,tasks:day.tasks.map(t=>matches(t)?{...t,state:request.state}:t)}))throw new Error('The daily plan could not be saved.');
         }
         request.result={ok:true};

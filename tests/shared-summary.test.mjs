@@ -38,9 +38,9 @@ test('long workboard identities are deterministic, bounded and separated across 
 test('invalid imported workstream or origin metadata is rejected before saving',async()=>{
   const item=await createTrackedWork(descriptor());
   for(const change of [{workstream:'admin'},{origin:{...item.origin,wing:'evil'}},{origin:{...item.origin,route:'https://example.org/'}},{origin:{...item.origin,route:'#task/one\nscript'}},{origin:{...item.origin,recordKey:''}}]){
-    assert.throws(()=>validateInbox(JSON.stringify({version:2,items:[{...item,...change}]})),/Invalid task fields/);
+    assert.throws(()=>validateInbox(JSON.stringify({version:2,items:[{...item,...change}]})),/Check the details for this task/);
   }
-  await assert.rejects(()=>createTrackedWork(descriptor({route:'javascript:alert(1)'})),/invalid source link/);
+  await assert.rejects(()=>createTrackedWork(descriptor({route:'javascript:alert(1)'})),/link to the original workboard task could not be read/);
 });
 
 test('same-titled tasks from different workboards and cycles cannot merge accidentally',async()=>{
@@ -101,11 +101,11 @@ test('trackWork fails safely for changed-tab state, invalid notes and full lists
   await assert.rejects(()=>list.trackWork(descriptor(),{silent:true}),/could not be saved/);
   assert.equal(stored.get(INBOX_KEY),other);assert.equal(list.blocked,true);assert.equal(list.reloadButton.hidden,false);
   const fresh=component();
-  await assert.rejects(()=>fresh.list.trackWork(descriptor({notes:'x'.repeat(200001)}),{silent:true}),/Invalid task fields/);
+  await assert.rejects(()=>fresh.list.trackWork(descriptor({notes:'x'.repeat(200001)}),{silent:true}),/Check the details for this task/);
   assert.equal(fresh.stored.get(INBOX_KEY),undefined);
   fresh.list.inbox.items=Array.from({length:300},(_,i)=>enrich({id:String(i),title:'Existing '+i,action:'Keep this work'}));
   assert.equal(fresh.list.persist(fresh.list.inbox),true);const full=fresh.stored.get(INBOX_KEY);
-  await assert.rejects(()=>fresh.list.trackWork(descriptor(),{silent:true}),/300 items.*Export a task backup/);
+  await assert.rejects(()=>fresh.list.trackWork(descriptor(),{silent:true}),/300 items.*Save a backup/);
   assert.equal(fresh.stored.get(INBOX_KEY),full);assert.equal(fresh.list.inbox.items.length,300);
 });
 
@@ -116,7 +116,7 @@ test('workboard import markers validate, union on restore and survive deliberate
   assert.equal(cleared.items.length,1);assert.deepEqual(cleared.items[0],inbox.items[0]);assert.deepEqual(cleared.workboardImports,markers);assert.equal(cleared.pinWorkflowVersion,1);
   assert.deepEqual(validateInbox(JSON.stringify(cleared)).workboardImports,markers);
   assert.deepEqual(mergeWorkboardImports(markers,['tas:staff-review::2026','vet:other::2027']),[...markers,'vet:other::2027']);
-  for(const workboardImports of [null,'vet:task',['other:task'],['vet:'],[123],Array.from({length:2001},(_,i)=>`vet:${i}`)])assert.throws(()=>validateInbox(JSON.stringify({version:2,items:[],workboardImports})),/workboard import history/);
+  for(const workboardImports of [null,'vet:task',['other:task'],['vet:'],[123],Array.from({length:2001},(_,i)=>`vet:${i}`)])assert.throws(()=>validateInbox(JSON.stringify({version:2,items:[],workboardImports})),/history of imported workboard tasks/);
 });
 
 test('marking an existing linked item is atomic and leaves its reviewed fields unchanged',async()=>{
@@ -215,9 +215,9 @@ test('forecast metadata is validated and survives task backups; unsafe batches n
   const first=await reconcileForecast(validateInbox(null),{entries:[scheduled()],context:forecastContext()});
   assert.deepEqual(validateInbox(JSON.stringify(first.inbox)),first.inbox);
   for(const change of [{section:'made-up'},{scheduledDate:'2026-02-30'},{windowEnd:'2026-08-01'},{blocked:'yes'}]){
-    await assert.rejects(()=>reconcileForecast(first.inbox,{entries:[scheduled({},change)],context:forecastContext()}),/Invalid workboard forecast/);
+    await assert.rejects(()=>reconcileForecast(first.inbox,{entries:[scheduled({},change)],context:forecastContext()}),/saved task schedule could not be read/);
   }
-  await assert.rejects(()=>reconcileForecast(first.inbox,{entries:[scheduled(),scheduled()],context:forecastContext()}),/Duplicate occurrence/);
+  await assert.rejects(()=>reconcileForecast(first.inbox,{entries:[scheduled(),scheduled()],context:forecastContext()}),/same task appears twice/);
   const {list,stored}=component();assert.equal(list.persist(first.inbox),true);const raw=stored.get(INBOX_KEY);
   localStorage.setItem=()=>{throw new Error('Quota exceeded');};
   await assert.rejects(()=>list.syncForecast({entries:[scheduled({recordKey:'next::2026'})],context:forecastContext()}),/could not be saved/);
@@ -246,12 +246,12 @@ test('unavailable source warnings update only static notices and preserve a focu
     notice=list.forecastNotice(list.inbox.items[0]);list.querySelectorAll=()=>[notice];list.renderItems=()=>renders++;
     document.activeElement=draft;list.contains=node=>node===draft;
     list.setForecastAvailability(forecastContext({mode:'unavailable',note:'The native records changed in another tab. Reload VET before refreshing.'}));
-    assert.match(text(notice),/Saved forecast · refresh unavailable/);assert.match(text(notice),/native records changed/);
+    assert.match(text(notice),/Saved schedule · could not update/);assert.match(text(notice),/native records changed/);
     assert.equal(renders,0);assert.strictEqual(document.activeElement,draft);assert.equal(draft.value,'Keep this unsaved draft and caret');
     assert.equal(stored.get(INBOX_KEY),raw);assert.equal(JSON.stringify(list.inbox),saved);
-    list.setForecastAvailability(forecastContext());assert.match(text(notice),/refresh unavailable/);
+    list.setForecastAvailability(forecastContext());assert.match(text(notice),/could not update/);
     list.contains=()=>false;await list.syncForecast(snapshot);
-    assert.doesNotMatch(text(notice),/refresh unavailable/);assert.equal(stored.get(INBOX_KEY),raw);assert.equal(renders,0);
+    assert.doesNotMatch(text(notice),/could not update/);assert.equal(stored.get(INBOX_KEY),raw);assert.equal(renders,0);
   }finally{document.createElement=originalCreate;document.activeElement=originalActive;}
 });
 

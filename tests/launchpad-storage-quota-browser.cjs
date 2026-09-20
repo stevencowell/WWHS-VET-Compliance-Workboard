@@ -165,8 +165,8 @@ async function newContext(browser, entries) {
       const before = await read(full.page), quota = await fillOrigin(full.page), fillerBefore = await fillerDigest(full.page);
       const nativeBefore = await full.page.evaluate(() => Object.fromEntries(Object.keys(localStorage).sort().map(key => [key, localStorage.getItem(key)])));
       const dialog = await openImport(full.page, inbox([addition]));
-      await dialog.getByRole('alert').filter({hasText: 'saved records are unchanged'}).waitFor({state: 'visible'});
-      assert.match(await dialog.getByRole('alert').innerText(), /saved records are unchanged|previous records.*restored/i);
+      await dialog.getByRole('alert').filter({hasText: 'saved work has not changed'}).waitFor({state: 'visible'});
+      assert.match(await dialog.getByRole('alert').innerText(), /saved work has not changed|previous work.*restored/i);
       assert.equal(await read(full.page), before);
       assert.deepEqual(await fillerDigest(full.page), fillerBefore);
       const nativeAfter = await full.page.evaluate(() => Object.fromEntries(Object.keys(localStorage).sort().map(key => [key, localStorage.getItem(key)])));

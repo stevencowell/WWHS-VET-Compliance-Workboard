@@ -112,7 +112,7 @@ test('Web Locks reject a second handover or recovery while preparation is in pro
 });
 test('failure to reserve the local marker leaves all original data intact',async()=>{
   const f=fixture();f.storage.capacity=size(f.storage.values);
-  await assert.rejects(applyTeamTransaction(f.storage,f.before,f.after,f.options),/small recovery marker.*unchanged/);
+  await assert.rejects(applyTeamTransaction(f.storage,f.before,f.after,f.options),/Could not prepare recovery.*unchanged/);
   assert.deepEqual(fullValues(f.storage,f.before),f.before);assert.equal(f.storage.getItem(KEYS.journal),null);assert.equal(f.db.records.size,0);
 });
 test('failure at either data write or the commit marker restores the exact original raw stores',async()=>{
@@ -172,7 +172,7 @@ test('recovery never overwrites conflicting edits or a marker replaced during th
   const f=fixture();savedRecovery(f);f.storage.values.set(KEYS.inbox,'new private work');const before=new Map(f.storage.values);
   await assert.rejects(recoverTeamTransaction(f.storage,f.options),/conflicting values/);assert.deepEqual(f.storage.values,before);
   const other=fixture();savedRecovery(other);const competing=marker('prepared','competing');other.db.onGet=()=>other.storage.values.set(KEYS.journal,competing);
-  await assert.rejects(recoverTeamTransaction(other.storage,other.options),/marker/);assert.equal(other.storage.getItem(KEYS.journal),competing);assert.equal(other.db.records.size,1);
+  await assert.rejects(recoverTeamTransaction(other.storage,other.options),/recovery record/);assert.equal(other.storage.getItem(KEYS.journal),competing);assert.equal(other.db.records.size,1);
 });
 test('marker cleanup failure keeps committed data and its recovery body',async()=>{
   const f=fixture();f.storage.failRemove=key=>key===KEYS.journal;

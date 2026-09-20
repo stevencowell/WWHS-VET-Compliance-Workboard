@@ -1,5 +1,5 @@
 // Private, browser-local recovery. Portable handover files never contain this data.
-import {KEYS, DATA_KEYS, recoverTransaction as recoverLegacyTransaction} from './team-handover-core.mjs?v=early-completion-1';
+import {KEYS, DATA_KEYS, recoverTransaction as recoverLegacyTransaction} from './team-handover-core.mjs?v=plain-language-1';
 
 const LOCK_NAME='wwhs-team-handover-transaction:v2';
 const DB_NAME='wwhs-team-handover-recovery', STORE_NAME='transactions';
@@ -19,7 +19,7 @@ function assertCurrent(storage,expected){
   for(const [key,value] of Object.entries(expected))if(storage.getItem(key)!==value)fail('Saved progress changed in another tab. Reload and reopen the latest team file before continuing.');
 }
 function assertNoJournal(storage){if(storage.getItem(KEYS.journal)!==null)fail('An unfinished team handover needs recovery before another change.');}
-function assertMarker(storage,raw){if(storage.getItem(KEYS.journal)!==raw)fail('Another tab changed the team recovery marker. Its work has been protected.');}
+function assertMarker(storage,raw){if(storage.getItem(KEYS.journal)!==raw)fail('Another tab changed the recovery record. Its work has been kept.');}
 function writeValue(storage,key,value){if(value===null)storage.removeItem(key);else storage.setItem(key,value);}
 const changedKeys=(before,after)=>Object.keys(after).filter(key=>before[key]!==after[key]);
 const valueSize=(key,value)=>value===null?0:key.length+value.length;
@@ -38,10 +38,10 @@ function markerText(id,phase){
   return JSON.stringify({version:2,transactionId:id,phase})+(phase==='prepared'?' ':'');
 }
 function parseMarker(raw){
-  let value;try{value=JSON.parse(raw);}catch{fail('The team recovery marker could not be read. Keep this browser data intact for recovery.');}
-  if(!object(value))fail('The team recovery marker is invalid. Keep this browser data intact for recovery.');
+  let value;try{value=JSON.parse(raw);}catch{fail('The recovery record could not be read. Keep your browser data for recovery.');}
+  if(!object(value))fail('The recovery record is damaged or unsupported. Keep your browser data for recovery.');
   if(value.version===1)return value;
-  if(value.version!==2||Object.keys(value).some(key=>!['version','transactionId','phase'].includes(key))||!['prepared','committed'].includes(value.phase))fail('This team recovery marker is not supported. Keep this browser data intact for recovery.');
+  if(value.version!==2||Object.keys(value).some(key=>!['version','transactionId','phase'].includes(key))||!['prepared','committed'].includes(value.phase))fail('This recovery record is not supported. Keep your browser data for recovery.');
   transactionId(value.transactionId);return value;
 }
 function validateBody(value,id){
@@ -164,7 +164,7 @@ export async function applyTeamTransaction(storage,beforeInput,afterInput,option
     }catch(error){await deleteOwned(backend,id);throw error;}
     const prepared=markerText(id,'prepared'),committed=markerText(id,'committed');
     try{storage.setItem(KEYS.journal,prepared);}
-    catch(error){await deleteOwned(backend,id);throw failure('The browser could not reserve the small recovery marker. The import did not start and your progress is unchanged.',error);}
+    catch(error){await deleteOwned(backend,id);throw failure('Could not prepare recovery before opening the backup. Opening did not start; your progress is unchanged.',error);}
     try{
       assertMarker(storage,prepared);assertCurrent(storage,before);
       const expected={...before};
@@ -177,7 +177,7 @@ export async function applyTeamTransaction(storage,beforeInput,afterInput,option
       assertMarker(storage,committed);
     }catch(error){
       try{rollbackValues(storage,body,prepared);}
-      catch(recoveryError){throw failure('The import did not finish and recovery is required. Its private recovery copy has been kept.',recoveryError,{recoveryRequired:true});}
+      catch(recoveryError){throw failure('Opening the backup did not finish. The recovery copy is kept and needs checking.',recoveryError,{recoveryRequired:true});}
       const cleanupPending=await deleteOwned(backend,id);
       throw failure(quota(error)?'There was not enough browser storage to finish the import. Your previous progress has been restored.':'The import could not finish. Your previous progress has been restored.',error,{cleanupPending});
     }
@@ -193,9 +193,9 @@ export async function recoverTeamTransaction(storage,options={}){
     if(marker.version===1)return recoverLegacyTransaction(storage);
     const backend=backendFor(options);let body;
     try{body=await backend.get(marker.transactionId);}
-    catch(error){throw failure('The private recovery copy could not be opened. Saved progress and its recovery marker have been kept.',error,{recoveryRequired:true});}
+    catch(error){throw failure('Could not open the recovery copy. Your saved progress and recovery record are kept.',error,{recoveryRequired:true});}
     assertMarker(storage,raw);
-    if(!body)throw failure('The private recovery copy is missing. Saved progress and its recovery marker have been kept; another import cannot start yet.',null,{recoveryRequired:true});
+    if(!body)throw failure('The recovery copy is missing. Your saved progress and recovery record are kept. Opening another backup is paused.',null,{recoveryRequired:true});
     validateBody(body,marker.transactionId);
     if(marker.phase==='committed'){
       // A later external edit is never overwritten to make an old commit match.

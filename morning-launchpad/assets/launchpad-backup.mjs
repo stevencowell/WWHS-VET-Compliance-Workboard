@@ -1,7 +1,7 @@
 // A complete private Launchpad file. Native VET/TAS and Finance data stay separate.
-import {INBOX_KEY, LEGACY_PLAN_KEY, validateInbox, validDate, mergeWorkboardImports} from './summary-core.mjs?v=backup-flow-2';
-import {CALENDAR_KEY, validateCalendar} from './calendar-core.mjs?v=8';
-import {snapshot as teamSnapshot,isTeamItem} from '../../assets/js/team-handover-core.mjs?v=early-completion-1';
+import {INBOX_KEY, LEGACY_PLAN_KEY, validateInbox, validDate, mergeWorkboardImports} from './summary-core.mjs?v=plain-language-1';
+import {CALENDAR_KEY, validateCalendar} from './calendar-core.mjs?v=plain-language-1';
+import {snapshot as teamSnapshot,isTeamItem} from '../../assets/js/team-handover-core.mjs?v=plain-language-1';
 
 export const BACKUP_FORMAT='wwhs-launchpad-backup';
 // The JSON envelope quotes five already-serialised records. Account for escaping
@@ -18,23 +18,23 @@ const webLink=value=>{try{const url=new URL(value);return typeof value==='string
 
 export function checkRecord(key,raw){
   if(raw===null)return null;
-  if(typeof raw!=='string'||raw.length>8000000)fail('One saved Launchpad record is too large or unreadable. Keep the original file.');
+  if(typeof raw!=='string'||raw.length>8000000)fail('One saved Launchpad item is too large or could not be read. Keep the original file.');
   if(key===INBOX_KEY)return validateInbox(raw);
   if(key===CALENDAR_KEY)return validateCalendar(raw);
-  if(key===BACKUP_KEYS.theme){if(!['light','dark'].includes(raw))fail('The saved appearance is invalid.');return raw;}
+  if(key===BACKUP_KEYS.theme){if(!['light','dark'].includes(raw))fail('The saved colour setting could not be read.');return raw;}
   const value=JSON.parse(raw);
   if(key===LEGACY_PLAN_KEY){
-    if(!object(value)||value.version!==1||!object(value.days))fail('The saved daily plans are invalid.');
+    if(!object(value)||value.version!==1||!object(value.days))fail('The saved daily plans could not be read.');
     for(const[date,day]of Object.entries(value.days)){
-      if(!date||!validDate(date)||!object(day)||typeof day.commitment!=='string'||!['small','normal'].includes(day.capacity)||typeof day.closed!=='boolean'||!Array.isArray(day.tasks)||day.tasks.length>3||day.tasks.some(task=>!object(task)||typeof task.id!=='string'||!task.id.trim()||typeof task.title!=='string'||!task.title.trim()||!['todo','done','deferred'].includes(task.state)||task.url!==undefined&&task.url!==''&&!webLink(task.url))||new Set(day.tasks.map(task=>task.id)).size!==day.tasks.length)fail('A saved daily plan is invalid.');
+      if(!date||!validDate(date)||!object(day)||typeof day.commitment!=='string'||!['small','normal'].includes(day.capacity)||typeof day.closed!=='boolean'||!Array.isArray(day.tasks)||day.tasks.length>3||day.tasks.some(task=>!object(task)||typeof task.id!=='string'||!task.id.trim()||typeof task.title!=='string'||!task.title.trim()||!['todo','done','deferred'].includes(task.state)||task.url!==undefined&&task.url!==''&&!webLink(task.url))||new Set(day.tasks.map(task=>task.id)).size!==day.tasks.length)fail('A saved daily plan could not be read.');
     }
     return value;
   }
   if(key===BACKUP_KEYS.links){
-    if(!Array.isArray(value)||value.some(link=>!object(link)||typeof link.id!=='string'||!link.id||typeof link.name!=='string'||!link.name.trim()||!webLink(link.url))||new Set(value.map(link=>link.id)).size!==value.length)fail('The saved links are invalid.');
+    if(!Array.isArray(value)||value.some(link=>!object(link)||typeof link.id!=='string'||!link.id||typeof link.name!=='string'||!link.name.trim()||!webLink(link.url))||new Set(value.map(link=>link.id)).size!==value.length)fail('The saved links could not be read.');
     return value;
   }
-  fail('This file contains an unsupported Launchpad record.');
+  fail('This file contains a Launchpad item we cannot open.');
 }
 export function snapshotLaunchpad(storage){
   const records={};
@@ -105,14 +105,14 @@ function mergeList(current,incoming,{match,preferBackup,compare=canonical,preser
   const out=current.map(item=>structuredClone(item)),matched=new Set();
   for(const item of incoming){
     const index=out.findIndex(old=>match(old,item));
-    if(index<0){const next=structuredClone(item);if(next.id&&out.some(old=>old.id===next.id))fail('Two different records use the same ID. The backup was not opened; keep both copies.');matched.add(out.length);out.push(next);counts.added++;continue;}
-    if(matched.has(index))fail('Two backup records match the same saved record. Nothing was changed; keep both files so the records can be checked.');matched.add(index);
+    if(index<0){const next=structuredClone(item);if(next.id&&out.some(old=>old.id===next.id))fail('Two different items use the same reference. The backup was not opened. Keep both copies.');matched.add(out.length);out.push(next);counts.added++;continue;}
+    if(matched.has(index))fail('Two items in the backup match the same saved item. Nothing has changed. Keep both files so they can be checked.');matched.add(index);
     if(compare(out[index])!==compare(item)){counts.different++;if(preferBackup){out[index]={...structuredClone(item),...(preserveIdentity?{id:out[index].id}: {})};counts.updated++;}else counts.kept++;}
   }
   return out;
 }
 export function planLaunchpadRestore(storage,backup,{preferBackup=false}={}){
-  if(typeof preferBackup!=='boolean')fail('Choose which matching records to keep.');
+  if(typeof preferBackup!=='boolean')fail('Choose which version of each matching item to keep.');
   const checked=backup.legacy?parseLaunchpadBackup(backup.records[backup.legacy==='calendar'?CALENDAR_KEY:INBOX_KEY]):parseLaunchpadBackup(JSON.stringify({format:backup.format,version:backup.version,savedAt:backup.savedAt,records:backup.records}));
   const before=snapshotLaunchpad(storage),after={...before},counts={added:0,different:0,updated:0,kept:0};
   for(const[key,raw]of Object.entries(checked.records)){

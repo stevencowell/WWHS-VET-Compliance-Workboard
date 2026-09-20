@@ -54,7 +54,7 @@ test('legacy inline metadata reads without IndexedDB and migrates only when prep
   const original=fixture(),before=json(original);
   const read=await hydrateTeamMetadata(original,{backend:null});
   assert.deepEqual(read,original);assert.equal(json(original),before);
-  await assert.rejects(prepareTeamMetadata(original,{backend:null}),/no saved progress was changed/);
+  await assert.rejects(prepareTeamMetadata(original,{backend:null}),/saved progress is unchanged/);
   assert.equal(json(original),before);
   const context=setup();assert.ok((await prepareTeamMetadata(original,context.options)).active.baselineRef);
 });
@@ -69,7 +69,7 @@ test('empty individual and compact viewing metadata need no database',async()=>{
 test('failed second body preparation never mutates metadata and keeps already durable copies',async()=>{
   const context=setup(),original=fixture(),before=json(original),put=context.backend.put;
   context.backend.put=async body=>{if(context.bodies.size===1)throw new DOMException('Storage full','QuotaExceededError');await put(body);};
-  await assert.rejects(prepareTeamMetadata(original,context.options),/no saved progress was changed/);
+  await assert.rejects(prepareTeamMetadata(original,context.options),/saved progress is unchanged/);
   assert.equal(json(original),before);assert.equal(context.bodies.size,1);
   assert.deepEqual([...context.bodies.values()][0].value,original.active.baselineData);
 });
@@ -135,7 +135,7 @@ test('old referenced bodies remain recoverable after confirm or later preparatio
 
 test('immutable ID collision cannot overwrite an earlier saved copy',async()=>{
   const context=setup(),original=fixture();context.options.createId=()=> 'one-id';
-  await assert.rejects(prepareTeamMetadata(original,context.options),/no saved progress was changed/);
+  await assert.rejects(prepareTeamMetadata(original,context.options),/saved progress is unchanged/);
   assert.equal(context.bodies.size,1);assert.equal(context.bodies.get('one-id').kind,'snapshot');
   assert.deepEqual(context.bodies.get('one-id').value,original.active.baselineData);
 });

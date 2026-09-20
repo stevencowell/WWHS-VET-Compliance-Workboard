@@ -77,7 +77,7 @@ test('weekly, term, annual and event work receive useful distinct outputs', () =
   assert.match(text(weekly), /closure, carry-forward or escalation/);
   const term = help('senior-monitoring');
   assert.equal(term.profileId, 'tas-monitoring');
-  assert.match(term.deliverable, /monitoring QA matrix/);
+  assert.match(term.deliverable, /monitoring checklist/);
   assert.match(text(term), /Principal\/delegate/);
   const annual = help('annual-calendar-control');
   assert.equal(annual.profileId, 'tas-calendar');
