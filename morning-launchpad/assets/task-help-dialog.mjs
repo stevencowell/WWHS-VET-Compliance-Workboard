@@ -10,18 +10,21 @@ export function createTaskHelpDialog(board){
   const heading=node('h2','Prepare with AI',{id:'task-help-title'}),taskTitle=node('p',undefined,{class:'task-help-task'});
   const close=node('button','Close',{type:'button',class:'task-help-close','aria-label':'Close AI help'});
   close.addEventListener('click',()=>dialog.close());
-  const intro=node('p','Check the request below, then copy it into ChatGPT. Nothing is sent automatically.');
-  const profileSummary=node('p'),deliverable=node('p'),inputs=node('ul');
+  const intro=node('ol',undefined,{class:'task-help-steps','aria-label':'How to use AI help'});
+  intro.append(node('li','Check the request below.'),node('li','Copy it into ChatGPT.'));
+  const sendNotice=node('p','Nothing is sent automatically.',{class:'import-help'});
+  const points=node('ul',undefined,{class:'task-help-points'}),profileSummary=node('li'),deliverable=node('li'),inputs=node('ul');
+  points.append(profileSummary,deliverable);
   const inputDetails=node('details');inputDetails.append(node('summary','What you may need to provide'),inputs);
   const noteChoice=node('label',undefined,{class:'task-help-note-choice'}),includeNote=node('input',undefined,{type:'checkbox'});
   noteChoice.append(includeNote,document.createTextNode('Include my note'));
   const privacy=node('p','Leave out student details, health information, passwords and other private information.',{class:'import-help'});
-  const state=node('p','',{class:'task-help-state',role:'status','aria-live':'polite'});
+  const state=node('div','',{class:'task-help-state',role:'status','aria-live':'polite'});
   const previewLabel=node('label','Request to copy',{for:'task-help-preview'});
   const preview=node('textarea','',{id:'task-help-preview',rows:'13',readonly:'','aria-label':'AI help request'});
   const actions=node('div',undefined,{class:'help-request-actions'}),copy=node('button','Copy help request',{type:'button',class:'import-primary'}),chat=node('button','Open ChatGPT',{type:'button'});
   actions.append(copy,chat);
-  dialog.append(close,heading,taskTitle,intro,profileSummary,deliverable,inputDetails,noteChoice,privacy,state,previewLabel,preview,actions);
+  dialog.append(close,heading,taskTitle,intro,sendNotice,points,inputDetails,noteChoice,privacy,state,previewLabel,preview,actions);
   board.append(dialog);
   let selectedId=null,opening=0;
   dialog.addEventListener('close',()=>{
@@ -67,7 +70,9 @@ export function createTaskHelpDialog(board){
       inputs.replaceChildren(...profile.requiredInputs.map(text=>node('li',text)));
       preview.value=buildTaskHelpPrompt(item,{includeNotes:includeNote.checked,availability});
       copy.textContent='Copy help request';
-      state.textContent=[draft?'This request includes your unsaved edits. Copying it does not save them.':'',availability?.note||'',item.origin?'Update progress and checklist ticks in the original workboard.':''].filter(Boolean).join(' ');
+      const notices=[draft?'This request includes your unsaved edits. Copying it does not save them.':'',availability?.note||'',item.origin?'Update progress and checklist ticks in the original workboard.':''].filter(Boolean);
+      state.replaceChildren();
+      if(notices.length){const list=node('ul');list.append(...notices.map(text=>node('li',text)));state.append(list);}
       state.classList.remove('import-error');copy.disabled=false;chat.disabled=false;return true;
     }catch(error){preview.value='';state.textContent=error.message;state.classList.add('import-error');copy.disabled=true;chat.disabled=true;return false;}
   }

@@ -6,7 +6,7 @@ import {storageSizes} from '../../assets/js/team-storage-report.mjs?v=area-backu
 import {createNoteEditor} from './note-editor.mjs?v=plain-language-1';
 import {downloadDestination} from '../../assets/js/save-backup-file.mjs?v=backup-flow-2';
 import {choosePrivateBackupDestination,getBackupFolder} from '../../assets/js/backup-folder.mjs?v=plain-language-1';
-import {createTaskHelpDialog} from './task-help-dialog.mjs?v=plain-language-1';
+import {createTaskHelpDialog} from './task-help-dialog.mjs?v=instruction-lists-1';
 import {emailSearchText} from './email-search.mjs?v=1';
 import './email-capture.mjs?v=plain-language-1';
 import './launchpad-calendar.mjs?v=plain-language-1';
@@ -301,7 +301,9 @@ class SummaryImport extends HTMLElement {
   }
   buildChatGPTChooser(){
     this.chatGPTChooser=element('dialog',undefined,{'aria-labelledby':'chatgpt-choice-title',class:'chatgpt-chooser'});
-    this.chatGPTChooser.append(element('h2','Open ChatGPT',{id:'chatgpt-choice-title'}),element('p','Copy the help request, choose where to open ChatGPT, then paste it into the chat with Ctrl + V.'));
+    const steps=element('ol',undefined,{class:'chatgpt-choice-steps'});
+    steps.append(element('li','Copy the help request.'),element('li','Choose where to open ChatGPT below.'),element('li','Paste the request into the chat with Ctrl + V.'));
+    this.chatGPTChooser.append(element('h2','Open ChatGPT',{id:'chatgpt-choice-title'}),steps);
     const choices=element('div',undefined,{class:'chatgpt-choice-links'});
     const desktop=element('a','Desktop app',{href:'chatgpt://'});
     const web=element('a','Web app',{href:'https://chatgpt.com/',target:'_blank',rel:'noopener noreferrer'});
