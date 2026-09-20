@@ -400,6 +400,9 @@ class SummaryImport extends HTMLElement {
   }
   card(item){
     const article=element('article',undefined,{class:`import-card${isPinned(item)?' is-pinned':''}`,'data-task-key':item.taskKey||item.id});
+    // Source tasks and Steve's own notes have useful titles. Imported email
+    // subjects remain in the details; their practical action leads the card.
+    const titleFirst=!!(item.origin||item.personal),frontAction=item.action||item.instruction||'';
     const active=['review','added'].includes(item.status)&&!sourceCompleted(item);const dependencies=item.dependsOn.map(key=>this.inbox.items.find(x=>x.taskKey===key));
     const blockedBy=dependencies.some(x=>!x||x.status!=='done')||(item.forecast?.asOf===todaySydney()&&(item.forecast.blocked||(item.forecast.active&&item.forecast.section==='waiting')));
     const head=element('div',undefined,{class:'import-card-top'});head.append(element('strong',item.title));
@@ -478,7 +481,7 @@ class SummaryImport extends HTMLElement {
     const disclosure=element('details',undefined,{class:'import-card-disclosure'});
     disclosure.open=this.openCards.has(item.id);
     const summary=element('summary',undefined,{class:'import-card-summary'});
-    const frontText=element('textarea',item.action||item.instruction||item.title,{class:'import-card-summary-text',rows:'2',maxlength:item.action?'800':'2000','aria-label':`Edit card text for ${item.title}`});
+    const frontText=element('textarea',titleFirst?frontAction:frontAction||item.title,{class:'import-card-summary-text',rows:titleFirst?'1':'2',maxlength:item.action?'800':'2000','aria-label':`Edit card text for ${item.title}`});
     frontText.dataset.helpField=item.action?'action':'instruction';
     frontText.disabled=this.blocked;
     const saveStatus=element('span','',{class:'card-save-status',role:'status','aria-live':'polite'});
@@ -498,7 +501,17 @@ class SummaryImport extends HTMLElement {
     frontText.addEventListener('click',event=>event.stopPropagation());
     frontText.addEventListener('keydown',event=>event.stopPropagation());
     summary.setAttribute('aria-label',`Expand or collapse ${item.title}`);
-    summary.append(frontText,element('span','',{class:'import-card-chevron','aria-hidden':'true'}));
+    const summaryCopy=element('span',undefined,{class:'import-card-summary-copy'});
+    if(titleFirst){
+      summaryCopy.append(element('strong',item.title,{class:'import-card-title'}));
+      if(frontAction){
+        const nextStep=element('span',undefined,{class:'import-card-next'});
+        const actionLabel=item.status==='done'||sourceCompleted(item)?'Recorded action':item.status==='dismissed'||item.status==='superseded'?'Saved action':'Next step';
+        nextStep.append(element('span',`${actionLabel}:`,{class:'import-card-next-label'}),frontText);
+        summaryCopy.append(nextStep);
+      }
+    }else summaryCopy.append(frontText);
+    summary.append(summaryCopy,element('span','',{class:'import-card-chevron','aria-hidden':'true'}));
     quickControls.prepend(saveStatus);
     requestAnimationFrame(()=>{if(frontText.isConnected){resizeText();}});
     const body=element('div',undefined,{class:'import-card-body'});
