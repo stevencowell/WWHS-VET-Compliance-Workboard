@@ -5,6 +5,7 @@ import {mountBackupFolderSettings} from '../../assets/js/backup-folder-ui.mjs?v=
 import {BACKUP_KEYS,snapshotLaunchpad,launchpadContent,parseLaunchpadBackup,backupCounts} from './launchpad-backup.mjs?v=early-completion-1';
 import {readPreviousLaunchpadBackup} from './launchpad-backup-transaction.mjs?v=early-completion-1';
 import {choosePrivateBackupDestination} from '../../assets/js/backup-folder.mjs?v=area-backups-1';
+import {createWorkspaceNavigationAllowance} from '../../assets/js/workspace-navigation.mjs?v=workspace-navigation-1';
 
 export const NOTES_BACKUP_KEY='morning-launchpad-backup-reminder:v1';
 function sorted(value){
@@ -104,6 +105,7 @@ export function installLaunchpadBackupReminder({header}){
   const showOptions=()=>{if(!panel.open)panel.showModal();};
   saveOptions.addEventListener('click',showOptions);guide.addEventListener('click',showOptions);close.addEventListener('click',()=>panel.close());
   let tracker,listener=false;
+  const navigation=createWorkspaceNavigationAllowance(window,document);
   function draftPending(){
     const board=document.querySelector('summary-import');
     if(board?.calendar?.hasDraft())return true;
@@ -115,8 +117,8 @@ export function installLaunchpadBackupReminder({header}){
     return false;
   }
   function beforeUnload(event){
-    const current=tracker.state();
-    if(draftPending()||current.enabled&&(current.checking||current.needsBackup||current.error)){event.preventDefault();event.returnValue='';}
+    const current=tracker.state(),internal=navigation.consume();
+    if(draftPending()||!internal&&current.enabled&&(current.checking||current.needsBackup||current.error)){event.preventDefault();event.returnValue='';}
   }
   function render(value){
     toggle.checked=value.enabled;confirm.hidden=!value.canConfirm;confirm.disabled=draftPending();

@@ -1,6 +1,8 @@
 // Backup reminder: a digest-only safety receipt never changes shared progress.
 import {KEYS, DATA_KEYS, metadataKey, scopeSnapshot, snapshot} from './team-handover-core.mjs?v=early-completion-1';
 import {hydrateTeamMetadata} from './team-handover-payloads.mjs?v=early-completion-1';
+import {createWorkspaceNavigationAllowance} from './workspace-navigation.mjs?v=workspace-navigation-1';
+export {isWorkboardDestination} from './workspace-navigation.mjs?v=workspace-navigation-1';
 
 export const SAFETY_RECEIPT_KEY='wwhs-team-safety-receipt:v1';
 const LAUNCHPAD_JOURNAL='morning-launchpad-restore:v1';
@@ -76,21 +78,12 @@ export function hasProgressChanges(before,after){
   return false;
 }
 
-export function isWorkboardDestination(href,base){
-  try{
-    const root=new URL(base),url=new URL(href,root);
-    return url.origin===root.origin&&['','index.html','head-teacher-tas/','head-teacher-tas/index.html',
-      'morning-launchpad/','morning-launchpad/index.html','team-handover/','team-handover/index.html']
-      .some(path=>url.pathname===root.pathname+path);
-  }catch{return false;}
-}
-
 export function installTeamExitGuard(win,doc,storage,{hydrate=hydrateTeamMetadata,scope=null}={}){
   const guardKey=scope?`WWHS_TEAM_EXIT_GUARD_${scope.toUpperCase()}`:'WWHS_TEAM_EXIT_GUARD';
   if(win[guardKey])return win[guardKey];
   const metaKey=metadataKey(scope),readMeta=()=>storage.getItem(metaKey)??(scope?storage.getItem(KEYS.metadata):null);
-  const base=new URL('../../',import.meta.url),watched=[...DATA_KEYS,KEYS.metadata,metaKey,KEYS.journal,LAUNCHPAD_JOURNAL,receiptKey(scope)];
-  let loadedRaw,loadingRaw,baseline,sequence=0,state='idle',listening=false,allowUntil=0;
+  const navigation=createWorkspaceNavigationAllowance(win,doc),watched=[...DATA_KEYS,KEYS.metadata,metaKey,KEYS.journal,LAUNCHPAD_JOURNAL,receiptKey(scope)];
+  let loadedRaw,loadingRaw,baseline,sequence=0,state='idle',listening=false;
   let lastDataRaw,lastSnapshot;
   let safetyVerified=null,safetySequence=0;
   function safetyMatches(){
@@ -130,7 +123,7 @@ export function installTeamExitGuard(win,doc,storage,{hydrate=hydrateTeamMetadat
   }
   const needsWarning=()=>!['idle','clean'].includes(inspect())&&!safetyMatches();
   function beforeUnload(event){
-    if(allowUntil>Date.now()){allowUntil=0;return;}
+    if(navigation.consume())return;
     if(needsWarning()){event.preventDefault();event.returnValue='';}
   }
   function publish(){
@@ -160,23 +153,10 @@ export function installTeamExitGuard(win,doc,storage,{hydrate=hydrateTeamMetadat
     const result=await acknowledgeSafetyBackup(storage,{...expected,...(scope?{scope}:{})},{cryptoProvider:win.crypto||globalThis.crypto});
     safetySequence++;safetyVerified=result;publish();return true;
   }
-  function allowNavigation(href){
-    if(!isWorkboardDestination(href,base))return false;
-    // One navigation only. Other handlers still protect unsaved form text.
-    allowUntil=Date.now()+1000;return true;
-  }
-  doc.addEventListener('click',event=>{
-    if(event.defaultPrevented||event.button!==0||event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;
-    const link=event.target.closest?.('a[href]');
-    if(!link||link.hasAttribute('download')||link.target&&link.target!=='_self')return;
-    const url=new URL(link.href,win.location.href);
-    if(url.pathname===win.location.pathname&&url.search===win.location.search&&link.href.includes('#'))return;
-    allowNavigation(url.href);
-  });
   for(const name of ['wwhs:records-updated','wwhs:review-updated','wwhs:work-saved','wwhs:work-reloaded','wwhs:team-session-updated','focus','pageshow'])win.addEventListener(name,()=>void refresh());
   win.addEventListener('storage',event=>{if(event.key===null||watched.includes(event.key))void refresh();});
   doc.addEventListener('visibilitychange',()=>{if(!doc.hidden)void refresh();});
-  const guard=Object.freeze({refresh,status:()=>state,allowNavigation,acknowledgeSafetyBackup:acknowledge,hasSafetyBackup:safetyMatches});
+  const guard=Object.freeze({refresh,status:()=>state,allowNavigation:navigation.allowNavigation,acknowledgeSafetyBackup:acknowledge,hasSafetyBackup:safetyMatches});
   win[guardKey]=guard;void refresh();return guard;
 }
 export function installAreaTeamExitGuards(win,doc,storage){

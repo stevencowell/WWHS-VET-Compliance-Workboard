@@ -9,11 +9,13 @@ import {downloadDestination} from '../assets/js/save-backup-file.mjs?v=backup-fl
 import {choosePrivateBackupDestination,getBackupFolder} from '../assets/js/backup-folder.mjs?v=area-backups-1';
 import {mountBackupFolderSettings} from '../assets/js/backup-folder-ui.mjs?v=area-backups-1';
 import {mountBackupFileBrowser} from '../assets/js/backup-file-browser.mjs?v=area-backups-1';
+import {createWorkspaceNavigationAllowance} from '../assets/js/workspace-navigation.mjs?v=workspace-navigation-1';
 
 if(window.self!==window.top)throw new Error('Open Finance Studio directly to use this workspace.');
 
 const $=id=>document.getElementById(id);
 const privateBackupFolder=getBackupFolder('finance');
+const workspaceNavigation=createWorkspaceNavigationAllowance(window,document);
 let selectedBackupFile=null;
 let vault,storage,engine,budgetUi,backupReminder,sample=false,starting=false,previousSaving=false,gateState='',fatalSaveError=null,engineAttempted=false,resetting=false;
 const rejectedWrites=new Map();
@@ -281,7 +283,10 @@ function restartAfterFailedStart(){
   fatalSaveError=null;storage?.close({discardUnsaved:true});vault?.lock();$('financeWorkspace').hidden=true;location.replace(location.pathname);
 }
 window.addEventListener('hashchange',()=>{if(engine)engine.App.navigate(location.hash.slice(1));else if(location.hash==='#import-backup')showBackupImport();});
-window.addEventListener('beforeunload',event=>{if(!sample&&!resetting&&(fatalSaveError||storage?.status().dirty||backupReminder?.status().shouldWarn)){event.preventDefault();event.returnValue='';}});
+window.addEventListener('beforeunload',event=>{
+  const internalNavigation=workspaceNavigation.consume();
+  if(!sample&&!resetting&&(fatalSaveError||storage?.status().dirty||!internalNavigation&&backupReminder?.status().shouldWarn)){event.preventDefault();event.returnValue='';}
+});
 // A back/forward cache entry must never restore an already-unlocked financial screen.
 window.addEventListener('pageshow',event=>{if(event.persisted)location.reload();});
 try{vault=await createLocalVault();await showGate();try{if(sessionStorage.getItem('finance_ui_start_error')){sessionStorage.removeItem('finance_ui_start_error');$('gateMessage').textContent='Finance could not finish opening. The page has been safely reset; your saved encrypted records are unchanged. Try again, or keep a copy of your backup if this continues.';}}catch{}}catch(error){$('gateTitle').textContent='Private storage is unavailable.';$('gateDescription').textContent=error.message;$('gateMessage').textContent='You can still explore the separate sample workspace, or restore an encrypted backup below.';}
