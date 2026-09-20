@@ -50,7 +50,7 @@ const base=process.env.WORKSPACE_BASE_URL||'http://127.0.0.1:4173';
       await page.setViewportSize({width:390,height:844});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
       await page.screenshot({path:`../../outputs/${wing}-task-list-mobile.png`,fullPage:true});
       await page.locator('.workspace-my-work').click();await board.locator('.import-workstreams').waitFor({state:'visible'});
-      await board.getByRole('button',{name:/^Personal \(/}).click();await search.fill('Tasklistcheck personal');assert.equal(await board.locator('.import-card').count(),5,JSON.stringify(await board.locator('.import-card-top strong').allTextContents()));
+      await board.getByRole('button',{name:/^Head Teacher \(/}).click();await search.fill('Tasklistcheck personal');assert.equal(await board.locator('.import-card').count(),5,JSON.stringify(await board.locator('.import-card-top strong').allTextContents()));
       await page.locator('.workspace-task-link').click();await board.locator('.import-workstreams').waitFor({state:'hidden'});await search.fill('Tasklistcheck personal');assert.equal(await board.locator('.import-card').count(),0);
       await page.evaluate(()=>location.hash='#today');await page.locator('.workspace-home').waitFor({state:'hidden'});
       await page.close();console.log(`PASS ${wing}: scoped tabs, counts, completion, notes, persistence, personal records preserved, mobile, route switching`);
@@ -60,6 +60,5 @@ const base=process.env.WORKSPACE_BASE_URL||'http://127.0.0.1:4173';
     assert.deepEqual(errors,[]);console.log('PASS shared Launchpad data and no runtime errors');
   }finally{await context.close();await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
-
 
 

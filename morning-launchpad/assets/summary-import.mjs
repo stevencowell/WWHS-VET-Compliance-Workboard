@@ -10,7 +10,7 @@ import {createTaskHelpDialog} from './task-help-dialog.mjs?v=instruction-lists-1
 import {emailSearchText} from './email-search.mjs?v=1';
 import './email-capture.mjs?v=plain-language-1';
 import './launchpad-calendar.mjs?v=plain-language-1';
-import {INBOX_KEY, LIMIT, parseSummary, validateInbox, mergeInbox, safeUrl, workingNoteLinks, matchesNoteSearch, PRIORITIES, NEXT_ACTIONS, EDITABLE, enrich, todaySydney, taskSection, rank, nextDate, consolidateDuplicates, LEGACY_PLAN_KEY, isPinned, migrateToPins, recordNoteAction, WORKSTREAMS, createTrackedWork, mergeWorkboardImports, clearEmailImports, isUnfinishedEmailNote, reconcileForecast, sourceCompleted, normaliseForecastContext} from './summary-core.mjs?v=plain-language-1';
+import {INBOX_KEY, LIMIT, parseSummary, validateInbox, mergeInbox, safeUrl, workingNoteLinks, matchesNoteSearch, PRIORITIES, NEXT_ACTIONS, EDITABLE, enrich, todaySydney, taskSection, rank, nextDate, consolidateDuplicates, LEGACY_PLAN_KEY, isPinned, migrateToPins, recordNoteAction, WORKSTREAMS, createTrackedWork, mergeWorkboardImports, clearEmailImports, isUnfinishedEmailNote, reconcileForecast, sourceCompleted, normaliseForecastContext} from './summary-core.mjs?v=head-teacher-label-1';
 
 const repositoryRoot=new URL('../../',import.meta.url);
 
@@ -279,7 +279,7 @@ class SummaryImport extends HTMLElement {
   buildClearNotesDialog(){
     this.clearDialog=element('dialog',undefined,{class:'chatgpt-chooser','aria-labelledby':'clear-notes-title'});
     this.clearDialog.append(element('h2','Clear unfinished email notes?',{id:'clear-notes-title'}));
-    this.clearDescription=element('p');this.clearDialog.append(this.clearDescription,element('p','This clears unfinished email notes in Personal, including their drafts, task dates and unfinished earlier imports. It also clears the old email summary.'),element('p','This keeps completed tasks in Done, items in My Notes, tasks put aside, your own notes, and all VET and TAS tasks and checklists. Lessons and diary events stay. Evernote and Outlook are not changed.'),element('p','Save a backup first. When asking ChatGPT to refresh your task file, include the backup with your Evernote notes so it can recognise completed tasks. You need the backup to restore anything cleared here.'));
+    this.clearDescription=element('p');this.clearDialog.append(this.clearDescription,element('p','This clears unfinished email notes in Head Teacher, including their drafts, task dates and unfinished earlier imports. It also clears the old email summary.'),element('p','This keeps completed tasks in Done, items in My Notes, tasks put aside, your own notes, and all VET and TAS tasks and checklists. Lessons and diary events stay. Evernote and Outlook are not changed.'),element('p','Save a backup first. When asking ChatGPT to refresh your task file, include the backup with your Evernote notes so it can recognise completed tasks. You need the backup to restore anything cleared here.'));
     const actions=element('div',undefined,{class:'clear-notes-actions'});
     const cancel=button('Cancel',()=>this.clearDialog.close());cancel.setAttribute('autofocus','');
     actions.append(cancel,button('Save backup first…',()=>void this.exportTaskBackup()),button('Clear unfinished email notes',()=>{
@@ -287,7 +287,7 @@ class SummaryImport extends HTMLElement {
       // Mark migration complete so old daily plans cannot repopulate the cleared list.
       const next=clearEmailImports(this.inbox);
       if(!this.persist(next)){this.clearDialog.close();return;}
-      this.clearDialog.close();this.workstream='personal';this.view='ready';this.expanded=false;this.editingNote=null;this.noteForm.reset();this.noteEditor.open=false;this.paste.value='';this.inputDetails.open=false;this.searchInput.value='';this.renderItems();this.say('Unfinished Personal email notes cleared. Completed items are kept in Done. Your own notes and all VET/TAS work are unchanged.');
+      this.clearDialog.close();this.workstream='personal';this.view='ready';this.expanded=false;this.editingNote=null;this.noteForm.reset();this.noteEditor.open=false;this.paste.value='';this.inputDetails.open=false;this.searchInput.value='';this.renderItems();this.say('Unfinished Head Teacher email notes cleared. Completed items are kept in Done. Your own notes and all VET/TAS work are unchanged.');
     },'import-danger'));
     this.clearDialog.append(actions);this.append(this.clearDialog);
   }
@@ -296,7 +296,7 @@ class SummaryImport extends HTMLElement {
     this.clearSnapshot=this.raw;
     const count=this.inbox.items.filter(isUnfinishedEmailNote).length;
     if(!count)return;
-    this.clearDescription.textContent=`You are about to remove ${count} unfinished ${count===1?'email note':'email notes'} from Personal in this browser. Completed notes will stay in Done.`;
+    this.clearDescription.textContent=`You are about to remove ${count} unfinished ${count===1?'email note':'email notes'} from Head Teacher in this browser. Completed notes will stay in Done.`;
     this.clearDialog.showModal();
   }
   buildChatGPTChooser(){

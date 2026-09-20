@@ -5,7 +5,7 @@ export const LEGACY_PLAN_KEY = 'morning-launchpad-routine:v1';
 export const LIMIT = 1000000;
 export const SOURCE_LIMIT = 200000;
 export const SOURCE_SUMMARY_LIMIT = 4000;
-export const WORKSTREAMS = {personal:'Personal',vet:'VET',tas:'TAS'};
+export const WORKSTREAMS = {personal:'Head Teacher',vet:'VET',tas:'TAS'};
 
 export function mergeWorkboardImports(current=[],incoming=[]) {
   for(const entries of [current,incoming])if(!Array.isArray(entries)||entries.length>2000||entries.some(value=>typeof value!=='string'||value.length>2004||!/^(?:vet|tas):[\s\S]+$/.test(value)||!value.slice(4).trim()))throw new Error('The history of imported workboard tasks could not be read.');
