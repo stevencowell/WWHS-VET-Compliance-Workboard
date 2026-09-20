@@ -156,7 +156,7 @@ function routeChanged() {
   host.hidden = !planning && !wingHome;
   host.classList.toggle('workspace-wing-list', wingHome);
   if (planning || wingHome) fullRegister.refresh();
-  document.getElementById('dashboard-access').hidden = planning;
+  document.getElementById('dashboard-access').hidden = planning || document.body.classList.contains('is-title');
   specialist.hidden = planning;
   specialist.classList.toggle('is-route', !planning);
   specialist.open = !planning;

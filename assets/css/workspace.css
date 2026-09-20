@@ -32,6 +32,7 @@
 .shared-workspace[data-workboard] .route-nav>a,.shared-workspace[data-workboard] .route-nav>button { font:600 12px/1.4 'Segoe UI',Arial,sans-serif; background:transparent; color:var(--muted); border:1px solid transparent; border-radius:9px; padding:9px 11px; min-height:36px; text-decoration:none; margin:0; }
 .shared-workspace[data-workboard] .route-nav .is-active,.shared-workspace[data-workboard] .workspace-my-work[aria-current=page] { background:var(--accent-soft); color:var(--ink); border-color:var(--line); }
 .shared-workspace.is-title[data-workboard] :is(.topbar,.route-bar) { display:none!important; }
+.shared-workspace.is-title[data-workboard="vet"] :is(#dashboard-access,.workspace-team-banner) { display:none!important; }
 .shared-workspace .dash-home.dash-gateway .page-heading h1 { color:var(--ink); }
 .shared-workspace .dash-gateway .page-heading :is(h1>span,.eyebrow,.gateway-intro),.shared-workspace .gateway-foot { color:var(--muted); }
 .shared-workspace .dash-gateway .dash-board-tas { --wing-bg:#403654; --wing-accent:#cbbce9; --wing-soft:#ece4fa; border-color:#cbbce94d; }
