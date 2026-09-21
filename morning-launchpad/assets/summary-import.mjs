@@ -403,6 +403,9 @@ class SummaryImport extends HTMLElement {
     // Source tasks and Steve's own notes have useful titles. Imported email
     // subjects remain in the details; their practical action leads the card.
     const titleFirst=!!(item.origin||item.personal),frontAction=item.action||item.instruction||'';
+    const clarity=item.origin?globalThis.WWHS_TASK_CLARITY?.describe(item.origin.wing,{...item.taskHelp,id:item.origin.taskId,title:item.title}):null;
+    const displayTitle=clarity?.title&&!item.dirty?.includes('title')?clarity.title:item.title;
+    if(item.origin)article.classList.add('is-workboard-task');
     const active=['review','added'].includes(item.status)&&!sourceCompleted(item);const dependencies=item.dependsOn.map(key=>this.inbox.items.find(x=>x.taskKey===key));
     const blockedBy=dependencies.some(x=>!x||x.status!=='done')||(item.forecast?.asOf===todaySydney()&&(item.forecast.blocked||(item.forecast.active&&item.forecast.section==='waiting')));
     const head=element('div',undefined,{class:'import-card-top'});head.append(element('strong',item.title));
@@ -444,7 +447,8 @@ class SummaryImport extends HTMLElement {
       if(item.action){const actionLabel=element('label','Action');actionLabel.append(action);edit.append(actionLabel);}edit.append(grid);article.append(edit);
     }
     article.append(createNoteEditor(item,{disabled:this.blocked,save:changes=>article.isConnected&&this.inbox.items.some(x=>x.id===item.id)&&this.updateItem(item.id,changes)}));
-    const source=element('details');source.append(element('summary','Source and links'),element('p',item.origin?'Original workboard task:':item.personal?'Your note title:':'Search Evernote using this note title:'),element('p',item.title,{class:'import-source-title'}));
+    const source=element('details');source.append(element('summary',item.origin?'Sources & responsibilities':'Source and links'),element('p',item.origin?'Original workboard task:':item.personal?'Your note title:':'Search Evernote using this note title:'),element('p',item.title,{class:'import-source-title'}));
+    if(item.origin){source.classList.add('task-clarity-reference');if(item.taskHelp?.roles?.length)source.append(element('p',`Responsible: ${item.taskHelp.roles.join(' · ')}`));for(const title of item.taskHelp?.sources||[])source.append(element('p',title));}
     for(const title of item.relatedTitles)source.append(element('p',`Also: ${title}`,{class:'import-source-title'}));
     if(item.sourceSummary){const summary=element('div',undefined,{class:'import-source-summary'});summary.append(element('strong','At a glance · AI summary'),element('p',item.sourceSummary));source.append(summary);}
     if(item.source)source.append(element('p','Original email or note',{class:'import-source-heading'}),element('div',item.source,{class:'import-source',tabindex:'0',role:'region','aria-label':'Original email or note'}));
@@ -503,8 +507,13 @@ class SummaryImport extends HTMLElement {
     summary.setAttribute('aria-label',`Expand or collapse ${item.title}`);
     const summaryCopy=element('span',undefined,{class:'import-card-summary-copy'});
     if(titleFirst){
-      summaryCopy.append(element('strong',item.title,{class:'import-card-title'}));
-      if(frontAction){
+      if(item.origin)summaryCopy.append(element('span',[WORKSTREAMS[item.origin.wing],item.forecast?.period,clarity?.kindLabel].filter(Boolean).join(' · '),{class:'task-clarity-meta'}));
+      summaryCopy.append(element('strong',displayTitle,{class:'import-card-title'}));
+      if(item.origin){
+        if(clarity?.purpose)summaryCopy.append(element('span',clarity.purpose,{class:'task-clarity-purpose'}));
+        if(item.dueDate||item.forecast?.scheduledDate)summaryCopy.append(element('span',`When: ${dateLabel(item.dueDate||item.forecast.scheduledDate)}`,{class:'task-clarity-meta'}));
+        summaryCopy.append(element('span','View steps',{class:'task-clarity-toggle'}));
+      }else if(frontAction){
         const nextStep=element('span',undefined,{class:'import-card-next'});
         const actionLabel=item.status==='done'||sourceCompleted(item)?'Recorded action':item.status==='dismissed'||item.status==='superseded'?'Saved action':'Next step';
         nextStep.append(element('span',`${actionLabel}:`,{class:'import-card-next-label'}),frontText);
@@ -515,8 +524,24 @@ class SummaryImport extends HTMLElement {
     quickControls.prepend(saveStatus);
     requestAnimationFrame(()=>{if(frontText.isConnected){resizeText();}});
     const body=element('div',undefined,{class:'import-card-body'});
-    body.append(...article.childNodes);disclosure.append(summary,body);article.append(disclosure);if(item.forecast)article.append(this.forecastNotice(item));if(quickControls.childElementCount)article.append(quickControls);
-    disclosure.addEventListener('toggle',()=>{if(!disclosure.isConnected)return;if(disclosure.open)this.openCards.add(item.id);else this.openCards.delete(item.id);});
+    if(clarity?.finished){const outcome=element('div',undefined,{class:'task-clarity-outcome'});outcome.append(element('strong','Finished when'),element('p',clarity.finished));body.append(outcome);}
+    if(clarity?.steps?.length){body.append(element('h3','What to do'));const steps=element('ol',undefined,{class:'task-clarity-steps'});clarity.steps.forEach(step=>steps.append(element('li',step)));body.append(steps);}
+    if(item.origin&&frontAction){const editAction=element('label',item.status==='done'?'Your recorded action':'Your next action',{class:'import-personal-action'});editAction.append(frontText);body.append(editAction);}
+    body.append(...article.childNodes);disclosure.append(summary,body);article.append(disclosure);
+    if(item.forecast){
+      if(item.origin){
+        source.append(this.forecastNotice(item));
+        const stale=item.forecast.asOf!==todaySydney()||this.forecastAvailability?.get(item.origin.wing);
+        if(blockedBy||stale){const warning=stale?'Saved schedule — open the source task to check the latest dates.':`Waiting: ${item.forecast.blockerReason||item.waitingOn||'Complete the prerequisite checks first.'}`;article.append(element('p',warning,{class:'task-clarity-front-warning'}));}
+      }else article.append(this.forecastNotice(item));
+    }
+    if(quickControls.childElementCount)article.append(quickControls);
+    disclosure.addEventListener('toggle',()=>{
+      if(!disclosure.isConnected)return;
+      if(disclosure.open){for(const other of this.querySelectorAll('.import-card-disclosure[open]'))if(other!==disclosure)other.open=false;this.openCards.clear();this.openCards.add(item.id);resizeText();}
+      else this.openCards.delete(item.id);
+      const toggle=summary.querySelector('.task-clarity-toggle');if(toggle)toggle.textContent=disclosure.open?'Hide steps':'View steps';
+    });
     return article;
   }
   forecastNotice(item){

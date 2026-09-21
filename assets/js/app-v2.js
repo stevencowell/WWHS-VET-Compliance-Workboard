@@ -5,6 +5,12 @@
   const data = window.VET_WORKBOARD;
   const register = data.taskRegister;
   const tasks = register.tasks;
+  function presentation(task) {
+    return window.WWHS_TASK_CLARITY?.describe('vet', task) || {
+      title: task.title, purpose: task.guidance?.why || task.doneWhen || '',
+      finished: task.doneWhen || '', steps: task.actionSteps || [], kindLabel: ''
+    };
+  }
   const cycle2027 = data.operatingCycle2027 || data.termOne2027 || { tasks: [], terms: [], gates: [], interruptWorkflows: [], sourceWarnings: [] };
   const cycleTasks = cycle2027.tasks || [];
   const eventTemplates = cycle2027.eventTemplates || [];
@@ -393,7 +399,7 @@
     const record = getRecord(id), nativeStatus = getStatus(task), sourceStatus = externalReview(task) ? EXTERNAL_REVIEW_STATUS : nativeStatus;
     const nextStep = !isTaskComplete(task) && (task.actionSteps || []).find((_, index) => !record.stepChecks?.[index]);
     return {
-      wing: "vet", taskId: task.id, recordKey: task.id, title: task.title,
+      wing: "vet", taskId: task.id, recordKey: task.id, title: presentation(task).title,
       action: nextStep || task.doneWhen || task.title,
       notes: reviewNotes(task, record),
       dueDate: record.reviewDate || task.dueDate || task.windowEnd || null,
@@ -420,7 +426,7 @@
   }
   function trackTaskButton(task) {
     if (!task) return "";
-    return `<button class="button secondary compact" type="button" data-action="track-work-task" data-task-id="${esc(task.id)}" aria-label="Add to my work: ${esc(task.title)}">Add to my work</button>`;
+    return `<button class="button secondary compact" type="button" data-action="track-work-task" data-task-id="${esc(task.id)}" aria-label="Add to my work: ${esc(presentation(task).title)}">Add to my work</button>`;
   }
   function forecastRoleMatches(task) {
     if (state.role === "all") return true;
@@ -572,6 +578,7 @@
     if (state.role !== "all") coverageNotes.push(`Filtered to ${forecast.context.roleLabel}. Choose All work in the VET role selector to see responsibilities held by other staff.`);
     if (forecast.context.mode === "unavailable") coverageNotes.push(forecast.context.note);
     const items = definitions.filter(forecastRoleMatches).map(task => {
+      const clarity = presentation(task);
       const record = getRecord(task.id), focus = focused.get(task.id);
       const template = task.occurrenceTemplate === true;
       const procedureOnly = template || task.procedureOnly === true;
@@ -600,7 +607,7 @@
       let focusReason = focus?.reason || (complete ? "This task is marked complete in the VET workboard." : template ? "Use this procedure when needed. Start a new record each time." : task.historyOnly ? "Historical reference; excluded from current reminders." : task.procedureOnly ? "Procedure reference; excluded from current reminders." : year !== String(forecast.context.year) ? "From another year; available for planning or review." : schedule.kind === "recurring" ? "Ongoing duty: follow its timing instructions and save the next review date." : schedule.kind === "trigger" ? "Open when the stated situation arises. The app does not detect it automatically." : "Outside the current focus window or waiting for its recorded review date.");
       if (forecast.context.mode === "unavailable" && !complete && !template) focusReason = "The current task list is unavailable. You can still open every saved task.";
       return {
-        id: task.id, recordKey: task.id, title: task.title, year,
+        id: task.id, recordKey: task.id, title: clarity.title, clarity, year,
         route: "#task/" + encodeURIComponent(task.id),
         area: template ? "Event procedure" : task.term ? `Term ${task.term}` : phaseMeta[task.phase]?.short || "Annual setup",
         owner: assignedRole(task), status: template ? "Procedure - start when needed" : review ? "Task complete · reviewed" : statusMeta[getStatus(task)]?.label || "Not started", progressAvailable: forecast.context.mode !== "unavailable",
@@ -808,9 +815,9 @@
   function taskCompletionActions(task) {
     if (externalReview(task)) return `<span class="task-complete-label">✓ Task complete · reviewed</span>`;
     if (!task || task.historyOnly || task.procedureOnly || ["verified", "not-applicable"].includes(getStatus(task))) return "";
-    if (getStatus(task) === "completed") return `<span class="task-complete-label">✓ Task Complete</span>${completionUndo.get(task.id)?.after === getRecord(task.id) ? `<button class="button secondary compact" type="button" data-action="undo-complete-task" data-task-id="${esc(task.id)}" aria-label="Undo completion: ${esc(task.title)}">Undo</button>` : ""}`;
+    if (getStatus(task) === "completed") return `<span class="task-complete-label">✓ Task Complete</span>${completionUndo.get(task.id)?.after === getRecord(task.id) ? `<button class="button secondary compact" type="button" data-action="undo-complete-task" data-task-id="${esc(task.id)}" aria-label="Undo completion: ${esc(presentation(task).title)}">Undo</button>` : ""}`;
     const reason = completionBlockReason(task);
-    return `<button class="button compact complete-task-button" type="button" data-action="complete-task" data-task-id="${esc(task.id)}" aria-label="Task Complete: ${esc(task.title)}" title="${esc(reason || "Tick every action step and your source and result checks. Verification stays separate.")}" ${reason ? "disabled" : ""}>Task Complete</button>`;
+    return `<button class="button compact complete-task-button" type="button" data-action="complete-task" data-task-id="${esc(task.id)}" aria-label="Task Complete: ${esc(presentation(task).title)}" title="${esc(reason || "Tick every action step and your source and result checks. Verification stays separate.")}" ${reason ? "disabled" : ""}>Task Complete</button>`;
   }
 
   function refreshTaskCompletion(task) {
@@ -863,11 +870,12 @@
   }
 
   function taskCard(task, options = {}) {
+    const clarity = presentation(task);
     const compact = options.compact ? " is-compact" : "";
     const depState = dependencyState(task), dependencies = [...depState.hardOpen, ...depState.open], future = cycleDateState(task) === "future", earlierGate = is2027Task(task) && !earlier2027GatesComplete(task);
-    const blocked = dependencies.length > 0 || future || earlierGate;
+    const blocked = depState.missing.length > 0 || dependencies.length > 0 || future || earlierGate;
     const blockedLabel = depState.missing.length ? "Blocked · prerequisite configuration error" : dependencies.length ? `Blocked · ${dependencies.length} open` : earlierGate ? "Earlier gate open" : future ? `Opens ${shortDate(task.windowStart)}` : "";
-    return `<article class="task-card priority-${esc(task.priority)}${compact}${blocked ? " is-blocked" : ""}"><div class="priority-rail" aria-hidden="true"></div><div class="task-main"><div class="task-meta"><span class="badge">${esc(applicabilityLabel(task))}</span>${dueBadge(task)}${blocked ? `<span class="badge blocked">${esc(blockedLabel)}</span>` : ""}${statusPill(task)}</div><h3>${esc(task.title)}</h3>${options.compact ? "" : `<p class="summary">${esc(task.timing)}</p>`}<p class="task-owner">${esc(assignedRole(task))}</p></div><div class="task-card-actions">${taskCompletionActions(task)}${trackTaskButton(task)}<button class="task-action" type="button" data-action="open-task" data-task-id="${esc(task.id)}">${blocked ? future ? "View timing" : "View blockers" : !hasRecord(task) ? "Review task" : getStatus(task) === "not-started" ? "Start task" : "Open task"}</button></div></article>`;
+    return `<article class="task-card priority-${esc(task.priority)}${compact}${blocked ? " is-blocked" : ""}"><div class="priority-rail" aria-hidden="true"></div><div class="task-main"><div class="task-meta"><span class="badge">${esc(applicabilityLabel(task))}</span>${dueBadge(task)}${blocked ? `<span class="badge blocked">${esc(blockedLabel)}</span>` : ""}${statusPill(task)}</div><h3>${esc(clarity.title)}</h3><p class="task-clarity-purpose">${esc(clarity.purpose)}</p><p class="task-clarity-meta"><span>${esc(task.timing)}</span><span>${esc(assignedRole(task))}</span></p></div><div class="task-card-actions">${taskCompletionActions(task)}${trackTaskButton(task)}<button class="task-action" type="button" data-action="open-task" data-task-id="${esc(task.id)}">${blocked ? future ? "View timing" : "View blockers" : !hasRecord(task) ? "Review task" : getStatus(task) === "not-started" ? "Start task" : "Open task"}</button></div></article>`;
   }
 
   function renderTitle() {
@@ -919,10 +927,11 @@
     const current = ordered[0];
     const upcoming = ordered.slice(1, 3);
     const earlierCount = tasks.filter(task => roleMatches(task) && historicalUnconfirmed(task) && !isTaskComplete(task)).length;
-    route.innerHTML = `<section class="page"><header class="page-heading calm-heading"><div><p class="eyebrow">${esc(data.config.currentTerm)} · ${esc(data.config.currentWeek)}</p><h1>Your next step</h1><p>Do this one action first. The rest of the workboard will wait.</p></div><button class="button quiet compact" type="button" data-action="choose-experience" data-experience="full">Explore the full workboard</button></header><aside class="privacy-line"><strong>Keep personal information out of this workboard.</strong> Complete the real action and keep its evidence in the authorised system.</aside>${earlierCount ? `<details class="prior-status-note"><summary>Earlier-year status has not been imported</summary><p>This new workboard does not assume those actions were missed. Confirm them in the official systems as they enter the guided queue.</p></details>` : ""}${current ? focusTask(current) : `<div class="empty-state"><h2>Every applicable action in this view is closed.</h2><p>Use the full workboard to review exceptions, future work or source changes.</p><button class="button" type="button" data-action="choose-experience" data-experience="full">Explore the full workboard</button></div>`}${upcoming.length ? `<section class="coming-next"><div class="section-heading"><div><h2>Coming next</h2><p>A preview only—nothing else to act on yet.</p></div></div>${upcoming.map((task, index) => `<div class="next-row"><span>0${index + 2}</span><div><strong>${esc(task.title)}</strong><small>${esc(task.timing)}</small></div></div>`).join("")}</section>` : ""}<button class="guidance-footer" type="button" data-action="choose-experience" data-experience="full"><span>Already know the role?</span><strong>Switch to the fast workboard →</strong></button></section>`;
+    route.innerHTML = `<section class="page"><header class="page-heading calm-heading"><div><p class="eyebrow">${esc(data.config.currentTerm)} · ${esc(data.config.currentWeek)}</p><h1>Your next step</h1><p>Do this one action first. The rest of the workboard will wait.</p></div><button class="button quiet compact" type="button" data-action="choose-experience" data-experience="full">Explore the full workboard</button></header><aside class="privacy-line"><strong>Keep personal information out of this workboard.</strong> Complete the real action and keep its evidence in the authorised system.</aside>${earlierCount ? `<details class="prior-status-note"><summary>Earlier-year status has not been imported</summary><p>This new workboard does not assume those actions were missed. Confirm them in the official systems as they enter the guided queue.</p></details>` : ""}${current ? focusTask(current) : `<div class="empty-state"><h2>Every applicable action in this view is closed.</h2><p>Use the full workboard to review exceptions, future work or source changes.</p><button class="button" type="button" data-action="choose-experience" data-experience="full">Explore the full workboard</button></div>`}${upcoming.length ? `<section class="coming-next"><div class="section-heading"><div><h2>Coming next</h2><p>A preview only—nothing else to act on yet.</p></div></div>${upcoming.map((task, index) => `<div class="next-row"><span>0${index + 2}</span><div><strong>${esc(presentation(task).title)}</strong><small>${esc(task.timing)}</small></div></div>`).join("")}</section>` : ""}<button class="guidance-footer" type="button" data-action="choose-experience" data-experience="full"><span>Already know the role?</span><strong>Switch to the fast workboard →</strong></button></section>`;
   }
   function focusTask(task) {
-    return `<section class="focus-task"><div class="focus-top"><span class="focus-number">01</span><div><span class="badge">${esc(applicabilityLabel(task))}</span>${dueBadge(task)}</div></div><h2>${esc(task.title)}</h2><p>${esc(task.timing)}</p><div class="focus-facts"><span><small>Responsible role</small><strong>${esc(accountableRole(task))}</strong></span><span><small>Start in</small><strong>${esc(task.systems?.[0] || "Authorised owner system")}</strong></span></div>${stepGuidance(task, 0)}<div class="task-card-actions">${taskCompletionActions(task)}${trackTaskButton(task)}<button class="button secondary focus-button" type="button" data-action="open-task" data-task-id="${esc(task.id)}">Show me this task</button></div></section>`;
+    const clarity = presentation(task);
+    return `<section class="focus-task"><div class="focus-top"><span class="focus-number">01</span><div><span class="badge">${esc(applicabilityLabel(task))}</span>${dueBadge(task)}</div></div><h2>${esc(clarity.title)}</h2><p class="task-clarity-purpose">${esc(clarity.purpose)}</p><p class="task-clarity-meta"><span>${esc(task.timing)}</span><span>${esc(assignedRole(task))}</span></p><div class="task-card-actions">${taskCompletionActions(task)}${trackTaskButton(task)}<button class="button secondary focus-button" type="button" data-action="open-task" data-task-id="${esc(task.id)}">Show me this task</button></div></section>`;
   }
 
   function renderFullToday() {
@@ -1006,14 +1015,15 @@
       const nextOpening = cycleTasks.filter(item => roleMatches(item) && !isTaskComplete(item) && isTaskReady(item) && earlier2027GatesComplete(item) && cycleDateState(item) === "future").sort((a, b) => String(a.windowStart).localeCompare(String(b.windowStart)))[0];
       return `<div class="empty-state"><h2>No action is open for this role right now.</h2><p>${nextOpening ? `The next task with its earlier checks complete opens ${esc(shortDate(nextOpening.windowStart))}.` : "Review the blockers below or switch to All work."} A blocked or future action will not be presented as your next step.</p></div>`;
     }
+    const clarity = presentation(task);
     const positionLabel = task.lane === "interrupt" ? "When needed" : task.week ? `Term ${esc(task.term)} · Week ${esc(task.week)}` : `Setup stage ${esc(task.gate)}`;
-    return `<section class="focus-task term-focus"><div class="focus-top"><span class="focus-number">01</span><div><span class="badge">${positionLabel}</span>${isEscalationDue(task) ? `<span class="badge overdue">Escalation due</span>` : isChaseDue(task) ? `<span class="badge overdue">Chase due</span>` : task.lane === "interrupt" ? `<span class="badge overdue">Respond now</span>` : `<span class="badge due">Ready now</span>`}</div></div><h2>${esc(task.title)}</h2><p>${esc(task.timing)}</p><div class="focus-facts term-focus-facts"><span><small>Responsible</small><strong>${esc(assignedRole(task))}</strong></span><span><small>Responsible for the task</small><strong>${esc(accountableRole(task))}</strong></span><span><small>Verifier</small><strong>${esc(verifierRole(task))}</strong></span><span><small>Start in</small><strong>${esc(task.systems?.[0] || "Authorised owner system")}</strong></span></div><div class="term-done-preview"><small>Done when</small><p>${esc(task.doneWhen)}</p></div>${stepGuidance(task, 0)}<div class="task-card-actions">${taskCompletionActions(task)}${trackTaskButton(task)}<button class="button secondary focus-button" type="button" data-action="open-task" data-task-id="${esc(task.id)}">Open this task</button></div></section>`;
+    return `<section class="focus-task term-focus"><div class="focus-top"><span class="focus-number">01</span><div><span class="badge">${positionLabel}</span>${isEscalationDue(task) ? `<span class="badge overdue">Escalation due</span>` : isChaseDue(task) ? `<span class="badge overdue">Chase due</span>` : task.lane === "interrupt" ? `<span class="badge overdue">Respond now</span>` : `<span class="badge due">Ready now</span>`}</div></div><h2>${esc(clarity.title)}</h2><p class="task-clarity-purpose">${esc(clarity.purpose)}</p><p class="task-clarity-meta"><span>${esc(task.timing)}</span><span>${esc(assignedRole(task))}</span></p><div class="task-card-actions">${taskCompletionActions(task)}${trackTaskButton(task)}<button class="button secondary focus-button" type="button" data-action="open-task" data-task-id="${esc(task.id)}">Open this task</button></div></section>`;
   }
   function cycleBlockers() {
     const gate = currentCycleGate();
     const blocked = cycleTasks.filter(task => task.gate === gate && !isClosed(task) && (!isCycleTaskReady(task) || isWaitingParked(task) || getStatus(task) === "completed")).sort((a, b) => a.order - b.order).slice(0, 4);
     if (!blocked.length) return "";
-    return `<section class="term-blockers"><div class="section-heading"><div><h2>Complete these first</h2><p>Visible for planning—these are not ready to act on yet.</p></div></div>${blocked.map(task => { const dependencies = openDependencies(task), record = getRecord(task.id); const reason = getStatus(task) === "completed" ? "Task checklist complete · awaiting verification" : isWaitingParked(task) ? `Waiting for ${record.waitingForRole || "the recorded role/system"}; chase ${shortDate(record.reviewDate)}` : dependencies.length ? `Waiting for ${dependencies.map(item => item.title).join(" · ")}` : cycleDateState(task) === "future" ? `Opens ${shortDate(task.windowStart)}` : "An earlier stage must be completed first"; return `<article><div><strong>${esc(task.title)}</strong><small>${esc(reason)}</small></div><button class="text-button" type="button" data-action="open-task" data-task-id="${esc(task.id)}">View related tasks</button></article>`; }).join("")}</section>`;
+    return `<section class="term-blockers"><div class="section-heading"><div><h2>Complete these first</h2><p>Visible for planning—these are not ready to act on yet.</p></div></div>${blocked.map(task => { const dependencies = openDependencies(task), record = getRecord(task.id); const reason = getStatus(task) === "completed" ? "Task checklist complete · awaiting verification" : isWaitingParked(task) ? `Waiting for ${record.waitingForRole || "the recorded role/system"}; chase ${shortDate(record.reviewDate)}` : dependencies.length ? `Waiting for ${dependencies.map(item => presentation(item).title).join(" · ")}` : cycleDateState(task) === "future" ? `Opens ${shortDate(task.windowStart)}` : "An earlier stage must be completed first"; return `<article><div><strong>${esc(presentation(task).title)}</strong><small>${esc(reason)}</small></div><button class="text-button" type="button" data-action="open-task" data-task-id="${esc(task.id)}">View related tasks</button></article>`; }).join("")}</section>`;
   }
   function cycleBoundaryNotice() {
     return `<aside class="term-boundary"><div><strong>${esc(cycle2027.state)}</strong><p>${esc(cycle2027.sharedState.message)}</p></div><span>Keep evidence in official systems</span></aside>`;
@@ -1029,7 +1039,7 @@
     const ready = cycleReadyQueue(), current = ready[0], upcoming = ready.slice(1, 3), gate = currentCycleGate(), gateState = cycleGateState(gate);
     const focusTerm = current?.term || cycle2027.gates.find(item => item.number === gate)?.term || 1;
     if (state.selected2027Term !== focusTerm) { state.selected2027Term = focusTerm; state.selected2027Week = focusTerm === 1 ? 0 : 1; saveState(); }
-    route.innerHTML = `<section class="page term-one-page cycle-2027-page"><header class="page-heading calm-heading"><div><p class="eyebrow">2027 PLAN · FOUR TERMS</p><h1>Your next task</h1><p>Stage ${gate} of ${cycle2027.gates.length} · ${gateState.closed} of ${gateState.total} checks verified.</p></div><button class="button quiet compact" type="button" data-action="set-cycle-mode" data-mode="full">Switch to fast term view</button></header>${cycleBoundaryNotice()}${cycleSourcePanel()}${cycleTermStrip()}${cycleFocusTask(current)}${cycleBlockers()}${upcoming.length ? `<section class="coming-next"><div class="section-heading"><div><h2>Also ready</h2><p>Preview the tasks that follow your next action.</p></div></div>${upcoming.map((task, index) => `<div class="next-row"><span>0${index + 2}</span><div><strong>${esc(task.title)}</strong><small>${esc(task.timing)}</small></div></div>`).join("")}</section>` : ""}${cycleInterruptPanel()}</section>`;
+    route.innerHTML = `<section class="page term-one-page cycle-2027-page"><header class="page-heading calm-heading"><div><p class="eyebrow">2027 PLAN · FOUR TERMS</p><h1>Your next task</h1><p>Stage ${gate} of ${cycle2027.gates.length} · ${gateState.closed} of ${gateState.total} checks verified.</p></div><button class="button quiet compact" type="button" data-action="set-cycle-mode" data-mode="full">Switch to fast term view</button></header>${cycleBoundaryNotice()}${cycleSourcePanel()}${cycleTermStrip()}${cycleFocusTask(current)}${cycleBlockers()}${upcoming.length ? `<section class="coming-next"><div class="section-heading"><div><h2>Also ready</h2><p>Preview the tasks that follow your next action.</p></div></div>${upcoming.map((task, index) => `<div class="next-row"><span>0${index + 2}</span><div><strong>${esc(presentation(task).title)}</strong><small>${esc(task.timing)}</small></div></div>`).join("")}</section>` : ""}${cycleInterruptPanel()}</section>`;
   }
   function renderCycleFull() {
     const term = selectedTerm(), termTasks = cycleTasks.filter(task => task.term === term.number || (term.number === 1 && !task.term));
@@ -1048,7 +1058,7 @@
     const done = phaseTasks.filter(isClosed).length;
     route.innerHTML = `<section class="page"><header class="page-heading"><div><p class="eyebrow">One phase at a time</p><h1>Year plan</h1><p>The ${tasks.length}-action register stays underneath. This page opens only one part of the year so new staff can see the sequence without facing the whole minefield.</p></div><div class="date-block"><strong>${done}/${phaseTasks.length} closed</strong><span>${esc(phaseMeta[selected].short)}</span></div></header><nav class="phase-nav" aria-label="Annual workflow phases">${register.phaseOrder.map(phase => `<button type="button" class="phase-button ${phase === selected ? "is-current" : ""}" data-action="select-phase" data-phase="${phase}"><span>${esc(phaseMeta[phase].short)}</span><small>${tasks.filter(task => task.phase === phase).length}</small></button>`).join("")}</nav><section class="phase-intro"><div><p class="eyebrow">${esc(phaseMeta[selected].short)}</p><h2>${esc(phaseMeta[selected].title)}</h2><p>${esc(phaseMeta[selected].description)}</p></div><label class="search-field"><span>Find in this phase</span><input id="year-search" type="search" value="${esc(state.yearSearch)}" placeholder="e.g. USI, trainer, reports"></label></section><div class="phase-status-line"><span>${phaseTasks.length} actions in sequence</span><span>${done} complete or not applicable</span><span>${phaseTasks.filter(historicalUnconfirmed).length} earlier milestones need status confirmation</span></div><div class="task-list year-task-list">${phaseTasks.length ? phaseTasks.map(task => taskCard(task, { compact: true })).join("") : `<div class="empty-state"><h2>No matching work in this phase.</h2><p>Clear the search or choose another role.</p></div>`}</div></section>`;
   }
-  function taskSearchText(task) { return [task.title, task.timing, task.trigger, task.dueAuthority, ...(task.actionSteps || []), ...(task.systems || [])].join(" ").toLowerCase(); }
+  function taskSearchText(task) { const clarity = presentation(task); return [task.title, clarity.title, clarity.purpose, task.timing, task.trigger, task.dueAuthority, ...(task.actionSteps || []), ...(task.systems || [])].join(" ").toLowerCase(); }
 
   function renderWorkflows() {
     const groups = ["Most used", "Learner pathway", "Planning", "Urgent", "Continuity"];
@@ -1076,7 +1086,7 @@
     };
   }
   function workflowTaskButtons(related) {
-    return related.map((task, index) => `<article class="workflow-task-row"><button type="button" class="workflow-task" data-action="open-task" data-task-id="${esc(task.id)}"><span>${String(index + 1).padStart(2, "0")}</span><div><strong>${esc(task.title)}</strong><small>${esc(statusMeta[getStatus(task)].label)} · ${esc(task.timing)}</small></div></button><div class="task-card-actions">${taskCompletionActions(task)}${trackTaskButton(task)}</div></article>`).join("");
+    return related.map((task, index) => `<article class="workflow-task-row"><button type="button" class="workflow-task" data-action="open-task" data-task-id="${esc(task.id)}"><span>${String(index + 1).padStart(2, "0")}</span><div><strong>${esc(presentation(task).title)}</strong><small>${esc(statusMeta[getStatus(task)].label)} · ${esc(task.timing)}</small></div></button><div class="task-card-actions">${taskCompletionActions(task)}${trackTaskButton(task)}</div></article>`).join("");
   }
   function openWorkflow(id, cycleContext = "") {
     const workflow = data.workflows.find(item => item.id === id); if (!workflow) return;
@@ -1175,12 +1185,36 @@
 
   function openTask(id) {
     const task = taskById(id); if (!task) return;
+    const clarity = presentation(task);
     activeWorkflow = null;
     const review = externalReview(task);
     const record = window.WWHS_TASK_REVIEW.project(getRecord(task.id), review, task.actionSteps || [], 'stepChecks'), systems = taskSystems(task), sources = (task.sourceIds || []).map(idValue => ({ id: idValue, item: sourceFor(idValue, task) }));
-    const dependencies = (task.dependencies || []).map(dependencyId => taskById(dependencyId) || { id: dependencyId, title: `Missing prerequisite configuration: ${dependencyId}`, missing: true });
+    const dependencies = [...new Set([...(task.dependencies || []), ...(task.hardDependencies || [])])].map(dependencyId => taskById(dependencyId) || { id: dependencyId, title: `Missing prerequisite configuration: ${dependencyId}`, missing: true });
     const guidanceOpen = state.guidance || state.experience === "guided";
-    taskDialogContent.innerHTML = `<header class="dialog-head"><div><p class="eyebrow">${esc(phaseMeta[task.phase]?.short || task.phase)} · ${esc(taskSourceLabel(task))}</p><h2 id="task-dialog-title">${esc(task.title)}</h2></div><button class="dialog-close" type="button" data-action="close-dialog" aria-label="Close task">×</button></header><div class="dialog-body"><div class="task-facts"><div class="fact"><span>When</span><strong>${esc(task.dueDate ? longDate(task.dueDate) : task.timing)}</strong></div><div class="fact"><span>Responsible for the task</span><strong>${esc(accountableRole(task))}</strong></div><div class="fact"><span>Assigned to</span><strong>${esc(assignedRole(task))}</strong></div><div class="fact"><span>Checked by</span><strong>${esc(verifierRole(task))}</strong></div></div>${authorityPanel(task)}<div class="task-card-actions">${statusPill(task)}${trackTaskButton(task)}</div>${dependencies.length ? dependencyPanel(dependencies, task.dependencyMode) : ""}${taskSourcePanel(task)}<section class="dialog-section"><h3>Suggested steps</h3>${review ? `<p>The review covers all applicable steps. Untick Reviewed complete to restore the earlier checklist.</p>` : ""}<ol class="step-list">${(task.actionSteps || []).map((step, index) => `<li><label><input type="checkbox" data-task-step="${index}" data-task-id="${esc(task.id)}" ${record.stepChecks?.[index] ? "checked" : ""} ${review ? "disabled" : ""}><span class="step-number">${index + 1}</span><span>${esc(step)}</span></label>${stepGuidance(task, index)}</li>`).join("")}</ol></section><section class="done-when"><span>Done when</span><p>${esc(task.doneWhen)}</p></section>${ownerSystemsPanel(task, systems)}<details class="guidance-details" ${guidanceOpen ? "open" : ""}><summary>Explain this in plain English</summary><div class="guidance-box"><p><strong>Why it matters:</strong> ${esc(task.guidance?.why || "This action supports the authorised annual VET process.")}</p><p><strong>Common trap:</strong> ${esc(task.guidance?.commonTrap || "Treating the workboard as the official record.")}</p><p><strong>Applies to:</strong> ${esc(task.applicability?.conditions || "Confirm locally")}</p></div></details><details class="source-details"><summary>Show source details</summary><div class="source-mini-list">${sources.map(({ id: sourceId, item }) => item ? `<div><strong>${esc(item.title)}</strong><span>${esc(item.note)}</span>${sourceGuidance(item, task, sourceId)}</div>` : `<p><strong>${esc(sourceId)}</strong><span>Controlled or local source—confirm the current authorised version.</span></p>`).join("")}</div></details>${completionForm(task, record)}${historyPanel(record)}</div>`;
+    const dependency = dependencyState(task), warnings = [];
+    if (dependency.missing.length) warnings.push('A prerequisite is missing from this plan. Check Sources & responsibilities below.');
+    else if (dependency.hardOpen.length || dependency.open.length) warnings.push(`${dependency.hardOpen.length + dependency.open.length} prerequisite${dependency.hardOpen.length + dependency.open.length === 1 ? '' : 's'} still need checking. See Sources & responsibilities below.`);
+    if (is2027Task(task) && !earlier2027GatesComplete(task)) warnings.push('An earlier setup stage still needs checking.');
+    if (cycleDateState(task) === 'future') warnings.push(`This task opens ${shortDate(task.windowStart)}.`);
+    if (task.dependencyMode === 'follow-up' && dependencies.length) warnings.push('Respond now. Follow up the related tasks alongside this work.');
+    if (task.historyOnly || task.procedureOnly) warnings.push('This entry is read-only. Keep the official record in its authorised system.');
+    taskDialogContent.innerHTML = `<header class="dialog-head"><div><p class="eyebrow">${esc(phaseMeta[task.phase]?.short || task.phase)} · ${esc(clarity.kindLabel || taskSourceLabel(task))}</p><h2 id="task-dialog-title">${esc(clarity.title)}</h2></div><button class="dialog-close" type="button" data-action="close-dialog" aria-label="Close task">×</button></header>
+      <div class="dialog-body">
+        <p class="task-clarity-purpose">${esc(clarity.purpose)}</p>
+        <section class="done-when task-clarity-outcome"><strong>Finished when</strong><p>${esc(clarity.finished)}</p></section>
+        <p class="task-clarity-meta"><span><strong>When:</strong> ${esc(task.dueDate ? longDate(task.dueDate) : task.timing)}</span><span><strong>Assigned to:</strong> ${esc(assignedRole(task))}</span></p>
+        <div class="task-card-actions">${statusPill(task)}${trackTaskButton(task)}</div>
+        ${warnings.length ? `<aside class="task-clarity-warning">${warnings.map(text => `<p>${esc(text)}</p>`).join('')}</aside>` : ''}
+        ${applicabilityLabel(task) !== 'required' && task.applicability?.conditions ? `<p class="task-clarity-applicability"><strong>Applies when:</strong> ${esc(task.applicability.conditions)}</p>` : ''}
+        <section class="dialog-section task-clarity-steps"><h3>What to do</h3>${review ? `<p>The review covers all applicable steps. Untick Reviewed complete to restore the earlier checklist.</p>` : ""}<ol class="step-list">${clarity.steps.map((step, index) => `<li><label><input type="checkbox" data-task-step="${index}" data-task-id="${esc(task.id)}" ${record.stepChecks?.[index] ? "checked" : ""} ${review ? "disabled" : ""}><span class="step-number">${index + 1}</span><span>${esc(step)}</span></label>${stepGuidance(task, index)}</li>`).join("")}</ol></section>
+        ${completionForm(task, record)}
+        <details class="task-clarity-reference"><summary>Sources &amp; responsibilities</summary><div>
+          <div class="task-facts"><div class="fact"><span>When</span><strong>${esc(task.dueDate ? longDate(task.dueDate) : task.timing)}</strong></div><div class="fact"><span>Responsible for the task</span><strong>${esc(accountableRole(task))}</strong></div><div class="fact"><span>Assigned to</span><strong>${esc(assignedRole(task))}</strong></div><div class="fact"><span>Checked by</span><strong>${esc(verifierRole(task))}</strong></div></div>
+          ${authorityPanel(task)}${dependencies.length ? dependencyPanel(dependencies, task.dependencyMode) : ""}${taskSourcePanel(task)}${ownerSystemsPanel(task, systems)}
+          <details class="guidance-details" ${guidanceOpen ? "open" : ""}><summary>Explain this in plain English</summary><div class="guidance-box"><p><strong>Why it matters:</strong> ${esc(task.guidance?.why || "This action supports the authorised annual VET process.")}</p><p><strong>Common trap:</strong> ${esc(task.guidance?.commonTrap || "Treating the workboard as the official record.")}</p><p><strong>Applies to:</strong> ${esc(task.applicability?.conditions || "Confirm locally")}</p></div></details>
+          <details class="source-details"><summary>Show source details</summary><div class="source-mini-list">${sources.map(({ id: sourceId, item }) => item ? `<div><strong>${esc(item.title)}</strong><span>${esc(item.note)}</span>${sourceGuidance(item, task, sourceId)}</div>` : `<p><strong>${esc(sourceId)}</strong><span>Controlled or local source—confirm the current authorised version.</span></p>`).join("")}</div></details>${historyPanel(record)}
+        </div></details>
+      </div>`;
     const reviewState = readReviewState();
     taskFormReviewSnapshot = { taskId: task.id, raw: reviewState.raw, readable: reviewState.readable, note: externalReviewNote(task) };
     if (!taskDialog.open) taskDialog.showModal();
@@ -1198,7 +1232,7 @@
     const open = dependencies.filter(task => task.missing || !isClosed(task));
     const followUp = mode === "follow-up";
     const missing = dependencies.filter(task => task.missing).length;
-    return `<section class="dependency-panel ${open.length && !followUp ? "has-open" : "is-clear"}"><strong>${missing ? "Configuration error — this task is locked" : followUp ? "Respond now — follow up these tasks alongside it" : open.length ? `${open.length} prerequisite${open.length === 1 ? "" : "s"} not yet complete` : "Prerequisites complete"}</strong><ul>${dependencies.map(task => `<li><span>${esc(task.title)}</span><span>${task.missing ? `<span class="status-pill status-exception">Missing</span>` : statusPill(task)}${task.missing ? "" : `<button class="text-button" type="button" data-action="open-task" data-task-id="${esc(task.id)}">Open</button>`}</span></li>`).join("")}</ul></section>`;
+    return `<section class="dependency-panel ${open.length && !followUp ? "has-open" : "is-clear"}"><strong>${missing ? "Configuration error — this task is locked" : followUp ? "Respond now — follow up these tasks alongside it" : open.length ? `${open.length} prerequisite${open.length === 1 ? "" : "s"} not yet complete` : "Prerequisites complete"}</strong><ul>${dependencies.map(task => `<li><span>${esc(presentation(task).title)}</span><span>${task.missing ? `<span class="status-pill status-exception">Missing</span>` : statusPill(task)}${task.missing ? "" : `<button class="text-button" type="button" data-action="open-task" data-task-id="${esc(task.id)}">Open</button>`}</span></li>`).join("")}</ul></section>`;
   }
   function allowedHandoffStates(current) {
     const transitions = {

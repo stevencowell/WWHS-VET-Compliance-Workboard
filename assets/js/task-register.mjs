@@ -146,13 +146,27 @@ export function createTaskRegister({wing, label, getAdapter, getSavedItems = () 
     for (const item of filtered) {
       const row=node('article',undefined,{class:`register-row${item.reviewComplete?' is-reviewed':''}`,'data-register-id':item.id});
       const main=node('div',undefined,{class:'register-row-main'});
-      const title=node('a',item.title,{href:item.route});
-      main.append(node('h3'));main.firstChild.append(title);
+      const clarity=item.clarity||{}, disclosure=node('details',undefined,{class:'task-clarity-disclosure',name:`register-task-${wing}`});
+      const front=node('summary');
+      front.append(node('p',[item.year==='ongoing'?'Ongoing':item.year,item.area,clarity.kindLabel].filter(Boolean).join(' · '),{class:'task-clarity-meta'}),node('h3',clarity.title||item.title));
+      if(clarity.purpose)front.append(node('p',clarity.purpose,{class:'task-clarity-purpose'}));
+      const shortDate=value=>new Date(`${value}T12:00:00`).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'});
+      const dates=[item.schedule?.startDate,item.schedule?.endDate].filter((value,index,all)=>value&&all.indexOf(value)===index);
+      const timing=dates.length?dates.map(shortDate).join(' – '):item.schedule?.kind==='trigger'?'As needed':item.schedule?.kind==='recurring'?'Recurring duty':'Check timing in task';
+      front.append(node('p',`When: ${timing}`,{class:'task-clarity-meta'}));
+      const reveal=node('span',undefined,{class:'task-clarity-toggle'});
+      reveal.append(node('span','View steps +',{class:'when-closed'}),node('span','Hide steps −',{class:'when-open'}));front.append(reveal);
+      const body=node('div',undefined,{class:'task-clarity-body'});
+      if(clarity.finished){const outcome=node('div',undefined,{class:'task-clarity-outcome'});outcome.append(node('strong','Finished when'),node('p',clarity.finished));body.append(outcome);}
+      if(clarity.steps?.length){body.append(node('h4','What to do'));const steps=node('ol',undefined,{class:'task-clarity-steps'});clarity.steps.forEach(step=>steps.append(node('li',step)));body.append(steps);}
+      body.append(node('a','Open task to work through the checks',{href:item.route,class:'task-clarity-task-link'}));
+      const reference=node('details',undefined,{class:'task-clarity-reference'});reference.append(node('summary','Sources & responsibilities'));
+      reference.append(node('p',[item.year==='ongoing'?`Ongoing duty · review ${item.reviewYear}`:item.year,entryLabels[registerEntryKind(item)][0],item.area,item.owner].filter(Boolean).join(' · '),{class:'register-meta'}));
+      reference.append(node('p',item.schedule?.label || 'Timing needs checking',{class:'register-timing'}));
+      body.append(reference);disclosure.append(front,body);main.append(disclosure);
       if(item.planningLabel)main.append(node('span',item.planningLabel,{class:'register-review-status'}));
       const reviewStatus=registerReviewStatus(item);
       if(reviewStatus)main.append(node('span',`Under review · ${reviewStatus}`,{class:'register-review-status'}));
-      main.append(node('p',[item.year==='ongoing'?`Ongoing duty · review ${item.reviewYear}`:item.year,entryLabels[registerEntryKind(item)][0],item.area,item.owner].filter(Boolean).join(' · '),{class:'register-meta'}));
-      main.append(node('p',item.schedule?.label || 'Timing needs checking',{class:'register-timing'}));
       const date=registerDate(item), past=date&&date<today;
       const status=item.sourceComplete?`Workboard status: ${item.status}`:item.personalDone?'Done in your saved task list':item.tick?.completed?`Reviewed complete${item.tick.completedEarly?' early':''} for ${item.reviewYear} · ${item.tick.reviewedOn}`:past?'Past date — review the record':item.historyOnly?'Past task — check if it is done':item.inFocus?'In your current task list':item.procedureOnly?'Procedure guide':item.schedule?.kind==='trigger'?'Do this when needed':'Not in your current task list';
       main.append(node('p',status,{class:'register-status'}));

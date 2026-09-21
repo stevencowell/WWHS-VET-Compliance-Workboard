@@ -14,7 +14,7 @@ async function selectFixtures(page,all=false){
 async function titleFirst(page,id,title,action,label='Next step:'){
   const row=card(page,id);await row.waitFor({state:'visible'});
   assert.equal(await row.locator('summary .import-card-title').innerText(),title);
-  assert.equal(await row.locator('.import-card-next-label').innerText(),label);
+  assert.equal(await row.locator('summary textarea').count(),0,'Source tasks keep editing inside the opened card');
   assert.equal(await row.locator('.import-card-summary-text').inputValue(),action);
   assert.equal(await row.locator('.import-card-disclosure').getAttribute('open'),null);
 }
@@ -47,13 +47,16 @@ async function titleFirst(page,id,title,action,label='Next step:'){
     await email.locator('.import-card-chevron').click();await email.getByText('Source and links',{exact:true}).click();assert.equal(await email.locator('.import-source-title').innerText(),records['email:hierarchy-email'].title);
     await email.locator('.import-card-chevron').click();
     const safety=card(page,'workboard:tas:hierarchy-tas');await safety.scrollIntoViewIfNeeded();
-    const dimensions=await safety.locator('summary textarea').evaluate(el=>({scroll:el.scrollHeight,client:el.clientHeight,rect:el.getBoundingClientRect().toJSON(),font:getComputedStyle(el).fontSize}));
-    assert.ok(dimensions.client>=dimensions.scroll-2,JSON.stringify(dimensions));assert.ok(dimensions.rect.right<=390);assert.equal(dimensions.font,'15px');
+    await safety.locator('.import-card-chevron').click();
+    assert.equal(await safety.locator('.task-clarity-steps').innerText(),longAction);
+    const dimensions=await safety.locator('.import-personal-action textarea').evaluate(el=>({scroll:el.scrollHeight,client:el.clientHeight,rect:el.getBoundingClientRect().toJSON(),font:getComputedStyle(el).fontSize}));
+    assert.ok(dimensions.client>=dimensions.scroll-2,JSON.stringify(dimensions));assert.ok(dimensions.rect.right<=390);assert.ok(parseFloat(dimensions.font)>=15);
     assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
     await safety.screenshot({path:path.join(outputs,`card-title-safety-${theme}-390.png`)});
     for(const [wing,id]of [['vet','workboard:vet:hierarchy-vet'],['tas','workboard:tas:hierarchy-tas']]){
       const edited=`Hierarchycheck edited ${wing.toUpperCase()} next action; preserve the original task title.`;
-      await card(page,id).locator('summary textarea').fill(edited);await card(page,id).locator('summary textarea').blur();
+      if(!await card(page,id).locator('.import-card-disclosure').evaluate(el=>el.open))await card(page,id).locator('.import-card-chevron').click();
+      await card(page,id).locator('.import-personal-action textarea').fill(edited);await card(page,id).locator('.import-personal-action textarea').blur();
       await page.waitForFunction(({key,id,edited})=>JSON.parse((window.WWHS_STORAGE||localStorage).getItem(key)).items.find(x=>x.taskKey===id)?.action===edited,{key,id,edited});
       assert.equal((await saved(page,id)).title,records[id].title);
       await card(page,id).getByRole('button',{name:`Prepare with AI: ${records[id].title}`,exact:true}).click();
@@ -66,7 +69,7 @@ async function titleFirst(page,id,title,action,label='Next step:'){
       await page.goto(base+route);await ready(page);await selectFixtures(page);
       await titleFirst(page,id,records[id].title,records[id].action);
       if(wing==='vet'){const row=card(page,'email:hierarchy-email');assert.equal(await row.locator('summary .import-card-title').count(),0);assert.equal(await row.locator('summary textarea').inputValue(),records['email:hierarchy-email'].action);}
-      await card(page,id).locator('.import-card-chevron').click();assert.equal(await card(page,id).locator('.import-card-top strong').innerText(),records[id].title);await card(page,id).locator('.import-card-chevron').click();
+      await card(page,id).locator('.import-card-chevron').click();assert.equal(await card(page,id).locator('.import-card-top strong').textContent(),records[id].title);await card(page,id).locator('.import-card-chevron').click();
       assert.equal((await saved(page,id)).title,records[id].title);assert.equal((await saved(page,id)).action,records[id].action);
       assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
       await card(page,id).screenshot({path:path.join(outputs,`card-title-${wing}-${theme}-390.png`)});

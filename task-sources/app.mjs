@@ -88,11 +88,13 @@ function reviewButton(row, count) {
 }
 
 function taskCard(row, position) {
+  const clarity=window.WWHS_TASK_CLARITY?.describe(row.wing,row);
   const related = taskFindings(row);
   const card = element('article', `card${related.length ? ' review-needed' : ''}`);
   const tags = element('div', 'tags');
   tags.append(element('span', 'tag', row.wing), element('span', `tag${row.provenanceStatus === 'specific-citation' ? '' : ' review'}`, labels[row.provenanceStatus] || row.provenanceStatus));
-  card.append(tags, element('h3', '', `${position}. ${row.title}`));
+  card.append(tags, element('h3', '', `${position}. ${clarity?.title||row.title}`));
+  if(clarity?.purpose)card.append(element('p','task-clarity-purpose',clarity.purpose));
   const timing = element('p', 'task-timing');
   timing.append(element('span', 'date-label', 'When: '), document.createTextNode(row.timing2026 || 'Timing to confirm'));
   card.append(timing);
@@ -103,6 +105,7 @@ function taskCard(row, position) {
   const details = element('details', 'details');
   if (focusedTaskId === row.id) details.open = true;
   details.append(element('summary', '', 'Source and 2027 check'));
+  if(clarity?.title&&clarity.title!==row.title)details.append(element('p','muted',`Recorded title: ${row.title}`));
   const grid = element('div', 'detail-grid');
   for (const fields of [
     [['Why it appears', row.sourceBasis], ['Gap or correction', row.sourceGap || 'No other gap noted.']],
@@ -144,7 +147,7 @@ function renderTasks() {
   const status = byId('status').value;
   const filtered = selectedWingRows().filter(row => (!focusedTaskId || row.id === focusedTaskId) && (!period || row.phaseLabel === period)
     && (!status || (status === 'review-needed' ? taskFindings(row).length : row.provenanceStatus === status))
-    && matchesQuery([row.title, row.timing2026, row.sourceIds, row.sourceBasis, row.sourceGap, row.nextYearCheck, row.evidenceRefs]));
+    && matchesQuery([row.title, window.WWHS_TASK_CLARITY?.describe(row.wing,row).title, row.timing2026, row.sourceIds, row.sourceBasis, row.sourceGap, row.nextYearCheck, row.evidenceRefs]));
   const container = byId('task-list');
   container.replaceChildren();
   const groups = new Map();

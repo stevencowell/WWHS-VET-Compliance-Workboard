@@ -3,6 +3,16 @@
   const browserStorage = () => window.WWHS_STORAGE || localStorage;
 
   const data = window.HT_TAS_WORKBOARD;
+  function presentation(task) {
+    return window.WWHS_TASK_CLARITY?.describe('tas', task) || {
+      title: task.title, purpose: task.summary || task.why || '',
+      finished: task.doneWhen || '', steps: task.steps || [], kindLabel: ''
+    };
+  }
+  function taskSearchText(task) {
+    const clarity = presentation(task);
+    return [task.title, task.summary, clarity.title, clarity.purpose, task.source, task.timing].join(' ').toLowerCase();
+  }
   const planningDefaults = new Map(data.tasks.filter(task => task.provisionalSchedule).map(task => [task.id, {
     dueDate: task.dueDate, milestones: (task.milestones || []).map(item => item.date)
   }]));
@@ -438,7 +448,7 @@
     const milestone = task.milestones?.find((_, index) => record.milestones?.[index] !== true);
     return {
       wing: "tas", taskId: task.id, recordKey: sourceKey,
-      title: task.title, action: closed ? task.doneWhen : nextStep || task.doneWhen,
+      title: presentation(task).title, action: closed ? task.doneWhen : nextStep || task.doneWhen,
       notes: window.WWHS_TASK_REVIEW.notes(record.exceptionReason, review),
       dueDate: task.milestones?.length ? milestone?.date || "" : task.dueDate || "",
       waitingOn: ["waiting", "exception"].includes(record.status) ? (record.exceptionReason || task.owner || "").slice(0, 2000) : "",
@@ -591,6 +601,7 @@
       return { kind: taskCycle(task) === "event" || task.id === "vet-handoff" ? "trigger" : task.timing ? "recurring" : "undated", label: task.timing || "No date or review rule recorded" };
     };
     const addTask = (task, key, olderOccurrence = false) => {
+      const clarity = presentation(task);
       const record = available ? state.records[key] : null;
       const review = available ? overallReview(task,key) : null;
       const reference = task.historyOnly || task.procedureOnly;
@@ -616,7 +627,8 @@
       if (task.id === "t4-year11-report-chain") gaps.push("Confirm the local 16 October hand-off reaches the authorised NESA submitter for 21 October; check faculty applicability.");
       items.push({
         id: olderOccurrence ? key : task.id,
-        title: olderOccurrence ? `${task.title} — ${period}` : task.title,
+        title: olderOccurrence ? `${clarity.title} — ${period}` : clarity.title,
+        clarity: { ...clarity, title: olderOccurrence ? `${clarity.title} — ${period}` : clarity.title },
         year: olderOccurrence ? occurrenceYear(key) : task.dueDate ? task.dueDate.slice(0, 4) : "ongoing",
         recordKey: reference ? "" : key,
         route: `#task/${encodeURIComponent(task.id)}${olderOccurrence || key !== recordKey(task) ? `?record=${encodeURIComponent(key)}` : ""}`,
@@ -644,6 +656,7 @@
         id: `weekly-scan-${index}${olderOccurrence ? `::${week}` : ""}`,
         recordKey: `weekly-scan-${index}::${week}`,
         title: `${label}${olderOccurrence ? ` — week beginning ${week}` : ""}`,
+        clarity: { title: `${label}${olderOccurrence ? ` — week beginning ${week}` : ""}`, purpose: '', finished: '', steps: [], kindLabel: 'Weekly review' },
         year: olderOccurrence ? week.slice(0, 4) : "ongoing", route: `#today?weekly=${index}&week=${encodeURIComponent(week)}`,
         area: "Weekly review", owner: "Head Teacher TAS", status: !available ? "unavailable" : checked ? "completed" : "not-reviewed",
         complete: checked, externallyReviewed:Boolean(review), reviewedOn:review?.reviewedOn || '', historyOnly: false, procedureOnly: false,
@@ -744,16 +757,17 @@
   }
 
   function openSavedTask(task, key) {
+    const clarity = presentation(task);
     const validKey = key.split("::")[0] === task.id;
     const available = validKey && forecastStorageAvailable();
     const record = available ? reviewedRecord(task,key) : null, review = available ? overallReview(task,key) : null;
     lastTaskTrigger = document.activeElement;
-    taskDialogContent.innerHTML = `<header class="dialog-head"><div><p class="eyebrow">Saved task record · read only</p><h2 id="task-dialog-title">${esc(task.title)}</h2></div><button class="dialog-close" type="button" data-action="close-task" aria-label="Close task">×</button></header>
-      <div class="dialog-body"><p><strong>Period:</strong> ${esc(validKey ? key.split("::").slice(1).join("::") : "Unavailable")}</p><p><strong>Saved status:</strong> ${esc(!available ? "Unavailable — reload to check saved progress" : record ? statusMeta[record.status]?.label || record.status : "Not reviewed here")}</p>
+    taskDialogContent.innerHTML = `<header class="dialog-head"><div><p class="eyebrow">Saved task record · read only</p><h2 id="task-dialog-title">${esc(clarity.title)}</h2></div><button class="dialog-close" type="button" data-action="close-task" aria-label="Close task">×</button></header>
+      <div class="dialog-body"><p class="task-clarity-purpose">${esc(clarity.purpose)}</p><section class="done-when task-clarity-outcome"><strong>Finished when</strong><p>${esc(clarity.finished)}</p></section><p><strong>Period:</strong> ${esc(validKey ? key.split("::").slice(1).join("::") : "Unavailable")}</p><p><strong>Saved status:</strong> ${esc(!available ? "Unavailable — reload to check saved progress" : record ? statusMeta[record.status]?.label || record.status : "Not reviewed here")}</p>
       <p>This past task record is separate from the current task and the official school record.</p>${review ? `<p>${esc(window.WWHS_TASK_REVIEW.note(review))}</p>` : ""}${record?.exceptionReason ? `<p>${esc(record.exceptionReason)}</p>` : ""}
-      ${taskSourcePanel(task,key.split("::")[1]?.slice(0,4))}<section class="dialog-section"><h3>Actions</h3><p class="section-help">Source links open current destinations; they do not reconstruct the source as it was at the time.</p><ol class="action-list">${task.steps.map((step, index) => `<li><div class="history-step"><span class="step-number">${record?.steps?.[index] ? "✓" : index + 1}</span><span>${esc(step)}</span></div>${stepGuidance(task, index)}</li>`).join("")}</ol></section>
+      <section class="dialog-section task-clarity-steps"><h3>Recorded steps</h3><p class="section-help">Source links open current destinations; they do not reconstruct the source as it was at the time.</p><ol class="action-list">${clarity.steps.map((step, index) => `<li><div class="history-step"><span class="step-number">${record?.steps?.[index] ? "✓" : index + 1}</span><span>${esc(step)}</span></div>${stepGuidance(task, index)}</li>`).join("")}</ol></section>
       ${task.milestones?.length ? `<section class="dialog-section"><h3>Captured calendar milestones</h3>${guidanceLinks(window.TAS_STEP_GUIDANCE?.forMilestone(task))}<ul>${task.milestones.map((item, index) => `<li>${record?.milestones?.[index] ? "✓ " : ""}${esc(item.date)} · ${esc(item.label)}</li>`).join("")}</ul></section>` : ""}
-      <section class="owner-systems"><h3>Open the official system</h3><div class="system-buttons">${systemButtons(task)}</div><p>${esc(task.privacy)}</p></section>
+      <details class="task-clarity-reference"><summary>Sources &amp; responsibilities</summary><div>${taskSourcePanel(task,key.split("::")[1]?.slice(0,4))}<section class="owner-systems"><h3>Open the official system</h3><div class="system-buttons">${systemButtons(task)}</div><p>${esc(task.privacy)}</p></section></div></details>
       <div class="dialog-actions"><button class="button quiet" type="button" data-action="close-task">Close record</button></div></div>`;
     taskDialog.showModal();
   }
@@ -881,28 +895,30 @@
   }
 
   function nextActionCard(task) {
+    const clarity = presentation(task);
     return `<article class="next-card">
       <div class="next-number" aria-hidden="true">01</div>
       <div class="next-badges">${priorityPill(task)}${statusPill(task)}<span class="pill due">${esc(dueLabel(task))}</span></div>
       <p class="eyebrow">${esc(areaMeta[task.area]?.label || "Core work")}</p>
-      <h2>${esc(task.title)}</h2>
-      <p class="next-summary">${esc(task.summary)}</p>
-      <div class="next-facts"><div><span>Accountable</span><strong>${esc(task.owner)}</strong></div><div><span>Start in</span><strong>${esc(primarySystemLabel(task))}</strong></div></div>
+      <h2>${esc(clarity.title)}</h2>
+      <p class="next-summary task-clarity-purpose">${esc(clarity.purpose)}</p>
+      <p class="task-clarity-meta"><span>${esc(task.timing)}</span><span>${esc(task.owner)}</span></p>
       <button class="button primary" type="button" data-action="open-task" data-task-id="${esc(task.id)}">Show me this task</button>
     </article>`;
   }
 
   function comingRow(task, number, timing = dueLabel(task)) {
-    return `<article class="coming-row"><button class="coming-task-open" type="button" data-action="open-task" data-task-id="${esc(task.id)}"><span class="row-number">${String(number).padStart(2, "0")}</span><span><strong>${esc(task.title)}</strong><small>${esc(timing)}</small></span>${statusPill(task)}</button><div class="coming-actions">${taskCompletionActions(task)}</div></article>`;
+    const clarity = presentation(task);
+    return `<article class="coming-row"><button class="coming-task-open" type="button" data-action="open-task" data-task-id="${esc(task.id)}"><span class="row-number">${String(number).padStart(2, "0")}</span><span><strong>${esc(clarity.title)}</strong><small class="task-clarity-purpose">${esc(clarity.purpose)}</small><small>${esc(timing)}</small></span>${statusPill(task)}</button><div class="coming-actions">${taskCompletionActions(task)}</div></article>`;
   }
 
   function taskCompletionActions(task) {
     if (task.historyOnly || task.procedureOnly) return "";
     if (task.provisionalSchedule && task.operatingYear > currentDate.getFullYear()) return planTaskButton(task);
     const record = recordFor(task);
-    return `${planTaskButton(task)}${!isClosed(task) ? `<button class="button primary compact" type="button" data-action="complete-task" data-task-id="${esc(task.id)}" aria-label="Task Complete: ${esc(task.title)}" title="Tick all steps, milestones and completion checks">Task Complete</button>` : ""}
+    return `${planTaskButton(task)}${!isClosed(task) ? `<button class="button primary compact" type="button" data-action="complete-task" data-task-id="${esc(task.id)}" aria-label="Task Complete: ${esc(presentation(task).title)}" title="Tick all steps, milestones and completion checks">Task Complete</button>` : ""}
       ${record.status === "completed" ? `<span class="task-complete-label">✓ Task Complete</span>` : ""}
-      ${record.status === "completed" && completionUndo.get(recordKey(task))?.after === record ? `<button class="button secondary compact" type="button" data-action="undo-complete-task" data-task-id="${esc(task.id)}" aria-label="Undo completion: ${esc(task.title)}">Undo</button>` : ""}`;
+      ${record.status === "completed" && completionUndo.get(recordKey(task))?.after === record ? `<button class="button secondary compact" type="button" data-action="undo-complete-task" data-task-id="${esc(task.id)}" aria-label="Undo completion: ${esc(presentation(task).title)}">Undo</button>` : ""}`;
   }
 
   function renderCalendar() {
@@ -924,13 +940,14 @@
   }
 
   function calendarItem(task) {
+    const clarity = presentation(task);
     const date = parseDate(queueDueDate(task));
     const month = date.toLocaleDateString("en-AU", { month: "short" }).toUpperCase();
     const day = date.getDate();
     const record = recordFor(task);
     return `<article class="timeline-item ${isClosed(task) ? "is-closed" : ""}">
       <div class="date-tile"><span>${esc(month)}</span><strong>${day}</strong></div>
-      <div class="timeline-body"><div class="card-badges">${priorityPill(task)}${statusPill(task)}${sourcePill(task)}</div><h3>${esc(task.title)}</h3><p>${esc(task.timing)}</p>${task.milestones ? `<ul class="milestone-mini">${task.milestones.map((item, index) => `<li class="${record.milestones?.[index] ? "is-done" : ""}"><span>${record.milestones?.[index] ? "✓ " : ""}${esc(shortDate(item.date))}</span>${esc(item.label)}</li>`).join("")}</ul>` : ""}</div>
+      <div class="timeline-body"><div class="card-badges">${priorityPill(task)}${statusPill(task)}${sourcePill(task)}</div><h3>${esc(clarity.title)}</h3><p class="task-clarity-purpose">${esc(clarity.purpose)}</p><p>${esc(task.timing)}</p>${task.milestones ? `<ul class="milestone-mini">${task.milestones.map((item, index) => `<li class="${record.milestones?.[index] ? "is-done" : ""}"><span>${record.milestones?.[index] ? "✓ " : ""}${esc(shortDate(item.date))}</span>${esc(item.label)}</li>`).join("")}</ul>` : ""}</div>
       <div class="timeline-actions">
         ${taskCompletionActions(task)}
         <button class="button quiet compact" type="button" data-action="open-task" data-task-id="${esc(task.id)}">Open</button>
@@ -1004,8 +1021,8 @@
     const areaTasks = currentYearTasks().filter(task => task.area === area);
     const allTasks = areaTasks.filter(task => !task.historyOnly);
     const historyTasks = areaTasks.filter(task => task.historyOnly);
-    const filtered = query ? allTasks.filter(task => [task.title, task.summary, task.source, task.timing].join(" ").toLowerCase().includes(query)) : allTasks;
-    const historyFiltered = query ? historyTasks.filter(task => [task.title, task.summary, task.source, task.timing].join(" ").toLowerCase().includes(query)) : historyTasks;
+    const filtered = query ? allTasks.filter(task => taskSearchText(task).includes(query)) : allTasks;
+    const historyFiltered = query ? historyTasks.filter(task => taskSearchText(task).includes(query)) : historyTasks;
     const trackableTasks = allTasks.filter(task => !task.procedureOnly);
     const coreAll = filtered.filter(task => task.phase !== "triggered");
     const earlier = coreAll.filter(task => task.dueDate && daysUntil(queueDueDate(task)) < -21);
@@ -1019,7 +1036,7 @@
     };
     const filter = new URLSearchParams(location.hash.split("?")[1] || "").get("filter");
     const selected = Object.prototype.hasOwnProperty.call(groups, filter) ? groups[filter] : null;
-    const selectedTasks = selected ? selected.tasks.filter(task => !query || [task.title, task.summary, task.source, task.timing].join(" ").toLowerCase().includes(query)) : [];
+    const selectedTasks = selected ? selected.tasks.filter(task => !query || taskSearchText(task).includes(query)) : [];
 
 
     routeContent.innerHTML = `<div class="page-wrap">
@@ -1040,11 +1057,13 @@
   }
 
   function taskCard(task) {
+    const clarity = presentation(task);
     return `<article class="task-card ${isClosed(task) ? "is-closed" : ""} ${task.historyOnly ? "is-history" : ""}">
       <div class="card-badges">${priorityPill(task)}${statusPill(task)}${sourcePill(task)}</div>
       <p class="eyebrow">${esc(phaseLabels[task.phase] || task.timing)}</p>
-      <h3>${esc(task.title)}</h3>
-      <p>${esc(task.summary)}</p>
+      <h3>${esc(clarity.title)}</h3>
+      <p class="task-clarity-purpose">${esc(clarity.purpose)}</p>
+      <p class="task-clarity-meta"><span>${esc(task.owner)}</span></p>
       <div class="task-card-foot"><span>${esc(task.dueDate ? dueLabel(task) : task.timing)}<small>${esc(task.historyOnly ? "Read-only annual pattern" : cycleLabel(task))}</small></span><div class="task-card-actions">${taskCompletionActions(task)}<button class="button quiet compact" type="button" data-action="open-task" data-task-id="${esc(task.id)}">${task.historyOnly ? "View reference" : "Open task"}</button></div></div>
     </article>`;
   }
@@ -1151,26 +1170,34 @@
   function openTask(id) {
     const task = data.tasks.find(item => item.id === id);
     if (!task) return;
+    const clarity = presentation(task);
     const record = reviewedRecord(task), review = overallReview(task);
     const guidanceOpen = state.guidance || state.mode === "guided";
     lastTaskTrigger = document.activeElement;
     taskReviewSnapshot = {key:recordKey(task), raw:window.WWHS_TASK_REVIEW.read().raw, note:window.WWHS_TASK_REVIEW.note(review)};
 
-    taskDialogContent.innerHTML = `<header class="dialog-head"><div><p class="eyebrow">${esc(areaMeta[task.area]?.label || "Core work")} · ${esc(phaseLabels[task.phase] || "Action")}</p><h2 id="task-dialog-title">${esc(task.title)}</h2></div><button class="dialog-close" type="button" data-action="close-task" aria-label="Close task">×</button></header>
+    taskDialogContent.innerHTML = `<header class="dialog-head"><div><p class="eyebrow">${esc(areaMeta[task.area]?.label || "Core work")} · ${esc(clarity.kindLabel || phaseLabels[task.phase] || "Action")}</p><h2 id="task-dialog-title">${esc(clarity.title)}</h2></div><button class="dialog-close" type="button" data-action="close-task" aria-label="Close task">×</button></header>
       <div class="dialog-body">
+        <p class="dialog-summary task-clarity-purpose">${esc(clarity.purpose)}</p>
+        <section class="done-when task-clarity-outcome"><strong>Finished when</strong><p>${esc(clarity.finished)}</p></section>
+        <p class="task-clarity-meta"><span><strong>When:</strong> ${esc(task.timing)}</span><span><strong>Responsible:</strong> ${esc(task.owner)}</span></p>
         <div class="dialog-badges">${priorityPill(task)}${statusPill(task)}${sourcePill(task)}${task.dueDate ? `<span class="pill due">${esc(dueLabel(task))}</span>` : ""}</div>
-        <p class="dialog-summary">${esc(task.summary)}</p>
-        ${planningDatePanel(task)}
         ${planTaskButton(task)}
+        ${task.provisionalSchedule && !task.scheduleConfirmed ? `<aside class="task-clarity-warning"><p>These planning dates follow the 2026 pattern. Check the current source before relying on them; edit or confirm dates below.</p></aside>` : ''}
+        ${task.historyOnly ? `<aside class="task-clarity-warning"><p>Read-only 2026 reference. Confirm the new calendar before starting the next year.</p></aside>` : task.procedureOnly ? `<aside class="task-clarity-warning"><p>Procedure only. Keep case details and the official record in the authorised system.</p><p>${esc(task.privacy)}</p></aside>` : ''}
         ${task.applicability ? `<aside class="applicability"><strong>Applies when</strong><span>${esc(task.applicability)}</span></aside>` : ""}
-        <div class="fact-grid"><div><span>Timing</span><strong>${esc(task.timing)}</strong></div><div><span>Current cycle</span><strong>${esc(cycleLabel(task))}</strong></div><div><span>Accountable</span><strong>${esc(task.owner)}</strong></div><div><span>Expected verifier</span><strong>${esc(task.verifier)}</strong></div><div><span>Primary start</span><strong>${esc(primarySystemLabel(task))}</strong></div></div>
+        <section class="dialog-section task-clarity-steps"><h3>${task.historyOnly ? "Captured process" : task.procedureOnly ? "Procedure steps" : "What to do"}</h3>${task.historyOnly ? `<p class="section-help">Links open current sources, not historical copies.</p>` : ""}<ol class="action-list">${clarity.steps.map((step, index) => task.historyOnly || task.procedureOnly ? `<li><div class="history-step"><span class="step-number">${review ? "✓" : index + 1}</span><span>${esc(step)}</span></div>${stepGuidance(task, index)}</li>` : `<li><label><input type="checkbox" data-task-step="${index}" data-task-id="${esc(task.id)}" ${record.steps?.[index] ? "checked" : ""} ${review ? "disabled" : ""}><span class="step-number">${index + 1}</span><span>${esc(step)}</span></label>${stepGuidance(task, index)}</li>`).join("")}</ol></section>
         ${task.milestones ? `<section class="dialog-section"><h3>Milestones</h3><p class="section-help">${task.historyOnly ? "Captured 2026 sequence for handover and planning. Rebuild it from the live calendar each year." : "Tick each dated hand-off only after it is complete in the owner system."}</p>${guidanceLinks(window.TAS_STEP_GUIDANCE?.forMilestone(task))}<ol class="milestone-list">${task.milestones.map((item, index) => task.historyOnly ? `<li>${record.milestones?.[index] ? "✓ " : ""}<time datetime="${esc(item.date)}">${esc(longDate(item.date))}</time><span>${esc(item.label)}</span></li>` : `<li class="${record.milestones?.[index] ? "is-done" : ""}"><label><input type="checkbox" data-task-milestone="${index}" data-task-id="${esc(task.id)}" ${record.milestones?.[index] ? "checked" : ""} ${review ? "disabled" : ""}><time datetime="${esc(item.date)}">${esc(longDate(item.date))}</time><span>${esc(item.label)}</span></label></li>`).join("")}</ol></section>` : ""}
-        ${taskSourcePanel(task)}<section class="dialog-section"><h3>${task.historyOnly ? "Captured process" : task.procedureOnly ? "Procedure steps" : "Suggested steps"}</h3><p class="section-help">Open the source beside the step. Staff destinations may require sign-in; Drive searches are labelled. ${task.historyOnly ? "Links open current sources, not historical copies." : "Opening a link does not tick the step."}</p><ol class="action-list">${task.steps.map((step, index) => task.historyOnly || task.procedureOnly ? `<li><div class="history-step"><span class="step-number">${review ? "✓" : index + 1}</span><span>${esc(step)}</span></div>${stepGuidance(task, index)}</li>` : `<li><label><input type="checkbox" data-task-step="${index}" data-task-id="${esc(task.id)}" ${record.steps?.[index] ? "checked" : ""} ${review ? "disabled" : ""}><span class="step-number">${index + 1}</span><span>${esc(step)}</span></label>${stepGuidance(task, index)}</li>`).join("")}</ol></section>
-        <section class="done-when"><span>Done when</span><p>${esc(task.doneWhen)}</p></section>
-        <section class="owner-systems"><h3>Open the official system</h3><div class="system-buttons">${systemButtons(task)}</div><p>${esc(task.privacy)}</p></section>
-        <details class="guidance-details" ${guidanceOpen ? "open" : ""}><summary>Explain this in plain English</summary><div><p><strong>Why it matters:</strong> ${esc(task.why)}</p><p><strong>Common trap:</strong> ${esc(task.trap)}</p></div></details>
-        <details class="source-details"><summary>Source and currency</summary><div><p><strong>${esc(task.source)}</strong></p>${guidanceLinks(window.TAS_STEP_GUIDANCE?.forSource(task))}<p>${sourcePill(task)} Current owner-system information overrides an old copied document or folder.</p></div></details>
+        ${planningDatePanel(task)}
         ${completionForm(task, record)}
+        <details class="task-clarity-reference"><summary>Sources &amp; responsibilities</summary><div>
+          <div class="fact-grid"><div><span>Timing</span><strong>${esc(task.timing)}</strong></div><div><span>Current cycle</span><strong>${esc(cycleLabel(task))}</strong></div><div><span>Accountable</span><strong>${esc(task.owner)}</strong></div><div><span>Expected verifier</span><strong>${esc(task.verifier)}</strong></div><div><span>Primary start</span><strong>${esc(primarySystemLabel(task))}</strong></div></div>
+          ${taskSourcePanel(task)}
+          <section class="owner-systems"><h3>Open the official system</h3><div class="system-buttons">${systemButtons(task)}</div><p>${esc(task.privacy)}</p></section>
+          <p class="section-help">Staff destinations may require sign-in; Drive searches are labelled. Opening a link does not tick the step.</p>
+          <details class="guidance-details" ${guidanceOpen ? "open" : ""}><summary>Explain this in plain English</summary><div><p><strong>Why it matters:</strong> ${esc(task.why)}</p><p><strong>Common trap:</strong> ${esc(task.trap)}</p></div></details>
+          <details class="source-details"><summary>Source and currency</summary><div><p><strong>${esc(task.source)}</strong></p>${guidanceLinks(window.TAS_STEP_GUIDANCE?.forSource(task))}<p>${sourcePill(task)} Current owner-system information overrides an old copied document or folder.</p></div></details>
+        </div></details>
       </div>`;
 
     taskDialog.showModal();

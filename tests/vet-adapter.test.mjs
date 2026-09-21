@@ -197,8 +197,10 @@ test('VET source and step resources honour approved overrides and label source a
   const original=harness();
   const search=original.api.guidanceTarget({sourceId:'WWHS-CALENDAR-2026'},task);
   assert.match(search.label,/Find in Drive/);assert.match(search.hint,/Search/);
-  assert.match(original.api.focusTask(task),/Useful places for step 1/);
-  assert.match(original.api.cycleFocusTask(original.data.operatingCycle2027.tasks[0]),/Useful places for step 1/);
+  assert.doesNotMatch(original.api.focusTask(task),/Useful places for step 1/);
+  assert.match(original.api.focusTask(task),/task-clarity-purpose/);
+  assert.doesNotMatch(original.api.cycleFocusTask(original.data.operatingCycle2027.tasks[0]),/Useful places for step 1/);
+  assert.match(original.api.cycleFocusTask(original.data.operatingCycle2027.tasks[0]),/task-clarity-purpose/);
 });
 
 test('full VET register distinguishes core duties, scheduled instances and procedures without saving', () => {
