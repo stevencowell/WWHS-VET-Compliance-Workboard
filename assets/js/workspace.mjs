@@ -57,6 +57,7 @@ installTeamEntry({wing,base,header:shell});
 if(wing==='launchpad')installLaunchpadBackupReminder({header:shell});
 
 let board, host, specialist, specialistSummary, forecastPanel, forecastHeading, forecastNote, forecastCount, fullRegister;
+let requestedSection = null, sectionScrollFrame = 0;
 const flow = () => {
   const strip = el('ol', undefined, {class: 'workspace-flow', 'aria-label': 'Your daily workflow'});
   for (const [heading, copy] of [['Review', 'Today, Soon or Waiting'], ['Choose', 'Pin what matters today'], ['Work & note', 'Open the task, then record your next step']]) {
@@ -93,7 +94,6 @@ if (wing !== 'launchpad') {
   const workLink = el('a', 'My work (personal)', {href: '#my-work', class: 'workspace-my-work'});
   routeNav.append(workLink);
   const taskLink = el('a', `${label} tasks`, {href: wing === 'vet' ? '#vet-home' : '#home', class: 'workspace-task-link'});
-  taskLink.addEventListener('click', () => setTimeout(() => board.scrollIntoView({behavior: 'smooth', block: 'start'}), 0));
   routeNav.append(taskLink);
   const registerLink = el('button', `All ${label} tasks`, {type:'button',class:'workspace-register-link'});
   registerLink.addEventListener('click',()=>{location.hash=wing==='vet'?'#vet-home':'#home';routeChanged();fullRegister.open('all');});
@@ -165,7 +165,33 @@ function routeChanged() {
   else if (wing === 'tas') document.title = staffTitle;
   document.querySelector('.workspace-my-work').setAttribute('aria-current', planning ? 'page' : 'false');
 }
-window.addEventListener('hashchange', () => { routeChanged(); enqueue(refreshScheduledWork); });
+function scrollToRequestedSection() {
+  const request=requestedSection;
+  requestedSection=null;
+  if(!request)return;
+  cancelAnimationFrame(sectionScrollFrame);
+  // Native route handlers render first. Scroll only for a selected menu link,
+  // preserving deep links, browser history and the position beneath task dialogs.
+  sectionScrollFrame=requestAnimationFrame(()=>{
+    if(request.event.defaultPrevented||location.hash!==request.hash)return;
+    const homeHash=wing==='vet'?'#vet-home':'#home';
+    const target=request.tasks?board:request.hash==='#my-work'?host:request.hash===homeHash?document.getElementById('dashboard-access'):document.getElementById('route-content');
+    if(!target?.getClientRects().length||target.hidden)return;
+    const heading=target.querySelector('h1,h2');
+    if(heading){if(!heading.hasAttribute('tabindex'))heading.setAttribute('tabindex','-1');heading.focus({preventScroll:true});}
+    target.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth',block:'start'});
+  });
+}
+if(wing!=='launchpad')document.addEventListener('click',event=>{
+  if(event.defaultPrevented||event.button!==0||event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;
+  const link=event.target.closest?.('.route-nav a[href]');
+  if(!link||link.hasAttribute('download')||(link.target&&link.target!=='_self'))return;
+  const next=new URL(link.href,location.href),current=new URL(location.href);
+  if(next.origin!==current.origin||next.pathname!==current.pathname||next.search!==current.search||!next.hash||next.hash.startsWith('#task/'))return;
+  requestedSection={hash:next.hash,tasks:link.classList.contains('workspace-task-link'),event};
+  if(next.hash===location.hash)scrollToRequestedSection();
+});
+window.addEventListener('hashchange', () => { routeChanged(); scrollToRequestedSection(); enqueue(refreshScheduledWork); });
 routeChanged();
 
 // Serialise imports and clicks, including the async stable identity calculation.

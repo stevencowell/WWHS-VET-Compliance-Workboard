@@ -1731,7 +1731,7 @@
 
   window.addEventListener("hashchange", () => {
     state.search = "";
-    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+    if (!document.body.classList.contains('shared-workspace')) window.scrollTo({ top: 0, left: 0, behavior: "instant" });
     renderRoute();
   });
   window.addEventListener("focus", () => {
