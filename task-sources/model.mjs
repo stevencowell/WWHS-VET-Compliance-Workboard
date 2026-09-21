@@ -10,10 +10,15 @@ export function taskGroup(row) {
   return 'Ongoing duties';
 }
 export function orderTasks(rows) {
+  const positions = new Map();
   return [...rows].sort((a,b) =>
     (wings[a.wing] ?? 9) - (wings[b.wing] ?? 9) ||
     (phases[a.phase] ?? 9) - (phases[b.phase] ?? 9) ||
     (a.due2026 || '9999-12-31').localeCompare(b.due2026 || '9999-12-31') ||
     (a.sequence ?? 999) - (b.sequence ?? 999) || a.id.localeCompare(b.id)
-  ).map((row,index) => ({...row, order:index+1}));
+  ).map(row => {
+    const order = (positions.get(row.wing) || 0) + 1;
+    positions.set(row.wing, order);
+    return {...row, order};
+  });
 }

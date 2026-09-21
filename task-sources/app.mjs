@@ -1,4 +1,4 @@
-import { orderTasks, taskGroup } from './model.mjs?v=plain-language-1';
+import { orderTasks, taskGroup } from './model.mjs?v=wing-numbering-1';
 
 const byId = id => document.getElementById(id);
 const views = ['tasks', 'sources', 'watch', 'findings'];
@@ -153,13 +153,12 @@ function renderTasks() {
     if (!groups.has(name)) groups.set(name, []);
     groups.get(name).push(row);
   }
-  const positions = new Map(rows.map((row, index) => [taskKey(row), index + 1]));
   for (const [name, groupRows] of groups) {
     const section = element('section', 'task-group');
     const heading = element('div', 'group-heading');
     heading.append(element('h2', '', name), element('span', '', `${groupRows.length} ${groupRows.length === 1 ? 'entry' : 'entries'}`));
     const cards = element('div', 'card-list');
-    groupRows.forEach(row => cards.append(taskCard(row, positions.get(taskKey(row)))));
+    groupRows.forEach(row => cards.append(taskCard(row, row.order)));
     section.append(heading, cards);
     container.append(section);
   }
