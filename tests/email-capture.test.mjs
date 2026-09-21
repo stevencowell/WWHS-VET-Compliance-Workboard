@@ -1,14 +1,32 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {suggestEmail} from '../morning-launchpad/assets/email-rules.mjs';
+import {mergeCapturedEmail} from '../morning-launchpad/assets/email-note.mjs';
 import {validateInbox,mergeInbox} from '../morning-launchpad/assets/summary-core.mjs';
 const suggest=(text,options={})=>suggestEmail(text,{today:'2026-09-16',...options});
 
 test('pasted full email chains retain text beyond the previous extract limit',()=>{
  const source='Subject: Chain\n\nPlease review this request.\n'+('Earlier reply\n'.repeat(2500))+'Final supplied reply';
- const item=suggest(source);assert.equal(item.source,source);
+ const item=suggest(source);assert.equal(item.source,source);assert.equal(item.noteText,source);
  assert.equal(validateInbox(JSON.stringify({version:2,items:[item]})).items[0].source,source);
  assert.throws(()=>suggest('x'.repeat(200001)),/Your pasted text has been kept/);
+});
+test('captured email fills an untouched note and preserves existing or deliberately cleared notes',()=>{
+ const item={...suggest('Subject: Note default\r\nPlease review this email.\r\n\r\nEarlier reply.'),taskKey:'email:note-default'};
+ const first=mergeCapturedEmail([],item);assert.equal(first.saved.noteText,item.source);assert.equal(first.saved.noteHtml,'');
+ const roundTrip=validateInbox(JSON.stringify({version:2,items:first.items}));assert.equal(roundTrip.items[0].noteText,item.source);
+ assert.equal(mergeInbox(first.items,[{...item,noteText:'',noteHtml:''}]).items[0].noteText,item.source);
+ for(const oldNote of [
+  {noteText:'My own notes',noteHtml:'<p>My own notes</p>',dirty:[]},
+  {noteText:'',noteHtml:'',dirty:['noteText','noteHtml']},
+  {noteText:'Edited notes',noteHtml:'',dirty:['noteText']}
+ ]){
+  const old={...first.saved,...oldNote,status:'done'};
+  const again=mergeCapturedEmail([old],item);assert.equal(again.added,0);assert.equal(again.saved.noteText,old.noteText);assert.equal(again.saved.noteHtml,old.noteHtml);assert.equal(again.saved.status,'done');assert.deepEqual(old,{...first.saved,...oldNote,status:'done'});
+ }
+ const oldEmpty={...first.saved,noteText:'',noteHtml:'',dirty:[]};assert.equal(mergeCapturedEmail([oldEmpty],item).saved.noteText,item.source);
+ // Captures may match an earlier imported record that has a different stable key.
+ const oldAlias={...first.saved,taskKey:'imported:old-email',noteText:'Imported notes',dirty:[]};assert.equal(mergeCapturedEmail([oldAlias],item).saved.noteText,'Imported notes');
 });
 test('one pasted email keeps its source and suggests a request and explicit Australian deadline',()=>{
  const source='From: Example Teacher\nSent: 14 September 2026\nSubject: Assessment schedule\n\nHi Steve,\nPlease send the assessment schedule by 18 September 2026.\nRegards,\nExample Teacher';

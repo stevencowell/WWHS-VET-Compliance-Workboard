@@ -131,6 +131,13 @@ summary-import .import-heading-actions button:hover{background:#819887;border-co
 .rich-note-editor a{color:var(--accent);text-decoration:underline;cursor:pointer}
 .rich-note-editor p,.rich-note-editor div{margin:0 0 .65em}.rich-note-editor ul,.rich-note-editor ol{padding-left:24px}.rich-note-editor pre{white-space:pre-wrap}
 .note-formatting{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.note-formatting button{font-size:13px;padding:6px 12px}
+.rich-note-editor img{display:block;max-width:100%;height:auto;border-radius:6px;margin:10px 0}
+.email-image-actions{display:flex;gap:8px;margin-top:12px}
+.email-image-list{display:flex;flex-wrap:wrap;gap:12px;margin:12px 0}
+.email-image-list:empty{display:none}
+.email-image-list figure{display:flex;flex-direction:column;align-items:flex-start;gap:6px;max-width:180px;margin:0;padding:8px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+.email-image-list img{width:160px;max-width:100%;height:110px;object-fit:contain}
+.email-image-list button{font-size:13px;padding:6px 12px}
 
 .note-search{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:18px 0 8px}.note-search label{font-weight:650}.note-search input{flex:1;min-width:180px;padding:12px 14px;min-height:44px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);font:inherit}.note-search button{font-size:14px}@media(max-width:600px){.note-search label{flex-basis:100%}}
 
