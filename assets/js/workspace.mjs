@@ -329,3 +329,6 @@ window.addEventListener('storage', event => {
   if (wing !== 'launchpad' && event.key !== 'morning-launchpad-theme') enqueue(refreshScheduledWork);
 });
 enqueue(refreshScheduledWork);
+// Reveal the completed layout, including any existing saved-work recovery UI.
+// Forecast refreshes continue independently; no extra loading delay is added.
+window.WWHS_WORKSPACE_BOOT?.ready();

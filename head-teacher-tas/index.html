@@ -8,6 +8,7 @@
   <title>WWHS Head Teacher TAS Operations Workboard</title>
   <link rel="icon" href="data:,">
   <script src="../morning-launchpad/assets/theme-2f817b373efd.js"></script>
+  <script src="../assets/js/workspace-boot.js?v=complete-layout-1"></script>
   <link rel="stylesheet" href="assets/css/site.css?v=tas-planning-1">
 <link rel="stylesheet" href="../assets/css/dashboard.css?v=20260915-combined">
   <link rel="stylesheet" href="../assets/css/ai-admin.css?v=20260915-combined">
@@ -17,7 +18,7 @@
   <link rel="stylesheet" href="../morning-launchpad/assets/button-feedback.css?v=1">
   <link rel="stylesheet" href="../morning-launchpad/assets/summary-import.css?v=clear-task-cards-1">
   <link rel="stylesheet" href="../morning-launchpad/assets/calendar.css?v=3">
-  <link rel="stylesheet" href="../assets/css/workspace.css?v=hub-selection-1">
+  <link rel="stylesheet" href="../assets/css/workspace.css?v=complete-layout-1">
   <link rel="stylesheet" href="../assets/css/task-sources.css?v=direct-sources-1">
   <link rel="stylesheet" href="../assets/css/team-handover.css?v=area-backups-1">
   <link rel="stylesheet" href="../assets/css/private-backup-reminder.css?v=area-backups-1">
@@ -30,6 +31,16 @@
   <script src="../assets/js/task-clarity.js?v=clear-task-cards-1"></script>
 </head>
 <body class="shared-workspace" data-workboard="tas">
+  <section id="workspace-loading" class="workspace-loading" role="status" aria-live="polite">
+    <div class="workspace-loading-card">
+      <p class="workspace-loading-wait">Opening your workboard…</p>
+      <div class="workspace-loading-error">
+        <p><strong>This workboard couldn’t finish opening.</strong></p>
+        <p>Reload to try again. You don’t need to clear your saved work.</p>
+        <a href="" onclick="event.preventDefault(); window.WWHS_WORKSPACE_BOOT.retry()">Retry loading</a>
+      </div>
+    </div>
+  </section>
   <a class="skip-link" href="#main-content">Skip to workboard</a>
 
   <header class="topbar">
@@ -86,8 +97,8 @@
   <script src="../assets/js/task-sources.js?v=plain-language-1"></script>
   <script src="../assets/js/task-navigation.js?v=task-return-1"></script>
   <script src="../assets/js/task-review.js?v=early-completion-1"></script>
-  <script src="../head-teacher-tas/assets/js/app.js?v=workspace-navigation-1"></script>
-  <script type="module" src="../assets/js/workspace.mjs?v=workspace-navigation-1"></script>
+  <script data-workspace-entry src="../head-teacher-tas/assets/js/app.js?v=workspace-navigation-1"></script>
+  <script type="module" data-workspace-entry src="../assets/js/workspace.mjs?v=complete-layout-1"></script>
   <script type="module" src="../morning-launchpad/assets/calendar-chooser.mjs?v=staff-wings-1"></script>
   <script type="module" src="../morning-launchpad/assets/quick-links.mjs?v=task-help-1"></script>
   <script type="module" src="../morning-launchpad/assets/button-feedback.mjs?v=1"></script>

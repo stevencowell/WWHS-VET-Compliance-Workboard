@@ -9,6 +9,24 @@
 :root[data-workspace=tas][data-theme=dark] { --bg:#201e29; --surface:#2a2735; --surface-soft:#322e40; --ink:#f3eefb; --muted:#c3b9d4; --line:#524b66; --accent:#cbbce9; --accent-soft:#433b57; --focus:#f0c181; }
 .shared-workspace { margin:0; background:var(--bg)!important; color:var(--ink); font-family:'Segoe UI',Arial,sans-serif; }
 .shared-workspace [hidden] { display:none!important; }
+/* Keep the native page out of view until its shared header, backups and route
+   layout exist. Visibility preserves measurements for saved-note textareas. */
+.workspace-loading { display:none; }
+html:is([data-workspace-boot=loading],[data-workspace-boot=failed]) { overflow:hidden; }
+html:is([data-workspace-boot=loading],[data-workspace-boot=failed]) body,
+html:is([data-workspace-boot=loading],[data-workspace-boot=failed]) body * { visibility:hidden!important; }
+html:is([data-workspace-boot=loading],[data-workspace-boot=failed]) dialog::backdrop { visibility:hidden!important; }
+html:is([data-workspace-boot=loading],[data-workspace-boot=failed]) #workspace-loading,
+html:is([data-workspace-boot=loading],[data-workspace-boot=failed]) #workspace-loading * { visibility:visible!important; }
+html:is([data-workspace-boot=loading],[data-workspace-boot=failed]) #workspace-loading { display:grid; place-items:center; position:fixed; inset:0; z-index:10000; padding:24px; background:var(--bg); color:var(--ink); }
+.workspace-loading-card { max-width:440px; padding:24px; border:1px solid var(--line); border-radius:16px; background:var(--surface); line-height:1.6; }
+.workspace-loading-card p { margin:0; }
+.workspace-loading-card p+p { margin-top:12px; }
+.workspace-loading-error { display:none; }
+html[data-workspace-boot=failed] .workspace-loading-wait { display:none; }
+html[data-workspace-boot=failed] .workspace-loading-error { display:block; }
+.workspace-loading-error a { display:inline-block; margin-top:18px; padding:10px 18px; border-radius:10px; background:var(--accent); color:var(--bg); font-weight:600; text-decoration:none; }
+.workspace-loading-error a:focus-visible { outline:3px solid var(--focus); outline-offset:4px; }
 .workspace-header { max-width:1240px; margin:auto; padding:22px 40px; display:flex; align-items:center; gap:32px; min-height:100px; border-bottom:1px solid var(--line); border-top:4px solid var(--accent); border-radius:0 0 18px 18px; background:var(--accent-soft); }
 .workspace-brand { display:flex; gap:12px; align-items:center; text-decoration:none; color:var(--ink); font-size:18px; font-weight:650; white-space:nowrap; }
 .workspace-mark { display:grid; place-items:center; width:40px; height:40px; border-radius:50%; background:var(--accent); color:var(--bg); font-size:28px; }
