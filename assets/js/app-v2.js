@@ -575,9 +575,9 @@
       "Coverage review added a separate historical 30 June 2026 Stage 6 VET entry cut-off check. Review its official recorded result; a missing local tick does not mean the deadline was missed. 2027 has its own separate control.",
       "The 2026 Principal HSC results certification handover is now a separate dated action. The equivalent 2027 certification action and date still need to be added when the current NESA source is confirmed; submitting VET estimates alone does not establish Principal certification."
     ];
-    if (state.role !== "all") coverageNotes.push(`Filtered to ${forecast.context.roleLabel}. Choose All work in the VET role selector to see responsibilities held by other staff.`);
+    coverageNotes.push("This catalogue includes all VET roles. Your saved role filters the current task list, not this full register.");
     if (forecast.context.mode === "unavailable") coverageNotes.push(forecast.context.note);
-    const items = definitions.filter(forecastRoleMatches).map(task => {
+    const items = definitions.map(task => {
       const clarity = presentation(task);
       const record = getRecord(task.id), focus = focused.get(task.id);
       const template = task.occurrenceTemplate === true;
@@ -615,7 +615,7 @@
         schedule, inFocus: focused.has(task.id), focusReason, sourceIds: [...(task.sourceIds || [])], gaps
       };
     });
-    return { wing: "vet", currentYear: Number(localIsoDate(new Date()).slice(0, 4)), roleLabel: forecast.context.roleLabel, sourceNote: `Saved 2026 reference: ${register.asAt}. Check the 2027 plan against current sources. Progress is saved in this browser.`, items, coverageNotes };
+    return { wing: "vet", currentYear: Number(localIsoDate(new Date()).slice(0, 4)), roleLabel: "All VET roles", sourceNote: `Saved 2026 reference: ${register.asAt}. Check the 2027 plan against current sources. Progress is saved in this browser.`, items, coverageNotes };
   }
   window.WWHS_WORKBOARD_ADAPTER = {
     wing: "vet",

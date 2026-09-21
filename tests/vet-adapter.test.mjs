@@ -564,6 +564,23 @@ test('forecast refresh uses the Sydney day and reports role/date changes', () =>
   assert.equal(h.adapter.getForecast().context.roleLabel,'Trainer / assessor');
 });
 
+test('All VET tasks remains complete for every saved role without changing the role-specific forecast or saved work', () => {
+  const options={now:'2026-09-22T01:00:00Z'};
+  const all=harness(null,options).adapter.getTaskRegister();
+  for(const role of ['htvet','coordinator','assistant','trainer','principal','workplace','nesa']){
+    const h=harness(state({'c-01-rto-updates':{status:'in-progress',stepChecks:{0:true},exceptionSummary:'Keep this saved note'}},{role,assignments:{'c-01-rto-updates':'VET Coordinator'}}),options);
+    const saved=h.storage.get(key),before=JSON.stringify(h.adapter.getForecast());
+    const catalogue=h.adapter.getTaskRegister();
+    assert.deepEqual(Array.from(catalogue.items,item=>item.id),Array.from(all.items,item=>item.id),role+' must not hide catalogue tasks');
+    assert.equal(catalogue.items.filter(item=>item.year==='2026').length,61);
+    assert.equal(catalogue.roleLabel,'All VET roles');
+    assert.equal(JSON.stringify(h.adapter.getForecast()),before,'Daily forecast remains role-specific');
+    assert.equal(h.api.getState().role,role);
+    assert.equal(h.storage.get(key),saved,'Saved role, notes, assignments and ticks are unchanged');
+    assert.equal(h.writes,0);
+  }
+});
+
 test('blocked 2026 dates automatically expose one next source prerequisite, not the whole chain', () => {
   const h=harness(null,{now:'2026-09-17T01:00:00Z'}),{entries}=h.adapter.getForecast();
   const next=entries.filter(entry=>entry.forecast.kind==='prerequisite');
