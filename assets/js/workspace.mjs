@@ -3,7 +3,7 @@ const workStorage=()=>globalThis.WWHS_STORAGE||globalThis.localStorage;
 import '../../morning-launchpad/assets/summary-import.mjs?v=email-note-images-1';
 import {installLaunchpadBackupReminder} from '../../morning-launchpad/assets/backup-reminder.mjs?v=plain-language-1';
 import {INBOX_KEY, validateInbox, taskSection, todaySydney} from '../../morning-launchpad/assets/summary-core.mjs?v=plain-language-1';
-import {createTaskRegister} from './task-register.mjs?v=start-here-1';
+import {createTaskRegister} from './task-register.mjs?v=expansion-arrows-1';
 import {installTeamEntry} from './team-entry.mjs?v=plain-language-1';
 
 const base = new URL('../../', import.meta.url);

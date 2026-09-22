@@ -157,7 +157,7 @@ export function createTaskRegister({wing, label, getAdapter, getSavedItems = () 
       const timing=dates.length?dates.map(shortDate).join(' – '):item.schedule?.kind==='trigger'?'As needed':item.schedule?.kind==='recurring'?'Recurring duty':'Check timing in task';
       front.append(node('p',`When: ${timing}`,{class:'task-clarity-meta'}));
       const reveal=node('span',undefined,{class:'task-clarity-toggle'});
-      reveal.append(node('span','View steps +',{class:'when-closed'}),node('span','Hide steps −',{class:'when-open'}));front.append(reveal);
+      reveal.append(node('span','View steps',{class:'when-closed'}),node('span','Hide steps',{class:'when-open'}));front.append(reveal);
       const body=node('div',undefined,{class:'task-clarity-body'});
       if(clarity.finished){const outcome=node('div',undefined,{class:'task-clarity-outcome'});outcome.append(node('strong','Finished when'),node('p',clarity.finished));body.append(outcome);}
       if(clarity.steps?.length){body.append(node('h4','What to do'));const steps=node('ol',undefined,{class:'task-clarity-steps'});clarity.steps.forEach(step=>steps.append(node('li',step)));body.append(steps);}
