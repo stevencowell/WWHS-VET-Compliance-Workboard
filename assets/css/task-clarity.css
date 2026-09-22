@@ -1,4 +1,6 @@
 /* A calm common hierarchy for VET, TAS and Launchpad task cards. */
+.register-row,summary-import .import-card { box-shadow:0 2px 3px #17302d12,0 10px 20px -7px #17302d38,inset 0 1px 0 #ffffffb3; }
+:root[data-theme=dark] :is(.register-row,summary-import .import-card) { box-shadow:0 2px 4px #0005,0 12px 24px -7px #0008,inset 0 1px 0 #ffffff0d; }
 .task-clarity-purpose { color:var(--muted,#536779); line-height:1.6; margin:8px 0 12px; max-width:75ch; font-size:15px; font-weight:400; }
 .task-clarity-meta { color:var(--muted,#536779); font-size:13px; line-height:1.5; margin:10px 0; }
 .task-clarity-meta>span+span::before { content:' · '; white-space:pre; }
