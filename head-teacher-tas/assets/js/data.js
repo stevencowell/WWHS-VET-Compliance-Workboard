@@ -126,7 +126,7 @@
     },
     {
       id: "tas-drive",
-      label: "WWHS TAS Drive",
+      label: "TAS/VET Google Drive",
       group: "Work-account sources",
       kind: "local",
       status: "front-door",

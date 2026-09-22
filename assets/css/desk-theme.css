@@ -125,8 +125,8 @@ body.is-title main { padding:43px 30px 27px; align-content:center; }
   .dash-ai-link { font-size:.73rem; padding:9px 10px; gap:6px; }
   .dash-shortcuts { grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
   .dash-shortcut { padding:12px 11px; min-height:180px; border-radius:7px; }
-  .dash-shortcut:last-child { min-height:0; padding:13px 14px; }
-  .dash-shortcut:last-child .dash-shortcut-top { margin-bottom:10px; }
+  .dash-shortcut:last-child:nth-child(odd) { min-height:0; padding:13px 14px; }
+  .dash-shortcut:last-child:nth-child(odd) .dash-shortcut-top { margin-bottom:10px; }
   .dash-shortcut-top { margin-bottom:13px; gap:7px; }
   .dash-mark,body[data-workboard="tas"] .dash-mark { width:28px; height:28px; border-radius:6px; }
   .dash-mark svg { width:18px; height:18px; }

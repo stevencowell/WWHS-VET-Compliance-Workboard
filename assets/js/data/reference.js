@@ -54,6 +54,7 @@
   ];
 
   board.systems = [
+    { id: "tas-drive", label: "TAS/VET Google Drive", group: "Run the program", kind: "private", url: "https://drive.google.com/drive/folders/0B40F5Y8uF0rvfkl1S2FEbjRhVmJYRWYyY2dlOFVHMDdQeFNyQlRBUzBudmtHRGJKdE83VVk?resourcekey=0-fXD-BgXggkE5EyIeJJdt5g&usp=drive_link", purpose: "Current faculty plans, programs, schedules, meeting records and evidence pointers.", boundary: "Opens the shared TAS/VET faculty folder in Google Drive. Existing account permissions apply." },
     { id: "vet-schools-hub", label: "VET Schools Hub", group: "Run the program", kind: "private", url: staffLinks["vet-schools-hub"], purpose: "School Profile, Authority to Deliver, Confirmation of Delivery, Application to Run, To Do and current communications.", boundary: "Check the official record in the Hub. This workboard provides reminders and guidance." },
     { id: "course-library", label: "Document Library — Courses", group: "Run the program", kind: "private", url: staffLinks["course-library"], purpose: "Stage 5/6 course resources, qualifications, training and assessment materials.", boundary: "Select the stage and course in the current library. Staff sign-in applies." },
     { id: "document-library", label: "RTO Document Library", group: "Run the program", kind: "private", url: staffLinks["document-library"], purpose: "Current controlled SOPs, forms and RTO implementation instructions.", boundary: "Never republish controlled procedures or assessment packages here." },

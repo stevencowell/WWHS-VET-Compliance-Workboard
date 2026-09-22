@@ -55,11 +55,12 @@
     {id:'schools-online', title:'Schools Online', detail:'NESA entries and outcomes', mark:'SO'},
     {id:'vet-schools-hub', title:'VET Hub', detail:'Delivery, actions and updates', mark:'VH'},
     {id:'course-library', title:'Document Library — Courses', detail:'Stage 5/6 course resources', mark:'CO'},
-    {id:'document-library', title:'Document Library — VET Coordinator', detail:'RTO procedures and forms', mark:'VC'}
+    {id:'document-library', title:'Document Library — VET Coordinator', detail:'RTO procedures and forms', mark:'VC'},
+    {id:'tas-drive', title:'TAS/VET Google Drive', detail:'Faculty documents and resources', mark:'TD'}
   ] : [
     {id:'sentral', title:'Sentral', detail:'School operations and reports', mark:'SE'},
     {id:'staff-calendar', title:'Staff calendar', detail:'Live school dates and events', mark:'CA'},
-    {id:'tas-drive', title:'TAS Drive', detail:'Faculty documents and resources', mark:'TD'},
+    {id:'tas-drive', title:'TAS/VET Google Drive', detail:'Faculty documents and resources', mark:'TD'},
     {id:'head-teacher-guide', title:'Head Teacher guide', detail:'Reference guide and school procedures', mark:'HT'},
     {id:'faculty-plan', title:'Faculty Management Plan', detail:'Current faculty and school priorities', mark:'FP'}
   ];
