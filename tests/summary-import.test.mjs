@@ -306,6 +306,19 @@ test('rich note formatting survives backups and reimports',()=>{
  assert.throws(()=>validateInbox(JSON.stringify({version:2,items:[{...edited,noteHtml:23}]})));
 });
 
+test('edited card wording and descriptions survive backup and reimport, including a cleared description',()=>{
+ const [item]=parseSummary('Note : Training claim\nCheck the training claim');
+ for(const reason of ['Only submit after the training is complete.','']){
+  const edited={...item,action:'Confirm the completed modules before submitting.',reason,dirty:['action','reason']};
+  const restored=validateInbox(JSON.stringify({version:2,items:[edited]})).items[0];
+  const merged=mergeInbox([restored],[{...item,reason:'Replacement imported description'}]).items[0];
+  assert.equal(merged.action,edited.action);
+  assert.equal(merged.reason,reason);
+  assert.equal(merged.source,item.source);
+  assert.equal(merged.title,item.title);
+ }
+});
+
 
 test('note search covers full card content and requires all keywords',()=>{
  const item={title:'Showcase',action:'Prepare display',noteText:'Draft email to TAS staff',source:'Original email about student projects',instruction:'Check equipment',links:['https://example.org/plan'],noteHtml:'<a href="https://docs.google.com/unique-file">Plan</a>',id:'secret-internal-id'};

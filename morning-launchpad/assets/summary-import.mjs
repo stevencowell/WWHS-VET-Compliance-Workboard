@@ -1,17 +1,17 @@
 const workStorage=()=>globalThis.WWHS_STORAGE||globalThis.localStorage;
-import {RESTORE_KEY,createLaunchpadBackup} from './launchpad-backup.mjs?v=plain-language-1';
-import {recoverLaunchpadRestore,readLaunchpadRecovery} from './launchpad-backup-transaction.mjs?v=plain-language-1';
-import {installLaunchpadBackupDialog} from './launchpad-backup-ui.mjs?v=plain-language-1';
+import {RESTORE_KEY,createLaunchpadBackup} from './launchpad-backup.mjs?v=edit-card-text-1';
+import {recoverLaunchpadRestore,readLaunchpadRecovery} from './launchpad-backup-transaction.mjs?v=edit-card-text-1';
+import {installLaunchpadBackupDialog} from './launchpad-backup-ui.mjs?v=edit-card-text-1';
 import {storageSizes} from '../../assets/js/team-storage-report.mjs?v=area-backups-1';
-import {createNoteEditor,cleanNoteHtml} from './note-editor.mjs?v=email-note-images-1';
-import {mergeCapturedEmail} from './email-note.mjs?v=email-note-images-1';
+import {createNoteEditor,cleanNoteHtml} from './note-editor.mjs?v=edit-card-text-1';
+import {mergeCapturedEmail} from './email-note.mjs?v=edit-card-text-1';
 import {downloadDestination} from '../../assets/js/save-backup-file.mjs?v=backup-flow-2';
 import {choosePrivateBackupDestination,getBackupFolder} from '../../assets/js/backup-folder.mjs?v=plain-language-1';
-import {createTaskHelpDialog} from './task-help-dialog.mjs?v=instruction-lists-1';
+import {createTaskHelpDialog} from './task-help-dialog.mjs?v=edit-card-text-1';
 import {emailSearchText} from './email-search.mjs?v=1';
-import './email-capture.mjs?v=email-note-images-1';
-import './launchpad-calendar.mjs?v=plain-language-1';
-import {INBOX_KEY, LIMIT, parseSummary, validateInbox, mergeInbox, safeUrl, workingNoteLinks, matchesNoteSearch, PRIORITIES, NEXT_ACTIONS, EDITABLE, enrich, todaySydney, taskSection, rank, nextDate, consolidateDuplicates, LEGACY_PLAN_KEY, isPinned, migrateToPins, recordNoteAction, WORKSTREAMS, createTrackedWork, mergeWorkboardImports, clearEmailImports, isUnfinishedEmailNote, reconcileForecast, sourceCompleted, normaliseForecastContext} from './summary-core.mjs?v=head-teacher-label-1';
+import './email-capture.mjs?v=edit-card-text-1';
+import './launchpad-calendar.mjs?v=edit-card-text-1';
+import {INBOX_KEY, LIMIT, parseSummary, validateInbox, mergeInbox, safeUrl, workingNoteLinks, matchesNoteSearch, PRIORITIES, NEXT_ACTIONS, EDITABLE, enrich, todaySydney, taskSection, rank, nextDate, consolidateDuplicates, LEGACY_PLAN_KEY, isPinned, migrateToPins, recordNoteAction, WORKSTREAMS, createTrackedWork, mergeWorkboardImports, clearEmailImports, isUnfinishedEmailNote, reconcileForecast, sourceCompleted, normaliseForecastContext} from './summary-core.mjs?v=edit-card-text-1';
 
 const repositoryRoot=new URL('../../',import.meta.url);
 
@@ -519,6 +519,33 @@ class SummaryImport extends HTMLElement {
     quickControls.prepend(saveStatus);
     requestAnimationFrame(()=>{if(frontText.isConnected){resizeText();}});
     const body=element('div',undefined,{class:'import-card-body'});
+    if(!item.origin){
+      const editor=element('form',undefined,{class:'import-card-text-editor','aria-label':`Edit card text for ${item.title}`});editor.hidden=true;
+      const mainKey=item.personal?'title':'action',descriptionKey=item.personal?'action':'reason';
+      const mainLabel=element('label','Main wording');
+      const mainInput=element('textarea','',{rows:'3',maxlength:item.personal?'300':'800',required:'','aria-label':`Main wording for ${item.title}`});mainLabel.append(mainInput);
+      const descriptionLabel=element('label','Smaller description');
+      const descriptionInput=element('textarea','',{rows:'3',maxlength:item.personal?'800':'2000','aria-label':`Smaller description for ${item.title}`});descriptionLabel.append(descriptionInput);
+      const message=element('p','',{role:'status',class:'import-help'});
+      const edit=button('Edit card text',()=>{
+        const current=this.inbox.items.find(x=>x.id===item.id);if(!current)return;
+        mainInput.value=current[mainKey]||'';descriptionInput.value=current[descriptionKey]||'';message.textContent='';
+        editor.hidden=false;disclosure.open=true;this.openCards.add(item.id);mainInput.focus();editor.scrollIntoView({block:'center',behavior:'smooth'});
+      });edit.disabled=this.blocked;quickControls.prepend(edit);
+      const actions=element('div',undefined,{class:'help-request-actions'});
+      const save=element('button','Save card text',{type:'submit'});save.disabled=this.blocked;
+      actions.append(save,button('Cancel',()=>{editor.hidden=true;this.draftInputs.delete(mainInput);this.draftInputs.delete(descriptionInput);edit.focus();}));
+      editor.append(element('h3','Edit card text'),mainLabel,descriptionLabel,element('p','Changes save in this browser and are included in your Launchpad backup.',{class:'import-help'}),actions,message);
+      editor.addEventListener('submit',event=>{
+        event.preventDefault();const current=this.inbox.items.find(x=>x.id===item.id);if(!current)return;
+        const main=mainInput.value.trim(),description=descriptionInput.value.trim();
+        if(!main){message.textContent='Enter the main wording before saving.';mainInput.focus();return;}
+        if(item.personal&&!description&&!['note','done','dismissed'].includes(current.status)){message.textContent='Keep a next action for this active task.';descriptionInput.focus();return;}
+        const changes={};if(main!==current[mainKey])changes[mainKey]=main;if(description!==current[descriptionKey])changes[descriptionKey]=description;
+        if(this.updateItem(item.id,changes,true)){this.draftInputs.delete(mainInput);this.draftInputs.delete(descriptionInput);this.say('Card text saved.');const updated=[...this.list.querySelectorAll('article')].find(node=>node.dataset.taskKey===(item.taskKey||item.id));updated?.querySelector('.import-card-summary')?.focus();}
+        else message.textContent='Not saved — see the message above. Your wording is still here.';
+      });body.append(editor);
+    }
     if(clarity?.finished){const outcome=element('div',undefined,{class:'task-clarity-outcome'});outcome.append(element('strong','Finished when'),element('p',clarity.finished));body.append(outcome);}
     if(clarity?.steps?.length){body.append(element('h3','What to do'));const steps=element('ol',undefined,{class:'task-clarity-steps'});clarity.steps.forEach(step=>steps.append(element('li',step)));body.append(steps);}
     if(frontAction||!titleFirst){const editAction=element('label',item.status==='done'?'Your recorded action':'Your next action',{class:'import-personal-action'});editAction.append(frontText);body.append(editAction);}

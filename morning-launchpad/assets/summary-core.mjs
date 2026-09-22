@@ -293,7 +293,7 @@ export const PRIORITIES = {
   orange: '🟠 Urgent / Not Important', purple: '🟣 Not Urgent / Not Important',
 };
 export const NEXT_ACTIONS = {'': 'Choose next step', do: '✅ Do Now', date: '⏰ Date', delegate: '👥 Delegate', delay: '⏸ Delay', delete: '🗑 Delete'};
-export const EDITABLE = ['title','source','sourceSummary','noteHtml','noteText','action','url','originalEmailUrl','priority','nextAction','dueDate','eventDate','followUpDate','dateNote','owner','waitingOn','instruction','group','pinnedDate','sectionOverride','workstream'];
+export const EDITABLE = ['title','source','sourceSummary','noteHtml','noteText','action','reason','url','originalEmailUrl','priority','nextAction','dueDate','eventDate','followUpDate','dateNote','owner','waitingOn','instruction','group','pinnedDate','sectionOverride','workstream'];
 export function todaySydney() { return new Intl.DateTimeFormat('en-CA', {timeZone:'Australia/Sydney',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()); }
 export function validDate(value) {
   if (value === null || value === '') return true;

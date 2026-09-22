@@ -1,5 +1,5 @@
-import {mergeInbox,sameSourceAction} from './summary-core.mjs?v=plain-language-1';
-import {plainNoteHtml} from './note-editor.mjs?v=email-note-images-1';
+import {mergeInbox,sameSourceAction} from './summary-core.mjs?v=edit-card-text-1';
+import {plainNoteHtml} from './note-editor.mjs?v=edit-card-text-1';
 import {NOTE_HTML_LIMIT,noteImageHtml} from './note-images.mjs?v=email-note-images-1';
 
 // Capturing an email supplies a default note, never a replacement for a saved note.

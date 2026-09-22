@@ -1,7 +1,7 @@
 // Portable safety copies and explicit reconnect plans. No browser store is
 // written here; the caller previews the plan, then uses the guarded transaction.
-import {KEYS,metadataKey,scopeSnapshot,readRaw,snapshot,parseBackup,createBackup,buildImportPlan} from './team-handover-core.mjs?v=plain-language-1';
-import {archiveTeamState,prepareTeamMetadata} from './team-handover-payloads.mjs?v=plain-language-1';
+import {KEYS,metadataKey,scopeSnapshot,readRaw,snapshot,parseBackup,createBackup,buildImportPlan} from './team-handover-core.mjs?v=edit-card-text-1';
+import {archiveTeamState,prepareTeamMetadata} from './team-handover-payloads.mjs?v=edit-card-text-1';
 
 export const SAFETY_KIND='WWHS-TEAM-SAFETY-BACKUP';
 const MAX_SIZE=12000000;

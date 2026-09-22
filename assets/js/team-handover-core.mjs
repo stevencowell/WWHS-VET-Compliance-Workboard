@@ -1,5 +1,5 @@
 // Manual team handover only. This module never reads files or sends data anywhere.
-import {INBOX_KEY, EDITABLE, validateInbox, validDate, validWorkOrigin, mergeWorkboardImports} from '../../morning-launchpad/assets/summary-core.mjs?v=plain-language-1';
+import {INBOX_KEY, EDITABLE, validateInbox, validDate, validWorkOrigin, mergeWorkboardImports} from '../../morning-launchpad/assets/summary-core.mjs?v=edit-card-text-1';
 
 export const KEYS = Object.freeze({
   vet:'wwhs-vet-compliance-workboard:v3', tas:'wwhs-head-teacher-tas-workboard:v2',

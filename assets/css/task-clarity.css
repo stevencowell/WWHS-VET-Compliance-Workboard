@@ -47,3 +47,6 @@
 
 /* Keep imported note context compact; the complete text remains in the details. */
 .import-card.is-launchpad-note .task-clarity-purpose { display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:3; overflow:hidden; }
+.import-card-text-editor { padding:18px; margin:12px 0 20px; border:1px solid var(--line); border-radius:12px; background:var(--surface-soft); }
+.import-card-text-editor label { display:block; margin:12px 0; font-weight:600; }
+.import-card-text-editor textarea { display:block; box-sizing:border-box; width:100%; min-height:90px; margin-top:6px; padding:10px; border:1px solid var(--line); border-radius:8px; background:var(--surface); color:var(--ink); font:400 16px/1.5 'Segoe UI',Arial,sans-serif; resize:vertical; }
