@@ -49,7 +49,10 @@ const views = {all:'All entries',core:'Main duties',scheduled:'Scheduled tasks',
 
 export function createTaskRegister({wing, label, getAdapter, getSavedItems = () => []}) {
   const panel = node('details', undefined, {class:'workspace-register'});
-  const summary = node('summary', `All ${label} tasks · all dates`);
+  const summary = node('summary');
+  const startHere = node('span', 'Start Here ', {class:'register-start-here'});
+  startHere.append(node('span', '→', {'aria-hidden':'true'}));
+  summary.append(startHere, node('span', `All ${label} tasks · all dates`, {class:'register-summary-label'}), node('span', '▸', {class:'register-disclosure-arrow','aria-hidden':'true'}));
   panel.append(summary);
   const body = node('section', undefined, {'aria-label':`All ${label} tasks`});
   body.append(node('h2', `All ${label} tasks`), node('p', 'Past, current and upcoming tasks. Check past dates against your records—the work may already be done.'));
@@ -136,7 +139,6 @@ export function createTaskRegister({wing, label, getAdapter, getSavedItems = () 
     const today=sydneyToday(), items=getItems(), query=search.value.trim().toLocaleLowerCase('en-AU');
     const filtered=items.filter(item=>matchesRegisterView(item,view.value,today)&&(!query||[item.title,item.area,item.owner,item.schedule?.label,...(item.gaps||[])].join(' ').toLocaleLowerCase('en-AU').includes(query)));
     for (const option of view.options) option.textContent=`${views[option.value]} (${items.filter(item=>matchesRegisterView(item,option.value,today)).length})`;
-    summary.textContent=`All ${label} tasks · all dates`;
     counts.textContent=`Showing ${filtered.length} of ${items.length} entries for ${year.value==='all'?'all listed years':year.value}. ${snapshot.roleLabel || ''}${snapshot.roleLabel?'.':''}`;
     breakdown.textContent=`This selection: ${registerEntrySummary(items) || 'no entries'}.`;
     const datedYearLoaded=snapshot.items.some(item=>item.year===year.value&&registerDate(item));
