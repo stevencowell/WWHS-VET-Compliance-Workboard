@@ -83,7 +83,8 @@ html[data-workspace-boot=failed] .workspace-loading-error { display:block; }
 .workspace-register h2 { font-size:25px; margin:8px 0 12px; }
 .workspace-register p { line-height:1.55; }
 .register-source,.register-meta,.register-review-note { color:var(--muted); font-size:13px; }
-.register-coverage { background:var(--surface-soft); border:1px solid var(--line); border-radius:10px; padding:14px 16px; margin:16px 0; }
+.register-coverage { --ink:#183f63; --muted:#3d5872; color:var(--ink); background:#dcecf9; border:1px solid #93bddb; border-left:4px solid #3976aa; border-radius:10px; padding:14px 16px; margin:16px 0; }
+:root[data-theme=dark] .register-coverage { --ink:#e7f3ff; --muted:#aecde6; background:#234a69; border-color:#517da2; border-left-color:#83b8e3; }
 .register-coverage>summary,.register-gap>summary,.register-backup>summary { cursor:pointer; font-weight:600; }
 .register-coverage li,.register-gap li { margin:8px 0; line-height:1.5; }
 .register-filters { display:grid; grid-template-columns:120px minmax(140px,.8fr) minmax(205px,1.1fr) minmax(190px,1fr); gap:14px; margin:22px 0 14px; }
