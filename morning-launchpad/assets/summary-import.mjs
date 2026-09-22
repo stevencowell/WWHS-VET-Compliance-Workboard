@@ -406,7 +406,7 @@ class SummaryImport extends HTMLElement {
     const titleFirst=!!(item.origin||item.personal),frontAction=item.action||item.instruction||'';
     const clarity=item.origin?globalThis.WWHS_TASK_CLARITY?.describe(item.origin.wing,{...item.taskHelp,id:item.origin.taskId,title:item.title}):null;
     const displayTitle=clarity?.title&&!item.dirty?.includes('title')?clarity.title:item.title;
-    if(item.origin)article.classList.add('is-workboard-task');
+    if(item.origin){article.classList.add('is-workboard-task');article.dataset.originWing=item.origin.wing;}
     const active=['review','added'].includes(item.status)&&!sourceCompleted(item);const dependencies=item.dependsOn.map(key=>this.inbox.items.find(x=>x.taskKey===key));
     const blockedBy=dependencies.some(x=>!x||x.status!=='done')||(item.forecast?.asOf===todaySydney()&&(item.forecast.blocked||(item.forecast.active&&item.forecast.section==='waiting')));
     const head=element('div',undefined,{class:'import-card-top'});head.append(element('strong',item.title));
