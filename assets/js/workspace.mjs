@@ -1,6 +1,6 @@
 const workStorage=()=>globalThis.WWHS_STORAGE||globalThis.localStorage;
 // One planning surface. Specialist records remain owned by their existing workboards.
-import '../../morning-launchpad/assets/summary-import.mjs?v=source-card-colours-1';
+import '../../morning-launchpad/assets/summary-import.mjs?v=launchpad-note-cards-1';
 import {installLaunchpadBackupReminder} from '../../morning-launchpad/assets/backup-reminder.mjs?v=plain-language-1';
 import {INBOX_KEY, validateInbox, taskSection, todaySydney} from '../../morning-launchpad/assets/summary-core.mjs?v=plain-language-1';
 import {createTaskRegister} from './task-register.mjs?v=expansion-arrows-1';
@@ -105,6 +105,17 @@ if (wing !== 'launchpad') {
     if (link.getAttribute('href') === '#today') link.textContent = `${label} follow-ups`;
     if (wing === 'tas' && link.getAttribute('href') === '#home') link.textContent = 'TAS wing';
   }
+  const everyday=el('div',undefined,{class:'workspace-nav-group',role:'group','aria-label':'Everyday work'});
+  const reference=el('div',undefined,{class:'workspace-nav-group',role:'group','aria-label':'Planning and reference'});
+  everyday.append(el('span','Everyday work',{class:'workspace-nav-label','aria-hidden':'true'}));
+  reference.append(el('span','Planning & reference',{class:'workspace-nav-label','aria-hidden':'true'}));
+  const homeLink=routeNav.querySelector(wing==='vet'?'[data-view="vet-home"]':'[data-route="home"]');
+  for(const link of [homeLink,taskLink,registerLink,routeNav.querySelector('a[href="#today"]'),workLink])if(link)everyday.append(link);
+  for(const link of [...routeNav.children]){
+    const daily=['#workflows','#issues','#teaching','#faculty','#people'].includes(link.getAttribute('href'));
+    (daily?everyday:reference).append(link);
+  }
+  routeNav.append(everyday,reference);
 } else {
   await customElements.whenDefined('summary-import');
   board = document.querySelector('summary-import');

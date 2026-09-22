@@ -1,6 +1,7 @@
 /* Shared Launchpad design tokens and navigation for all three work areas. */
-:root { --bg:#f4f5f0; --surface:#fff; --surface-soft:#f6f8f4; --ink:#17302d; --muted:#5c6b66; --line:#dce4dc; --accent:#235c49; --accent-soft:#e8f0e9; --focus:#ae641a; --radius:20px; --canvas:var(--bg); --paper:var(--surface); --navy:var(--accent); --navy-deep:var(--area-deep); --navy-2:var(--accent); --teal:var(--accent); --shadow:0 6px 25px #17302d06; --area-solid:#235c49; --area-deep:#173b33; --area-hero-start:#173b33ee; --area-hero-end:#173b3399; --area-backdrop:#10221acc; --area-link:#a8d2f0; font-family:'Segoe UI',Arial,sans-serif; }
-:root[data-theme=dark] { color-scheme:dark; --bg:#14211f; --surface:#1b2d29; --surface-soft:#213630; --ink:#eef3eb; --muted:#adbbb4; --line:#3b5048; --accent:#bfd9be; --accent-soft:#2b4236; --focus:#f0c181; --navy-deep:#18382d; }
+:root,.import-card.is-launchpad-note { --bg:#f4f5f0; --surface:#fff; --surface-soft:#f6f8f4; --ink:#17302d; --muted:#5c6b66; --line:#dce4dc; --accent:#235c49; --accent-soft:#e8f0e9; --focus:#ae641a; --radius:20px; --canvas:var(--bg); --paper:var(--surface); --navy:var(--accent); --navy-deep:var(--area-deep); --navy-2:var(--accent); --teal:var(--accent); --shadow:0 6px 25px #17302d06; --area-solid:#235c49; --area-deep:#173b33; --area-hero-start:#173b33ee; --area-hero-end:#173b3399; --area-backdrop:#10221acc; --area-link:#a8d2f0; font-family:'Segoe UI',Arial,sans-serif; }
+.import-card.is-launchpad-note { --surface:#f6fbf7; --surface-soft:#edf5ef; --line:#d2e3d6; }
+:root[data-theme=dark],:root[data-theme=dark] .import-card.is-launchpad-note { color-scheme:dark; --bg:#14211f; --surface:#1b2d29; --surface-soft:#213630; --ink:#eef3eb; --muted:#adbbb4; --line:#3b5048; --accent:#bfd9be; --accent-soft:#2b4236; --focus:#f0c181; --navy-deep:#18382d; }
 /* Source cards retain these same section colours wherever they are displayed.
    Section identity is set in each HTML entry point before the page paints.
    Appearance remains one shared light/dark preference; status colours stay semantic. */
@@ -8,7 +9,7 @@
 :root[data-workspace=tas],.import-card[data-origin-wing=tas] { --bg:#f5f3f9; --surface:#fefcff; --surface-soft:#f8f5fc; --ink:#30293f; --muted:#696077; --line:#ddd6e8; --accent:#625788; --accent-soft:#ece8f4; --focus:#9b6120; --area-solid:#625788; --area-deep:#403654; --navy-deep:var(--area-deep); --area-hero-start:#352b4bf5; --area-hero-end:#352b4bad; --area-backdrop:#251e38cc; --area-link:#d0c2f0; }
 :root[data-workspace=vet][data-theme=dark],:root[data-theme=dark] .import-card[data-origin-wing=vet] { --bg:#14212f; --surface:#1b2c3f; --surface-soft:#21354b; --ink:#ecf4fc; --muted:#adbed1; --line:#3a536c; --accent:#9dc9f0; --accent-soft:#28435f; --focus:#f3c58e; }
 :root[data-workspace=tas][data-theme=dark],:root[data-theme=dark] .import-card[data-origin-wing=tas] { --bg:#201e29; --surface:#2a2735; --surface-soft:#322e40; --ink:#f3eefb; --muted:#c3b9d4; --line:#524b66; --accent:#cbbce9; --accent-soft:#433b57; --focus:#f0c181; }
-.import-card[data-origin-wing] { color:var(--ink); }
+.import-card.is-task-card { color:var(--ink); }
 .shared-workspace { margin:0; background:var(--bg)!important; color:var(--ink); font-family:'Segoe UI',Arial,sans-serif; }
 .shared-workspace [hidden] { display:none!important; }
 /* Keep the native page out of view until its shared header, backups and route
@@ -48,8 +49,13 @@ html[data-workspace-boot=failed] .workspace-loading-error { display:block; }
 .shared-workspace[data-workboard] .role-control { color:var(--muted); }
 .shared-workspace[data-workboard] .role-control select { background:var(--surface); color:var(--ink); border-color:var(--line); }
 .shared-workspace[data-workboard] .route-bar { display:block!important; position:static!important; transform:none; visibility:visible; max-width:1160px; margin:auto; padding:5px 0 14px; border:0; background:transparent; box-shadow:none; }
-.shared-workspace[data-workboard] .route-nav { display:flex; flex-wrap:wrap; gap:5px; max-width:none; }
-.shared-workspace[data-workboard] .route-nav>a,.shared-workspace[data-workboard] .route-nav>button { font:600 12px/1.4 'Segoe UI',Arial,sans-serif; background:transparent; color:var(--muted); border:1px solid transparent; border-radius:9px; padding:9px 11px; min-height:36px; text-decoration:none; margin:0; }
+.shared-workspace[data-workboard] .route-nav { display:flex; flex-direction:column; align-items:stretch; gap:0; max-width:none; overflow:visible; border:1px solid var(--line); border-radius:14px; background:var(--surface); padding:5px 14px; }
+.workspace-nav-group { display:flex; flex-wrap:wrap; align-items:center; gap:5px; padding:8px 0; }
+.workspace-nav-group+.workspace-nav-group { border-top:1px solid var(--line); }
+.workspace-nav-label { flex:0 0 132px; font:600 11px/1.5 'Segoe UI',Arial,sans-serif; color:var(--muted); }
+.shared-workspace[data-workboard] .route-nav :is(a,button) { font:600 12px/1.4 'Segoe UI',Arial,sans-serif; background:transparent; color:var(--muted); border:1px solid transparent; border-radius:9px; padding:9px 11px; min-height:44px; text-decoration:none; margin:0; }
+.shared-workspace[data-workboard] .route-nav :is(a,button):hover { background:var(--accent-soft); color:var(--ink); }
+@media(max-width:700px) { .workspace-nav-label { flex-basis:100%; padding:2px 10px; } .shared-workspace[data-workboard] .route-nav :is(a,button) { white-space:normal; text-align:left; } }
 .shared-workspace[data-workboard] .route-nav .is-active,.shared-workspace[data-workboard] .workspace-my-work[aria-current=page] { background:var(--accent-soft); color:var(--ink); border-color:var(--line); }
 .shared-workspace.is-title[data-workboard] :is(.topbar,.route-bar) { display:none!important; }
 .shared-workspace.is-title[data-workboard="vet"] :is(#dashboard-access,.workspace-team-banner) { display:none!important; }

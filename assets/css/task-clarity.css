@@ -26,19 +26,22 @@
 .register-row .task-clarity-meta { margin:0 0 8px; font-size:12px; }
 .register-row .register-status { font-size:13px; }
 .register-row .task-clarity-reference .register-meta { line-height:1.6; }
-.import-card.is-workboard-task .import-card-summary-copy { display:block; }
-.import-card.is-workboard-task .task-clarity-purpose { display:block; margin:8px 0; }
-:root[data-workspace] .shared-workspace summary-import .import-card.is-workboard-task .import-card-summary { background:var(--surface); border-left:0; padding:22px 24px; }
-.import-card.is-workboard-task .import-card-body>.import-card-top>strong { display:none; }
-.import-card.is-workboard-task .import-personal-action { display:block; margin:14px 0 20px; }
-.import-card.is-workboard-task .import-personal-action .import-card-summary-text { display:block; width:100%; border:1px solid var(--line,#d1dce8); border-radius:8px; margin-top:7px; padding:10px; resize:vertical; min-height:64px; overflow:auto; font:400 15px/1.6 'Segoe UI',Arial,sans-serif; }
-.import-card.is-workboard-task .import-card-body { padding-top:4px; }
-.import-card.is-workboard-task .import-forecast { margin-top:12px; }
-.import-card.is-workboard-task .task-clarity-front-warning { border-top:1px solid var(--line,#d1dce8); padding:10px 20px; margin:0; color:var(--ink,#17394e); font-size:13px; line-height:1.6; }
+.import-card.is-task-card .import-card-summary-copy { display:block; }
+.import-card.is-task-card .task-clarity-purpose { display:block; margin:8px 0; }
+:root[data-workspace] .shared-workspace summary-import .import-card.is-task-card .import-card-summary { background:var(--surface); border-left:0; padding:22px 24px; }
+.import-card.is-task-card .import-card-body>.import-card-top>strong { display:none; }
+.import-card.is-task-card .import-personal-action { display:block; margin:14px 0 20px; }
+.import-card.is-task-card .import-personal-action .import-card-summary-text { display:block; width:100%; border:1px solid var(--line,#d1dce8); border-radius:8px; margin-top:7px; padding:10px; resize:vertical; min-height:64px; overflow:auto; font:400 15px/1.6 'Segoe UI',Arial,sans-serif; }
+.import-card.is-task-card .import-card-body { padding-top:4px; }
+.import-card.is-task-card .import-forecast { margin-top:12px; }
+.import-card.is-task-card .task-clarity-front-warning { border-top:1px solid var(--line,#d1dce8); padding:10px 20px; margin:0; color:var(--ink,#17394e); font-size:13px; line-height:1.6; }
 :root[data-theme=dark] .task-clarity-outcome { background:#233c32; color:#d4ecde; border-color:#466253; border-left-color:#8ab59c; }
 :root[data-theme=dark] .shared-workspace[data-workboard] .task-clarity-outcome :is(h3,strong,p) { color:#d4ecde; }
 @media(max-width:600px) {
-  :root[data-workspace] .shared-workspace summary-import .import-card.is-workboard-task .import-card-summary { padding:18px; }
+  :root[data-workspace] .shared-workspace summary-import .import-card.is-task-card .import-card-summary { padding:18px; }
   .task-clarity-outcome { padding:14px; }
   .task-clarity-purpose { font-size:14px; }
 }
+
+/* Keep imported note context compact; the complete text remains in the details. */
+.import-card.is-launchpad-note .task-clarity-purpose { display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:3; overflow:hidden; }

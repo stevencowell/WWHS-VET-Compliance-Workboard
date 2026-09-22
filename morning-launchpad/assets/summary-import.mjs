@@ -400,7 +400,7 @@ class SummaryImport extends HTMLElement {
     }
   }
   card(item){
-    const article=element('article',undefined,{class:`import-card${isPinned(item)?' is-pinned':''}`,'data-task-key':item.taskKey||item.id});
+    const article=element('article',undefined,{class:`import-card is-task-card${item.origin?'':' is-launchpad-note'}${isPinned(item)?' is-pinned':''}`,'data-task-key':item.taskKey||item.id});
     // Source tasks and Steve's own notes have useful titles. Imported email
     // subjects remain in the details; their practical action leads the card.
     const titleFirst=!!(item.origin||item.personal),frontAction=item.action||item.instruction||'';
@@ -424,7 +424,7 @@ class SummaryImport extends HTMLElement {
     if(item.instruction){const tasks=element('section',undefined,{class:'import-instruction','aria-label':'Tasks'});tasks.append(element('h3','Tasks'),element('p',item.instruction));article.append(tasks);}
     const action=element('textarea',item.action,{class:'import-action',rows:'3',maxlength:'800','aria-label':`Action for ${item.title}`});action.disabled=this.blocked||!active;
     action.dataset.helpField='action';
-    action.addEventListener('change',()=>{if(!action.value.trim()){action.value=item.action;this.say('Keep a short action, or put the task aside.',true);return;}if(this.updateItem(item.id,{action:action.value.trim()}))article.querySelector('.import-card-summary-text').value=action.value.trim();});if(item.personal&&item.source)article.append(element('pre',item.source,{class:'import-source'}));
+    action.addEventListener('change',()=>{if(!action.value.trim()){action.value=item.action;this.say('Keep a short action, or put the task aside.',true);return;}if(this.updateItem(item.id,{action:action.value.trim()})){frontText.value=action.value.trim();syncFrontCopy(frontText.value);}});if(item.personal&&item.source)article.append(element('pre',item.source,{class:'import-source'}));
     if(item.origin){
       const sourceLink=new URL(item.origin.wing==='tas'?'head-teacher-tas/':'./',repositoryRoot);sourceLink.hash=item.origin.route;
       article.append(element('a',`Open ${WORKSTREAMS[item.origin.wing]} task`,{href:sourceLink.href,class:'import-origin-link'}),element('p','Mark done here to record your part. Complete the checklist in the VET or TAS task.',{class:'import-help'}));
@@ -498,7 +498,7 @@ class SummaryImport extends HTMLElement {
       const current=this.inbox.items.find(x=>x.id===item.id);if(!current)return;
       const key=item.action?'action':'instruction';
       if(current[key]===value){saveStatus.textContent='Saved';return;}
-      if(this.updateItem(item.id,{[key]:value})){savedText=value;saveStatus.textContent='Saved';if(key==='action')action.value=value;}
+      if(this.updateItem(item.id,{[key]:value})){savedText=value;saveStatus.textContent='Saved';if(key==='action')action.value=value;syncFrontCopy(value);}
       else saveStatus.textContent='Not saved — see the message above.';
     };
     frontText.addEventListener('input',()=>{resizeText();saveStatus.textContent='Saving…';clearTimeout(saveTimer);saveTimer=setTimeout(saveText,500);});
@@ -507,27 +507,21 @@ class SummaryImport extends HTMLElement {
     frontText.addEventListener('keydown',event=>event.stopPropagation());
     summary.setAttribute('aria-label',`Expand or collapse ${item.title}`);
     const summaryCopy=element('span',undefined,{class:'import-card-summary-copy'});
-    if(titleFirst){
-      if(item.origin)summaryCopy.append(element('span',[WORKSTREAMS[item.origin.wing],item.forecast?.period,clarity?.kindLabel].filter(Boolean).join(' · '),{class:'task-clarity-meta'}));
-      summaryCopy.append(element('strong',displayTitle,{class:'import-card-title'}));
-      if(item.origin){
-        if(clarity?.purpose)summaryCopy.append(element('span',clarity.purpose,{class:'task-clarity-purpose'}));
-        if(item.dueDate||item.forecast?.scheduledDate)summaryCopy.append(element('span',`When: ${dateLabel(item.dueDate||item.forecast.scheduledDate)}`,{class:'task-clarity-meta'}));
-        summaryCopy.append(element('span','View steps',{class:'task-clarity-toggle'}));
-      }else if(frontAction){
-        const nextStep=element('span',undefined,{class:'import-card-next'});
-        const actionLabel=item.status==='done'||sourceCompleted(item)?'Recorded action':item.status==='dismissed'||item.status==='superseded'?'Saved action':'Next step';
-        nextStep.append(element('span',`${actionLabel}:`,{class:'import-card-next-label'}),frontText);
-        summaryCopy.append(nextStep);
-      }
-    }else summaryCopy.append(frontText);
+    summaryCopy.append(element('span',item.origin?[WORKSTREAMS[item.origin.wing],item.forecast?.period,clarity?.kindLabel].filter(Boolean).join(' · '):`Launchpad · ${item.personal?'My note':'Email / imported note'}`,{class:'task-clarity-meta'}));
+    const frontTitle=element('strong',titleFirst?displayTitle:frontAction||item.title,{class:'import-card-title'});
+    const frontDescription=element('span',item.origin?clarity?.purpose||'':item.personal?frontAction:item.reason||'',{class:'task-clarity-purpose'});
+    frontDescription.hidden=!frontDescription.textContent||frontDescription.textContent===frontTitle.textContent;
+    summaryCopy.append(frontTitle,frontDescription);
+    const syncFrontCopy=value=>{if(item.origin)return;if(titleFirst){frontDescription.textContent=value;frontDescription.hidden=!value||value===frontTitle.textContent;}else frontTitle.textContent=value;};
+    if(item.dueDate||item.forecast?.scheduledDate)summaryCopy.append(element('span',`When: ${dateLabel(item.dueDate||item.forecast.scheduledDate)}`,{class:'task-clarity-meta'}));
+    summaryCopy.append(element('span',disclosure.open?'Hide steps':'View steps',{class:'task-clarity-toggle'}));
     summary.append(summaryCopy,element('span','',{class:'import-card-chevron','aria-hidden':'true'}));
     quickControls.prepend(saveStatus);
     requestAnimationFrame(()=>{if(frontText.isConnected){resizeText();}});
     const body=element('div',undefined,{class:'import-card-body'});
     if(clarity?.finished){const outcome=element('div',undefined,{class:'task-clarity-outcome'});outcome.append(element('strong','Finished when'),element('p',clarity.finished));body.append(outcome);}
     if(clarity?.steps?.length){body.append(element('h3','What to do'));const steps=element('ol',undefined,{class:'task-clarity-steps'});clarity.steps.forEach(step=>steps.append(element('li',step)));body.append(steps);}
-    if(item.origin&&frontAction){const editAction=element('label',item.status==='done'?'Your recorded action':'Your next action',{class:'import-personal-action'});editAction.append(frontText);body.append(editAction);}
+    if(frontAction||!titleFirst){const editAction=element('label',item.status==='done'?'Your recorded action':'Your next action',{class:'import-personal-action'});editAction.append(frontText);body.append(editAction);}
     body.append(...article.childNodes);disclosure.append(summary,body);article.append(disclosure);
     if(item.forecast){
       if(item.origin){
