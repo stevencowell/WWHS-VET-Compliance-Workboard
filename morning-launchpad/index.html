@@ -1,7 +1,7 @@
 <!doctype html>
 <html data-backup-mode="workspace" lang="en-AU" data-workspace="launchpad">
 <head>
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'self'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src https://api.open-meteo.com; object-src 'none'; base-uri 'none'; form-action 'self'">
   <meta name="robots" content="noindex, nofollow">
   <meta name="referrer" content="no-referrer">
   <meta charset="utf-8">
@@ -17,6 +17,7 @@
   <link rel="stylesheet" href="./assets/quick-links.css?v=2">
   <link rel="stylesheet" href="./assets/calendar-chooser.css?v=1">
   <link rel="stylesheet" href="./assets/welcome-banner.css?v=2">
+  <link rel="stylesheet" href="./assets/weather.css?v=1">
   <link rel="stylesheet" href="./assets/button-feedback.css?v=1">
   <link rel="stylesheet" href="../assets/css/workspace.css?v=launchpad-note-cards-1">
   <link rel="stylesheet" href="../assets/css/team-handover.css?v=area-backups-1"><link rel="stylesheet" href="../assets/css/private-backup-reminder.css?v=area-backups-1"><link rel="stylesheet" href="../assets/css/backup-folder.css?v=default-folder-1">
@@ -40,7 +41,8 @@
     <form method="dialog"><button autofocus>Cancel</button></form>
   </dialog>
   <noscript>Daily Launchpad needs JavaScript to show your saved daily plan and links.</noscript>
-  <script type="module" src="./assets/launchpad-LHM7QKM7.js?v=workspace-backup-1"></script>
+  <script type="module" src="./assets/weather.mjs?v=1"></script>
+  <script type="module" src="./assets/launchpad-LHM7QKM7.js?v=weather-1"></script>
   <script type="module" src="../assets/js/workspace.mjs?v=workspace-backup-1"></script>
   <script type="module" src="./assets/quick-links.mjs?v=task-help-1"></script>
   <script type="module" src="./assets/calendar-chooser.mjs?v=staff-wings-1"></script>
