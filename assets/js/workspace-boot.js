@@ -44,7 +44,7 @@
         ? document.querySelector('.workspace-home:not([hidden]) summary-import')
         : document.querySelector('#route-content > *');
       if (!window.WWHS_WORKBOARD_ADAPTER || !routeReady ||
-          !document.querySelector('.workspace-header') || !document.querySelector('.workspace-team-banner') ||
+          !document.querySelector('.workspace-header') || !document.querySelector('.workspace-backup-toolbar') ||
           !document.querySelector('.workspace-specialist') || !document.querySelector('.workspace-register-link')) {
         fail();
         return;

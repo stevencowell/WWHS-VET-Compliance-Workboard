@@ -1,4 +1,5 @@
-import {createLocalVault} from './security/local-vault.mjs?v=plain-language-1';
+import {createLocalVault} from './security/local-vault.mjs?v=workspace-backup-1';
+import {installWorkspaceBackup} from '../assets/js/workspace-backup-ui.mjs?v=workspace-backup-1';
 import {createPrivateStorage} from './security/private-storage.mjs?v=plain-language-1';
 import {sampleDataset} from './sample.mjs';
 import {FINANCE_PROMPT_TOPICS,buildFinancePrompt,buildSafeFinanceSummary} from './prompts.mjs?v=plain-language-1';
@@ -91,7 +92,7 @@ async function openWorkspace(isSample=false) {
   if(engineAttempted)throw new Error('Reload Finance Studio before opening another workspace.');
   sample=isSample;
   storage=sample?memoryStorage():await createPrivateStorage(vault,{onStatus:reportStatus,autoFlushMs:300});
-  if(!sample){backupReminder=createFinanceBackupReminder(storage,{onChange:renderBackupReminder});storage=backupReminder.storage;mountBackupFolderSettings($('financeBackupSettings'),{scope:'finance'});}
+  if(!sample){backupReminder=createFinanceBackupReminder(storage,{onChange:renderBackupReminder});storage=backupReminder.storage;}
   window.FINANCE_STORAGE={privateWorkspace:!sample,validateBudgetPlan,getItem:k=>storage.getItem(k),setItem:(k,v)=>{try{storage.setItem(k,v);rejectedWrites.delete(k);}catch(error){rejectedWrites.set(k,v);throw error;}},removeItem:k=>storage.removeItem(k),atomic:fn=>{const rejectedBefore=new Map(rejectedWrites);try{return storage.atomic?storage.atomic(fn):fn();}catch(error){rejectedWrites.clear();for(const [key,value] of rejectedBefore)rejectedWrites.set(key,value);fatalSaveError=error;reportStatus({state:'error',error:error.message});throw error;}},onError:error=>{fatalSaveError=error;reportStatus({state:'error',error:error.message});}};
   engineAttempted=true;
   await loadScript('./vendor/chart.js/chart.umd.js');
@@ -202,7 +203,7 @@ async function saveFinanceBackup(downloadOnly=false){
     else{$('backupStatus').textContent=canConfirm?'Encrypted backup download started. Saving has not been confirmed.':'Download started, but more changes arrived. Save another backup to include the latest edits.';}
   }catch(error){$('backupStatus').textContent=error.message;}finally{button.disabled=false;$('importEncryptedBackup').disabled=false;$('lockFinance').disabled=false;$('downloadFinanceCopy').disabled=false;$('closeFinanceBackup').disabled=false;}
 }
-$('financeSaveBackup').addEventListener('click',()=>{if(!sample&&!starting&&!resetting&&backupReminder){renderBackupReminder();$('financeBackupReminder').showModal();$('downloadEncryptedBackup').focus();}});
+$('financeSaveBackup').addEventListener('click',()=>window.WWHS_BACKUPS?.open('save'));
 $('closeFinanceBackup').addEventListener('click',()=>$('financeBackupReminder').close());
 $('financeBackupReminder').addEventListener('cancel',event=>{if($('downloadEncryptedBackup').disabled)event.preventDefault();});
 $('downloadEncryptedBackup').addEventListener('click',()=>saveFinanceBackup());
@@ -230,7 +231,6 @@ async function lockWorkspace(forImport=false){
   try{
     await storage.flush();if(fatalSaveError)throw fatalSaveError;
     const action=forImport?'Lock Finance and open backup import anyway?':'Lock Finance anyway?';
-    if(backupReminder?.status().shouldWarn&&!confirm(`Your changes are saved in this browser, but a private encrypted backup has not been confirmed. ${action} Choose Cancel to keep this workspace open and back up first.`))return;
     storage.close();vault?.lock();resetting=true;$('financeWorkspace').hidden=true;
     // Reload purges the old engine and decrypted records before the restore form opens.
     history.replaceState(null,'',location.pathname+(forImport?'#import-backup':''));
@@ -239,9 +239,9 @@ async function lockWorkspace(forImport=false){
   finally{setStarting(false);}
 }
 $('lockFinance').addEventListener('click',()=>lockWorkspace());
-$('importEncryptedBackup').addEventListener('click',()=>{if(!sample)lockWorkspace(true);});
-$('gateImportBackup').addEventListener('click',showBackupImport);
-$('gateSaveBackup').addEventListener('click',()=>{if(starting||previousSaving||resetting)return;$('gateMessage').textContent='Unlock Finance first to save a complete encrypted backup.';$('vaultPassword').focus();});
+$('importEncryptedBackup').addEventListener('click',()=>window.WWHS_BACKUPS?.open('open'));
+$('gateImportBackup').addEventListener('click',()=>window.WWHS_BACKUPS?.open('open'));
+$('gateSaveBackup').addEventListener('click',()=>window.WWHS_BACKUPS?.open('save'));
 function selectBackupFile(file){
   if(starting||previousSaving||resetting||!$('financeWorkspace').hidden||!$('restoreVaultDetails').open)return;
   selectedBackupFile=file||null;$('financeSelectedBackup').textContent=file?`Selected: ${file.name}`:'';$('restoreVaultMessage').textContent='';
@@ -282,13 +282,22 @@ function restartAfterFailedStart(){
   resetting=true;setStarting(true);try{sessionStorage.setItem('finance_ui_start_error','1');}catch{}
   fatalSaveError=null;storage?.close({discardUnsaved:true});vault?.lock();$('financeWorkspace').hidden=true;location.replace(location.pathname);
 }
-window.addEventListener('hashchange',()=>{if(engine)engine.App.navigate(location.hash.slice(1));else if(location.hash==='#import-backup')showBackupImport();});
+window.addEventListener('hashchange',()=>{if(location.hash==='#import-backup')window.WWHS_BACKUPS?.open('open');else if(engine)engine.App.navigate(location.hash.slice(1));});
 window.addEventListener('beforeunload',event=>{
   const internalNavigation=workspaceNavigation.consume();
-  if(!sample&&!resetting&&(fatalSaveError||storage?.status().dirty||!internalNavigation&&backupReminder?.status().shouldWarn)){event.preventDefault();event.returnValue='';}
+  if(!sample&&!resetting&&(fatalSaveError||storage?.status().dirty)){event.preventDefault();event.returnValue='';}
 });
 // A back/forward cache entry must never restore an already-unlocked financial screen.
 window.addEventListener('pageshow',event=>{if(event.persisted)location.reload();});
 try{vault=await createLocalVault();await showGate();try{if(sessionStorage.getItem('finance_ui_start_error')){sessionStorage.removeItem('finance_ui_start_error');$('gateMessage').textContent='Finance could not open. The page has reset; your saved encrypted records are unchanged. Try again. If this keeps happening, keep a copy of your backup.';}}catch{}}catch(error){$('gateTitle').textContent='Private storage is unavailable.';$('gateDescription').textContent=error.message;$('gateMessage').textContent='You can still explore the separate sample workspace, or restore an encrypted backup below.';}
-if(location.hash==='#import-backup')showBackupImport();
+installWorkspaceBackup({flush:async()=>{
+  if(starting||previousSaving||resetting)throw Error('Finance is still opening or saving. Please wait, then try again.');
+  if(fatalSaveError)throw fatalSaveError;
+  if(!sample&&storage)await storage.flush();
+},recoverFinance:async()=>{
+  if(sample||!storage)throw Error('Unlock your saved Finance workspace before rescuing unsaved Finance edits.');
+  await saveFinanceBackup(true);return $('backupStatus').textContent;
+}});
+window.addEventListener('wwhs:workspace-restored',()=>{resetting=true;storage?.close({discardUnsaved:true});vault?.lock();});
+if(location.hash==='#import-backup')window.WWHS_BACKUPS.open('open');
 if(vault)await refreshPreviousBackup();

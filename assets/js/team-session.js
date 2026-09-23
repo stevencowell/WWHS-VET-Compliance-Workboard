@@ -13,10 +13,12 @@
     catch{return {managed:true,blocked:true};}
   }
   const bootSessions=Object.fromEntries(['vet','tas'].map(scope=>[scope,read(scope).active?.id||null]));
-  function hasJournal(){try{return browserStorage().getItem(JOURNAL)!==null||browserStorage().getItem('morning-launchpad-restore:v1')!==null;}catch{return true;}}
+  const unified=()=>root.document?.documentElement?.dataset?.backupMode==='workspace';
+  function hasJournal(){try{return browserStorage().getItem(JOURNAL)!==null||browserStorage().getItem('morning-launchpad-restore:v1')!==null||browserStorage().getItem('wwhs-workspace-restore:v1')!==null;}catch{return true;}}
   function isEditing(scope=defaultScope()) {
     const state=read(scope);
     if(hasJournal())return false;
+    if(unified())return true;
     return !state.managed||!state.blocked&&state.active?.phase==='editing'&&state.active.id===bootSessions[scope];
   }
   function isTeamItem(item){return item&&['vet','tas'].includes(item.origin?.wing)&&item.workstream===item.origin.wing&&item.personal!==true&&typeof item.taskKey==='string'&&item.taskKey.startsWith(`workboard:${item.origin.wing}:`);}
@@ -37,6 +39,7 @@
   }
   function reason(scope=defaultScope()) {
     const state=read(scope);
+    try{if(browserStorage().getItem('wwhs-workspace-restore:v1')!==null)return 'A complete backup needs recovery. Open the shared backup panel to continue.';}catch{}
     try{if(browserStorage().getItem('morning-launchpad-restore:v1')!==null)return 'A Launchpad backup is being opened or needs recovery. Open Launchpad before saving shared progress.';}catch{}
     if(hasJournal())return 'A handover was interrupted. Open Team handover to recover it before saving.';
     if(state.blocked)return 'Your shared backup record could not be read. Open Team handover to check it before saving.';

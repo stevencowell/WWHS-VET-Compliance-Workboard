@@ -47,6 +47,9 @@
 
 /* Keep imported note context compact; the complete text remains in the details. */
 .import-card.is-launchpad-note .task-clarity-purpose { display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:3; overflow:hidden; }
-.import-card-text-editor { padding:18px; margin:12px 0 20px; border:1px solid var(--line); border-radius:12px; background:var(--surface-soft); }
-.import-card-text-editor label { display:block; margin:12px 0; font-weight:600; }
-.import-card-text-editor textarea { display:block; box-sizing:border-box; width:100%; min-height:90px; margin-top:6px; padding:10px; border:1px solid var(--line); border-radius:8px; background:var(--surface); color:var(--ink); font:400 16px/1.5 'Segoe UI',Arial,sans-serif; resize:vertical; }
+/* Text is editable in place; the separate View steps control expands the card. */
+summary-import .import-card.is-task-card textarea.card-inline-field { box-sizing:border-box; display:block; width:100%; min-height:30px; margin:4px 0; padding:4px 6px; border:1px solid transparent; border-radius:6px; background:transparent; color:inherit; font:inherit; line-height:1.5; resize:none; overflow:hidden; cursor:text; -webkit-line-clamp:unset; }
+summary-import .import-card.is-task-card textarea.card-inline-field.task-clarity-purpose { color:var(--muted); font-size:15px; font-weight:400; }
+summary-import .import-card.is-task-card textarea.card-inline-field:hover { border-color:var(--line); }
+summary-import .import-card.is-task-card textarea.card-inline-field:focus { border-color:var(--accent); background:var(--surface); outline:2px solid var(--focus); outline-offset:2px; }
+summary-import .card-inline-field::placeholder { color:var(--muted); opacity:.8; }

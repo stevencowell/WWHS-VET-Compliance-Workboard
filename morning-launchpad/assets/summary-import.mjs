@@ -87,7 +87,7 @@ class SummaryImport extends HTMLElement {
     this.workstream=Object.hasOwn(WORKSTREAMS,this.dataset.workstream)?this.dataset.workstream:'all';
     this.draftInputs=new Map();this.captureDraft=event=>{const field=event.target;if(field.matches?.('textarea:not([readonly]),input:not([type="file"]):not([type="checkbox"]),[contenteditable="true"]')){this.draftInputs.delete(field);this.draftInputs.set(field,field.getAttribute('aria-label')||field.closest('label')?.childNodes[0]?.textContent||field.id||'Draft text');}};this.addEventListener('input',this.captureDraft);
     try {this.raw=workStorage().getItem(INBOX_KEY);this.inbox=validateInbox(this.raw);if(!this.scope)this.legacyRaw=workStorage().getItem(LEGACY_PLAN_KEY);} catch {this.blocked=true;this.inbox=validateInbox(null);}
-    this.build();this.resizeNotes=()=>this.querySelectorAll('.import-working-note textarea').forEach(fitNoteText);window.addEventListener('resize',this.resizeNotes);
+    this.build();this.resizeNotes=()=>this.querySelectorAll('.import-working-note textarea,.card-inline-field').forEach(fitNoteText);window.addEventListener('resize',this.resizeNotes);
     this.onStorage=event=>{if(event.key===INBOX_KEY||event.key===null){this.blocked=true;this.updateCount();this.reloadButton.hidden=false;this.say('Your task list changed in another tab. Reload saved work before saving here. Your draft is still on this page.',true);}};
     window.addEventListener('storage',this.onStorage);
     this.openToday=()=>{this.showCalendar(true);this.calendar.openDate(todaySydney(),'day');this.calendar.scrollIntoView({behavior:'smooth',block:'start'});};window.addEventListener('launchpad:open-today',this.openToday);
@@ -104,6 +104,7 @@ class SummaryImport extends HTMLElement {
     } catch(error){this.say(`Could not save: ${error.message} Your saved list has not changed.`,true);return false;}
   }
   async exportTaskBackup({downloadOnly=false}={}){
+    if(window.WWHS_BACKUPS)return window.WWHS_BACKUPS.open('save');
     if(this.hasNoteDraft()||this.calendar?.hasDraft()){this.say('Save or cancel the open note or calendar event before saving a backup. Your draft is still here.',true);return;}
     try{
       const destination=downloadOnly?downloadDestination('launchpad-backup.json'):await choosePrivateBackupDestination({suggestedName:'launchpad-backup.json',id:'launchpad-private-backup'});
@@ -228,7 +229,7 @@ class SummaryImport extends HTMLElement {
     for(const [key,label]of [['ready','Today'],['upcoming','Soon'],['waiting','Waiting'],['notes','My Notes'],['done','Done']]){const b=button(label,()=>{this.searchInput.value='';this.view=key;this.expanded=false;this.renderItems();});this.tabs[key]={button:b,label};this.nav.append(b);}this.append(this.nav);
     this.viewHelp=element('p','',{class:'import-help',role:'status','aria-live':'polite'});this.list=element('div',undefined,{class:'import-list'});this.append(this.viewHelp,this.list);
     this.earlier=element('details',undefined,{class:'import-other'});this.earlierHeading=element('summary');this.earlierList=element('div',undefined,{class:'import-list'});this.earlier.append(this.earlierHeading,element('p','The new task file replaces these earlier notes. Their text and edits are kept here. Restore one only if it has work missing from the new task.',{class:'import-help'}),this.earlierList);this.append(this.earlier);
-    const footer=element('div',undefined,{class:'import-footer'});footer.append(element('p','Saved in this browser. Use Open backup or Save backup at the top. Email and Evernote are not changed.',{class:'import-help'}),button('Open backup…',()=>this.openTaskBackupImport()),button('Save backup…',()=>void this.exportTaskBackup()));if(this.legacyRaw!==null)footer.append(button('Save older daily plans',()=>download(this.legacyRaw,'launchpad-older-daily-plans.json')));this.clearNotesButton=button('Clear unfinished email notes',()=>this.openClearNotes(),'import-danger');footer.append(this.clearNotesButton);this.append(footer);
+    const footer=element('div',undefined,{class:'import-footer'});footer.append(element('p','Saved in this browser. Use Open backup or Save backup at the top. Email and Evernote are not changed.',{class:'import-help'}));this.clearNotesButton=button('Clear unfinished email notes',()=>this.openClearNotes(),'import-danger');footer.append(this.clearNotesButton);this.append(footer);
     this.taskArea=element('div',undefined,{class:'task-area'});for(const child of [...this.children])if(child!==heading&&child!==this.message&&child!==this.reloadButton)this.taskArea.append(child);this.append(this.taskArea);
     this.calendar=element('launchpad-calendar');this.calendar.hidden=true;
     this.calendar.addEventListener('calendar:minimise',()=>{this.showCalendar(false);this.calendarToggle.focus({preventScroll:true});this.calendarToggle.scrollIntoView({behavior:'smooth',block:'nearest'});});
@@ -259,6 +260,7 @@ class SummaryImport extends HTMLElement {
     return this.noteEditor?.open&&Object.entries(this.noteInputs||{}).some(([key,input])=>input.value!==(old?.[key]||''));
   }
   openTaskBackupImport(){
+    if(window.WWHS_BACKUPS)return window.WWHS_BACKUPS.open('open');
     if(this.scope)return;
     this.resetBackupPreview?.();
     this.backupFile.value='';this.backupMessage.textContent='';this.backupStorageDetails.hidden=true;
@@ -508,44 +510,40 @@ class SummaryImport extends HTMLElement {
     summary.setAttribute('aria-label',`Expand or collapse ${item.title}`);
     const summaryCopy=element('span',undefined,{class:'import-card-summary-copy'});
     summaryCopy.append(element('span',item.origin?[WORKSTREAMS[item.origin.wing],item.forecast?.period,clarity?.kindLabel].filter(Boolean).join(' · '):`Launchpad · ${item.personal?'My note':'Email / imported note'}`,{class:'task-clarity-meta'}));
-    const frontTitle=element('strong',titleFirst?displayTitle:frontAction||item.title,{class:'import-card-title'});
-    const frontDescription=element('span',item.origin?clarity?.purpose||'':item.personal?frontAction:item.reason||'',{class:'task-clarity-purpose'});
-    frontDescription.hidden=!frontDescription.textContent||frontDescription.textContent===frontTitle.textContent;
+    const inlineField=(key,value,label,{required=false,maxlength=2000,className=''})=>{
+      const field=element('textarea',value,{class:`card-inline-field ${className}`,rows:'1',maxlength:String(maxlength),'aria-label':`${label} for ${item.title}`,title:'Click to edit. Changes save automatically.',placeholder:required?'Enter the main wording':'Click to add a description'});
+      field.disabled=this.blocked;field.dataset.helpField=key;
+      let timer,savedValue=value;
+      field.setSavedText=value=>{clearTimeout(timer);savedValue=value;field.value=value;fitNoteText(field);};
+      const save=()=>{
+        clearTimeout(timer);if(!field.isConnected)return;const next=field.value.trim();if(next===savedValue)return;
+        const current=this.inbox.items.find(x=>x.id===item.id);if(!current)return;
+        if(required&&!next){saveStatus.textContent='Enter the main wording — empty text is not saved.';return;}
+        if(key==='action'&&!next&&!['note','done','dismissed'].includes(current.status)){saveStatus.textContent='Keep a next action for this active task.';return;}
+        if(this.updateItem(item.id,{[key]:next})){
+          savedValue=next;saveStatus.textContent='Saved';this.draftInputs.delete(field);
+          if(key==='action'){frontText.value=next;action.value=next;}
+        }else saveStatus.textContent='Not saved — see the message above. Your text is still here.';
+      };
+      field.addEventListener('input',event=>{fitNoteText(field);clearTimeout(timer);saveStatus.textContent='Saving…';if(!event.isComposing)timer=setTimeout(save,500);});
+      field.addEventListener('compositionend',()=>{clearTimeout(timer);timer=setTimeout(save,500);});
+      field.addEventListener('blur',save);
+      field.addEventListener('click',event=>event.stopPropagation());
+      field.addEventListener('keydown',event=>{event.stopPropagation();if(event.key==='Escape'){clearTimeout(timer);field.value=savedValue;fitNoteText(field);saveStatus.textContent='';this.draftInputs.delete(field);field.blur();}});
+      requestAnimationFrame(()=>fitNoteText(field));
+      return field;
+    };
+    const frontTitle=inlineField(titleFirst?'title':'action',titleFirst?displayTitle:frontAction||item.title,'Main wording',{required:true,maxlength:titleFirst?300:800,className:'import-card-title'});
+    const description=item.origin?(item.dirty?.includes('reason')?item.reason:clarity?.purpose||''):item.personal?frontAction:item.reason||'';
+    const frontDescription=inlineField(item.personal&&!item.origin?'action':'reason',description,'Smaller description',{maxlength:item.personal&&!item.origin?800:2000,className:'task-clarity-purpose'});
     summaryCopy.append(frontTitle,frontDescription);
-    const syncFrontCopy=value=>{if(item.origin)return;if(titleFirst){frontDescription.textContent=value;frontDescription.hidden=!value||value===frontTitle.textContent;}else frontTitle.textContent=value;};
+    const syncFrontCopy=value=>{if(item.origin)return;const field=titleFirst?frontDescription:frontTitle;field.setSavedText(value);};
     if(item.dueDate||item.forecast?.scheduledDate)summaryCopy.append(element('span',`When: ${dateLabel(item.dueDate||item.forecast.scheduledDate)}`,{class:'task-clarity-meta'}));
     summaryCopy.append(element('span',disclosure.open?'Hide steps':'View steps',{class:'task-clarity-toggle'}));
     summary.append(summaryCopy,element('span','',{class:'import-card-chevron','aria-hidden':'true'}));
     quickControls.prepend(saveStatus);
     requestAnimationFrame(()=>{if(frontText.isConnected){resizeText();}});
     const body=element('div',undefined,{class:'import-card-body'});
-    if(!item.origin){
-      const editor=element('form',undefined,{class:'import-card-text-editor','aria-label':`Edit card text for ${item.title}`});editor.hidden=true;
-      const mainKey=item.personal?'title':'action',descriptionKey=item.personal?'action':'reason';
-      const mainLabel=element('label','Main wording');
-      const mainInput=element('textarea','',{rows:'3',maxlength:item.personal?'300':'800',required:'','aria-label':`Main wording for ${item.title}`});mainLabel.append(mainInput);
-      const descriptionLabel=element('label','Smaller description');
-      const descriptionInput=element('textarea','',{rows:'3',maxlength:item.personal?'800':'2000','aria-label':`Smaller description for ${item.title}`});descriptionLabel.append(descriptionInput);
-      const message=element('p','',{role:'status',class:'import-help'});
-      const edit=button('Edit card text',()=>{
-        const current=this.inbox.items.find(x=>x.id===item.id);if(!current)return;
-        mainInput.value=current[mainKey]||'';descriptionInput.value=current[descriptionKey]||'';message.textContent='';
-        editor.hidden=false;disclosure.open=true;this.openCards.add(item.id);mainInput.focus();editor.scrollIntoView({block:'center',behavior:'smooth'});
-      });edit.disabled=this.blocked;quickControls.prepend(edit);
-      const actions=element('div',undefined,{class:'help-request-actions'});
-      const save=element('button','Save card text',{type:'submit'});save.disabled=this.blocked;
-      actions.append(save,button('Cancel',()=>{editor.hidden=true;this.draftInputs.delete(mainInput);this.draftInputs.delete(descriptionInput);edit.focus();}));
-      editor.append(element('h3','Edit card text'),mainLabel,descriptionLabel,element('p','Changes save in this browser and are included in your Launchpad backup.',{class:'import-help'}),actions,message);
-      editor.addEventListener('submit',event=>{
-        event.preventDefault();const current=this.inbox.items.find(x=>x.id===item.id);if(!current)return;
-        const main=mainInput.value.trim(),description=descriptionInput.value.trim();
-        if(!main){message.textContent='Enter the main wording before saving.';mainInput.focus();return;}
-        if(item.personal&&!description&&!['note','done','dismissed'].includes(current.status)){message.textContent='Keep a next action for this active task.';descriptionInput.focus();return;}
-        const changes={};if(main!==current[mainKey])changes[mainKey]=main;if(description!==current[descriptionKey])changes[descriptionKey]=description;
-        if(this.updateItem(item.id,changes,true)){this.draftInputs.delete(mainInput);this.draftInputs.delete(descriptionInput);this.say('Card text saved.');const updated=[...this.list.querySelectorAll('article')].find(node=>node.dataset.taskKey===(item.taskKey||item.id));updated?.querySelector('.import-card-summary')?.focus();}
-        else message.textContent='Not saved — see the message above. Your wording is still here.';
-      });body.append(editor);
-    }
     if(clarity?.finished){const outcome=element('div',undefined,{class:'task-clarity-outcome'});outcome.append(element('strong','Finished when'),element('p',clarity.finished));body.append(outcome);}
     if(clarity?.steps?.length){body.append(element('h3','What to do'));const steps=element('ol',undefined,{class:'task-clarity-steps'});clarity.steps.forEach(step=>steps.append(element('li',step)));body.append(steps);}
     if(frontAction||!titleFirst){const editAction=element('label',item.status==='done'?'Your recorded action':'Your next action',{class:'import-personal-action'});editAction.append(frontText);body.append(editAction);}

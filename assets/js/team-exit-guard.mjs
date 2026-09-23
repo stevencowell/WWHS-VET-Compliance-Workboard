@@ -169,4 +169,4 @@ export function installAreaTeamExitGuards(win,doc,storage){
     acknowledgeSafetyBackup:expected=>selected(expected.scope).acknowledgeSafetyBackup(expected)});
   return win.WWHS_TEAM_EXIT_GUARD;
 }
-if(typeof window==='object')installAreaTeamExitGuards(window,document,window.WWHS_STORAGE||localStorage);
+if(typeof window==='object'&&document.documentElement.dataset.backupMode!=='workspace')installAreaTeamExitGuards(window,document,window.WWHS_STORAGE||localStorage);

@@ -31,13 +31,13 @@ function stores(){
     [KEYS.inbox]:json({version:2,items:[teamCard(),personalCard()],briefing:'Private briefing',workboardImports:['vet:task::2026'],forecastContexts:{}})
   };
 }
-function harness({teamState=metadata(),journal=null,areas={}}={}){
+function harness({teamState=metadata(),journal=null,areas={},unified=false}={}){
   const values=new Map(Object.entries(stores())),events=[],writes=[];
   if(teamState!==null)values.set(KEYS.metadata,typeof teamState==='string'?teamState:json(teamState));
   if(journal!==null)values.set(KEYS.journal,journal);
   for(const [scope,state] of Object.entries(areas))values.set(KEYS[`${scope}Metadata`],typeof state==='string'?state:json(state));
   const storage={getItem:key=>values.get(key)??null,setItem(key,value){values.set(key,String(value));writes.push({key,value:String(value)});},removeItem(key){values.delete(key);writes.push({key,value:null});}};
-  const window={dispatchEvent(event){events.push(event);return true;}};
+  const window={document:{documentElement:{dataset:{backupMode:unified?'workspace':''}}},dispatchEvent(event){events.push(event);return true;}};
   class CustomEvent{constructor(type,options={}){this.type=type;this.detail=options.detail;}}
   vm.runInNewContext(script,{window,localStorage:storage,CustomEvent},{filename:'team-session.js'});
   const guard=window.WWHS_TEAM_SESSION;
@@ -171,4 +171,12 @@ test('area session changes in another tab do not revoke the other area',()=>{
 test('damaged area metadata does not block unrelated native work',()=>{
   const h=harness({teamState:null,areas:{vet:'broken',tas:metadata(editing('tas-session'))}});
   const tas=h.value(KEYS.tas);tas.records['task::2026'].exceptionReason='Later note';assert.equal(h.attempt(KEYS.tas,tas),true);
+});
+
+test('complete-workspace mode permits editing formerly view-only TAS and VET, but never during restore',()=>{
+  const h=harness({unified:true});
+  assert.equal(h.guard.isEditing('vet'),true);assert.equal(h.guard.isEditing('tas'),true);
+  const next=h.value(KEYS.tas);next.records['task::2026'].exceptionReason='New working note';assert.equal(h.attempt(KEYS.tas,next),true);
+  h.values.set('wwhs-workspace-restore:v1',JSON.stringify({id:'test',phase:'prepared'}));
+  denied(h,KEYS.tas,next,/complete backup/);
 });

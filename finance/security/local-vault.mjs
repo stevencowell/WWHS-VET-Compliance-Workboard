@@ -37,6 +37,7 @@ function validRecord(value) {
     updatedAt: value.updatedAt, salt: value.salt, iv: value.iv, ciphertext: value.ciphertext,
   };
 }
+export const validateEncryptedRecord = value => validRecord(value);
 function additionalData(record) {
   return encode(JSON.stringify([record.format, record.version, record.kdf, record.iterations, record.vaultId, record.revision, record.salt, record.createdAt, record.updatedAt]));
 }
@@ -47,6 +48,7 @@ function requirePassword(password, creating = false) {
 }
 
 export async function openVaultDatabase(indexedDB, dbName) {
+  const generation = globalThis.localStorage?.getItem('wwhs-workspace-generation:v1') ?? null;
   if (!indexedDB) throw failure('unsupported', 'This browser cannot save private Finance records.');
   const db = await new Promise((resolve, reject) => {
     const request = indexedDB.open(dbName, 1);
@@ -68,7 +70,7 @@ export async function openVaultDatabase(indexedDB, dbName) {
       });
     },
     readPrevious() { return this.read(PREVIOUS_ID); },
-    compareAndSwap(expected, next, { preservePrevious = false } = {}) {
+    compareAndSwap(expected, next, { preservePrevious = false, restoreId } = {}) {
       return new Promise((resolve, reject) => {
         let reason;
         const transaction = db.transaction(STORE, 'readwrite');
@@ -76,6 +78,10 @@ export async function openVaultDatabase(indexedDB, dbName) {
         const request = store.get(RECORD_ID);
         request.onsuccess = () => {
           try {
+          const marker = globalThis.localStorage?.getItem('wwhs-workspace-restore:v1');
+          if(marker ? JSON.parse(marker).id !== restoreId : generation !== (globalThis.localStorage?.getItem('wwhs-workspace-generation:v1') ?? null)) {
+            throw failure('conflict', 'A complete backup was opened in another tab. Keep any unsaved edits, then reload Finance.');
+          }
           const current = request.result ?? null;
           const matches = expected === null ? current === null : Object.hasOwn(expected,'record')
             ? JSON.stringify(current) === JSON.stringify(expected.record)
@@ -90,7 +96,7 @@ export async function openVaultDatabase(indexedDB, dbName) {
           if (preservePrevious && current !== null) store.put(current, PREVIOUS_ID);
           store.put(next, RECORD_ID);
           } catch (error) {
-            reason ||= failure('storage', 'Finance could not be saved in this browser. The current and previous encrypted copies are unchanged.');
+            reason ||= error instanceof FinanceStorageError ? error : failure('storage', 'Finance could not be saved in this browser. The current and previous encrypted copies are unchanged.');
             try { transaction.abort(); } catch {}
           }
         };
@@ -209,7 +215,8 @@ export async function createLocalVault({ dbName = 'finance-studio-private-v1' } 
       const clean = validateValues(values);
       const saved = await encrypt(clean, key, { ...unlockedRecord, revision: expectedRevision + 1, updatedAt: new Date().toISOString() });
       assertEpoch(started);
-      await database.compareAndSwap({ vaultId: unlockedRecord.vaultId, revision: expectedRevision }, saved);
+      if(unlockedRecord.revision!==expectedRevision)throw failure('conflict','Finance changed before this save. Keep your edits and reload the saved copy.');
+      await database.compareAndSwap({ record: unlockedRecord }, saved);
       assertEpoch(started);
       unlockedRecord = saved;
       return { revision: saved.revision, values: clean, updatedAt: saved.updatedAt };
@@ -251,6 +258,14 @@ export async function createLocalVault({ dbName = 'finance-studio-private-v1' } 
       const saved = await encrypt(clean, key, { ...unlockedRecord, updatedAt: new Date().toISOString() });
       assertEpoch(started);
       return JSON.stringify(saved, null, 2);
+    },
+    async prepareRestoreBackup(record, password, current = null) {
+      requireOpen();requirePassword(password);
+      const imported=validRecord(record),derived=await derive(password,imported.salt);
+      const values=await decrypt(imported,derived);
+      const revision=current&&Number.isSafeInteger(current.revision)?current.revision+1:0;
+      validateRevision(revision);
+      return encrypt(values,derived,{...imported,vaultId:crypto.randomUUID(),revision,updatedAt:new Date().toISOString()});
     },
     async restoreBackup(text, password, { replaceExisting = false } = {}) {
       return exclusiveAuth(async () => {

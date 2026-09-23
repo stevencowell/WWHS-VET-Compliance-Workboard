@@ -36,6 +36,11 @@
   }
   function createStorage(native){
     const readCache=new Map(),writeCache=new Map();
+    let generation;try{generation=native.getItem('wwhs-workspace-generation:v1');}catch{/* Keep blocked storage on the existing recovery path. */}
+    function assertWritable(options={}){
+      const marker=native.getItem('wwhs-workspace-restore:v1');
+      if(marker?JSON.parse(marker).id!==options.restoreId:native.getItem('wwhs-workspace-generation:v1')!==generation)throw new Error('A complete backup is being opened or was opened in another tab. Keep any draft text, then reload this page.');
+    }
     function prepared(key,value){
       const cached=writeCache.get(key);if(cached?.plain===value)return cached.packed;
       const packed=encode(key,value);if(keys.has(key))writeCache.set(key,{plain:value,packed});return packed;
@@ -56,7 +61,8 @@
         }catch{/* An unreadable or unwritable record stays untouched. */}
       }
     }
-    function setItem(key,value){
+    function setItem(key,value,options){
+      assertWritable(options);
       const text=String(value),packed=prepared(key,text),before=native.getItem(key);
       try{native.setItem(key,packed);}
       catch(error){
@@ -73,7 +79,7 @@
         }
       }
     }
-    return Object.freeze({getItem,setItem,removeItem:key=>native.removeItem(key),key:index=>native.key(index),get length(){return native.length;},
+    return Object.freeze({getItem,setItem,removeItem:(key,options)=>{assertWritable(options);native.removeItem(key);},key:index=>native.key(index),get length(){return native.length;},
       storedSize:key=>{const value=native.getItem(key);return value===null?0:key.length+value.length;},
       encodedSize:(key,value)=>value===null?0:key.length+prepared(key,value).length});
   }
