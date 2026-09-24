@@ -1257,4 +1257,1507 @@
     }
   ]
 };
+  // September 2026 administration audit. Preserve the original requirements as
+  // the migration baseline; new steps use stable row IDs, never old tick indexes.
+  const auditRows = [
+  {
+    "rowId": "R01",
+    "topic": "Daily staffroom triage",
+    "taskIds": [
+      "c-10-daily-staffroom-triage"
+    ],
+    "steps": [
+      "Open the current VET Teams and Statewide Staffroom channels each working day during term.",
+      "Identify changed instructions, deadlines and requests; send relevant items to the affected teachers through the agreed school channel.",
+      "Give each action an owner and follow-up date, and escalate urgent issues immediately."
+    ],
+    "sourceFileIds": ["school-procedure-05"],
+    "authorityCheck": ""
+  },
+  {
+    "rowId": "R02",
+    "topic": "Weekly notices and action evidence",
+    "taskIds": [
+      "c-01-rto-updates"
+    ],
+    "steps": [
+      "Record the weekly notice, required action, responsible person, due date and evidence link in the agreed Head Teacher RTO Notices/action record.",
+      "Send the Head Teacher a link to that record and confirm receipt or an assigned follow-up."
+    ],
+    "sourceFileIds": [],
+    "authorityCheck": ""
+  },
+  {
+    "rowId": "R03",
+    "topic": "Access to all operating systems",
+    "taskIds": [
+      "a-03-confirm-roles-access"
+    ],
+    "steps": [
+      "Test the access needed for Schools Online, Sentral Markbook and Reports, QMS, LLN Robot, VET Hub, Evidence Central and the Head Teacher record.",
+      "Check each user has the correct school, role and class access; record access failures without storing credentials.",
+      "Confirm the school's approved LLN Robot address with the RTO before using either saved tenant link."
+    ],
+    "sourceFileIds": [],
+    "authorityCheck": "Two LLN addresses differ. Keep both labelled as unverified until approved tenant confirmed."
+  },
+  {
+    "rowId": "R04",
+    "topic": "Annual and term calendar",
+    "taskIds": [
+      "a-02-build-live-calendar"
+    ],
+    "steps": [
+      "Download the current NESA timetable and identify the actions that apply to the school's VET courses.",
+      "Recheck dates at the start of every term and whenever a notice changes; update the approved shared school calendar.",
+      "Send the Head Teacher the current calendar link; produce print or Outlook copies only where the team still uses them."
+    ],
+    "sourceFileIds": ["school-procedure-13"],
+    "authorityCheck": "2027 timetable exists; compare individual deadlines against current official NESA source and label local lead times as planning."
+  },
+  {
+    "rowId": "R06",
+    "topic": "Management structure and staff list",
+    "taskIds": [
+      "a-03-confirm-roles-access",
+      "a-04-update-school-profile"
+    ],
+    "steps": [
+      "Complete the management-structure template from the current approved PxP timetable, course list and delegated staff roles.",
+      "Ask the Head Teacher to check it and publish the agreed staff reference in the Head Teacher master location; replace a displayed staff copy only after review."
+    ],
+    "sourceFileIds": ["school-procedure-16"],
+    "authorityCheck": ""
+  },
+  {
+    "rowId": "R07",
+    "topic": "COMPACT staff update",
+    "taskIds": [
+      "t1-06-work-placement-plan"
+    ],
+    "steps": [
+      "Obtain the current COMPACT staff-update form and confirm the approved VET, TVET, EVET and SBAT course/cohort information with the responsible deputy.",
+      "Send the authorised staff update through COMPACT's current approved route and record confirmation; keep student lists in restricted school/provider systems."
+    ],
+    "sourceFileIds": ["school-procedure-10"],
+    "authorityCheck": ""
+  },
+  {
+    "rowId": "R08",
+    "topic": "New teachers in Evidence Central",
+    "taskIds": [
+      "a-03-confirm-roles-access",
+      "a-07-trainer-readiness"
+    ],
+    "steps": [
+      "Confirm each new teacher's Evidence Central status, course classes and induction-cohort access.",
+      "Ask the teacher to test access to the correct cohort and report any mismatch before delivery begins."
+    ],
+    "sourceFileIds": [],
+    "authorityCheck": ""
+  },
+  {
+    "rowId": "R09",
+    "topic": "RTO or VSO visit",
+    "taskIds": [
+      "e-08-rto-audit-visit"
+    ],
+    "steps": [
+      "When the current RTO/VSO arrangement requires a school visit, agree the date, required attendees and preparation with the Head Teacher.",
+      "Record the visit's actions in the Head Teacher action record and return the completed response to the RTO/VSO."
+    ],
+    "sourceFileIds": [],
+    "authorityCheck": "Do not claim annual face-to-face visit is mandatory without current RTO instruction."
+  },
+  {
+    "rowId": "R10",
+    "topic": "Year 12 markbook setup",
+    "taskIds": [
+      "a-09-set-up-markbooks"
+    ],
+    "steps": [
+      "For Year 12, reconcile the continuing Year 11 students against current enrolments before transferring them to the new book.",
+      "Retain non-continuing students' earlier records, check the required student pins and confirm current teacher/class membership."
+    ],
+    "sourceFileIds": ["school-procedure-02", "school-procedure-06"],
+    "authorityCheck": ""
+  },
+  {
+    "rowId": "R11",
+    "topic": "Year 11 markbook setup",
+    "taskIds": [
+      "a-09-set-up-markbooks"
+    ],
+    "steps": [
+      "Create the Year 11 markbooks using the current approved structure and timetable-linked teachers.",
+      "Check student membership and pins, and match Preliminary/HSC course and competency headings to the current training and assessment strategy.",
+      "Test teacher Staff Roles/access and obtain the teacher's confirmation that the book is ready."
+    ],
+    "sourceFileIds": ["school-procedure-01", "school-procedure-06"],
+    "authorityCheck": ""
+  },
+  {
+    "rowId": "R12",
+    "topic": "Current training and assessment strategies",
+    "taskIds": [
+      "t1-05-tas-and-assessment-readiness",
+      "a-06-reconcile-course-codes"
+    ],
+    "steps": [
+      "Issue the current controlled training and assessment strategy template to each teacher.",
+      "Collect completed strategies, check qualification/course/unit codes and the teaching sequence, and return corrections to the teacher.",
+      "Record the approved strategy link and teacher/Head Teacher hand-back before confirming readiness."
+    ],
+    "sourceFileIds": [],
+    "authorityCheck": ""
+  },
+  {
+    "rowId": "R13",
+    "topic": "School-leaver outcomes and withdrawal",
+    "taskIds": [
+      "e-03-enrolment-change"
+    ],
+    "steps": [
+      "For each authorised school leaver, obtain the teacher's confirmed outcomes and check the permitted outcome codes against current NESA/RTO instructions.",
+      "Update the authorised enrolment systems, retain the earlier markbook evidence and check the student's retained/pinned status."
+    ],
+    "sourceFileIds": ["school-procedure-15"],
+    "authorityCheck": "Do not hard-code simplified Achieved/Withdrawn or no EXIT from older notes."
+  },
+  {
+    "rowId": "R14",
+    "topic": "Signed transcripts for school leavers",
+    "taskIds": [
+      "e-03-enrolment-change"
+    ],
+    "steps": [
+      "For a school leaver who needs a VET transcript, check the current approved Schools Online print and attestation procedure.",
+      "Have the authorised person attest, sign and date the transcript; provide the student copy through the approved route.",
+      "File the signed school copy in the approved student record and reopen the attachment to check the student, course and document are correct."
+    ],
+    "sourceFileIds": ["school-procedure-21", "school-procedure-11"],
+    "authorityCheck": "Confirm current signatory and official student-record destination; no automatic emailing or student records in public workboard."
+  },
+  {
+    "rowId": "R15",
+    "topic": "Evidence Central suspension on exit",
+    "taskIds": [
+      "e-03-enrolment-change",
+      "t4-07-markbook-rollover"
+    ],
+    "steps": [
+      "At the approved exit point, check Evidence Central suspension for both the induction cohort and each affected course class.",
+      "Preserve required evidence and earlier records; confirm the account/class status with the responsible teacher."
+    ],
+    "sourceFileIds": [],
+    "authorityCheck": ""
+  },
+  {
+    "rowId": "R16",
+    "topic": "Deputy enrolment changes and pink forms",
+    "taskIds": [
+      "e-03-enrolment-change",
+      "c-04-cross-system-reconciliation"
+    ],
+    "steps": [
+      "Receive the deputy's authorised enrolment or subject-change instruction, including the current pink-form process if still used.",
+      "Check the affected timetable, markbook, Evidence Central, Hub and NESA records, then return the completion or outstanding mismatch to the deputy."
+    ],
+    "sourceFileIds": [],
+    "authorityCheck": ""
+  },
+  {
+    "rowId": "R17",
+    "topic": "Assessment booklet amendments",
+    "taskIds": [
+      "t1-05-tas-and-assessment-readiness",
+      "t3-09-hsc-schedule-and-delivery-check"
+    ],
+    "steps": [
+      "When courses or assessment arrangements change, check the booklet's current course descriptors, Preliminary/HSC transitions and required competencies.",
+      "Cross-check the booklet's front timetable and assessment schedule against the teacher's approved plan.",
+      "Obtain teacher and curriculum-owner sign-off before releasing the amended booklet."
+    ],
+    "sourceFileIds": [],
+    "authorityCheck": ""
+  },
+  {
+    "rowId": "R18",
+    "topic": "Subject selection booklet amendments",
+    "taskIds": [
+      "t3-08-next-year-promotion"
+    ],
+    "steps": [
+      "Review VET subject-selection wording whenever approved offerings, qualification details or selection information change.",
+      "Return amendments to the TAS subject-selection release owner and confirm the published version has the approved VET wording."
+    ],
+    "sourceFileIds": [],
+    "authorityCheck": ""
+  },
+  {
+    "rowId": "R19",
+    "topic": "Induction completion and exceptions",
+    "taskIds": [
+      "t1-03-onboarding-induction-support",
+      "c-04-cross-system-reconciliation"
+    ],
+    "steps": [
+      "Prepare a restricted list of students missing from Evidence Central or still needing induction.",
+      "Assign each exception to the teacher, set a response date and check the completion record when the teacher replies."
+    ],
+    "sourceFileIds": [],
+    "authorityCheck": ""
+  },
+  {
+    "rowId": "R20",
+    "topic": "USI verification and exception follow-up",
+    "taskIds": [
+      "t1-01-usi-verification",
+      "t2-04-finalise-usi-exceptions"
+    ],
+    "steps": [
+      "Use the current QMS USI verification template and authorised upload procedure; correct rejected records through the current process.",
+      "Update the approved school USI register and send each unresolved exception to its teacher with a response date.",
+      "Check the returned verification status without copying USIs into workboard notes."
+    ],
+    "sourceFileIds": ["school-procedure-14"],
+    "authorityCheck": ""
+  },
+  {
+    "rowId": "R21",
+    "topic": "USI upload responsibility",
+    "taskIds": [
+      "t1-01-usi-verification"
+    ],
+    "steps": [
+      "Confirm with the current RTO instruction who uploads verified USIs to NESA.",
+      "Only carry out the school's assigned part; record the current instruction and owner before marking the NESA hand-back complete."
+    ],
+    "sourceFileIds": [],
+    "authorityCheck": "Keep existing safeguard: school staff do not upload to NESA unless the current RTO instruction assigns that work."
+  },
+  {
+    "rowId": "R22",
+    "topic": "LLN results and teacher hand-back",
+    "taskIds": [
+      "t1-03-onboarding-induction-support"
+    ],
+    "steps": [
+      "Use the current approved LLN report selection and access route to provide results to the authorised teacher.",
+      "Keep the protected Head Teacher reference link, confirm the teacher has received it and follow up the agreed learning-support action."
+    ],
+    "sourceFileIds": ["school-procedure-09"],
+    "authorityCheck": "Verify LLN tenant and current report-selection procedure; do not disclose learner results in workboard."
+  },
+  {
+    "rowId": "R23",
+    "topic": "USI LLN and induction markbook flags",
+    "taskIds": [
+      "c-04-cross-system-reconciliation"
+    ],
+    "steps": [
+      "Reconcile the USI verified, LLN completed and induction completed flags in the markbook against the authorised source records.",
+      "Return missing or conflicting flags to the responsible teacher and recheck the corrected status; keep underlying personal records in their approved system."
+    ],
+    "sourceFileIds": [],
+    "authorityCheck": ""
+  },
+  {
+    "rowId": "R25",
+    "topic": "Missing NESA course or RTO errors",
+    "taskIds": [
+      "a-06-reconcile-course-codes",
+      "e-06-discrepancy-corrective-action"
+    ],
+    "steps": [
+      "For unavailable NESA courses, an incorrect RTO code or a Group 23 exception, retain a safe reference to the error and contact the current authorised VSO/RTO help route.",
+      "Assign the correction to the responsible owner and verify the corrected school/NESA record before closing it."
+    ],
+    "sourceFileIds": ["school-procedure-17"],
+    "authorityCheck": "Verify current contacts annually; older SOP is incomplete for late entry."
+  },
+  {
+    "rowId": "R26",
+    "topic": "All My Own Work completion",
+    "taskIds": [
+      "t1-07-nesa-check-one"
+    ],
+    "steps": [
+      "Check All My Own Work completion for the students to whom the current requirement applies.",
+      "Give unresolved completion or eligibility cases to the authorised deputy and record the returned decision."
+    ],
+    "sourceFileIds": [],
+    "authorityCheck": "Applicability and current completion rule controlled by current NESA instructions."
+  },
+  {
+    "rowId": "R27",
+    "topic": "Life Skills course and report checks",
+    "taskIds": [
+      "t1-07-nesa-check-one",
+      "t2-07-nesa-check-two"
+    ],
+    "steps": [
+      "Identify applicable Life Skills students through the authorised deputy's list.",
+      "Check the correct Life Skills course, reporting schema and syllabus outcomes with the reporting owner.",
+      "Return unresolved mapping or enrolment problems to the deputy before reports are released."
+    ],
+    "sourceFileIds": ["school-procedure-03"],
+    "authorityCheck": "Existing local mapping is partial; do not treat it as complete or current authority."
+  },
+  {
+    "rowId": "R28",
+    "topic": "Too few units and minimum standards errors",
+    "taskIds": [
+      "t1-07-nesa-check-one",
+      "t3-06-nesa-check-three"
+    ],
+    "steps": [
+      "Review too-few-units/pattern-of-study errors and applicable reading, writing and numeracy minimum-standards exceptions.",
+      "Return unresolved cases to the responsible deputy and record the authorised decision or next check."
+    ],
+    "sourceFileIds": [],
+    "authorityCheck": ""
+  },
+  {
+    "rowId": "R29",
+    "topic": "Year 11 and Year 12 report setup",
+    "taskIds": [
+      "t2-06-finalise-semester-one-reports",
+      "t4-02-year11-reports"
+    ],
+    "steps": [
+      "Before teachers enter reports, check title, NESA course code, qualification/RTO, class, teacher and competency fields against the current approved course records.",
+      "Check required Preliminary competency coverage and which units belong in this semester/year-group report.",
+      "Confirm the internal Head Teacher review date and teacher access before opening the reporting cycle."
+    ],
+    "sourceFileIds": ["school-procedure-20"],
+    "authorityCheck": ""
+  },
+  {
+    "rowId": "R30",
+    "topic": "Term-end attendance record",
+    "taskIds": [
+      "c-11-term-end-attendance"
+    ],
+    "steps": [
+      "On the final school day of term, obtain the approved PxP attendance report or screenshot for every VET class.",
+      "Check the class and reporting period, save a dated class-named file in the approved restricted attendance folder, and verify it opens.",
+      "Send the Head Teacher the record links through the approved school channel and confirm all VET classes are accounted for."
+    ],
+    "sourceFileIds": ["school-procedure-12"],
+    "authorityCheck": "Confirm permitted record destination/access before storing student attendance copies."
+  },
+  {
+    "rowId": "R31",
+    "topic": "Prepare and close term action timelines",
+    "taskIds": [
+      "c-01-rto-updates",
+      "c-02-team-meetings",
+      "e-07-coordinator-handover"
+    ],
+    "steps": [
+      "At term start, open the new term action timeline using current RTO requests and the previous term's unfinished actions.",
+      "At term close, review each action with its owner and record completion evidence or an assigned carry-forward.",
+      "Update the Head Teacher master action record and any RTO-required Hub entry; confirm the receiving role has accepted the hand-back."
+    ],
+    "sourceFileIds": [],
+    "authorityCheck": ""
+  },
+  {
+    "rowId": "R32",
+    "topic": "HSC exam participation decision",
+    "taskIds": [
+      "t2-10-hsc-exam-intentions"
+    ],
+    "steps": [
+      "In Term2, obtain the deputy-approved process for each student's HSC VET examination participation decision.",
+      "Collect the current signed decision form, follow up missing responses and record the approved Yes/No status in the markbook.",
+      "File the form in the approved student record and verify the attachment; hand the confirmed list to the authorised NESA entry owner."
+    ],
+    "sourceFileIds": ["school-procedure-22", "school-procedure-04"],
+    "authorityCheck": ""
+  },
+  {
+    "rowId": "R34",
+    "topic": "COMPACT placement requests and dates",
+    "taskIds": [
+      "t1-06-work-placement-plan",
+      "c-07-workplace-learning-control"
+    ],
+    "steps": [
+      "Use COMPACT's current placement-request form and confirm course, cohort, requested weeks and school assessment/calendar exclusions.",
+      "Obtain provider acceptance and the required school approval before confirming dates.",
+      "Update the approved shared/Parent Portal calendar as authorised, then notify the Head Teacher, deputies and Principal through the agreed route."
+    ],
+    "sourceFileIds": ["school-procedure-19"],
+    "authorityCheck": "Use current form/contact; historical example includes date typo and does not establish current windows."
+  },
+  {
+    "rowId": "R35",
+    "topic": "Next-year placement booking",
+    "taskIds": [
+      "t1-06-work-placement-plan",
+      "t4-06-next-year-vet-hub"
+    ],
+    "steps": [
+      "For next-year bookings, confirm course codes/titles, teacher or TBA, and cohort numbers with the timetabling team.",
+      "Agree requested weeks and exclude trial/Preliminary exam periods before sending the placement request.",
+      "Record provider acceptance and school approval, then publish dates to the authorised Parent Portal/shared calendar."
+    ],
+    "sourceFileIds": ["school-procedure-19"],
+    "authorityCheck": ""
+  },
+  {
+    "rowId": "R37",
+    "topic": "Placement record scanning and filing",
+    "taskIds": [
+      "c-07-workplace-learning-control",
+      "c-08-records-privacy-control"
+    ],
+    "steps": [
+      "Scan placement records using the approved naming method and check every page is readable and belongs to the correct student and placement.",
+      "File the scan in the approved restricted year/course location and attach it to the correct official student record where required.",
+      "Reopen both the saved record and attachment, then give the responsible record owner the verified link."
+    ],
+    "sourceFileIds": ["school-procedure-08"],
+    "authorityCheck": "Do not put sensitive records in a broadly shared folder merely because it is the new HT starting point."
+  },
+  {
+    "rowId": "R38",
+    "topic": "Placement originals and disposal",
+    "taskIds": [
+      "c-08-records-privacy-control"
+    ],
+    "steps": [
+      "Ask the authorised records owner to confirm the current retention and approved digitisation rule for original Student Placement Records.",
+      "Retain originals securely until that instruction is confirmed; record the authority and approved location."
+    ],
+    "sourceFileIds": [],
+    "authorityCheck": "No destruction instruction. Local source conflicts between destroying after scan and filing in office."
+  },
+  {
+    "rowId": "R43",
+    "topic": "Coordinator guide meeting and staff briefing",
+    "taskIds": [
+      "c-01-rto-updates",
+      "c-02-team-meetings",
+      "t3-02-meeting-follow-up"
+    ],
+    "steps": [
+      "When the RTO publishes the Term4 coordinator meeting, arrange attendance by the responsible coordinator and review its current guide.",
+      "Brief the affected staff, assign the required actions and return the requested response to the RTO."
+    ],
+    "sourceFileIds": [],
+    "authorityCheck": ""
+  },
+  {
+    "rowId": "R44",
+    "topic": "NSW Training Awards reminder",
+    "taskIds": [
+      "t4-10-training-awards"
+    ],
+    "steps": [
+      "Check the current NSW Training Awards categories, eligibility and nomination window.",
+      "Ask the Head Teacher and teachers to identify suitable potential nominees, and agree the authorised nomination owner.",
+      "Record the nomination decision and next deadline; only submit after the required school/student approvals."
+    ],
+    "sourceFileIds": [],
+    "authorityCheck": "Verify official current awards page before link release."
+  },
+  {
+    "rowId": "R45",
+    "topic": "Preliminary leaver exit survey",
+    "taskIds": [
+      "t3-07-exit-survey"
+    ],
+    "steps": [
+      "Identify Preliminary students who are exiting in Term4 and check whether the current RTO exit-survey request applies.",
+      "Send the approved survey through the agreed channel and follow up participation through the current RTO process."
+    ],
+    "sourceFileIds": [],
+    "authorityCheck": ""
+  },
+  {
+    "rowId": "R46",
+    "topic": "Trainer and student checks of NESA reports",
+    "taskIds": [
+      "t2-03-enter-competencies",
+      "t4-03-year12-year10-final-data"
+    ],
+    "steps": [
+      "Send the authorised NESA entry/outcome report to the relevant trainers for checking and resolve any returned discrepancy.",
+      "Where the current school/NESA process requires it, obtain each Year12 student's signed final-entry confirmation and file it in the approved student record."
+    ],
+    "sourceFileIds": [],
+    "authorityCheck": "Do not substitute one trainer's sign-off for individual signed student confirmation."
+  },
+  {
+    "rowId": "R47",
+    "topic": "Signed confirmation of enrolment",
+    "taskIds": [
+      "t1-07-nesa-check-one",
+      "e-03-enrolment-change"
+    ],
+    "steps": [
+      "Use the current approved enrolment-entry confirmation form and obtain the required student signature.",
+      "File it through the authorised deputy-office/student-record process and verify the correct student and attachment."
+    ],
+    "sourceFileIds": [],
+    "authorityCheck": "Confirm current form and protected official destination."
+  },
+  {
+    "rowId": "R48",
+    "topic": "Late competency correction route",
+    "taskIds": [
+      "e-06-discrepancy-corrective-action"
+    ],
+    "steps": [
+      "Obtain the current NESA late-competency correction template and complete authorised submission instructions through the current help route.",
+      "Have the authorised owner check supporting evidence and submit the correction; verify the returned system outcome and record reference."
+    ],
+    "sourceFileIds": ["school-procedure-17"],
+    "authorityCheck": "2022-linked and2025-labelled templates are historical. Local SOP steps8–10 blank; do not offer as complete current process."
+  },
+  {
+    "rowId": "R49",
+    "topic": "Trainer feedback and post-audit surveys",
+    "taskIds": [
+      "c-09-validation-improvement"
+    ],
+    "steps": [
+      "Check current RTO requests for the Term4 trainer survey and any post-audit survey.",
+      "Assign the response to the requested role, return it through the approved route and record the resulting improvement actions."
+    ],
+    "sourceFileIds": [],
+    "authorityCheck": ""
+  },
+  {
+    "rowId": "R50",
+    "topic": "Historical guidance and old exceptions",
+    "taskIds": [
+      "a-01-confirm-authority-set",
+      "c-08-records-privacy-control"
+    ],
+    "steps": [
+      "Label copied historical guides, trials and exception notices with their original year and source.",
+      "Keep them available for reference, but link the current controlled instruction first and record unresolved conflicts.",
+      "Do not carry old waivers, credentials, student records or unverified deadlines into new website instructions."
+    ],
+    "sourceFileIds": [],
+    "authorityCheck": "Source preservation is not policy endorsement. Copied procedural files retain original provenance."
+  },
+  {
+    "rowId": "R51",
+    "topic": "Markbook to Reports synchronisation",
+    "taskIds": [
+      "t2-06-finalise-semester-one-reports",
+      "t4-02-year11-reports"
+    ],
+    "steps": [
+      "Check class and competency links and teacher access before syncing Markbook to Reports.",
+      "Confirm the current overwrite behaviour and protect any manually entered report results before recalculating or syncing.",
+      "Recalculate and sync the applicable year groups using the approved method; compare the resulting reports against the markbook and resolve differences before release."
+    ],
+    "sourceFileIds": ["school-procedure-20", "school-procedure-23"],
+    "authorityCheck": "Make overwrite warning visible before sync, not only after; no destructive automatic operation."
+  },
+  {
+    "rowId": "R52",
+    "topic": "VET report fields and outcome definitions",
+    "taskIds": [
+      "t2-06-finalise-semester-one-reports",
+      "t4-02-year11-reports"
+    ],
+    "steps": [
+      "Check the VET report identifies the course, qualification and studied units, with supported outcomes and placement hours where required.",
+      "Apply the current NESA/RTO outcome definitions, including the conditions for Not Achieved and Withdrawn; resolve conflicting older shorthand before release.",
+      "Check VET reports do not include marks or ranks contrary to current VET reporting guidance."
+    ],
+    "sourceFileIds": ["school-procedure-07"],
+    "authorityCheck": "Current NESA VET Report Guidelines verified in audit15Apr2026; confirm current source on implementation."
+  },
+  {
+    "rowId": "R53",
+    "topic": "Preparation for an RTO audit visit",
+    "taskIds": [
+      "e-08-rto-audit-visit"
+    ],
+    "steps": [
+      "When an RTO audit or verification visit is arranged, confirm the current document request, scope, date and responsible school contact.",
+      "Arrange the entry meeting, required trainer/student interviews and authorised access to sampled records.",
+      "Check requested authority, enrolment, induction/support, trainer, facility, assessment, USI and placement evidence is available in its approved location.",
+      "After the visit, assign findings, return the required response and verify closure."
+    ],
+    "sourceFileIds": ["school-procedure-18"],
+    "authorityCheck": ""
+  }
+];
+  auditRows.push({rowId:'R39',topic:'Intended competency entry and supported outcomes',taskIds:['t2-03-enter-competencies'],steps:['Enter each competency the student intends to study for the applicable calendar year through the authorised school or RTO route by the current NESA deadline; enter outcomes only when supported by authorised assessment evidence.'],sourceFileIds:[],authorityCheck:'The 2027 NESA timetable distinguishes entry of intended competencies from evidence-supported competency outcomes.'});
+  const auditedTasks = window.VET_WORKBOARD.taskRegister.tasks;
+  auditedTasks.push(...[
+  {
+    "id": "c-10-daily-staffroom-triage",
+    "title": "Check today's VET staffroom updates",
+    "phase": "continuous",
+    "timing": "Each school working day during term",
+    "trigger": "Each school working day during term",
+    "dueAuthority": "Approved local work routine; current NESA/RTO instructions control external deadlines and requirements.",
+    "roles": {
+      "accountable": [
+        "Head Teacher VET",
+        "VET Coordinator"
+      ],
+      "doer": [
+        "VET Coordinator Assistant",
+        "VET Coordinator"
+      ],
+      "verifier": [
+        "Head Teacher VET"
+      ]
+    },
+    "priority": "normal",
+    "dependencies": [],
+    "actionSteps": [],
+    "doneWhen": "Each applicable working day has been checked, relevant updates have reached the affected staff, and required actions have an owner and follow-up date.",
+    "evidencePointerType": "approved-head-teacher-master-or-owner-system-reference",
+    "systems": [
+      "Approved Head Teacher TAS record",
+      "VET Schools Hub"
+    ],
+    "sourceIds": [
+      "WWHS-ADMIN-TIMELINE",
+      "WWHS-VET-SHARED",
+      "RTO-DOCUMENT-LIBRARY"
+    ],
+    "liveVerification": {
+      "required": true,
+      "check": "Use the current approved school procedure and system access. Confirm applicability, current source and record destination before acting."
+    },
+    "guidance": {
+      "why": "A quick daily check catches changed instructions before the weekly review.",
+      "commonTrap": "Using an older example, incomplete record or unconfirmed deadline as proof that the current task is complete."
+    },
+    "applicability": {
+      "cohorts": [
+        "applicable VET courses and cohorts"
+      ],
+      "conditions": "Each school working day during term"
+    },
+    "auditRows": [
+      "R01"
+    ],
+    "contentRevision": "vet-audit-2026-09-24"
+  },
+  {
+    "id": "a-09-set-up-markbooks",
+    "title": "Set up and check the Year 11 and Year 12 markbooks",
+    "phase": "annual_setup",
+    "timing": "Start of year and after relevant class/teacher changes.",
+    "trigger": "Start of year and after relevant class/teacher changes.",
+    "dueAuthority": "Approved local work routine; current NESA/RTO instructions control external deadlines and requirements.",
+    "roles": {
+      "accountable": [
+        "Head Teacher VET",
+        "VET Coordinator"
+      ],
+      "doer": [
+        "VET Coordinator Assistant",
+        "VET Coordinator"
+      ],
+      "verifier": [
+        "Head Teacher VET"
+      ]
+    },
+    "priority": "normal",
+    "dependencies": [],
+    "actionSteps": [],
+    "doneWhen": "Year 11 and Year 12 markbooks match approved classes, students, teachers and competencies; earlier records are preserved and teachers have confirmed access.",
+    "evidencePointerType": "approved-head-teacher-master-or-owner-system-reference",
+    "systems": [
+      "Sentral Markbook and Reports",
+      "Approved Head Teacher TAS record"
+    ],
+    "sourceIds": [
+      "WWHS-ADMIN-TIMELINE",
+      "WWHS-VET-SHARED",
+      "RTO-DOCUMENT-LIBRARY"
+    ],
+    "liveVerification": {
+      "required": true,
+      "check": "Use the current approved school procedure and system access. Confirm applicability, current source and record destination before acting."
+    },
+    "guidance": {
+      "why": "Teachers need correct current books without losing earlier student records.",
+      "commonTrap": "Using an older example, incomplete record or unconfirmed deadline as proof that the current task is complete."
+    },
+    "applicability": {
+      "cohorts": [
+        "applicable VET courses and cohorts"
+      ],
+      "conditions": "Start of year and after relevant class/teacher changes."
+    },
+    "auditRows": [
+      "R10",
+      "R11"
+    ],
+    "contentRevision": "vet-audit-2026-09-24"
+  },
+  {
+    "id": "c-11-term-end-attendance",
+    "title": "Save the term's attendance record for every VET class",
+    "phase": "continuous",
+    "timing": "Last school day of each term.",
+    "trigger": "Last school day of each term.",
+    "dueAuthority": "Approved local work routine; current NESA/RTO instructions control external deadlines and requirements.",
+    "roles": {
+      "accountable": [
+        "Head Teacher VET",
+        "VET Coordinator"
+      ],
+      "doer": [
+        "VET Coordinator Assistant",
+        "VET Coordinator"
+      ],
+      "verifier": [
+        "Head Teacher VET"
+      ]
+    },
+    "priority": "normal",
+    "dependencies": [],
+    "actionSteps": [],
+    "doneWhen": "Every VET class has a checked term attendance record in the approved restricted location and the Head Teacher has received the record links.",
+    "evidencePointerType": "approved-head-teacher-master-or-owner-system-reference",
+    "systems": [
+      "Approved Head Teacher TAS record",
+      "VET Schools Hub"
+    ],
+    "sourceIds": [
+      "WWHS-ADMIN-TIMELINE",
+      "WWHS-VET-SHARED",
+      "RTO-DOCUMENT-LIBRARY"
+    ],
+    "liveVerification": {
+      "required": true,
+      "check": "Use the current approved school procedure and system access. Confirm applicability, current source and record destination before acting."
+    },
+    "guidance": {
+      "why": "A complete term attendance snapshot gives the Head Teacher a consistent record for every VET class.",
+      "commonTrap": "Using an older example, incomplete record or unconfirmed deadline as proof that the current task is complete."
+    },
+    "applicability": {
+      "cohorts": [
+        "applicable VET courses and cohorts"
+      ],
+      "conditions": "Last school day of each term."
+    },
+    "auditRows": [
+      "R30"
+    ],
+    "contentRevision": "vet-audit-2026-09-24"
+  },
+  {
+    "id": "t2-10-hsc-exam-intentions",
+    "title": "Confirm who intends to sit the HSC VET exam",
+    "phase": "term_2",
+    "timing": "Term 2, with missing responses followed up before the current NESA entry deadline",
+    "trigger": "Term 2, with missing responses followed up before the current NESA entry deadline",
+    "dueAuthority": "Approved local work routine; current NESA/RTO instructions control external deadlines and requirements.",
+    "roles": {
+      "accountable": [
+        "Head Teacher VET",
+        "VET Coordinator"
+      ],
+      "doer": [
+        "VET Coordinator Assistant",
+        "VET Coordinator"
+      ],
+      "verifier": [
+        "Head Teacher VET"
+      ]
+    },
+    "priority": "normal",
+    "dependencies": [],
+    "actionSteps": [],
+    "doneWhen": "Each applicable student has an authorised examination decision or assigned follow-up; required signed forms are filed and the NESA entry owner has the checked list.",
+    "evidencePointerType": "approved-head-teacher-master-or-owner-system-reference",
+    "systems": [
+      "Approved Head Teacher TAS record",
+      "VET Schools Hub"
+    ],
+    "sourceIds": [
+      "WWHS-ADMIN-TIMELINE",
+      "WWHS-VET-SHARED",
+      "RTO-DOCUMENT-LIBRARY"
+    ],
+    "liveVerification": {
+      "required": true,
+      "check": "Use the current approved school procedure and system access. Confirm applicability, current source and record destination before acting."
+    },
+    "guidance": {
+      "why": "Examination decisions and signed forms need to be ready before final NESA entry checks.",
+      "commonTrap": "Using an older example, incomplete record or unconfirmed deadline as proof that the current task is complete."
+    },
+    "applicability": {
+      "cohorts": [
+        "applicable VET courses and cohorts"
+      ],
+      "conditions": "Term 2, with missing responses followed up before the current NESA entry deadline"
+    },
+    "auditRows": [
+      "R32"
+    ],
+    "contentRevision": "vet-audit-2026-09-24"
+  },
+  {
+    "id": "t4-10-training-awards",
+    "title": "Consider students for NSW Training Awards",
+    "phase": "term_4",
+    "timing": "Term 4 planning and the current nomination window",
+    "trigger": "Term 4 planning and the current nomination window",
+    "dueAuthority": "Approved local work routine; current NESA/RTO instructions control external deadlines and requirements.",
+    "roles": {
+      "accountable": [
+        "Head Teacher VET",
+        "VET Coordinator"
+      ],
+      "doer": [
+        "VET Coordinator Assistant",
+        "VET Coordinator"
+      ],
+      "verifier": [
+        "Head Teacher VET"
+      ]
+    },
+    "priority": "normal",
+    "dependencies": [],
+    "actionSteps": [],
+    "doneWhen": "Current eligibility and timing have been checked, teachers have considered candidates, and any nomination has an authorised owner and required approvals.",
+    "evidencePointerType": "approved-head-teacher-master-or-owner-system-reference",
+    "systems": [
+      "Approved Head Teacher TAS record",
+      "VET Schools Hub"
+    ],
+    "sourceIds": [
+      "WWHS-ADMIN-TIMELINE",
+      "WWHS-VET-SHARED",
+      "RTO-DOCUMENT-LIBRARY"
+    ],
+    "liveVerification": {
+      "required": true,
+      "check": "Use the current approved school procedure and system access. Confirm applicability, current source and record destination before acting."
+    },
+    "guidance": {
+      "why": "An early reminder gives staff time to consider suitable students and check the current nomination process.",
+      "commonTrap": "Using an older example, incomplete record or unconfirmed deadline as proof that the current task is complete."
+    },
+    "applicability": {
+      "cohorts": [
+        "applicable VET courses and cohorts"
+      ],
+      "conditions": "Term 4 planning and the current nomination window"
+    },
+    "auditRows": [
+      "R44"
+    ],
+    "contentRevision": "vet-audit-2026-09-24"
+  },
+  {
+    "id": "e-08-rto-audit-visit",
+    "title": "Prepare for an RTO school visit or audit",
+    "phase": "event_driven",
+    "timing": "When an RTO school visit or audit is arranged",
+    "trigger": "When an RTO school visit or audit is arranged",
+    "dueAuthority": "Approved local work routine; current NESA/RTO instructions control external deadlines and requirements.",
+    "roles": {
+      "accountable": [
+        "Head Teacher VET",
+        "VET Coordinator"
+      ],
+      "doer": [
+        "VET Coordinator Assistant",
+        "VET Coordinator"
+      ],
+      "verifier": [
+        "Head Teacher VET"
+      ]
+    },
+    "priority": "high",
+    "dependencies": [],
+    "actionSteps": [],
+    "doneWhen": "The current visit request is prepared in authorised systems, required participants know the arrangements, and findings and responses have owners and closure checks.",
+    "evidencePointerType": "approved-head-teacher-master-or-owner-system-reference",
+    "systems": [
+      "Approved Head Teacher TAS record",
+      "VET Schools Hub"
+    ],
+    "sourceIds": [
+      "WWHS-ADMIN-TIMELINE",
+      "WWHS-VET-SHARED",
+      "RTO-DOCUMENT-LIBRARY"
+    ],
+    "liveVerification": {
+      "required": true,
+      "check": "Use the current approved school procedure and system access. Confirm applicability, current source and record destination before acting."
+    },
+    "guidance": {
+      "why": "Preparing for the actual visit keeps evidence and staff ready before the annual review.",
+      "commonTrap": "Using an older example, incomplete record or unconfirmed deadline as proof that the current task is complete."
+    },
+    "applicability": {
+      "cohorts": [
+        "applicable VET courses and cohorts"
+      ],
+      "conditions": "When an RTO school visit or audit is arranged"
+    },
+    "auditRows": [
+      "R09",
+      "R53"
+    ],
+    "contentRevision": "vet-audit-2026-09-24"
+  }
+]);
+  for (const row of auditRows) for (const taskId of row.taskIds) {
+    const task = auditedTasks.find(item => item.id === taskId);
+    if (!task) throw new Error('Unknown audit task: ' + taskId);
+    if (!task.contentRevision) task.legacyRequirements = {steps:[...task.actionSteps],finished:task.doneWhen || ''};
+    task.contentRevision = 'vet-audit-2026-09-24';
+    task.auditRows = [...new Set([...(task.auditRows || []),row.rowId])];
+    task.auditSteps = task.auditSteps || [];
+    row.steps.forEach((text,index) => {
+      if (!task.actionSteps.includes(text)) task.actionSteps.push(text);
+      task.auditSteps.push({id:row.rowId.toLowerCase()+'-'+(index+1),rowId:row.rowId,text,sourceFileIds:row.sourceFileIds,authorityCheck:row.authorityCheck});
+    });
+  }
+  window.VET_WORKBOARD.auditCoverage = [
+  {
+    "rowId": "R01",
+    "topic": "Daily staffroom triage",
+    "disposition": "new-duty-or-occurrence-and-extend",
+    "taskIds": [
+      "c-10-daily-staffroom-triage"
+    ],
+    "authorityCheck": ""
+  },
+  {
+    "rowId": "R02",
+    "topic": "Weekly notices and action evidence",
+    "disposition": "extend-existing",
+    "taskIds": [
+      "c-01-rto-updates"
+    ],
+    "authorityCheck": ""
+  },
+  {
+    "rowId": "R03",
+    "topic": "Access to all operating systems",
+    "disposition": "extend-existing",
+    "taskIds": [
+      "a-03-confirm-roles-access"
+    ],
+    "authorityCheck": "Two LLN addresses differ. Keep both labelled as unverified until approved tenant confirmed."
+  },
+  {
+    "rowId": "R04",
+    "topic": "Annual and term calendar",
+    "disposition": "extend-existing",
+    "taskIds": [
+      "a-02-build-live-calendar"
+    ],
+    "authorityCheck": "2027 timetable exists; compare individual deadlines against current official NESA source and label local lead times as planning."
+  },
+  {
+    "rowId": "R05",
+    "topic": "Hub courses classes and teachers",
+    "disposition": "retain",
+    "taskIds": [
+      "a-05-confirm-delivery",
+      "t4-06-next-year-vet-hub"
+    ],
+    "authorityCheck": ""
+  },
+  {
+    "rowId": "R06",
+    "topic": "Management structure and staff list",
+    "disposition": "extend-existing",
+    "taskIds": [
+      "a-03-confirm-roles-access",
+      "a-04-update-school-profile"
+    ],
+    "authorityCheck": ""
+  },
+  {
+    "rowId": "R07",
+    "topic": "COMPACT staff update",
+    "disposition": "extend-existing",
+    "taskIds": [
+      "t1-06-work-placement-plan"
+    ],
+    "authorityCheck": ""
+  },
+  {
+    "rowId": "R08",
+    "topic": "New teachers in Evidence Central",
+    "disposition": "extend-existing",
+    "taskIds": [
+      "a-03-confirm-roles-access",
+      "a-07-trainer-readiness"
+    ],
+    "authorityCheck": ""
+  },
+  {
+    "rowId": "R09",
+    "topic": "RTO or VSO visit",
+    "disposition": "new-duty-or-occurrence-and-extend",
+    "taskIds": [
+      "e-08-rto-audit-visit"
+    ],
+    "authorityCheck": "Do not claim annual face-to-face visit is mandatory without current RTO instruction."
+  },
+  {
+    "rowId": "R10",
+    "topic": "Year 12 markbook setup",
+    "disposition": "new-duty-or-occurrence-and-extend",
+    "taskIds": [
+      "a-09-set-up-markbooks"
+    ],
+    "authorityCheck": ""
+  },
+  {
+    "rowId": "R11",
+    "topic": "Year 11 markbook setup",
+    "disposition": "new-duty-or-occurrence-and-extend",
+    "taskIds": [
+      "a-09-set-up-markbooks"
+    ],
+    "authorityCheck": ""
+  },
+  {
+    "rowId": "R12",
+    "topic": "Current training and assessment strategies",
+    "disposition": "extend-existing",
+    "taskIds": [
+      "t1-05-tas-and-assessment-readiness",
+      "a-06-reconcile-course-codes"
+    ],
+    "authorityCheck": ""
+  },
+  {
+    "rowId": "R13",
+    "topic": "School-leaver outcomes and withdrawal",
+    "disposition": "extend-existing",
+    "taskIds": [
+      "e-03-enrolment-change"
+    ],
+    "authorityCheck": "Do not hard-code simplified Achieved/Withdrawn or no EXIT from older notes."
+  },
+  {
+    "rowId": "R14",
+    "topic": "Signed transcripts for school leavers",
+    "disposition": "extend-existing",
+    "taskIds": [
+      "e-03-enrolment-change"
+    ],
+    "authorityCheck": "Confirm current signatory and official student-record destination; no automatic emailing or student records in public workboard."
+  },
+  {
+    "rowId": "R15",
+    "topic": "Evidence Central suspension on exit",
+    "disposition": "extend-existing",
+    "taskIds": [
+      "e-03-enrolment-change",
+      "t4-07-markbook-rollover"
+    ],
+    "authorityCheck": ""
+  },
+  {
+    "rowId": "R16",
+    "topic": "Deputy enrolment changes and pink forms",
+    "disposition": "extend-existing",
+    "taskIds": [
+      "e-03-enrolment-change",
+      "c-04-cross-system-reconciliation"
+    ],
+    "authorityCheck": ""
+  },
+  {
+    "rowId": "R17",
+    "topic": "Assessment booklet amendments",
+    "disposition": "extend-existing",
+    "taskIds": [
+      "t1-05-tas-and-assessment-readiness",
+      "t3-09-hsc-schedule-and-delivery-check"
+    ],
+    "authorityCheck": ""
+  },
+  {
+    "rowId": "R18",
+    "topic": "Subject selection booklet amendments",
+    "disposition": "extend-existing",
+    "taskIds": [
+      "t3-08-next-year-promotion"
+    ],
+    "authorityCheck": ""
+  },
+  {
+    "rowId": "R19",
+    "topic": "Induction completion and exceptions",
+    "disposition": "extend-existing",
+    "taskIds": [
+      "t1-03-onboarding-induction-support",
+      "c-04-cross-system-reconciliation"
+    ],
+    "authorityCheck": ""
+  },
+  {
+    "rowId": "R20",
+    "topic": "USI verification and exception follow-up",
+    "disposition": "extend-existing",
+    "taskIds": [
+      "t1-01-usi-verification",
+      "t2-04-finalise-usi-exceptions"
+    ],
+    "authorityCheck": ""
+  },
+  {
+    "rowId": "R21",
+    "topic": "USI upload responsibility",
+    "disposition": "retain-authority-hold",
+    "taskIds": [
+      "t1-01-usi-verification"
+    ],
+    "authorityCheck": "Keep existing safeguard: school staff do not upload to NESA unless the current RTO instruction assigns that work."
+  },
+  {
+    "rowId": "R22",
+    "topic": "LLN results and teacher hand-back",
+    "disposition": "extend-existing",
+    "taskIds": [
+      "t1-03-onboarding-induction-support"
+    ],
+    "authorityCheck": "Verify LLN tenant and current report-selection procedure; do not disclose learner results in workboard."
+  },
+  {
+    "rowId": "R23",
+    "topic": "USI LLN and induction markbook flags",
+    "disposition": "extend-existing",
+    "taskIds": [
+      "c-04-cross-system-reconciliation"
+    ],
+    "authorityCheck": ""
+  },
+  {
+    "rowId": "R24",
+    "topic": "Class lists course codes and competencies",
+    "disposition": "retain",
+    "taskIds": [
+      "a-06-reconcile-course-codes",
+      "c-04-cross-system-reconciliation"
+    ],
+    "authorityCheck": ""
+  },
+  {
+    "rowId": "R25",
+    "topic": "Missing NESA course or RTO errors",
+    "disposition": "extend-existing",
+    "taskIds": [
+      "a-06-reconcile-course-codes",
+      "e-06-discrepancy-corrective-action"
+    ],
+    "authorityCheck": "Verify current contacts annually; older SOP is incomplete for late entry."
+  },
+  {
+    "rowId": "R26",
+    "topic": "All My Own Work completion",
+    "disposition": "extend-existing",
+    "taskIds": [
+      "t1-07-nesa-check-one"
+    ],
+    "authorityCheck": "Applicability and current completion rule controlled by current NESA instructions."
+  },
+  {
+    "rowId": "R27",
+    "topic": "Life Skills course and report checks",
+    "disposition": "extend-existing",
+    "taskIds": [
+      "t1-07-nesa-check-one",
+      "t2-07-nesa-check-two"
+    ],
+    "authorityCheck": "Existing local mapping is partial; do not treat it as complete or current authority."
+  },
+  {
+    "rowId": "R28",
+    "topic": "Too few units and minimum standards errors",
+    "disposition": "extend-existing",
+    "taskIds": [
+      "t1-07-nesa-check-one",
+      "t3-06-nesa-check-three"
+    ],
+    "authorityCheck": ""
+  },
+  {
+    "rowId": "R29",
+    "topic": "Year 11 and Year 12 report setup",
+    "disposition": "extend-existing",
+    "taskIds": [
+      "t2-06-finalise-semester-one-reports",
+      "t4-02-year11-reports"
+    ],
+    "authorityCheck": ""
+  },
+  {
+    "rowId": "R30",
+    "topic": "Term-end attendance record",
+    "disposition": "new-duty-or-occurrence-and-extend",
+    "taskIds": [
+      "c-11-term-end-attendance"
+    ],
+    "authorityCheck": "Confirm permitted record destination/access before storing student attendance copies."
+  },
+  {
+    "rowId": "R31",
+    "topic": "Prepare and close term action timelines",
+    "disposition": "extend-existing",
+    "taskIds": [
+      "c-01-rto-updates",
+      "c-02-team-meetings",
+      "e-07-coordinator-handover"
+    ],
+    "authorityCheck": ""
+  },
+  {
+    "rowId": "R32",
+    "topic": "HSC exam participation decision",
+    "disposition": "new-duty-or-occurrence-and-extend",
+    "taskIds": [
+      "t2-10-hsc-exam-intentions"
+    ],
+    "authorityCheck": ""
+  },
+  {
+    "rowId": "R33",
+    "topic": "HSC exam additions and withdrawals",
+    "disposition": "retain-with-dependency",
+    "taskIds": [
+      "t3-04-hsc-exam-entry"
+    ],
+    "authorityCheck": ""
+  },
+  {
+    "rowId": "R34",
+    "topic": "COMPACT placement requests and dates",
+    "disposition": "extend-existing",
+    "taskIds": [
+      "t1-06-work-placement-plan",
+      "c-07-workplace-learning-control"
+    ],
+    "authorityCheck": "Use current form/contact; historical example includes date typo and does not establish current windows."
+  },
+  {
+    "rowId": "R35",
+    "topic": "Next-year placement booking",
+    "disposition": "extend-existing",
+    "taskIds": [
+      "t1-06-work-placement-plan",
+      "t4-06-next-year-vet-hub"
+    ],
+    "authorityCheck": ""
+  },
+  {
+    "rowId": "R36",
+    "topic": "Placement readiness monitoring and hours",
+    "disposition": "retain",
+    "taskIds": [
+      "t1-06-work-placement-plan",
+      "t3-01-year11-work-placement",
+      "c-07-workplace-learning-control"
+    ],
+    "authorityCheck": ""
+  },
+  {
+    "rowId": "R37",
+    "topic": "Placement record scanning and filing",
+    "disposition": "extend-existing",
+    "taskIds": [
+      "c-07-workplace-learning-control",
+      "c-08-records-privacy-control"
+    ],
+    "authorityCheck": "Do not put sensitive records in a broadly shared folder merely because it is the new HT starting point."
+  },
+  {
+    "rowId": "R38",
+    "topic": "Placement originals and disposal",
+    "disposition": "retain-authority-hold",
+    "taskIds": [
+      "c-08-records-privacy-control"
+    ],
+    "authorityCheck": "No destruction instruction. Local source conflicts between destroying after scan and filing in office."
+  },
+  {
+    "rowId": "R39",
+    "topic": "Competency outcomes and NESA deadlines",
+    "disposition": "retain",
+    "taskIds": [
+      "t2-03-enter-competencies",
+      "t3-03-progressive-outcomes",
+      "t4-01-year11-final-outcomes"
+    ],
+    "authorityCheck": ""
+  },
+  {
+    "rowId": "R40",
+    "topic": "Final Year 12 data",
+    "disposition": "retain",
+    "taskIds": [
+      "t4-03-year12-year10-final-data",
+      "t4-05-year12-markbook-closure"
+    ],
+    "authorityCheck": ""
+  },
+  {
+    "rowId": "R41",
+    "topic": "SBAT TVET and EVET cross-check",
+    "disposition": "retain",
+    "taskIds": [
+      "t1-02-external-vet-entries",
+      "t2-02-sbat-status",
+      "c-06-sbat-monitoring"
+    ],
+    "authorityCheck": ""
+  },
+  {
+    "rowId": "R42",
+    "topic": "School profile and next-year authority",
+    "disposition": "retain",
+    "taskIds": [
+      "a-04-update-school-profile",
+      "a-05-confirm-delivery",
+      "t2-08-plan-next-year-delivery"
+    ],
+    "authorityCheck": ""
+  },
+  {
+    "rowId": "R43",
+    "topic": "Coordinator guide meeting and staff briefing",
+    "disposition": "extend-existing",
+    "taskIds": [
+      "c-01-rto-updates",
+      "c-02-team-meetings",
+      "t3-02-meeting-follow-up"
+    ],
+    "authorityCheck": ""
+  },
+  {
+    "rowId": "R44",
+    "topic": "NSW Training Awards reminder",
+    "disposition": "new-duty-or-occurrence-and-extend",
+    "taskIds": [
+      "t4-10-training-awards"
+    ],
+    "authorityCheck": "Verify official current awards page before link release."
+  },
+  {
+    "rowId": "R45",
+    "topic": "Preliminary leaver exit survey",
+    "disposition": "extend-existing",
+    "taskIds": [
+      "t3-07-exit-survey"
+    ],
+    "authorityCheck": ""
+  },
+  {
+    "rowId": "R46",
+    "topic": "Trainer and student checks of NESA reports",
+    "disposition": "extend-existing",
+    "taskIds": [
+      "t2-03-enter-competencies",
+      "t4-03-year12-year10-final-data"
+    ],
+    "authorityCheck": "Do not substitute one trainer's sign-off for individual signed student confirmation."
+  },
+  {
+    "rowId": "R47",
+    "topic": "Signed confirmation of enrolment",
+    "disposition": "extend-existing",
+    "taskIds": [
+      "t1-07-nesa-check-one",
+      "e-03-enrolment-change"
+    ],
+    "authorityCheck": "Confirm current form and protected official destination."
+  },
+  {
+    "rowId": "R48",
+    "topic": "Late competency correction route",
+    "disposition": "extend-existing",
+    "taskIds": [
+      "e-06-discrepancy-corrective-action"
+    ],
+    "authorityCheck": "2022-linked and2025-labelled templates are historical. Local SOP steps8–10 blank; do not offer as complete current process."
+  },
+  {
+    "rowId": "R49",
+    "topic": "Trainer feedback and post-audit surveys",
+    "disposition": "extend-existing",
+    "taskIds": [
+      "c-09-validation-improvement"
+    ],
+    "authorityCheck": ""
+  },
+  {
+    "rowId": "R50",
+    "topic": "Historical guidance and old exceptions",
+    "disposition": "retain-authority-hold",
+    "taskIds": [
+      "a-01-confirm-authority-set",
+      "c-08-records-privacy-control"
+    ],
+    "authorityCheck": "Source preservation is not policy endorsement. Copied procedural files retain original provenance."
+  },
+  {
+    "rowId": "R51",
+    "topic": "Markbook to Reports synchronisation",
+    "disposition": "extend-existing",
+    "taskIds": [
+      "t2-06-finalise-semester-one-reports",
+      "t4-02-year11-reports"
+    ],
+    "authorityCheck": "Make overwrite warning visible before sync, not only after; no destructive automatic operation."
+  },
+  {
+    "rowId": "R52",
+    "topic": "VET report fields and outcome definitions",
+    "disposition": "extend-existing",
+    "taskIds": [
+      "t2-06-finalise-semester-one-reports",
+      "t4-02-year11-reports"
+    ],
+    "authorityCheck": "Current NESA VET Report Guidelines verified in audit15Apr2026; confirm current source on implementation."
+  },
+  {
+    "rowId": "R53",
+    "topic": "Preparation for an RTO audit visit",
+    "disposition": "new-duty-or-occurrence-and-extend",
+    "taskIds": [
+      "e-08-rto-audit-visit"
+    ],
+    "authorityCheck": ""
+  }
+];
+  // Intended competency entries precede assessment; actual outcomes still require authorised evidence.
+  const intendedEntries = auditedTasks.find(task => task.id === 't2-03-enter-competencies');
+  intendedEntries.title = 'Enter the competencies students intend to study';
+  intendedEntries.timing = 'By the current NESA intended-competency entry deadline; assessment outcomes are recorded separately when authorised';
+  intendedEntries.trigger = 'The current NESA window for entering intended competencies';
+  intendedEntries.dependencies = ['t2-01-confirm-rto-qualification'];
+  intendedEntries.actionSteps.splice(0, 4,
+    'Confirm the competencies each student intends to study this calendar year against the approved course plan; completed assessment is not required for this entry.',
+    'Check the qualification and competency codes against the current NESA and RTO instructions.',
+    'Enter the intended competencies through the authorised school or RTO route by the published NESA deadline; record actual outcomes separately and only with authorised assessment evidence.',
+    'Check the entered competencies against the approved plan and return discrepancies to the authorised entry owner.');
+  intendedEntries.doneWhen = 'Intended competencies are entered by the applicable NESA deadline and checked against the approved plan; discrepancies have owners. Any actual outcome entered is supported by authorised assessment evidence.';
+  intendedEntries.guidance = {why:'NESA needs the competencies students intend to study before those assessments are completed.',commonTrap:'Waiting for completed assessments before entering intended competencies, or treating an intended entry as a competency outcome.'};
+  intendedEntries.liveVerification.check = 'Confirm the current NESA entry window and the school or RTO entry owner. Intended entries do not require completed assessments; actual outcomes require authorised evidence.';
+
+  const authorityGap = window.VET_WORKBOARD.taskRegister.knownGaps.find(item=>item.id==='gap-2027-dates');
+  if (authorityGap) authorityGap.summary = 'The 2027 NESA Timetable of Actions is published. Check each relevant live deadline and current RTO instruction against the local planning windows before acting.';
+
 })();

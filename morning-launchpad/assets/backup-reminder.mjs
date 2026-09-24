@@ -1,9 +1,9 @@
 const workStorage=()=>globalThis.WWHS_STORAGE||globalThis.localStorage;
-import {INBOX_KEY,validateInbox} from './summary-core.mjs?v=edit-card-text-1';
-import {isTeamItem} from '../../assets/js/team-handover-core.mjs?v=edit-card-text-1';
+import {INBOX_KEY,validateInbox} from './summary-core.mjs?v=vet-admin-audit-20260924';
+import {isTeamItem} from '../../assets/js/team-handover-core.mjs?v=vet-admin-audit-20260924';
 import {mountBackupFolderSettings} from '../../assets/js/backup-folder-ui.mjs?v=plain-language-1';
-import {BACKUP_KEYS,snapshotLaunchpad,launchpadContent,parseLaunchpadBackup,backupCounts} from './launchpad-backup.mjs?v=edit-card-text-1';
-import {readPreviousLaunchpadBackup} from './launchpad-backup-transaction.mjs?v=edit-card-text-1';
+import {BACKUP_KEYS,snapshotLaunchpad,launchpadContent,parseLaunchpadBackup,backupCounts} from './launchpad-backup.mjs?v=vet-admin-audit-20260924';
+import {readPreviousLaunchpadBackup} from './launchpad-backup-transaction.mjs?v=vet-admin-audit-20260924';
 import {choosePrivateBackupDestination} from '../../assets/js/backup-folder.mjs?v=plain-language-1';
 import {createWorkspaceNavigationAllowance} from '../../assets/js/workspace-navigation.mjs?v=workspace-navigation-2';
 

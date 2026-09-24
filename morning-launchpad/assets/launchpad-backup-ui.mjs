@@ -1,6 +1,6 @@
-import {BACKUP_KEYS,MAX_BACKUP_BYTES,parseLaunchpadBackup,planLaunchpadRestore,backupCounts} from './launchpad-backup.mjs?v=edit-card-text-1';
-import {applyLaunchpadRestore,captureLaunchpadTeamGuard} from './launchpad-backup-transaction.mjs?v=edit-card-text-1';
-import {validateInbox} from './summary-core.mjs?v=edit-card-text-1';
+import {BACKUP_KEYS,MAX_BACKUP_BYTES,parseLaunchpadBackup,planLaunchpadRestore,backupCounts} from './launchpad-backup.mjs?v=vet-admin-audit-20260924';
+import {applyLaunchpadRestore,captureLaunchpadTeamGuard} from './launchpad-backup-transaction.mjs?v=vet-admin-audit-20260924';
+import {validateInbox} from './summary-core.mjs?v=vet-admin-audit-20260924';
 import {mountBackupFileBrowser} from '../../assets/js/backup-file-browser.mjs?v=plain-language-1';
 const storage=()=>globalThis.WWHS_STORAGE||globalThis.localStorage;
 const el=(tag,text,attrs={})=>{const node=document.createElement(tag);if(text!==undefined)node.textContent=text;for(const[key,value]of Object.entries(attrs))node.setAttribute(key,value);return node;};

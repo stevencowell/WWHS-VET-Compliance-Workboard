@@ -1,9 +1,9 @@
 const workStorage=()=>globalThis.WWHS_STORAGE||globalThis.localStorage;
 // One planning surface. Specialist records remain owned by their existing workboards.
-import '../../morning-launchpad/assets/summary-import.mjs?v=workspace-backup-1';
-import {installWorkspaceBackup} from './workspace-backup-ui.mjs?v=workspace-backup-1';
-import {INBOX_KEY, validateInbox, taskSection, todaySydney} from '../../morning-launchpad/assets/summary-core.mjs?v=edit-card-text-1';
-import {createTaskRegister} from './task-register.mjs?v=expansion-arrows-1';
+import '../../morning-launchpad/assets/summary-import.mjs?v=vet-admin-audit-20260924';
+import {installWorkspaceBackup} from './workspace-backup-ui.mjs?v=vet-admin-audit-20260924';
+import {INBOX_KEY, validateInbox, taskSection, todaySydney} from '../../morning-launchpad/assets/summary-core.mjs?v=vet-admin-audit-20260924';
+import {createTaskRegister} from './task-register.mjs?v=vet-admin-audit-20260924';
 
 const base = new URL('../../', import.meta.url);
 const wing = document.body.dataset.workboard || 'launchpad';
@@ -283,7 +283,7 @@ async function refreshScheduledWork() {
   if (wing === 'vet') sourceGuard.reviewRaw = workStorage().getItem('wwhs-task-register-review:v1');
   const resolved = board.inbox.items.filter(item => item.origin?.wing === wing)
     .map(item => {
-      const descriptor = adapter.describeRecord?.(item.origin.recordKey);
+      const descriptor = adapter.describeRecord?.(item.origin.recordKey) || adapter.describeTask?.(item.origin.recordKey);
       if (descriptor) return descriptor;
       // An older manually added card may have no saved native checklist yet.
       // Enrich that exact occurrence without inventing a native progress record.

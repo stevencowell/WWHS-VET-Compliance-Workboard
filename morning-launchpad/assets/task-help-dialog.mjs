@@ -1,6 +1,6 @@
 const workStorage=()=>globalThis.WWHS_STORAGE||globalThis.localStorage;
-import {getTaskHelpProfile, buildTaskHelpPrompt} from '../../assets/js/task-help.mjs?v=plain-language-1';
-import {INBOX_KEY, todaySydney} from './summary-core.mjs?v=edit-card-text-1';
+import {getTaskHelpProfile, buildTaskHelpPrompt} from '../../assets/js/task-help.mjs?v=vet-admin-audit-20260924';
+import {INBOX_KEY, todaySydney} from './summary-core.mjs?v=vet-admin-audit-20260924';
 
 const node=(tag,text,attrs={})=>{const el=document.createElement(tag);if(text!==undefined)el.textContent=text;for(const[key,value]of Object.entries(attrs))el.setAttribute(key,value);return el;};
 

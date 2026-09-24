@@ -47,3 +47,42 @@ test('legacy ticks still cannot complete future work or a later recurrence impli
   assert.equal(review.resolve(records,'vet','task',2026,'2026-10-23','2026-10-23'),null);
   assert.equal(review.resolve(records,'vet','task',2026,'2026-09-20').method,'overall');
 });
+
+test('reordered checks follow their saved text while new and rewritten steps start unchecked',()=>{
+  const old={steps:['Open the record','Check the result','File the signed copy'],finished:'A signed copy is filed'};
+  const saved={status:'completed',requirements:old,stepChecks:{0:true,1:true,2:true},sourceChecked:true,doneWhenConfirmed:true,
+    exceptionSummary:'Keep my note',evidenceRef:'Keep my reference',history:[{when:'2026-09-23T00:00:00.000Z',action:'Completed previously'}]};
+  const reordered={actionSteps:[old.steps[2],old.steps[0],old.steps[1]],doneWhen:old.finished};
+  const orderOnly=review.migrateRequirements(saved,reordered);
+  assert.equal(orderOnly.status,'completed');assert.deepEqual(orderOnly.stepChecks,{0:true,1:true,2:true});assert.equal(orderOnly.requirementsReview,false);
+  const changed={actionSteps:[old.steps[2],'Obtain the new approval',old.steps[0],'Check the amended result'],doneWhen:old.finished};
+  const migrated=review.migrateRequirements(saved,changed);
+  assert.deepEqual(migrated.stepChecks,{0:true,2:true});assert.equal(migrated.status,'in-progress');assert.equal(migrated.requirementsReview,true);
+  assert.equal(migrated.exceptionSummary,saved.exceptionSummary);assert.deepEqual(migrated.history,saved.history);assert.equal(migrated.evidenceRef,saved.evidenceRef);
+  assert.equal(migrated.requirementsHistory[0].status,'completed');assert.deepEqual(migrated.requirementsHistory[0].stepChecks,saved.stepChecks);
+  assert.equal(review.migrateRequirements(migrated,changed).requirementsHistory.length,1,'Reload must not archive the same revision twice');
+});
+
+test('legacy completion needs a new sign-off only when the task requirements changed',()=>{
+  const old={steps:['Read the source'],finished:'Source read'},task={actionSteps:['Read the source','Record the exception'],doneWhen:'Source read',legacyRequirements:old};
+  const info=review.requirementsInfo(task),records={'vet:2026:changed':{completed:true,reviewedOn:'2026-09-24'}};
+  assert.equal(review.resolve(records,'vet','changed',2026,'2026-09-24','',info),null);
+  records['vet:2026:changed'].requirementsKey=info.key;
+  const parsed=review.parse(JSON.stringify({version:1,records}));
+  assert.ok(review.resolve(parsed.records,'vet','changed',2026,'2026-09-24','',info));
+  assert.ok(review.reviewMatches({completed:true},review.requirementsInfo({actionSteps:old.steps,doneWhen:old.finished})));
+  const originalTick={completed:true,reviewedOn:'2026-09-23',completedEarly:true};
+  const renewed=review.nextReview(originalTick,{completed:true,reviewedOn:'2026-09-24',requirementsKey:info.key});
+  assert.deepEqual(renewed.previousReviews,[originalTick]);
+  assert.deepEqual(review.parse(JSON.stringify({version:1,records:{'vet:2026:changed':renewed}})).records['vet:2026:changed'].previousReviews,[originalTick]);
+});
+
+test('a Done copy cannot complete revised native requirements until its new sign-off is stamped',()=>{
+  const task={actionSteps:['Original check','Added check'],doneWhen:'Result',legacyRequirements:{steps:['Original check'],finished:'Result'}},info=review.requirementsInfo(task);
+  const item={status:'done',origin:{wing:'vet',recordKey:'revised'},lastActionOn:'2026-09-24'};items.push(item);
+  assert.equal(review.savedCompletion('vet','revised',2026,'2026-09-24','',info),null);
+  item.completedRequirementsKey=info.legacyKey;
+  assert.equal(review.savedCompletion('vet','revised',2026,'2026-09-24','',info),null);
+  item.completedRequirementsKey=info.key;
+  assert.ok(review.savedCompletion('vet','revised',2026,'2026-09-24','',info));
+});

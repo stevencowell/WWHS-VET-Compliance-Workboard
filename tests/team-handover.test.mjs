@@ -48,6 +48,22 @@ test('early sign-off is preserved through shared backup, scoped import and re-ex
   assert.throws(()=>parseBackup(file),/early completion/);
 });
 
+test('instruction snapshots, earlier completion and current sign-off survive shared backup roundtrip',()=>{
+  const local=fixture(),review=globalThis.WWHS_TASK_REVIEW;
+  const old={steps:['Original step'],finished:'Original result'},task={actionSteps:['Original step','New step'],doneWhen:old.finished,legacyRequirements:old};
+  const value=JSON.parse(local.getItem(KEYS.vet));
+  value.records.task=review.migrateRequirements({status:'completed',stepChecks:{0:true},sourceChecked:true,doneWhenConfirmed:true,exceptionSummary:'Keep my saved note'},task);
+  local.setItem(KEYS.vet,json(value));
+  const ticks=JSON.parse(local.getItem(KEYS.review));ticks.records['vet:2026:task'].requirementsKey=review.requirementsKey(task);local.setItem(KEYS.review,json(ticks));
+  const inbox=JSON.parse(local.getItem(KEYS.inbox));Object.assign(inbox.items[0],{requirementsKey:review.requirementsKey(task),completedRequirementsKey:review.requirementsKey(old),requirementsReview:true,requirementsHistory:[{requirementsKey:review.requirementsKey(old),completedOn:'2026-09-23'}]});local.setItem(KEYS.inbox,json(inbox));
+  const file=parseBackup(json(backup(local))),target=fixture(),plan=buildImportPlan(target,file,{firstConnection:true});atomicApply(target,plan.before,plan.after);
+  const result=backup(target);
+  assert.deepEqual(result.data.vet.records.task.requirementsHistory,file.data.vet.records.task.requirementsHistory);
+  assert.deepEqual(result.data.vet.records.task.requirements,file.data.vet.records.task.requirements);
+  assert.equal(result.data.review.records['vet:2026:task'].requirementsKey,review.requirementsKey(task));
+  const restored=result.data.inbox.items.find(item=>item.origin.wing==='vet');assert.equal(restored.requirementsReview,true);assert.equal(restored.requirementsHistory[0].completedOn,'2026-09-23');
+});
+
 test('export preserves progress and excludes personal cards, email content, private links and pins',()=>{
   const file=backup(),text=json(file);
   for(const forbidden of ['PRIVATE MAIL','private.example','PERSONAL SECRET','PRIVATE TITLE','PRIVATE PLAN','PRIVATE HELP','email:private-key','private-linked'])assert.equal(text.includes(forbidden),false,forbidden);

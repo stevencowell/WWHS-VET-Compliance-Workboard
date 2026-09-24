@@ -3,17 +3,31 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import {normaliseTaskHelpContext} from '../assets/js/task-help.mjs';
+import '../assets/js/task-review.js';
 
 const root = new URL('../', import.meta.url);
 const source = fs.readFileSync(new URL('assets/js/app-v2.js', root), 'utf8');
 const key = 'wwhs-vet-compliance-workboard:v3';
 const reviewKey = 'wwhs-task-register-review:v1';
-const reviewStore = (id, completed = true, reviewedOn = '2026-09-18', year = 2026) => JSON.stringify({version:1,records:{[`vet:${year}:${encodeURIComponent(id)}`]:{completed,reviewedOn}}});
-const earlyReviewStore = (id, completed = true, reviewedOn = '2026-09-18', year = 2026) => JSON.stringify({version:1,records:{[`vet:${year}:${encodeURIComponent(id)}`]:{completed,reviewedOn,completedEarly:true}}});
+const fixtureContext=vm.createContext({window:{}});
+for(const file of ['config.js','tasks.js','term1-2027.js'])vm.runInContext(fs.readFileSync(new URL('assets/js/data/'+file,root),'utf8'),fixtureContext);
+const fixtureData=fixtureContext.window.VET_WORKBOARD;
+const fixtureRequirements=new Map([...fixtureData.taskRegister.tasks,...fixtureData.operatingCycle2027.tasks,...fixtureData.operatingCycle2027.eventTemplates].map(task=>[task.id,globalThis.WWHS_TASK_REVIEW.requirements(task)]));
+const reviewStore = (id, completed = true, reviewedOn = '2026-09-18', year = 2026) => JSON.stringify({version:1,records:{[`vet:${year}:${encodeURIComponent(id)}`]:{completed,reviewedOn,...(fixtureRequirements.has(id)?{requirementsKey:globalThis.WWHS_TASK_REVIEW.requirementsKey(fixtureRequirements.get(id))}:{})}}});
+const earlyReviewStore = (id, completed = true, reviewedOn = '2026-09-18', year = 2026) => {
+  const value=JSON.parse(reviewStore(id,completed,reviewedOn,year));value.records[`vet:${year}:${encodeURIComponent(id)}`].completedEarly=true;return JSON.stringify(value);
+};
 const state = (records = {}, extra = {}) => ({schemaVersion:3, linkDefaultsVersion:2, records, ...extra});
 
 function harness(saved = null, options = {}) {
   const storage = new Map(saved === null ? [] : [[key, typeof saved === 'string' ? saved : JSON.stringify(saved)]]);
+  // Ordinary regression fixtures describe today's instructions. Dedicated legacy
+  // tests below opt out so migration is exercised against genuine old snapshots.
+  if(!options.legacyNative&&storage.has(key))try{
+    const value=JSON.parse(storage.get(key));
+    for(const [id,record] of Object.entries(value.records||{}))if(record&&typeof record==='object'&&!record.requirements&&fixtureRequirements.has(id))record.requirements=fixtureRequirements.get(id);
+    storage.set(key,JSON.stringify(value));
+  }catch(_){}
   if(options.reviewRaw !== undefined) storage.set(reviewKey, options.reviewRaw);
   const events = [], notices = [], listeners = new Map(), windowListeners = new Map(), elements = new Map();
   let writes = 0;
@@ -207,7 +221,7 @@ test('full VET register distinguishes core duties, scheduled instances and proce
   const h=harness(null,{now:'2026-09-17T01:00:00Z'}), before=JSON.stringify(h.api.getState());
   const {items}=h.adapter.getTaskRegister(), counts={core:0,scheduled:0,procedure:0,event:0};
   for(const item of items)counts[item.entryKind]++;
-  assert.deepEqual(counts,{core:61,scheduled:176,procedure:9,event:0});
+  assert.deepEqual(counts,{core:h.data.taskRegister.tasks.length,scheduled:h.data.operatingCycle2027.tasks.length,procedure:h.data.operatingCycle2027.eventTemplates.length,event:0});
   assert.equal(items.find(item=>item.id==='t2-09-review-stage6-entry-cutoff').entryKind,'core');
   for(const template of h.data.operatingCycle2027.eventTemplates){
     const item=items.find(item=>item.id===template.id);
@@ -572,7 +586,7 @@ test('All VET tasks remains complete for every saved role without changing the r
     const saved=h.storage.get(key),before=JSON.stringify(h.adapter.getForecast());
     const catalogue=h.adapter.getTaskRegister();
     assert.deepEqual(Array.from(catalogue.items,item=>item.id),Array.from(all.items,item=>item.id),role+' must not hide catalogue tasks');
-    assert.equal(catalogue.items.filter(item=>item.year==='2026').length,61);
+    assert.equal(catalogue.items.filter(item=>item.year==='2026').length,h.data.taskRegister.tasks.length);
     assert.equal(catalogue.roleLabel,'All VET roles');
     assert.equal(JSON.stringify(h.adapter.getForecast()),before,'Daily forecast remains role-specific');
     assert.equal(h.api.getState().role,role);
@@ -622,4 +636,43 @@ test('saved verified work still recognises an overall prerequisite sign-off afte
   const h=harness(state({[child.id]:record}),{now:'2026-09-18T01:00:00Z',reviewRaw:reviewStore(parent.id)});
   assert.equal(h.api.getStatus(h.api.taskById(child.id)),'verified');
   assert.equal(h.writes,0);
+});
+
+test('legacy canonical and scheduled progress keeps old ticks and history while new audit steps need review',()=>{
+  const seed=harness(),amended=[seed.data.taskRegister.tasks.find(task=>task.legacyRequirements&&task.actionSteps.length>task.legacyRequirements.steps.length),seed.data.operatingCycle2027.tasks.find(task=>task.legacyRequirements&&task.actionSteps.length>task.legacyRequirements.steps.length)];
+  assert.ok(amended.every(Boolean),'Both canonical and scheduled legacy baselines are required');
+  for(const task of amended){
+    const previous={status:'completed',sourceChecked:true,doneWhenConfirmed:true,stepChecks:Object.fromEntries(task.legacyRequirements.steps.map((_,index)=>[index,true])),exceptionSummary:'My edited note and https://example.test/evidence',evidenceRef:'Original location',history:[{when:'2026-09-23T00:00:00.000Z',action:'Task checklist completed'}]};
+    const saved=state({[task.id]:previous}),raw=JSON.stringify(saved),h=harness(raw,{legacyNative:true,now:'2027-09-24T01:00:00Z'}),record=h.api.getRecord(task.id);
+    assert.equal(record.status,'in-progress',task.id);assert.equal(record.requirementsReview,true);assert.equal(record.exceptionSummary,previous.exceptionSummary);
+    assert.equal(record.evidenceRef,previous.evidenceRef);assert.deepEqual(JSON.parse(JSON.stringify(record.history)),previous.history);
+    task.actionSteps.forEach((step,index)=>assert.equal(record.stepChecks[index]===true,task.legacyRequirements.steps.includes(step),`${task.id} step ${index+1}`));
+    assert.equal(record.requirementsHistory[0].status,'completed');assert.equal(h.storage.get(key),raw,'Opening the upgraded card does not overwrite stored data');
+    h.api.openTask(task.id);assert.match(h.elements.get('task-dialog-content').innerHTML,/Updated steps need review/);
+    assert.ok(h.api.saveState());const reloaded=harness(h.storage.get(key),{legacyNative:true,now:'2027-09-24T01:00:00Z'});
+    assert.equal(reloaded.api.getRecord(task.id).requirementsHistory.length,1);assert.equal(reloaded.api.getRecord(task.id).exceptionSummary,previous.exceptionSummary);
+    const backup=JSON.stringify({kind:'WWHS-VET-COMPLIANCE-WORKBOARD-BACKUP',productId:h.data.config.productId,schemaVersion:3,buildId:h.data.config.buildId,state:JSON.parse(h.storage.get(key))});
+    const restored=harness(null,{now:'2027-09-24T01:00:00Z'});restored.api.importWorkspace(backup);
+    assert.deepEqual(JSON.parse(JSON.stringify(restored.api.getRecord(task.id).requirementsHistory)),JSON.parse(JSON.stringify(record.requirementsHistory)));
+  }
+});
+
+test('unstamped old overall reviews do not cover amended steps; current sign-off restores completion',()=>{
+  const seed=harness(),task=seed.data.taskRegister.tasks.find(task=>task.legacyRequirements),reviewRaw=JSON.stringify({version:1,records:{[`vet:2026:${encodeURIComponent(task.id)}`]:{completed:true,reviewedOn:'2026-09-24'}}});
+  const h=harness(null,{reviewRaw,now:'2026-09-24T01:00:00Z'});
+  assert.equal(h.api.externalReview(h.api.taskById(task.id)),null);assert.equal(h.storage.get(reviewKey),reviewRaw);
+  assert.equal(h.adapter.getTaskRegister().items.find(item=>item.id===task.id).requirementsReview,true);
+  h.storage.set(reviewKey,reviewStore(task.id,true,'2026-09-24'));
+  assert.ok(h.api.externalReview(h.api.taskById(task.id)));
+});
+
+test('saved event occurrences upgrade their own checklist without changing occurrence identity or notes',()=>{
+  const seed=harness(),cycle=seed.data.operatingCycle2027,template=cycle.eventTemplates.find(task=>task.legacyRequirements&&task.actionSteps.length>task.legacyRequirements.steps.length);
+  assert.ok(template,'An amended event template is required');
+  const occurrence={id:`2027-event-${template.canonicalTaskId}-saved`,templateId:template.id,workflowId:cycle.interruptWorkflows[0],createdAt:'2027-03-01T01:00:00.000Z',term:1};
+  const h=harness(state({[occurrence.id]:{status:'completed',sourceChecked:true,doneWhenConfirmed:true,stepChecks:Object.fromEntries(template.legacyRequirements.steps.map((_,index)=>[index,true])),exceptionSummary:'Occurrence-specific working note'}},{eventOccurrences:[occurrence]}),{legacyNative:true,now:'2027-03-02T01:00:00Z'});
+  const task=h.api.taskById(occurrence.id),record=h.api.getRecord(occurrence.id);
+  assert.equal(task.occurrenceOf,template.id);assert.equal(record.requirementsReview,true);assert.equal(record.status,'in-progress');assert.equal(record.exceptionSummary,'Occurrence-specific working note');
+  assert.equal(record.requirementsHistory[0].status,'completed');assert.equal(Object.keys(record.stepChecks).length,template.legacyRequirements.steps.length);
+  assert.equal(h.api.getState().eventOccurrences.length,1);assert.equal(h.writes,0);
 });

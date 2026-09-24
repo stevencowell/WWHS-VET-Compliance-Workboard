@@ -38,7 +38,7 @@ const snapshot=page=>page.evaluate(keys=>Object.fromEntries(keys.map(key=>[key,l
     assert.match(await audit.locator('#task-list').innerText(),/Update and share the School VET Handbook/);
     assert.equal(await audit.locator('#task-list details[open]').count(),1);
     await audit.locator('#reset').click();
-    assert.equal(await audit.locator('#task-list .card').count(),61);
+    assert.equal(await audit.locator('#task-list .card').count(),67);
     assert.ok(!new URL(audit.url()).searchParams.has('task'));
     await audit.close();
     assert.deepEqual(await snapshot(page),initial,'Source mapping navigation preserves native and review state');

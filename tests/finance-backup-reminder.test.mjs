@@ -96,7 +96,7 @@ test('failed acknowledgement save restores unconfirmed metadata before retry',as
 
 test('vault roundtrip keeps reminder and preference encrypted without plaintext browser storage',async()=>{
   let record=null;
-  const database={read:async()=>record,compareAndSwap:async(expected,next)=>{if(expected)assert.equal(record.revision,expected.revision);record=structuredClone(next);},close(){}};
+  const database={read:async()=>record,compareAndSwap:async(expected,next)=>{if(expected)assert.deepEqual(record,expected.record);record=structuredClone(next);},close(){}};
   const vault=await createLocalVault({}, {database,crypto:webcrypto});await vault.setup('synthetic password only');
   const reminder=createFinanceBackupReminder(await createPrivateStorage(vault,{autoFlushMs:null}),{makeToken:()=> 'synthetic_token'});
   reminder.activate();reminder.storage.setItem(DATA,'[{"item":"Synthetic secret value"}]');await reminder.storage.flush();

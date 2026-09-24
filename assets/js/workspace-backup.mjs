@@ -1,7 +1,7 @@
 // One portable snapshot of current saved work. Session locks and folder handles
 // are device-specific; Finance stays encrypted with its existing password.
-import {BACKUP_KEYS, checkRecord, backupCounts, canonical, parseLaunchpadBackup, planLaunchpadRestore} from '../../morning-launchpad/assets/launchpad-backup.mjs?v=edit-card-text-1';
-import {KEYS, snapshot, parseBackup, buildImportPlan} from './team-handover-core.mjs?v=edit-card-text-1';
+import {BACKUP_KEYS, checkRecord, backupCounts, canonical, parseLaunchpadBackup, planLaunchpadRestore} from '../../morning-launchpad/assets/launchpad-backup.mjs?v=vet-admin-audit-20260924';
+import {KEYS, snapshot, parseBackup, buildImportPlan} from './team-handover-core.mjs?v=vet-admin-audit-20260924';
 import {validateEncryptedRecord} from '../../finance/security/local-vault.mjs?v=workspace-backup-1';
 
 export const FORMAT='wwhs-workspace-backup';

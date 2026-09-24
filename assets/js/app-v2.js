@@ -169,8 +169,9 @@
   function sanitiseRecords(value) {
     const input = safeObject(value), result = {};
     allTasks.forEach(task => {
-      const raw = safeObject(input[task.id]);
-      if (!Object.keys(raw).length) return;
+      const saved = safeObject(input[task.id]);
+      if (!Object.keys(saved).length) return;
+      const raw = window.WWHS_TASK_REVIEW.migrateRequirements(saved, task);
       const record = {
         status: statusMeta[raw.status] ? raw.status : "not-started",
         evidenceRef: recordText(raw.evidenceRef), verifier: recordText(raw.verifier, 2000),
@@ -180,7 +181,8 @@
         sourceCheckedAt: safeTimestamp(raw.sourceCheckedAt), reviewDate: safeIsoDate(raw.reviewDate),
         escalationDate: safeIsoDate(raw.escalationDate), waitingForRole: workRoles.includes(raw.waitingForRole) ? raw.waitingForRole : "",
         handoffTo: workRoles.includes(raw.handoffTo) ? raw.handoffTo : "", handoffState: ["none", "sent", "accepted", "returned", "verified"].includes(raw.handoffState) ? raw.handoffState : "none",
-        exceptionSummary: recordText(raw.exceptionSummary), stepChecks: {}, history: sanitiseHistory(raw.history)
+        exceptionSummary: recordText(raw.exceptionSummary), stepChecks: {}, history: sanitiseHistory(raw.history),
+        requirements: raw.requirements, requirementsHistory: raw.requirementsHistory, requirementsReview: raw.requirementsReview
       };
       (task.actionSteps || []).forEach((_, index) => { if (safeObject(raw.stepChecks)[index] === true || safeObject(raw.stepChecks)[String(index)] === true) record.stepChecks[index] = true; });
       const allStepsComplete = (task.actionSteps || []).every((_, index) => record.stepChecks[index] === true || record.stepChecks[String(index)] === true);
@@ -313,6 +315,18 @@
   function getRecord(id) { return state.records[id] || { status: "not-started", stepChecks: {}, history: [] }; }
   function hasRecord(task) { return Object.prototype.hasOwnProperty.call(state.records, task.id); }
   function getStatus(task) { return getRecord(task.id).status || "not-started"; }
+  function requirementsNotice(task) {
+    if (isNativeTaskComplete(task) || externalReview(task)) return '';
+    const info = window.WWHS_TASK_REVIEW.requirementsInfo(task), year = is2027Task(task) ? 2027 : 2026;
+    const tick = window.WWHS_TASK_REVIEW.read().records[`vet:${year}:${encodeURIComponent(task.id)}`];
+    let previousDone = false;
+    try {
+      const inbox = JSON.parse(browserStorage().getItem(window.WWHS_TASK_REVIEW.INBOX_KEY) || 'null');
+      previousDone = inbox?.items?.some(item => item.origin?.wing === 'vet' && item.origin.recordKey === task.id && ((item.status === 'done' && !window.WWHS_TASK_REVIEW.reviewMatches({requirementsKey:item.completedRequirementsKey}, info)) || item.requirementsReview === true));
+    } catch (_) { /* The native saved record remains available if the task list is unreadable. */ }
+    return getRecord(task.id).requirementsReview || (tick?.completed && !window.WWHS_TASK_REVIEW.reviewMatches(tick, info)) || previousDone
+      ? 'Updated steps need review. Your earlier progress, notes and completion record are kept; check the new requirements before signing off again.' : '';
+  }
   function isClosed(task) { return isNativeTaskComplete(task) || Boolean(externalReview(task)); }
   function isNativeTaskComplete(task) { return ["completed", "verified", "not-applicable"].includes(getStatus(task)); }
   function isTaskComplete(task) { return isNativeTaskComplete(task) || Boolean(externalReview(task)); }
@@ -344,11 +358,12 @@
     const followDate = [strictReviewDate(record.reviewDate), strictReviewDate(record.escalationDate)].filter(Boolean).sort()[0];
     const scheduledDate = strictReviewDate(task.windowEnd) || strictReviewDate(task.dueDate) || strictReviewDate(task.windowStart);
     const taskDate = [followDate, scheduledDate].filter(Boolean).sort().at(-1);
-    const review = window.WWHS_TASK_REVIEW.resolve(window.WWHS_TASK_REVIEW.read().records, 'vet', task.id, year, boardTodayIso, taskDate);
+    const info = window.WWHS_TASK_REVIEW.requirementsInfo(task);
+    const review = window.WWHS_TASK_REVIEW.resolve(window.WWHS_TASK_REVIEW.read().records, 'vet', task.id, year, boardTodayIso, taskDate, info);
     if (review?.completedEarly) return review;
     if (year > Number(boardTodayIso.slice(0, 4))) return null;
     if (strictReviewDate(task.windowStart) > boardTodayIso || taskDate > boardTodayIso) return null;
-    return review || window.WWHS_TASK_REVIEW.savedCompletion('vet', task.id, year, boardTodayIso, taskDate);
+    return review || window.WWHS_TASK_REVIEW.savedCompletion('vet', task.id, year, boardTodayIso, taskDate, info);
   }
   function externalReviewNote(task) {
     const review = externalReview(task);
@@ -400,6 +415,7 @@
     const nextStep = !isTaskComplete(task) && (task.actionSteps || []).find((_, index) => !record.stepChecks?.[index]);
     return {
       wing: "vet", taskId: task.id, recordKey: task.id, title: presentation(task).title,
+      requirementsInfo: window.WWHS_TASK_REVIEW.requirementsInfo(task), requirementsReview: Boolean(requirementsNotice(task)),
       action: nextStep || task.doneWhen || task.title,
       notes: reviewNotes(task, record),
       dueDate: record.reviewDate || task.dueDate || task.windowEnd || null,
@@ -598,6 +614,8 @@
       else schedule = { kind: "undated", label: "Timing or trigger needs confirmation" };
       const complete = !template && isTaskComplete(task), review = externalReview(task);
       const gaps = [];
+      const updatedRequirements = requirementsNotice(task);
+      if (updatedRequirements) gaps.push(updatedRequirements);
       if (schedule.kind === "undated") gaps.push("No date, review rule or trigger is recorded.");
       if (task.liveVerification?.required && !record.sourceChecked) gaps.push("Current source not confirmed in this browser.");
       if (!(task.sourceIds || []).length || (task.sourceIds || []).some(id => !sourceFor(id, task))) gaps.push("A source reference needs checking.");
@@ -608,6 +626,7 @@
       if (forecast.context.mode === "unavailable" && !complete && !template) focusReason = "The current task list is unavailable. You can still open every saved task.";
       return {
         id: task.id, recordKey: task.id, title: clarity.title, clarity, year,
+        requirementsInfo: window.WWHS_TASK_REVIEW.requirementsInfo(task), requirementsReview: Boolean(updatedRequirements),
         route: "#task/" + encodeURIComponent(task.id),
         area: template ? "Event procedure" : task.term ? `Term ${task.term}` : phaseMeta[task.phase]?.short || "Annual setup",
         owner: assignedRole(task), status: template ? "Procedure - start when needed" : review ? "Task complete · reviewed" : statusMeta[getStatus(task)]?.label || "Not started", progressAvailable: forecast.context.mode !== "unavailable",
@@ -841,6 +860,7 @@
     const before = state.records[id], previous = getRecord(id), now = new Date().toISOString();
     const after = {
       ...previous, status: "completed",
+      requirements: window.WWHS_TASK_REVIEW.requirements(task), requirementsReview: false,
       stepChecks: Object.fromEntries((task.actionSteps || []).map((_, index) => [index, true])),
       sourceChecked: true, doneWhenConfirmed: true,
       sourceCheckedAt: previous.sourceCheckedAt || now,
@@ -1192,6 +1212,7 @@
     const dependencies = [...new Set([...(task.dependencies || []), ...(task.hardDependencies || [])])].map(dependencyId => taskById(dependencyId) || { id: dependencyId, title: `Missing prerequisite configuration: ${dependencyId}`, missing: true });
     const guidanceOpen = state.guidance || state.experience === "guided";
     const dependency = dependencyState(task), warnings = [];
+    if (requirementsNotice(task)) warnings.push(requirementsNotice(task));
     if (dependency.missing.length) warnings.push('A prerequisite is missing from this plan. Check Sources & responsibilities below.');
     else if (dependency.hardOpen.length || dependency.open.length) warnings.push(`${dependency.hardOpen.length + dependency.open.length} prerequisite${dependency.hardOpen.length + dependency.open.length === 1 ? '' : 's'} still need checking. See Sources & responsibilities below.`);
     if (is2027Task(task) && !earlier2027GatesComplete(task)) warnings.push('An earlier setup stage still needs checking.');
@@ -1253,7 +1274,9 @@
   }
   function historyPanel(record) {
     const history = (record.history || []).slice(-5).reverse();
-    return history.length ? `<details class="history-details"><summary>Recent changes in this browser</summary><ul>${history.map(item => `<li><span>${esc(item.when.replace("T", " ").slice(0, 16))}</span><strong>${esc(item.action)}</strong></li>`).join("")}</ul></details>` : "";
+    const earlier = record.requirementsHistory || [];
+    const revisions = earlier.length ? `<details class="history-details"><summary>Earlier instruction versions and progress</summary>${earlier.map(item => `<p><strong>${esc(statusMeta[item.status]?.label || item.status)}</strong> under the earlier instructions. This record has been kept.</p><ul>${item.requirements.steps.map((step,index) => `<li>${item.stepChecks[index] ? '✓ ' : ''}${esc(step)}</li>`).join('')}</ul>`).join('')}</details>` : '';
+    return revisions + (history.length ? `<details class="history-details"><summary>Recent changes in this browser</summary><ul>${history.map(item => `<li><span>${esc(item.when.replace("T", " ").slice(0, 16))}</span><strong>${esc(item.action)}</strong></li>`).join("")}</ul></details>` : "");
   }
 
   function saveTaskForm(form, commit) {
@@ -1304,7 +1327,7 @@
     const previousHandoffState = previous.handoffState || "none";
     if (!allowedHandoffStates(previousHandoffState).some(([value]) => value === handoffState)) { error.textContent = "Save each hand-off stage in order: sent, accepted or returned, then verified."; error.hidden = false; return; }
     if (status === "verified" && handoffTo && !["accepted", "verified"].includes(handoffState)) { error.textContent = "A handed-off task cannot close until the receiving role has accepted it or returned it verified."; error.hidden = false; return; }
-    state.records[task.id] = { status, evidenceRef, verifier, sourceChecked, doneWhenConfirmed, independentVerifierConfirmed, dependencyExceptionConfirmed, sourceCheckedAt: sourceChecked ? (previous.sourceCheckedAt || new Date().toISOString()) : "", reviewDate, escalationDate, waitingForRole, handoffTo, handoffState, exceptionSummary, stepChecks: previous.stepChecks || {}, history: [...(previous.history || []), { when: new Date().toISOString(), action: `${statusMeta[status].label} saved${handoffState !== "none" ? ` · hand-off ${handoffState}` : ""}` }].slice(-30) };
+    state.records[task.id] = { requirements: window.WWHS_TASK_REVIEW.requirements(task), requirementsHistory: previous.requirementsHistory || [], requirementsReview: !["completed","verified","not-applicable"].includes(status) && previous.requirementsReview === true, status, evidenceRef, verifier, sourceChecked, doneWhenConfirmed, independentVerifierConfirmed, dependencyExceptionConfirmed, sourceCheckedAt: sourceChecked ? (previous.sourceCheckedAt || new Date().toISOString()) : "", reviewDate, escalationDate, waitingForRole, handoffTo, handoffState, exceptionSummary, stepChecks: previous.stepChecks || {}, history: [...(previous.history || []), { when: new Date().toISOString(), action: `${statusMeta[status].label} saved${handoffState !== "none" ? ` · hand-off ${handoffState}` : ""}` }].slice(-30) };
     const previousAssignment = state.assignments[task.id];
     const assignment = boundedString(values.get("assignment"), 120).trim(); if (assignment) state.assignments[task.id] = assignment; else delete state.assignments[task.id];
     if (!saveState()) {
@@ -1523,7 +1546,7 @@
       if (externalReview(taskById(id))) { event.target.checked = true; return; }
       const openForm = taskDialog.open && document.getElementById("task-record-form");
       if (openForm && !taskFormReviewIsCurrent(openForm)) { event.target.checked = Boolean(previous?.stepChecks?.[event.target.dataset.taskStep]); return; }
-      const record = { ...getRecord(id), stepChecks: { ...getRecord(id).stepChecks, [event.target.dataset.taskStep]: event.target.checked } };
+      const record = { ...getRecord(id), requirements: window.WWHS_TASK_REVIEW.requirements(taskById(id)), stepChecks: { ...getRecord(id).stepChecks, [event.target.dataset.taskStep]: event.target.checked } };
       if (record.status === "not-started" && event.target.checked) record.status = "in-progress";
       if (["completed", "verified"].includes(record.status) && !event.target.checked) { record.status = "in-progress"; record.doneWhenConfirmed = false; }
       state.records[id] = record;

@@ -10,7 +10,7 @@
     "go2workplacement": "https://teacher.go2workplacement.com/auth/login",
     "placement-provider-portal": "https://teacher.pathways.cloud/Login",
     "lln-robot": "https://waggawaggarto90333.lln.training/login",
-    "wwhs-drive": workDriveSearch('type:folder "WWHS VET"'),
+    "wwhs-drive": "https://drive.google.com/drive/folders/0B40F5Y8uF0rvfkl1S2FEbjRhVmJYRWYyY2dlOFVHMDdQeFNyQlRBUzBudmtHRGJKdE83VVk?resourcekey=0-fXD-BgXggkE5EyIeJJdt5g&usp=drive_link",
     "sentral": "https://waggawagga-h.sentral.com.au/dashboard/",
     "staff-calendar": "https://waggawagga-h.sentral.com.au/s-lD94m0/webcal/calendar/29",
     "finance-system": "https://selfservice.det.nsw.edu.au/irj/portal",
@@ -21,7 +21,7 @@
       productId: "wwhs-vet-compliance-workboard",
       buildId: "wwhs-vet-compliance-workboard-2027-full-year-v1",
       compatibleBuildIds: ["wwhs-vet-compliance-workboard-2027-term1-prototype-v1", "wwhs-vet-compliance-workboard-2026-08-26-gated-v3"],
-      version: "4.0.0-2027-full-year-candidate",
+      version: "4.1.0-2027-admin-audit",
       operatingYear: 2027,
       referenceYear: 2026,
       operationalStart: "2026-08-26",
@@ -37,7 +37,7 @@
       { id: "evidence-central", label: "Evidence Central", kind: "controlled", url: "https://evidencecentral.info/" },
       { id: "schools-online", label: "Schools Online", kind: "private", url: staffLinks["schools-online"] },
       { id: "nesa-toa", label: "NESA live dates", kind: "public", url: "https://www.nsw.gov.au/education-and-training/nesa/key-dates/timetable-of-actions" },
-      { id: "wwhs-drive", label: "WWHS VET Drive", kind: "private", url: staffLinks["wwhs-drive"] }
+      { id: "wwhs-drive", label: "TAS/VET Google Drive", kind: "private", url: staffLinks["wwhs-drive"] }
     ],
     previewTasks: [
       {

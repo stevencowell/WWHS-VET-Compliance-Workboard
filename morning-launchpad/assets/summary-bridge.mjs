@@ -1,4 +1,4 @@
-import {prepareTasks} from './summary-core.mjs?v=edit-card-text-1';
+import {prepareTasks} from './summary-core.mjs?v=vet-admin-audit-20260924';
 // Use the existing conflict-safe React saver for every daily-plan mutation.
 export function useSummaryBridge(React,context){
   React.useEffect(()=>{

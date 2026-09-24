@@ -1,4 +1,4 @@
-import {safeUrl} from './summary-core.mjs?v=edit-card-text-1';
+import {safeUrl} from './summary-core.mjs?v=vet-admin-audit-20260924';
 import {NOTE_HTML_LIMIT,NOTE_TEXT_LIMIT,isSafeNoteImage,prepareNoteImages,noteImageHtml,clipboardImageFiles} from './note-images.mjs?v=email-note-images-1';
 
 // Build a fresh allowlisted tree; pasted markup never enters the live editor directly.

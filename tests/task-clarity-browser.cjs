@@ -2,7 +2,7 @@
 const {chromium}=require('C:/Users/scowell1/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const base=process.env.TEST_BASE_URL||'http://127.0.0.1:43175';
-const output=path.resolve(__dirname,'../../../outputs');
+const output=path.resolve(process.env.WORKBOARD_TEST_OUTPUT || path.join(require('node:os').tmpdir(),'workboard-audit-browser-20260924'));
 const errors=[];
 (async()=>{
   fs.mkdirSync(output,{recursive:true});const browser=await chromium.launch({headless:true});

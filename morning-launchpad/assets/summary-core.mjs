@@ -1,5 +1,6 @@
+import '../../assets/js/task-review.js?v=vet-admin-audit-20260924';
 // Local text processing only. No network requests or embedded personal records.
-import {normaliseTaskHelpContext} from '../../assets/js/task-help.mjs?v=plain-language-1';
+import {normaliseTaskHelpContext} from '../../assets/js/task-help.mjs?v=vet-admin-audit-20260924';
 export const INBOX_KEY = 'morning-launchpad-summary:v1';
 export const LEGACY_PLAN_KEY = 'morning-launchpad-routine:v1';
 export const LIMIT = 1000000;
@@ -83,9 +84,11 @@ export async function reconcileForecast(inbox,{entries=[],resolved=[],context:in
   let added=0,updated=0,retired=0,suppressed=0;
   let imports=mergeWorkboardImports(inbox.workboardImports);
   const seen=new Set();
-  const items=inbox.items.map(original=>{
+  const items=inbox.items.map(savedItem=>{
+    let original=savedItem;
     if(original.origin?.wing!==context.wing)return original;
     const key=identity(original.origin),scheduledEntry=scheduled.get(key),source=sources.get(key);seen.add(key);
+    original=syncTaskRequirements(original,source);
     if(!scheduledEntry&&!original.forecast){
       if(source?.taskHelp&&JSON.stringify(source.taskHelp)!==JSON.stringify(original.taskHelp)){updated++;return {...original,taskHelp:normaliseTaskHelpContext(source.taskHelp)};}
       return original;
@@ -111,7 +114,7 @@ export async function reconcileForecast(inbox,{entries=[],resolved=[],context:in
         refreshed[field]=value;
       }
     }
-    if(JSON.stringify(refreshed)===JSON.stringify(original))return original;
+    if(JSON.stringify(refreshed)===JSON.stringify(savedItem))return savedItem;
     updated++;return refreshed;
   });
   for(const[key,descriptor]of scheduled){
@@ -156,7 +159,7 @@ export async function createTrackedWork(descriptor) {
     group:['waiting','blocked'].includes(descriptor.status)?'waiting':'ready',
     waitingOn:String(descriptor.waitingOn||''),dueDate:descriptor.dueDate&&validDate(descriptor.dueDate)?descriptor.dueDate:null,
     reason:`From your ${WORKSTREAMS[wing]} workboard`});
-  return validateInbox(JSON.stringify({version:2,items:[item]})).items[0];
+  return validateInbox(JSON.stringify({version:2,items:[syncTaskRequirements(item,descriptor)]})).items[0];
 }
 
 export function safeUrl(value) {
@@ -319,6 +322,9 @@ export function validateInbox(raw) {
   for(const[wing,context]of Object.entries(value.forecastContexts||{})){if(!['vet','tas'].includes(wing)||context?.wing!==wing)throw new Error('The saved schedule details could not be read.');forecastContexts[wing]=normaliseForecastContext(context);}
   const items = value.items.map(enrich);
   for (const x of items) {
+    for (const key of ['requirementsKey','completedRequirementsKey']) if (x[key] !== undefined && !globalThis.WWHS_TASK_REVIEW.validRequirementsKey(x[key])) throw new Error('The saved task requirements could not be read.');
+    if (x.requirementsReview !== undefined && typeof x.requirementsReview !== 'boolean') throw new Error('The instruction review could not be read.');
+    if (x.requirementsHistory !== undefined && (!Array.isArray(x.requirementsHistory) || x.requirementsHistory.length > 100 || x.requirementsHistory.some(record => !globalThis.WWHS_TASK_REVIEW.validRequirementsKey(record?.requirementsKey) || !validDate(record.completedOn)))) throw new Error('The earlier completion history could not be read.');
     x.taskHelp=normaliseTaskHelpContext(x.taskHelp);
     if(x.taskHelp&&(!x.origin||['wing','taskId','recordKey','cycle'].some(key=>x.taskHelp[key]!==x.origin[key])))throw new Error('AI help does not match its source task.');
     if (typeof x.id !== 'string' || !x.id.trim() || x.id.length > 150 || typeof x.title !== 'string' || !x.title.trim() || x.title.length > 300 ||
@@ -358,6 +364,7 @@ export function mergeInbox(existing, incoming) {
       // Classification and source identity belong to the saved card. Older
       // exports and AI refreshes must never detach work from its native task.
       const merged={...old,...next,workstream:old.workstream,origin:old.origin||next.origin,forecast:old.forecast||next.forecast,taskHelp:old.taskHelp||(old.origin&&JSON.stringify(old.origin)!==JSON.stringify(next.origin)?null:next.taskHelp),progressOverride:old.progressOverride,taskKey:old.taskKey||next.taskKey,id:old.id,createdOn:old.createdOn||next.createdOn,lastActionOn:old.lastActionOn||next.lastActionOn,status:old.status,pinnedDate:old.pinnedDate,dirty,selected:false,planStamp:old.planStamp,planAliases:old.planAliases,preserveDoneOnce:old.preserveDoneOnce};
+      for(const field of ['requirementsKey','completedRequirementsKey','requirementsReview','requirementsHistory'])if(Object.hasOwn(old,field))merged[field]=old[field];
       // An older import may omit the summary or supply only an extract of the
       // saved email. Keep the fuller source and summary in that case.
       if (!next.sourceSummary.trim()) merged.sourceSummary=old.sourceSummary;
@@ -523,4 +530,26 @@ export function matchesNoteSearch(item,query){
  const fields=['title','action','noteText','source','sourceSummary','instruction','help','reason','owner','waitingOn','dateNote','dueDate','eventDate','followUpDate','url','originalEmailUrl'];
  const text=normal([...fields.map(key=>item[key]),...(item.links||[]),...(item.relatedTitles||[]),PRIORITIES[item.priority],NEXT_ACTIONS[item.nextAction],...(item.noteHtml||'').matchAll(/href=["']([^"']+)["']/g)].map(value=>Array.isArray(value)?value[1]:value).join(' '));
  return terms.every(term=>text.includes(term));
+}
+
+// A refreshed source must never apply an earlier Done tick to added requirements.
+export function syncTaskRequirements(item, descriptor) {
+  const info = descriptor?.requirementsInfo;
+  const review = globalThis.WWHS_TASK_REVIEW;
+  if (!info || !review.validRequirementsKey(info.key) || !review.validRequirementsKey(info.legacyKey)) return item;
+  const previous = item.completedRequirementsKey || item.requirementsKey || info.legacyKey;
+  const sourceClosed = ['done','completed','completed-externally','verified','not-applicable'].includes(descriptor.sourceStatus);
+  const next = {...item, requirementsKey:info.key};
+  if (sourceClosed) return {...next, ...(item.requirementsReview ? {status:'done'} : {}), completedRequirementsKey:info.key, requirementsReview:false};
+  if (item.status === 'done' && previous !== info.key) {
+    return {...next, status:'review', progressOverride:true, completedRequirementsKey:previous, requirementsReview:true,
+      requirementsHistory:[...(item.requirementsHistory || []), {requirementsKey:previous, completedOn:item.lastActionOn || item.createdOn || ''}]};
+  }
+  if (item.status === 'done' && !item.completedRequirementsKey) next.completedRequirementsKey = previous;
+  return next;
+}
+
+export function taskCompletionChanges(item, changes) {
+  return changes.status === 'done' && item.requirementsKey
+    ? {...changes, completedRequirementsKey:item.requirementsKey, requirementsReview:false} : changes;
 }

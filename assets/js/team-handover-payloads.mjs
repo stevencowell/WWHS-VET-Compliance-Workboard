@@ -1,5 +1,5 @@
 // Immutable, private browser copies. Only small references enter localStorage.
-import {parseBackup,snapshot} from './team-handover-core.mjs?v=edit-card-text-1';
+import {parseBackup,snapshot} from './team-handover-core.mjs?v=vet-admin-audit-20260924';
 
 const DB_NAME='wwhs-team-handover-payloads', STORE='payloads', MAX_SIZE=12000000;
 const INFO=['scope','workspaceId','revision','parentRevision','parentExportId','exportId','savedAt','savedBy','note','changes'];

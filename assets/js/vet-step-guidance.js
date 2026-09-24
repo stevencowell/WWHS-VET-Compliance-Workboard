@@ -6,7 +6,7 @@
   const system = (systemId, label, hint) => ({ systemId, label, hint });
   const source = (sourceId, label, hint) => ({ sourceId, label, hint });
   const route = (path, label, hint) => ({ route: path, label, hint });
-  const local = (item, hint = "") => system("wwhs-drive", `Search WWHS VET Drive — ${item}`, hint || `Use your work account to find the approved ${item}; this opens a search, not the document itself.`);
+  const local = (item, hint = "") => system("wwhs-drive", `Open TAS/VET Google Drive — ${item}`, hint || `Use your work account to find the approved ${item} master in HEAD TEACHER TAS. Keep confidential records in their authorised restricted location.`);
   const library = (item = "current RTO guidance") => system("document-library", "Open RTO Document Library", `After staff sign-in, find ${item} for the task year and check its version.`);
   const hub = (item = "current school actions and notices") => system("vet-schools-hub", "Open VET Schools Hub", `After staff sign-in, open ${item}.`);
   const evidence = (item = "the relevant course and retained assessment record") => system("evidence-central", "Open Evidence Central", `After staff sign-in, open ${item}; keep learner evidence in that system.`);
@@ -72,7 +72,7 @@
   ]);
   define("a-08-publish-local-handbook", [
     [local("staff VET handbook"), library()], [local("staff VET handbook")],
-    [local("approved staff briefing and distribution arrangements", "Find the approved staff channel and document location in the local procedure; this search does not send a message.")], [local("VET team briefing record"), systems]
+    [local("approved staff briefing and distribution arrangements", "Find the approved staff channel and document location in the local procedure; opening this folder does not send a message.")], [local("VET team briefing record"), systems]
   ]);
   define("t1-01-usi-verification", [
     [usi, source("USI-PERMISSION", "Check permission to access a student USI", "Follow the current permission requirements within the authorised collection and verification process."), library("the current RTO USI collection and verification procedure")], [usi, local("approved USI procedure")],
@@ -322,16 +322,73 @@
     [wpl, placement("post-placement review and outstanding exceptions")]
   ];
 
+
+  const auditDestinations = {
+    R01:[hub('current notices'),library('the approved VET Teams and Statewide Staffroom access route')],
+    R02:[actions], R03:[systems,roles], R04:[dates,schoolCalendar,calendar],
+    R06:[roles], R07:[placement('current staff update form and authorised provider contact')],
+    R08:[evidence('teacher status, class and induction-cohort access')],
+    R09:[hub('current VSO or audit visit arrangements'),actions],
+    R10:[sentral('Year 12 markbook membership and retained Year 11 records')],
+    R11:[sentral('Year 11 markbook, student pins, competency headings and Staff Roles')],
+    R12:[system('course-library','Open current training and assessment resources','Find the current controlled strategy template; obtain teacher completion and authorised hand-back.')],
+    R13:[nesa('authorised enrolment and current outcome codes'),sentral('retained student markbook records')],
+    R14:[nesa('the approved school-leaver transcript procedure'),sentral('the approved restricted student transcript record')],
+    R15:[evidence('both the induction cohort and course class exit status')],
+    R16:[sentral('the authorised enrolment or subject change'),nesa('affected course entries')],
+    R17:[local('current assessment booklet and approved amendment record')],
+    R18:[local('current subject-selection master and release approval')],
+    R19:[evidence('the induction completion and missing-student exceptions')],
+    R20:[usi,library('the current QMS USI verification template and rejected-record procedure')],
+    R21:[library('the current instruction assigning USI upload responsibility')],
+    R22:[local('approved LLN report-selection procedure and protected teacher hand-back')],
+    R23:[sentral('USI, LLN and induction completion flags'),evidence('verified completion states')],
+    R25:[nesa('current entry and Group 23 exceptions'),hub('current VSO/RTO support route')],
+    R26:[nesa('applicable All My Own Work completion'),roles],
+    R27:[nesa('current Life Skills course requirements'),sentral('approved Life Skills report schema and outcomes')],
+    R28:[nesa('pattern-of-study and applicable minimum-standards exceptions'),roles],
+    R29:[sentral('report setup, competencies, teacher access and internal review dates')],
+    R30:[sentral('each VET class attendance record'),local('approved restricted term attendance destination','Find the authorised restricted attendance folder. The procedure library is not a destination for student attendance data.')],
+    R31:[actions,hub('RTO-required action timeline and term hand-back')],
+    R32:[sentral('approved examination intention and signed-form record'),nesa('authorised exam-entry hand-back')],
+    R34:[placement('current placement request form, accepted dates and school approval'),schoolCalendar],
+    R35:[placement('approved next-year course/cohort request'),schoolCalendar],
+    R37:[sentral('the correct official student placement attachment'),retention],
+    R38:[retention,privacy],
+    R39:[nesa('intended competency entry and supported outcomes'),evidence('assessor-authorised outcome evidence')],
+    R43:[library('the current Term 4 coordinator meeting and guide'),actions],
+    R44:[sources,local('approved Training Awards nomination owner and current nomination process')],
+    R45:[library('the current Preliminary exiting-cohort survey request')],
+    R46:[nesa('the current trainer report and individual Year 12 entry confirmation'),sentral('the approved signed confirmation record')],
+    R47:[sentral('the authorised signed enrolment-entry confirmation record')],
+    R48:[nesa('current late-competency correction instructions'),library('the complete current submission procedure; the older local draft has blank steps')],
+    R49:[library('the current trainer or post-audit survey request'),actions],
+    R50:[sources,retention], R51:[sentral('Markbook to Reports sync, overwrite controls and post-sync verification')],
+    R52:[nesa('current VET reporting requirements'),sentral('course, qualification, unit outcomes and placement-hours fields')],
+    R53:[library('the actual audit document request and visit arrangements'),actions]
+  };
+  function auditLinks(task, step) {
+    const addition = (task.auditSteps || []).find(item=>normalise(item.text)===normalise(step));
+    if (!addition) return null;
+    const registry = window.VET_WORKBOARD?.auditProcedureSources || {};
+    const direct = (addition.sourceFileIds || []).map(id=>registry[id]).filter(Boolean).map(id=>source(id,'Open the Head Teacher procedure copy','Check the source date and any reference-only warning. Use current approved instructions and keep student records in their authorised restricted system.'));
+    const links = [...direct,...(auditDestinations[addition.rowId] || [sources])];
+    const seen = new Set();
+    return links.filter(item=>{const key=item.sourceId||item.systemId||item.route;if(seen.has(key))return false;seen.add(key);return true;}).slice(0,4);
+  }
+
   function normalise(value) { return String(value || "").trim().replace(/\s+/g, " "); }
   function mappingFor(task, step, index) {
     const id = task?.id || "", key = task?.canonicalTaskId || id;
+    const audit = auditLinks(task, step);
+    if (audit) return audit;
     if (/^2027-(?:t[234]-)?w\d{2}-close$/.test(id)) return weeklyClose[index];
     if (/^2027-t[234]-w01-open$/.test(id)) return termOpen[index];
     if (/^2027-(?:t[23]-)?w10-term-assurance$/.test(id)) return termAssurance[index];
     if (id === "2027-t4-w11-year-close") {
       return index === 4 ? [local("2027 annual archive and 2028 carry-over record", "Find the approved annual archive and assign clean 2028 carry-overs; this app currently supplies the 2027 cycle only.")] : termAssurance[index];
     }
-    if (key === "c-07-workplace-learning-control" && task.actionSteps?.length === 5 && /Day 1 or Day 2/.test(task.actionSteps[1] || "")) return placementOccurrence[index];
+    if (key === "c-07-workplace-learning-control" && (task.actionSteps?.length === 5 || task.legacyRequirements?.steps?.length === 5) && /Day 1 or Day 2/.test(task.actionSteps[1] || "")) return placementOccurrence[index];
     if (mapped[id]) return mapped[id][index];
     const original = window.VET_WORKBOARD?.taskRegister?.tasks?.find(item => item.id === key);
     if (!original || !mapped[key]) return [];

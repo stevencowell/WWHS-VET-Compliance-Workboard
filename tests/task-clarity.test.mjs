@@ -37,11 +37,12 @@ test('saved task-help and unknown tasks retain their data and do not acquire inv
   const result=describe('vet',unknown);
   assert.equal(result.title,unknown.title);assert.equal(result.finished,unknown.doneWhen);assert.equal(result.purpose,'');assert.deepEqual(Array.from(result.steps),unknown.steps);
 });
-test('created placement events and saved event help retain the complete five-step template',()=>{
+test('created placement events and saved event help retain the complete audited placement template',()=>{
   const template=w.VET_WORKBOARD.operatingCycle2027.eventTemplates.find(task=>task.id==='template-c-07-workplace-learning-control');
   const event={...template,id:'event-new-placement',occurrenceOf:template.id};
   const native=describe('vet',event);
-  assert.equal(native.steps.length,5);
+  assert.equal(native.steps.length,template.actionSteps.length);
+  assert.ok(native.steps.length > 5, "Audited placement follow-up steps must survive");
   assert.equal(native.steps[0],w.WWHS_TASK_COPY.vet[template.id].steps[0]);
   const help={taskId:event.id,canonicalTaskId:template.canonicalTaskId,steps:template.actionSteps,objective:template.doneWhen};
   assert.deepEqual(describe('vet',help).steps,native.steps);

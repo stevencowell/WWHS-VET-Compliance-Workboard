@@ -1,5 +1,5 @@
 // Manual team handover only. This module never reads files or sends data anywhere.
-import {INBOX_KEY, EDITABLE, validateInbox, validDate, validWorkOrigin, mergeWorkboardImports} from '../../morning-launchpad/assets/summary-core.mjs?v=edit-card-text-1';
+import {INBOX_KEY, EDITABLE, validateInbox, validDate, validWorkOrigin, mergeWorkboardImports} from '../../morning-launchpad/assets/summary-core.mjs?v=vet-admin-audit-20260924';
 
 export const KEYS = Object.freeze({
   vet:'wwhs-vet-compliance-workboard:v3', tas:'wwhs-head-teacher-tas-workboard:v2',
@@ -15,7 +15,8 @@ const VET_FIELDS = ['records','assignments','gaps','eventOccurrences'];
 const TAS_FIELDS = ['records','weekly','eventOccurrences','scheduleOverrides'];
 export const TEAM_ITEM_FIELDS = Object.freeze(['taskKey','title','action','noteText','workstream','origin','forecast','taskHelp',
   'progressOverride','sectionOverride','createdOn','lastActionOn','personal','priority','nextAction','dueDate','eventDate','followUpDate',
-  'dateNote','owner','waitingOn','instruction','reason','score','group','status','dependsOn','dirty']);
+  'dateNote','owner','waitingOn','instruction','reason','score','group','status','dependsOn','dirty',
+  'requirementsKey','completedRequirementsKey','requirementsReview','requirementsHistory']);
 const TEAM_DIRTY_FIELDS = EDITABLE.filter(key=>TEAM_ITEM_FIELDS.includes(key));
 const FORECAST_FIELDS = ['version','managed','active','section','kind','reason','scheduledDate','windowStart','windowEnd','period',
   'sourceStatus','blocked','blockerReason','asOf','role','roleLabel','year','sourceYear','horizonDays'];
@@ -23,7 +24,8 @@ const WORK_ROLES = ['Head Teacher VET','VET Coordinator','VET Coordinator Assist
   'Workplace learning coordinator','Authorised NESA staff','RTO/VSO support'];
 const STATUS = ['not-started','in-progress','waiting','performed','recorded','completed','verified','exception','not-applicable'];
 const VET_RECORD_FIELDS = ['status','evidenceRef','verifier','sourceChecked','doneWhenConfirmed','independentVerifierConfirmed',
-  'dependencyExceptionConfirmed','sourceCheckedAt','reviewDate','escalationDate','waitingForRole','handoffTo','handoffState','exceptionSummary','stepChecks','history'];
+  'dependencyExceptionConfirmed','sourceCheckedAt','reviewDate','escalationDate','waitingForRole','handoffTo','handoffState','exceptionSummary','stepChecks','history',
+  'requirements','requirementsReview','requirementsHistory'];
 const TAS_RECORD_FIELDS = ['status','steps','milestones','evidenceRef','verifier','sourceChecked','doneConfirmed','exceptionReason','updatedAt'];
 const own = (value,key)=>Object.hasOwn(value,key);
 const object = value=>!!value && typeof value==='object' && !Array.isArray(value);
@@ -70,7 +72,17 @@ function record(value,wing,strict){
   const result=pick(value,fields);
   for(const [key,item] of Object.entries(result)){
     if(key==='status')enumValue(item,wing==='vet'?STATUS:STATUS.filter(status=>!['performed','recorded'].includes(status)),'task status');
-    else if(['sourceChecked','doneWhenConfirmed','independentVerifierConfirmed','dependencyExceptionConfirmed','doneConfirmed'].includes(key))boolean(item,key);
+    else if(['sourceChecked','doneWhenConfirmed','independentVerifierConfirmed','dependencyExceptionConfirmed','doneConfirmed','requirementsReview'].includes(key))boolean(item,key);
+    else if(key==='requirements')result[key]=globalThis.WWHS_TASK_REVIEW.requirements(item);
+    else if(key==='requirementsHistory'){
+      if(!Array.isArray(item)||item.length>100)fail('Invalid instruction history.');
+      result[key]=item.map(previous=>{
+        keys(previous,['requirements','stepChecks','status','sourceChecked','doneWhenConfirmed','independentVerifierConfirmed'],'instruction history');
+        return {requirements:globalThis.WWHS_TASK_REVIEW.requirements(previous.requirements),stepChecks:checks(previous.stepChecks),
+          status:enumValue(previous.status,STATUS,'previous task status'),sourceChecked:boolean(previous.sourceChecked,'previous source check'),
+          doneWhenConfirmed:boolean(previous.doneWhenConfirmed,'previous result check'),independentVerifierConfirmed:boolean(previous.independentVerifierConfirmed,'previous verification')};
+      });
+    }
     else if(['steps','milestones','stepChecks'].includes(key))result[key]=checks(item);
     else if(key==='history')result[key]=history(item);
     else if(['sourceCheckedAt','updatedAt'].includes(key))timestamp(item,key);
@@ -150,9 +162,15 @@ function reviewData(value,{strict=false}={}){
   if(strict&&!own(value,'records'))fail('The review handover is incomplete.');
   return {version:1,records:map(field(value,'records',{}),(item,key)=>{
     if(!/^(vet|tas):\d{4}:.+$/.test(key))fail('Invalid review task identity.');
-    keys(item,['completed','reviewedOn','completedEarly'],'review record');
+    keys(item,['completed','reviewedOn','completedEarly','requirementsKey','previousReviews'],'review record');
     boolean(item.completed,'review tick');
     if(own(item,'completedEarly'))boolean(item.completedEarly,'early completion');
+    if(own(item,'requirementsKey')&&!globalThis.WWHS_TASK_REVIEW.validRequirementsKey(item.requirementsKey))fail('Invalid reviewed task requirements.');
+    if(own(item,'previousReviews')){
+      if(!Array.isArray(item.previousReviews))fail('Invalid previous reviews.');
+      item.previousReviews.forEach(previous=>keys(previous,['completed','reviewedOn','completedEarly','requirementsKey'],'previous review'));
+      globalThis.WWHS_TASK_REVIEW.parse(JSON.stringify({version:1,records:{[key]:item}}));
+    }
     if(!date(item.reviewedOn,'review date'))fail('Missing review date.');
     return {...item};
   },'task reviews')};
@@ -186,7 +204,7 @@ function validatePortableInbox(value){
   if(value.version!==2||!Array.isArray(value.items)||value.items.length>300||!Array.isArray(value.workboardImports))fail('Invalid team task list.');
   value.items.forEach(item=>{
     keys(item,TEAM_ITEM_FIELDS,'team task');
-    if(TEAM_ITEM_FIELDS.some(key=>!own(item,key))||!isTeamItem(item))fail('Only complete origin-linked VET or TAS tasks can enter the team file.');
+    if(TEAM_ITEM_FIELDS.filter(key=>!['requirementsKey','completedRequirementsKey','requirementsReview','requirementsHistory'].includes(key)).some(key=>!own(item,key))||!isTeamItem(item))fail('Only complete origin-linked VET or TAS tasks can enter the team file.');
     keys(item.origin,['wing','taskId','recordKey','route','cycle'],'task origin');
     if(item.forecast)keys(item.forecast,FORECAST_FIELDS,'team forecast');
     if(!Array.isArray(item.dirty)||item.dirty.some(key=>!TEAM_DIRTY_FIELDS.includes(key))||!Array.isArray(item.dependsOn)||item.dependsOn.some(key=>!/^workboard:(vet|tas):.+/.test(key))||item.taskHelp?.links?.length)fail('Private task fields are not allowed in a team handover.');

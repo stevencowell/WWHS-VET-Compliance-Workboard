@@ -93,6 +93,21 @@
     return value;
   }
 
+  function inheritAuditRequirements(task, original, options = {}) {
+    if (!original.auditSteps?.length) return task;
+    const clean = value => cleanInherited(value);
+    const old = original.legacyRequirements;
+    if (old) task.legacyRequirements = {
+      steps: options.actionSteps ? [...options.actionSteps] : clean(old.steps),
+      finished: options.doneWhen || clean(old.finished)
+    };
+    else delete task.legacyRequirements;
+    task.auditSteps = original.auditSteps.map(item => ({...item,text:clean(item.text)}));
+    task.actionSteps = [...task.actionSteps];
+    for (const item of task.auditSteps) if (!task.actionSteps.includes(item.text)) task.actionSteps.push(item.text);
+    return task;
+  }
+
   function sourceTask(id, canonicalId, options) {
     const original = canonicalTasks.get(canonicalId);
     if (!original) throw new Error(`Missing canonical task: ${canonicalId}`);
@@ -134,7 +149,7 @@
       guidance: options.guidance || cleanInherited(original.guidance)
     };
     Object.keys(derived).filter(key => /2026/.test(key)).forEach(key => delete derived[key]);
-    return derived;
+    return inheritAuditRequirements(derived, original, options);
   }
 
   function customTask(options) {
@@ -180,7 +195,7 @@
   function eventTemplate(canonicalId, options = {}) {
     const original = canonicalTasks.get(canonicalId);
     if (!original) throw new Error(`Missing event task: ${canonicalId}`);
-    return {
+    const derived = {
       ...original,
       id: `template-${canonicalId}`,
       title: options.title || cleanInherited(original.title),
@@ -211,6 +226,7 @@
         check: options.liveCheck || "Respond safely now, then re-open and verify the current 2027 controls listed as concurrent follow-ups."
       }
     };
+    return inheritAuditRequirements(derived, original, options);
   }
 
   const leadershipRoles = {
@@ -278,6 +294,7 @@
       independentVerificationRequired: true,
       liveCheck: "Own and contain the discrepancy as soon as it is found, then verify the current 2027 authority and affected control as concurrent follow-ups."
     }),
+    eventTemplate("e-08-rto-audit-visit", {order:85, independentVerificationRequired:true}),
     eventTemplate("c-09-validation-improvement", {
       order: 80,
       dependencies: ["2027-g01-authority", "2027-g08-assessment"],
@@ -950,6 +967,125 @@
     { number: 4, label: "Term 4", staffStart: "2027-10-11", studentStart: "2027-10-12", end: "2027-12-20", weeks: termFourWeeks }
   ];
 
+
+  // Local audit additions stay in the existing task lanes and use fresh IDs.
+  // A weekly routine has separate dated daily checks, rather than one reusable
+  // annual completion tick or hundreds of expanded cards.
+  const auditScheduledTasks = [];
+  const auditTask = (id, canonicalId, termNumber, weekNumber, options = {}) => {
+    const term = terms.find(item=>item.number === termNumber);
+    const week = term.weeks.find(item=>item.number === weekNumber);
+    const task = sourceTask(id, canonicalId, {
+      term:termNumber,week:weekNumber,order:termNumber*1000+weekNumber*100+55,
+      lane:'core',gate:termNumber===1?3:termNumber===2?7:termNumber===3?9:11,
+      windowStart:week.start,windowEnd:week.end,
+      timing:'Local planning reminder in Term '+termNumber+' Week '+weekNumber+'. Confirm the current school/RTO date before acting.',
+      ...options
+    });
+    // New occurrence IDs have no saved baseline to inherit.
+    delete task.legacyRequirements;
+    auditScheduledTasks.push(task);
+    return task;
+  };
+  // Published NSW public holidays checked 24 September 2026. The August bank
+  // holiday is not a general public holiday. Local school variations still need
+  // the current WWHS calendar; these daily lists cover student term days.
+  const publicHolidays2027 = new Set(['2027-01-01','2027-01-26','2027-03-26','2027-03-27','2027-03-28','2027-03-29','2027-04-25','2027-04-26','2027-06-14','2027-10-04','2027-12-25','2027-12-26','2027-12-27','2027-12-28']);
+  for (const term of terms) {
+    for (const week of term.weeks) {
+      const task = auditTask('2027-t'+term.number+'-w'+String(week.number).padStart(2,'0')+'-daily-updates','c-10-daily-staffroom-triage',term.number,week.number,{title:'Check daily VET updates',lane:'weekly'});
+      const days = [];
+      for (let date = new Date(week.start+'T12:00:00Z');date.toISOString().slice(0,10)<=week.end;date.setUTCDate(date.getUTCDate()+1)) {
+        const iso = date.toISOString().slice(0,10);
+        if (![0,6].includes(date.getUTCDay()) && !publicHolidays2027.has(iso)) days.push(iso);
+      }
+      task.actionSteps = days.map(day=>new Intl.DateTimeFormat('en-AU',{weekday:'long',day:'numeric',month:'short',timeZone:'UTC'}).format(new Date(day+'T12:00:00Z'))+': if this is a school working day, check VET Teams and Statewide Staffroom, send relevant updates to affected teachers, and assign required actions and follow-up dates. Record a confirmed holiday or non-working day as not applicable.');
+      task.auditSteps = task.actionSteps.map((text,index)=>({id:'r01-'+days[index],rowId:'R01',text,sourceFileIds:['1BN3FjrNy1GhA2z4MMbvqeKvW0S5x8x52'],authorityCheck:'Use the current school working calendar; these are local daily checks, not NESA deadlines.'}));
+      task.dailyCheckDates = days;
+      task.recurrence = 'daily-grouped-by-week';
+      task.dailyCalendarBasis = 'Published Eastern Division student term days, excluding NSW public holidays. Confirm local variations; staff-only days follow current school work arrangements.';
+      task.timing = 'Daily checks for the listed student term days in Term '+term.number+' Week '+week.number+'. Public holidays and scheduled student-free days are excluded; check local school variations.';
+      task.doneWhen = 'Every applicable dated working-day check is complete, confirmed non-working days are identified, and required actions have reached the responsible staff.';
+    }
+    auditTask('2027-t'+term.number+'-attendance','c-11-term-end-attendance',term.number,term.weeks.length,{dueDate:term.end,windowStart:term.end,windowEnd:term.end,timing:'Local attendance export on the published last student day of term; confirm any WWHS variation.',deadlineState:'local-planning'});
+    if(term.number>1) auditTask('2027-t'+term.number+'-calendar-refresh','a-02-build-live-calendar',term.number,1,{title:'Refresh this term’s VET calendar'});
+  }
+  auditTask('2027-w01-markbook-setup','a-09-set-up-markbooks',1,1,{dependencies:['2027-g07-codes']});
+  auditTask('2027-t2-w01-exam-intentions','t2-10-hsc-exam-intentions',2,1,{dependencies:['2027-g07-codes']});
+  auditTask('2027-t4-w02-training-awards','t4-10-training-awards',4,2,{deadlineState:'confirm-current'});
+  auditTask('2027-t4-w02-preliminary-exit-survey','t3-07-exit-survey',4,2,{title:'Check the exit survey for Preliminary leavers',applicability:{cohorts:['exiting Preliminary VET students'],conditions:'Only if the current RTO requests the survey for this cohort; verify the live survey window.'}});
+  auditTask('2027-t4-w01-coordinator-meeting','c-02-team-meetings',4,1,{title:'Arrange the Term 4 RTO coordinator meeting and staff briefing',timing:'Check the current RTO Term 4 meeting notice and guide; this is a preparation reminder, not a meeting date.'});
+  auditTask('2027-t4-w07-trainer-survey','c-09-validation-improvement',4,7,{title:'Check the current RTO trainer survey request',timing:'Term 4 planning reminder; respond only to the current RTO request and its published date.'});
+  auditTask('2027-w03-report-setup','t2-06-finalise-semester-one-reports',1,3,{title:'Prepare the Year 11 and Year 12 report setup',timing:'Before the applicable reporting cycle opens to teachers; confirm the Head Teacher’s internal date.'});
+  auditTask('2027-t3-w02-report-setup','t4-02-year11-reports',3,2,{title:'Prepare Semester 2 VET report setup',timing:'Before the applicable Semester 2 reporting cycle opens; confirm each year group and the Head Teacher’s internal date.',applicability:{cohorts:['applicable Year 11 and Year 12 VET reports'],conditions:'Use current school reporting schedule and course requirements.'}});
+
+  for (const setupId of ['2027-w03-report-setup','2027-t3-w02-report-setup']) {
+    const setup = auditScheduledTasks.find(task=>task.id===setupId);
+    setup.auditSteps = setup.auditSteps.filter(item=>item.rowId==='R29' || (item.rowId==='R51' && item.id==='r51-1'));
+    setup.auditSteps.push({id:'r52-report-template',rowId:'R52',text:'Check the current VET report template contains the required course, qualification, studied units/outcomes and placement-hours fields; do not use a generic marks/ranks report template.',sourceFileIds:['1JElTdkJo0GHxWI7_HctCHBqOcdz8gW4N'],authorityCheck:'Use current NESA/RTO report requirements; student outcomes are entered and verified later.'});
+    setup.actionSteps = setup.auditSteps.map(item=>item.text);
+    setup.doneWhen='The applicable report templates, class/competency links, teacher access and internal review dates are checked and ready for teachers. Final student outcomes are checked in the later reporting task.';
+    setup.guidance={why:'Prepare the report structure and access before teachers enter their results.',commonTrap:'Leaving template errors until report release, or treating setup as final outcome verification.'};
+  }
+  const survey = auditScheduledTasks.find(task=>task.id==='2027-t4-w07-trainer-survey');
+  survey.auditSteps=survey.auditSteps.filter(item=>item.rowId==='R49');
+  survey.actionSteps=survey.auditSteps.map(item=>item.text);
+  survey.doneWhen='The current RTO survey request has been checked; the required response is returned or recorded as not applicable, and resulting actions have owners.';
+  survey.guidance={why:'Check the actual RTO request and return the required staff feedback.',commonTrap:'Completing an older survey or assuming a survey is due without a current request.'};
+
+  const allScheduledTasks = [...setupTasks,...weekTasks,...laterTermTasks,...auditScheduledTasks];
+  const examVerification = allScheduledTasks.find(task=>task.id==='2027-t3-w01-exam-entry');
+  examVerification.dependencies.push('2027-t2-w01-exam-intentions');
+
+  // Published NESA 2027 timetable, Detailed TOA worksheet (21 September 2026).
+  // Retain preparation windows separately and never mark them as official cut-offs.
+  const officialControls = {
+    't1-02-external-vet-entries': {due:'2027-03-17',open:'2027-02-02',rows:'15–17',label:'TAFE NSW outside-school entry where applicable'},
+    't1-01-usi-verification': {due:'2027-04-02',open:'2027-02-02',rows:'22–24',label:'School-delivered VET USI entry according to sector/RTO responsibility'},
+    't2-01-confirm-rto-qualification': {due:'2027-05-13',open:'2027-03-30',rows:'43–45',label:'Confirm RTO and qualification'},
+    't2-02-sbat-status': {due:'2027-05-13',open:'2027-03-30',rows:'46–47',label:'SBAT status and applicable TCID'},
+    't2-03-enter-competencies': {due:'2027-05-13',open:'2027-03-30',rows:'48–50',label:'Enter competencies intended for study; outcomes remain evidence-supported'},
+    't3-05-hsc-estimates': {due:'2027-09-17',open:'2027-08-02',rows:'93',label:'HSC VET exam estimates'},
+    't4-01-year11-final-outcomes': {due:'2027-10-22',rows:'127–128',label:'Final Year 11 competencies and work-placement hours'},
+    't4-03-year12-year10-final-data': {due:'2027-11-19',rows:'152–154',label:'Final Year 12/Year 10 competency outcomes and Year 12 placement hours'},
+    't4-04-year9-short-course-entries': {due:'2027-11-19',open:'2027-02-02',rows:'26',label:'Applicable Year 9 White Card/First Aid entry and USI'}
+  };
+  for(const task of allScheduledTasks) {
+    const control = officialControls[task.canonicalTaskId];
+    if(!control) continue;
+    task.planningWindow = {start:task.windowStart,end:task.windowEnd};
+    task.officialDeadline = {...control,sourceId:'NESA-TOA',url:'https://www.nsw.gov.au/education-and-training/nesa/key-dates/timetable-of-actions/2027',checkedOn:'2026-09-24'};
+    task.externalDueDate = control.due;
+    task.dueDate = control.due;
+    task.windowEnd = control.due;
+    task.deadlineState = 'published-nesa-2027';
+    task.dueAuthority = 'NESA 2027 Timetable of Actions, Detailed TOA rows '+control.rows+': '+control.label+'. Recheck later amendments and current sector/RTO instructions.';
+    task.timing += ' Published NESA due date: '+control.due+'.';
+  }
+  const tafeEntry = allScheduledTasks.find(task=>task.id==='2027-w02-external');
+  tafeEntry.title='Confirm TAFE NSW outside-school VET entries';
+  tafeEntry.trigger='A student has a TAFE NSW (RTO 98201) outside-school VET entry covered by the current NESA action';
+  tafeEntry.timing='Check TAFE NSW (RTO 98201) outside-school entries in Term 1 Week 2. The published NESA deadline is 17 March 2027 for this TAFE NSW action only; follow current instructions and dates for other external providers.';
+  tafeEntry.applicability={cohorts:['Applicable TAFE NSW (RTO 98201) outside-school VET students'],conditions:'Only the TAFE NSW outside-school entry action in NESA 2027 Detailed TOA rows 15–17. Other external providers follow their current instructions and deadlines.'};
+  tafeEntry.officialDeadline.appliesTo='TAFE NSW (RTO 98201) outside-school VET entry only';
+  tafeEntry.officialDeadline.otherProviders='Confirm each current provider/EVET instruction and deadline separately';
+  tafeEntry.guidance={why:'The published 17 March NESA deadline applies to the TAFE NSW outside-school entry action. Other external providers may have different dates and entry routes.',commonTrap:'Applying the TAFE NSW date to every external provider.'};
+  tafeEntry.liveVerification.check='Confirm this entry is within the current TAFE NSW (RTO 98201) NESA action, then check provider confirmation and the authorised entry owner. Confirm other providers separately.';
+
+  const competencyEntry = allScheduledTasks.find(task=>task.id==='2027-t2-w04-competencies');
+  competencyEntry.week=2;
+  competencyEntry.windowStart='2027-05-03';
+  competencyEntry.planningWindow={start:'2027-05-03',end:'2027-05-07'};
+  competencyEntry.order=2230;
+  competencyEntry.timing='Prepare in Term 2 Week 2 (3–7 May); enter intended competencies by the published NESA deadline of 13 May 2027. Record outcomes only when supported by authorised assessment evidence.';
+  competencyEntry.title='Enter the competencies students intend to study';
+  competencyEntry.trigger='The published NESA window for intended competency entries';
+  competencyEntry.dependencies=['2027-t2-w02-qualification'];
+  competencyEntry.hardDependencies=[];
+  const usiFollowUp=allScheduledTasks.find(task=>task.id==='2027-t2-w03-usi-exceptions');
+  usiFollowUp.title='Follow up unresolved USI exceptions after the published deadline';
+  usiFollowUp.timing='Any unresolved USI exception after 2 April 2027 needs the current RTO owner and an authorised correction route; this May review is not an extension of the NESA deadline.';
+
   const operatingCycle2027 = {
     id: "wwhs-vet-2027-full-year-cycle",
     title: "2027 plan · the full year",
@@ -963,13 +1099,17 @@
       studentStart: "2027-02-03",
       termEnd: "2027-12-20",
       terms: terms.map(term => ({ number: term.number, staffStart: term.staffStart, studentStart: term.studentStart, end: term.end })),
-      status: "published-full-year-term-windows-school-calendar-to-confirm"
+      status: "published-full-year-term-windows-school-calendar-to-confirm",
+      checkedOn: "2026-09-24",
+      publicHolidaysSourceUrl: "https://www.nsw.gov.au/about-nsw/public-holidays",
+      dailyCheckBasis: "Published student term weekdays excluding NSW public holidays; staff-only days and local variations follow the current school arrangements.",
+      publicHolidays: [...publicHolidays2027]
     },
     sequenceRule: "Only tasks whose prerequisites are verified or authorised as not applicable may appear as the next action. Urgent workflows may interrupt this sequence.",
     sourceFamilies: {
       "NESA-TOA": {
         title: "Current NESA Timetable of Actions",
-        note: "Check the 2027 edition when published. Use current NESA dates; do not carry 2026 dates forward.",
+        note: "The 2027 edition is published. Recheck its current revision and the specific action; local preparation windows are separate from published deadlines.",
         url: "https://www.nsw.gov.au/education-and-training/nesa/key-dates/timetable-of-actions"
       },
       "RTO-DOCUMENT-LIBRARY": {
@@ -995,14 +1135,14 @@
     terms,
     weeks,
     gates,
-    tasks: [...setupTasks, ...weekTasks, ...laterTermTasks],
+    tasks: allScheduledTasks,
     eventTemplates,
     interruptWorkflows: ["safety-incident", "placement", "confirm-delivery", "onboard-learners", "corrective-action", "handover"],
     sourceWarnings: [
-      "On 30 August 2026, the public NESA page showed only the 2026 Timetable of Actions. Check the 2027 source before starting each affected task.",
+      "The 2027 NESA Timetable of Actions was published in September 2026. Listed external dates were checked on 24 September; recheck amendments before acting.",
       "Check the current 2027 RTO coordinator term guides and WWHS staff calendar before starting.",
       "The Principal or authorised delegate must confirm the local Head Teacher VET, Coordinator, Assistant, deputy and verifier split.",
-      "No 2026 VET deadline has been copied into 2027.",
+      "Published NESA dates are linked to their 2027 action rows; other reminder windows are local planning dates until confirmed.",
       "The 30 June Stage 6 VET entry cut-off comes from current NESA ACE Rule 14.2; all cohort details and corrections stay in Schools Online.",
       "Official evidence and personal information remain in authorised owner systems."
     ]

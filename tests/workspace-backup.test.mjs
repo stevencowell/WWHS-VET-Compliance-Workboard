@@ -37,6 +37,20 @@ test('one file round-trips every current record verbatim, retaining rich notes a
   assert.ok(text.includes('data:image/png'));assert.ok(text.includes('TAS preference'));
   assert.ok(!text.includes('SYNTHETIC_PRIVATE_FINANCE'));assert.ok(!text.includes('unrelated-site-secret'));assert.ok(!text.includes('Must never enter'));
 });
+
+test('all-area backup restores instruction revisions and earlier completion without losing any area',async()=>{
+  const f=await fixture(),review=globalThis.WWHS_TASK_REVIEW;
+  const old={steps:['Original check'],finished:'Original result'},task={actionSteps:['Original check','Added check'],doneWhen:old.finished,legacyRequirements:old};
+  const vet=JSON.parse(f.storage.getItem(KEYS.vet));
+  vet.records.synthetic=review.migrateRequirements({status:'completed',stepChecks:{0:true},sourceChecked:true,doneWhenConfirmed:true,exceptionSummary:'Saved working notes'},task);
+  f.storage.setItem(KEYS.vet,json(vet));
+  const ticks=JSON.parse(f.storage.getItem(KEYS.review));ticks.records['vet:2026:synthetic']=review.nextReview(ticks.records['vet:2026:synthetic'],{completed:true,reviewedOn:'2026-09-24',requirementsKey:review.requirementsKey(task)});f.storage.setItem(KEYS.review,json(ticks));
+  const data=await captureWorkspace(f.storage,f.finance),opened=await parseWorkspaceBackup(json(await createWorkspaceBackup(data)));
+  assert.deepEqual(opened.data,data);
+  const restored=JSON.parse(opened.data.records[KEYS.vet]);
+  assert.equal(restored.records.synthetic.requirementsHistory[0].status,'completed');assert.equal(restored.records.synthetic.requirementsReview,true);assert.equal(restored.records.synthetic.exceptionSummary,'Saved working notes');
+  const restoredTicks=JSON.parse(opened.data.records[KEYS.review]);assert.equal(restoredTicks.records['vet:2026:synthetic'].previousReviews[0].completed,true);
+});
 test('empty, damaged, incomplete and unknown-version files cannot be restored',async()=>{
   const f=await fixture(),file=await createWorkspaceBackup(f.data);
   await assert.rejects(parseWorkspaceBackup(''),/empty/);

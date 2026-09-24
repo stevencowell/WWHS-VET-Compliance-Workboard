@@ -272,3 +272,19 @@ test('native source changes across reconciliation never commit a stale forecast 
   const read=localStorage.getItem;localStorage.getItem=target=>{if(target===key)throw new Error('Access unavailable');return read(target);};
   assert.equal((await list.syncForecast(snapshot)).sourceChanged,true);assert.equal(stored.get(INBOX_KEY),undefined);
 });
+import {syncTaskRequirements,taskCompletionChanges} from '../morning-launchpad/assets/summary-core.mjs';
+
+test('changed task requirements reopen an old Done card while retaining edited text, rich notes and its earlier completion',()=>{
+  const review=globalThis.WWHS_TASK_REVIEW;
+  const old={steps:['Check the record'],finished:'Record checked'},task={actionSteps:[...old.steps,'File the signed copy'],doneWhen:old.finished,legacyRequirements:old};
+  const descriptor={requirementsInfo:review.requirementsInfo(task),sourceStatus:'in-progress'};
+  const original={status:'done',title:'My own title',action:'My own next step',noteText:'Keep my research',noteHtml:'<p><b>Keep</b> <a href="https://example.test/doc">document</a></p>',dirty:['title','action','noteText'],createdOn:'2026-09-20',lastActionOn:'2026-09-23'};
+  const updated=syncTaskRequirements(original,descriptor);
+  assert.equal(updated.status,'review');assert.equal(updated.requirementsReview,true);
+  for(const key of ['title','action','noteText','noteHtml','createdOn','lastActionOn'])assert.equal(updated[key],original[key]);
+  assert.deepEqual(updated.requirementsHistory,[{requirementsKey:descriptor.requirementsInfo.legacyKey,completedOn:'2026-09-23'}]);
+  assert.deepEqual(syncTaskRequirements(updated,descriptor),updated,'Repeated source refresh cannot duplicate old completion');
+  const finished={...updated,...taskCompletionChanges(updated,{status:'done'})};
+  assert.equal(finished.completedRequirementsKey,descriptor.requirementsInfo.key);assert.equal(finished.requirementsReview,false);
+  assert.equal(syncTaskRequirements(finished,descriptor).status,'done');assert.equal(finished.requirementsHistory.length,1);
+});

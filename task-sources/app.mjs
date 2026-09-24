@@ -165,7 +165,7 @@ function renderTasks() {
     section.append(heading, cards);
     container.append(section);
   }
-  countMessage(filtered.length, 'of 126 loaded entries', byId('wing').value ? ` · ${byId('wing').value}` : ' · VET and TAS');
+  countMessage(filtered.length, 'of '+rows.length+' loaded entries', byId('wing').value ? ` · ${byId('wing').value}` : ' · VET and TAS');
   empty(container);
 }
 
@@ -279,7 +279,7 @@ function renderFindings() {
     if (finding.id) evidence.append(element('p', 'source-id', `Finding reference: ${finding.id}`));
     container.append(card);
   }
-  countMessage(filtered.length, `of ${data.findings.length} review findings`, ' · task definitions have not yet been changed');
+  countMessage(filtered.length, `of ${data.findings.length} review findings`, ' · check current sources and remaining follow-ups');
   empty(container);
 }
 
@@ -337,7 +337,7 @@ window.addEventListener('hashchange', () => setView(location.hash.slice(1), fals
 
 async function initialise() {
   try {
-    const response = await fetch('./data.json?v=plain-language-1');
+    const response = await fetch('./data.json?v=vet-admin-audit-20260924');
     if (!response.ok) throw new Error('Source register unavailable');
     data = await response.json();
     if (![data.rows, data.sources, data.watch, data.findings].every(Array.isArray)) throw new Error('Source register incomplete');

@@ -1,4 +1,4 @@
-import {RESTORE_KEY,EPOCH_KEY,RECORD_KEYS,captureWorkspace,same,validateSnapshot} from './workspace-backup.mjs';
+import {RESTORE_KEY,EPOCH_KEY,RECORD_KEYS,captureWorkspace,same,validateSnapshot} from './workspace-backup.mjs?v=vet-admin-audit-20260924';
 const LOCK='wwhs-team-handover-transaction:v2';
 export async function openWorkspaceRecovery(indexedDB=globalThis.indexedDB){
   const db=await new Promise((resolve,reject)=>{const r=indexedDB.open('wwhs-workspace-recovery-v1',1);r.onupgradeneeded=()=>r.result.createObjectStore('copies');r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});

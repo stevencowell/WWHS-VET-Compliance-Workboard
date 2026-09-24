@@ -166,3 +166,12 @@ test('callers cannot mutate a shared profile or native task by editing the retur
   assert.deepEqual(getVetTaskHelp(task), expected);
   assert.deepEqual(task, {taskId:'a-01-confirm-authority-set'});
 });
+
+
+test('intended unit entry is prepared before assessment outcomes exist', () => {
+  const intended = getVetTaskHelp(find('t2-03-enter-competencies'));
+  const outcomes = getVetTaskHelp(find('t3-03-progressive-outcomes'));
+  assert.notEqual(intended.profileId, outcomes.profileId);
+  assert.match(text(intended), /do not wait for completed assessments/);
+  assert.match(text(intended), /Competency results require actual authorised assessor decisions/);
+});

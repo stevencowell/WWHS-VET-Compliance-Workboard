@@ -1,5 +1,5 @@
 // Full source register and year-specific overall task sign-off.
-import './task-review.js?v=early-completion-1';
+import './task-review.js?v=vet-admin-audit-20260924';
 export const REVIEW_KEY = 'wwhs-task-register-review:v1';
 const browserStorage = () => window.WWHS_STORAGE || localStorage;
 export function readReview(raw) {
@@ -128,9 +128,9 @@ export function createTaskRegister({wing, label, getAdapter, getSavedItems = () 
       const reviewYear = item.year === 'ongoing' ? (year.value === 'all' ? snapshot.currentYear : Number(year.value)) : Number(item.year);
       const key = reviewKey(wing,item,reviewYear), tick=review.records[key];
       const appliesToYear=item.year !== 'ongoing' || reviewYear === snapshot.currentYear;
-      const personalDone=appliesToYear&&!!item.recordKey&&saved.some(task=>task.origin?.wing===wing&&task.origin.recordKey===item.recordKey&&task.status==='done');
+      const personalDone=appliesToYear&&!!item.recordKey&&saved.some(task=>task.origin?.wing===wing&&task.origin.recordKey===item.recordKey&&task.status==='done'&&globalThis.WWHS_TASK_REVIEW.reviewMatches({requirementsKey:task.completedRequirementsKey},item.requirementsInfo));
       const schedule=appliesToYear?item.schedule:{kind:item.schedule?.kind||'undated',label:`Repeating duty — ${reviewYear} dates are not loaded. Open the task to check when it is needed.`};
-      const signedOff = globalThis.WWHS_TASK_REVIEW.resolve(review.records,wing,item.recordKey || item.id,reviewYear,sydneyToday(),registerDate({schedule}));
+      const signedOff = globalThis.WWHS_TASK_REVIEW.resolve(review.records,wing,item.recordKey || item.id,reviewYear,sydneyToday(),registerDate({schedule}),item.requirementsInfo);
       return {...item,schedule,statusAppliesToYear:appliesToYear,inFocus:appliesToYear&&item.inFocus,reviewYear,key,tick:signedOff?tick:undefined,sourceComplete:appliesToYear&&item.complete&&!item.externallyReviewed,personalDone,reviewComplete:!!signedOff || appliesToYear&&item.complete || personalDone};
     });
   }
@@ -170,7 +170,7 @@ export function createTaskRegister({wing, label, getAdapter, getSavedItems = () 
       const reviewStatus=registerReviewStatus(item);
       if(reviewStatus)main.append(node('span',`Under review · ${reviewStatus}`,{class:'register-review-status'}));
       const date=registerDate(item), past=date&&date<today;
-      const status=item.sourceComplete?`Workboard status: ${item.status}`:item.personalDone?'Done in your saved task list':item.tick?.completed?`Reviewed complete${item.tick.completedEarly?' early':''} for ${item.reviewYear} · ${item.tick.reviewedOn}`:past?'Past date — review the record':item.historyOnly?'Past task — check if it is done':item.inFocus?'In your current task list':item.procedureOnly?'Procedure guide':item.schedule?.kind==='trigger'?'Do this when needed':'Not in your current task list';
+      const status=item.requirementsReview&&!item.reviewComplete?'Updated steps — review needed':item.sourceComplete?`Workboard status: ${item.status}`:item.personalDone?'Done in your saved task list':item.tick?.completed?`Reviewed complete${item.tick.completedEarly?' early':''} for ${item.reviewYear} · ${item.tick.reviewedOn}`:past?'Past date — review the record':item.historyOnly?'Past task — check if it is done':item.inFocus?'In your current task list':item.procedureOnly?'Procedure guide':item.schedule?.kind==='trigger'?'Do this when needed':'Not in your current task list';
       main.append(node('p',status,{class:'register-status'}));
       if(!item.reviewComplete&&item.gaps?.length){const gaps=node('details',undefined,{class:'register-gap'});gaps.append(node('summary',`${item.gaps.length} ${item.gaps.length===1?'check':'checks'} needed`));const ul=node('ul');item.gaps.forEach(gap=>ul.append(node('li',gap)));gaps.append(ul);main.append(gaps);}
       const control=node('label',undefined,{class:'register-tick'});
@@ -180,7 +180,7 @@ export function createTaskRegister({wing, label, getAdapter, getSavedItems = () 
       checkbox.disabled=blocked||item.procedureOnly||item.sourceComplete||item.personalDone;
       checkbox.addEventListener('change',()=>{
         const completed=checkbox.checked;
-        if(save({version:1,records:{...review.records,[item.key]:{completed,reviewedOn:today,...(completed&&future?{completedEarly:true}:{})}}})) {message.textContent=completed?`Reviewed complete${future?' early':''} for ${item.reviewYear}: ${item.title}.${future?' Scheduled dates are unchanged.':''}`:`Review tick removed: ${item.title}.`;render();}
+        if(save({version:1,records:{...review.records,[item.key]:globalThis.WWHS_TASK_REVIEW.nextReview(review.records[item.key],{completed,reviewedOn:today,...(completed&&future?{completedEarly:true}:{}),...(item.requirementsInfo?.key?{requirementsKey:item.requirementsInfo.key}:{})})}})) {message.textContent=completed?`Reviewed complete${future?' early':''} for ${item.reviewYear}: ${item.title}.${future?' Scheduled dates are unchanged.':''}`:`Review tick removed: ${item.title}.`;render();}
         else {checkbox.checked=!completed;checkbox.disabled=true;}
       });
       control.append(checkbox,node('span',item.procedureOnly?'Reference only':item.sourceComplete?'Complete in workboard':item.personalDone?'Done in task list':item.tick?.completedEarly?`Reviewed complete early · ${item.reviewYear}`:future?`Mark complete early · ${item.reviewYear}`:`Reviewed complete · ${item.reviewYear}`));
@@ -188,7 +188,7 @@ export function createTaskRegister({wing, label, getAdapter, getSavedItems = () 
         const remove=node('button','Remove review tick',{type:'button','aria-label':`Remove review tick: ${item.title}`});
         remove.disabled=blocked;
         remove.addEventListener('click',()=>{
-          if(save({version:1,records:{...review.records,[item.key]:{completed:false,reviewedOn:today}}})) {message.textContent=`Review tick removed: ${item.title}. Its other completion record is unchanged.`;render();}
+          if(save({version:1,records:{...review.records,[item.key]:globalThis.WWHS_TASK_REVIEW.nextReview(review.records[item.key],{completed:false,reviewedOn:today,...(item.requirementsInfo?.key?{requirementsKey:item.requirementsInfo.key}:{})})}})) {message.textContent=`Review tick removed: ${item.title}. Its other completion record is unchanged.`;render();}
         });
         main.append(remove);
       }

@@ -1,17 +1,18 @@
 const workStorage=()=>globalThis.WWHS_STORAGE||globalThis.localStorage;
-import {RESTORE_KEY,createLaunchpadBackup} from './launchpad-backup.mjs?v=edit-card-text-1';
-import {recoverLaunchpadRestore,readLaunchpadRecovery} from './launchpad-backup-transaction.mjs?v=edit-card-text-1';
-import {installLaunchpadBackupDialog} from './launchpad-backup-ui.mjs?v=edit-card-text-1';
+import {taskCompletionChanges, syncTaskRequirements} from './summary-core.mjs?v=vet-admin-audit-20260924';
+import {RESTORE_KEY,createLaunchpadBackup} from './launchpad-backup.mjs?v=vet-admin-audit-20260924';
+import {recoverLaunchpadRestore,readLaunchpadRecovery} from './launchpad-backup-transaction.mjs?v=vet-admin-audit-20260924';
+import {installLaunchpadBackupDialog} from './launchpad-backup-ui.mjs?v=vet-admin-audit-20260924';
 import {storageSizes} from '../../assets/js/team-storage-report.mjs?v=area-backups-1';
-import {createNoteEditor,cleanNoteHtml} from './note-editor.mjs?v=edit-card-text-1';
-import {mergeCapturedEmail} from './email-note.mjs?v=edit-card-text-1';
+import {createNoteEditor,cleanNoteHtml} from './note-editor.mjs?v=vet-admin-audit-20260924';
+import {mergeCapturedEmail} from './email-note.mjs?v=vet-admin-audit-20260924';
 import {downloadDestination} from '../../assets/js/save-backup-file.mjs?v=backup-flow-2';
 import {choosePrivateBackupDestination,getBackupFolder} from '../../assets/js/backup-folder.mjs?v=plain-language-1';
-import {createTaskHelpDialog} from './task-help-dialog.mjs?v=edit-card-text-1';
+import {createTaskHelpDialog} from './task-help-dialog.mjs?v=vet-admin-audit-20260924';
 import {emailSearchText} from './email-search.mjs?v=1';
-import './email-capture.mjs?v=edit-card-text-1';
-import './launchpad-calendar.mjs?v=edit-card-text-1';
-import {INBOX_KEY, LIMIT, parseSummary, validateInbox, mergeInbox, safeUrl, workingNoteLinks, matchesNoteSearch, PRIORITIES, NEXT_ACTIONS, EDITABLE, enrich, todaySydney, taskSection, rank, nextDate, consolidateDuplicates, LEGACY_PLAN_KEY, isPinned, migrateToPins, recordNoteAction, WORKSTREAMS, createTrackedWork, mergeWorkboardImports, clearEmailImports, isUnfinishedEmailNote, reconcileForecast, sourceCompleted, normaliseForecastContext} from './summary-core.mjs?v=edit-card-text-1';
+import './email-capture.mjs?v=vet-admin-audit-20260924';
+import './launchpad-calendar.mjs?v=vet-admin-audit-20260924';
+import {INBOX_KEY, LIMIT, parseSummary, validateInbox, mergeInbox, safeUrl, workingNoteLinks, matchesNoteSearch, PRIORITIES, NEXT_ACTIONS, EDITABLE, enrich, todaySydney, taskSection, rank, nextDate, consolidateDuplicates, LEGACY_PLAN_KEY, isPinned, migrateToPins, recordNoteAction, WORKSTREAMS, createTrackedWork, mergeWorkboardImports, clearEmailImports, isUnfinishedEmailNote, reconcileForecast, sourceCompleted, normaliseForecastContext} from './summary-core.mjs?v=vet-admin-audit-20260924';
 
 const repositoryRoot=new URL('../../',import.meta.url);
 
@@ -126,8 +127,10 @@ class SummaryImport extends HTMLElement {
     const identity=`${candidate.origin.wing}:${candidate.origin.recordKey}`;
     const imports=this.inbox.workboardImports||[];
     const refreshHelp=item&&candidate.taskHelp&&JSON.stringify(item.taskHelp)!==JSON.stringify(candidate.taskHelp);
-    if(!item||!imports.includes(identity)||refreshHelp){
-      const items=item?this.inbox.items.map(existing=>refreshHelp&&existing.id===item.id?{...existing,taskHelp:candidate.taskHelp}:existing):[...this.inbox.items,candidate];
+    const revised=item?syncTaskRequirements(item,descriptor):null;
+    const refreshRequirements=item&&JSON.stringify(revised)!==JSON.stringify(item);
+    if(!item||!imports.includes(identity)||refreshHelp||refreshRequirements){
+      const items=item?this.inbox.items.map(existing=>existing.id===item.id?{...revised,...(refreshHelp?{taskHelp:candidate.taskHelp}:{})}:existing):[...this.inbox.items,candidate];
       const workboardImports=mergeWorkboardImports(imports,[identity]);
       if(!this.persist({...this.inbox,items,workboardImports}))throw new Error('Your task list could not be saved.');
       item=this.inbox.items.find(x=>x.id===(item?.id||candidate.id));
@@ -365,6 +368,7 @@ class SummaryImport extends HTMLElement {
     this.nav.scrollIntoView({behavior:'smooth',block:'start'});return true;
   }
   updateItem(id,changes,rerender=false){
+    changes=taskCompletionChanges(this.inbox.items.find(item=>item.id===id)||{},changes);
     if(Object.hasOwn(changes,'status'))changes={...changes,progressOverride:true};
     const next={...this.inbox,items:this.inbox.items.map(x=>x.id===id?{...recordNoteAction(x,changes),dirty:[...new Set([...x.dirty,...Object.keys(changes).filter(k=>EDITABLE.includes(k))])]}:x)};
     if(this.persist(next)){if(rerender)this.renderItems();else this.refreshActionDates();this.updateCount();return true;}return false;
@@ -452,6 +456,7 @@ class SummaryImport extends HTMLElement {
     article.append(createNoteEditor(item,{disabled:this.blocked,save:changes=>article.isConnected&&this.inbox.items.some(x=>x.id===item.id)&&this.updateItem(item.id,changes)}));
     const source=element('details');source.append(element('summary',item.origin?'Sources & responsibilities':'Source and links'),element('p',item.origin?'Original workboard task:':item.personal?'Your note title:':'Search Evernote using this note title:'),element('p',item.title,{class:'import-source-title'}));
     if(item.origin){source.classList.add('task-clarity-reference');if(item.taskHelp?.roles?.length)source.append(element('p',`Responsible: ${item.taskHelp.roles.join(' · ')}`));for(const title of item.taskHelp?.sources||[])source.append(element('p',title));}
+    if(item.requirementsHistory?.length)source.append(element('p',`Earlier completion record kept before the instructions changed. Last saved action: ${item.requirementsHistory.map(record=>record.completedOn?dateLabel(record.completedOn):'date not recorded').join(' · ')}.`));
     for(const title of item.relatedTitles)source.append(element('p',`Also: ${title}`,{class:'import-source-title'}));
     if(item.sourceSummary){const summary=element('div',undefined,{class:'import-source-summary'});summary.append(element('strong','At a glance · AI summary'),element('p',item.sourceSummary));source.append(summary);}
     if(item.source)source.append(element('p','Original email or note',{class:'import-source-heading'}),element('div',item.source,{class:'import-source',tabindex:'0',role:'region','aria-label':'Original email or note'}));
@@ -548,6 +553,7 @@ class SummaryImport extends HTMLElement {
     if(clarity?.steps?.length){body.append(element('h3','What to do'));const steps=element('ol',undefined,{class:'task-clarity-steps'});clarity.steps.forEach(step=>steps.append(element('li',step)));body.append(steps);}
     if(frontAction||!titleFirst){const editAction=element('label',item.status==='done'?'Your recorded action':'Your next action',{class:'import-personal-action'});editAction.append(frontText);body.append(editAction);}
     body.append(...article.childNodes);disclosure.append(summary,body);article.append(disclosure);
+    if(item.requirementsReview)article.append(element('p','Updated steps need review. Your earlier completion and notes are kept.',{class:'task-clarity-front-warning'}));
     if(item.forecast){
       if(item.origin){
         source.append(this.forecastNotice(item));
