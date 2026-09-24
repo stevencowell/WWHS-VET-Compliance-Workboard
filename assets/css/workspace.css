@@ -270,3 +270,15 @@ html[data-workspace-boot=failed] .workspace-loading-error { display:block; }
   .register-summary-label { font-size:15px; }
   .register-disclosure-arrow { width:29px; height:29px; }
 }
+
+/* Keep the Start Here action distinct from the blue register card. */
+.shared-workspace[data-workboard] .workspace-register>summary .register-start-here {
+  background:#8f332c;
+  border-color:#742720;
+  color:#fff;
+}
+@media(hover:hover) {
+  .shared-workspace[data-workboard] .workspace-register>summary:hover .register-start-here {
+    background:#742720;
+  }
+}
