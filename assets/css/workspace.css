@@ -225,3 +225,48 @@ html[data-workspace-boot=failed] .workspace-loading-error { display:block; }
 .workspace-source-access a { color:var(--area-link,var(--ink)); font-weight:700; text-underline-offset:3px; }
 .workspace-source-access span { display:block; margin-top:5px; font-size:14px; }
 @media print { .workspace-header,.workspace-flow,.workspace-specialist>summary { display:none; } .workspace-welcome { background:none;color:#000; } .workspace-welcome h1,.workspace-welcome p { color:#000!important; } }
+
+/* Make the complete-task register read clearly as the next place to start. */
+.workspace-register {
+  border:2px solid var(--accent);
+  border-left-width:9px;
+  box-shadow:0 3px 0 rgba(16,42,62,.11),0 11px 24px rgba(16,42,62,.10);
+}
+.workspace-register>summary {
+  min-height:86px;
+  gap:16px;
+  padding:18px 24px;
+  background:var(--accent-soft);
+  color:var(--ink);
+  font-size:17px;
+}
+.workspace-register>summary:hover { background:var(--accent-soft); }
+.workspace-register[open]>summary { border-bottom:1px solid var(--line); }
+.register-start-here {
+  min-height:48px;
+  padding:10px 16px;
+  border-radius:10px;
+  font-size:15px;
+  box-shadow:0 2px 0 rgba(16,42,62,.20);
+}
+.register-start-here>span { font-size:21px; }
+.register-summary-label { font-size:18px; font-weight:750; line-height:1.35; }
+.register-disclosure-arrow {
+  display:grid;
+  place-items:center;
+  width:36px;
+  height:36px;
+  border:1px solid var(--line);
+  border-radius:50%;
+  background:var(--surface);
+  color:var(--accent);
+  font-size:21px;
+  line-height:1;
+  transition:transform .16s ease;
+}
+@media(max-width:450px) {
+  .workspace-register>summary { min-height:72px; gap:9px; padding:14px 10px; font-size:14px; }
+  .register-start-here { min-height:42px; gap:5px; padding:8px 9px; font-size:12px; }
+  .register-summary-label { font-size:15px; }
+  .register-disclosure-arrow { width:29px; height:29px; }
+}
