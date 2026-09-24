@@ -1,18 +1,18 @@
 const workStorage=()=>globalThis.WWHS_STORAGE||globalThis.localStorage;
-import {taskCompletionChanges, syncTaskRequirements} from './summary-core.mjs?v=vet-admin-audit-20260924';
-import {RESTORE_KEY,createLaunchpadBackup} from './launchpad-backup.mjs?v=vet-admin-audit-20260924';
-import {recoverLaunchpadRestore,readLaunchpadRecovery} from './launchpad-backup-transaction.mjs?v=vet-admin-audit-20260924';
-import {installLaunchpadBackupDialog} from './launchpad-backup-ui.mjs?v=vet-admin-audit-20260924';
+import {taskCompletionChanges, syncTaskRequirements} from './summary-core.mjs?v=vet-admin-procedures-20260924';
+import {RESTORE_KEY,createLaunchpadBackup} from './launchpad-backup.mjs?v=vet-admin-procedures-20260924';
+import {recoverLaunchpadRestore,readLaunchpadRecovery} from './launchpad-backup-transaction.mjs?v=vet-admin-procedures-20260924';
+import {installLaunchpadBackupDialog} from './launchpad-backup-ui.mjs?v=vet-admin-procedures-20260924';
 import {storageSizes} from '../../assets/js/team-storage-report.mjs?v=area-backups-1';
-import {createNoteEditor,cleanNoteHtml} from './note-editor.mjs?v=vet-admin-audit-20260924';
-import {mergeCapturedEmail} from './email-note.mjs?v=vet-admin-audit-20260924';
+import {createNoteEditor,cleanNoteHtml} from './note-editor.mjs?v=vet-admin-procedures-20260924';
+import {mergeCapturedEmail} from './email-note.mjs?v=vet-admin-procedures-20260924';
 import {downloadDestination} from '../../assets/js/save-backup-file.mjs?v=backup-flow-2';
 import {choosePrivateBackupDestination,getBackupFolder} from '../../assets/js/backup-folder.mjs?v=plain-language-1';
-import {createTaskHelpDialog} from './task-help-dialog.mjs?v=vet-admin-audit-20260924';
+import {createTaskHelpDialog} from './task-help-dialog.mjs?v=vet-admin-procedures-20260924';
 import {emailSearchText} from './email-search.mjs?v=1';
-import './email-capture.mjs?v=vet-admin-audit-20260924';
-import './launchpad-calendar.mjs?v=vet-admin-audit-20260924';
-import {INBOX_KEY, LIMIT, parseSummary, validateInbox, mergeInbox, safeUrl, workingNoteLinks, matchesNoteSearch, PRIORITIES, NEXT_ACTIONS, EDITABLE, enrich, todaySydney, taskSection, rank, nextDate, consolidateDuplicates, LEGACY_PLAN_KEY, isPinned, migrateToPins, recordNoteAction, WORKSTREAMS, createTrackedWork, mergeWorkboardImports, clearEmailImports, isUnfinishedEmailNote, reconcileForecast, sourceCompleted, normaliseForecastContext} from './summary-core.mjs?v=vet-admin-audit-20260924';
+import './email-capture.mjs?v=vet-admin-procedures-20260924';
+import './launchpad-calendar.mjs?v=vet-admin-procedures-20260924';
+import {INBOX_KEY, LIMIT, parseSummary, validateInbox, mergeInbox, safeUrl, workingNoteLinks, matchesNoteSearch, PRIORITIES, NEXT_ACTIONS, EDITABLE, enrich, todaySydney, taskSection, rank, nextDate, consolidateDuplicates, LEGACY_PLAN_KEY, isPinned, migrateToPins, recordNoteAction, WORKSTREAMS, createTrackedWork, mergeWorkboardImports, clearEmailImports, isUnfinishedEmailNote, reconcileForecast, sourceCompleted, normaliseForecastContext} from './summary-core.mjs?v=vet-admin-procedures-20260924';
 
 const repositoryRoot=new URL('../../',import.meta.url);
 

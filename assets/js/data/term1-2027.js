@@ -1000,7 +1000,7 @@
         if (![0,6].includes(date.getUTCDay()) && !publicHolidays2027.has(iso)) days.push(iso);
       }
       task.actionSteps = days.map(day=>new Intl.DateTimeFormat('en-AU',{weekday:'long',day:'numeric',month:'short',timeZone:'UTC'}).format(new Date(day+'T12:00:00Z'))+': if this is a school working day, check VET Teams and Statewide Staffroom, send relevant updates to affected teachers, and assign required actions and follow-up dates. Record a confirmed holiday or non-working day as not applicable.');
-      task.auditSteps = task.actionSteps.map((text,index)=>({id:'r01-'+days[index],rowId:'R01',text,sourceFileIds:['1BN3FjrNy1GhA2z4MMbvqeKvW0S5x8x52'],authorityCheck:'Use the current school working calendar; these are local daily checks, not NESA deadlines.'}));
+      task.auditSteps = task.actionSteps.map((text,index)=>({id:'r01-'+days[index],rowId:'R01',text,sourceFileIds:['school-procedure-05'],authorityCheck:'Use the current school working calendar; these are local daily checks, not NESA deadlines.'}));
       task.dailyCheckDates = days;
       task.recurrence = 'daily-grouped-by-week';
       task.dailyCalendarBasis = 'Published Eastern Division student term days, excluding NSW public holidays. Confirm local variations; staff-only days follow current school work arrangements.';
@@ -1022,7 +1022,7 @@
   for (const setupId of ['2027-w03-report-setup','2027-t3-w02-report-setup']) {
     const setup = auditScheduledTasks.find(task=>task.id===setupId);
     setup.auditSteps = setup.auditSteps.filter(item=>item.rowId==='R29' || (item.rowId==='R51' && item.id==='r51-1'));
-    setup.auditSteps.push({id:'r52-report-template',rowId:'R52',text:'Check the current VET report template contains the required course, qualification, studied units/outcomes and placement-hours fields; do not use a generic marks/ranks report template.',sourceFileIds:['1JElTdkJo0GHxWI7_HctCHBqOcdz8gW4N'],authorityCheck:'Use current NESA/RTO report requirements; student outcomes are entered and verified later.'});
+    setup.auditSteps.push({id:'r52-report-template',rowId:'R52',text:'Check the current VET report template contains the required course, qualification, studied units/outcomes and placement-hours fields; do not use a generic marks/ranks report template.',sourceFileIds:['school-procedure-07'],authorityCheck:'Use current NESA/RTO report requirements; student outcomes are entered and verified later.'});
     setup.actionSteps = setup.auditSteps.map(item=>item.text);
     setup.doneWhen='The applicable report templates, class/competency links, teacher access and internal review dates are checked and ready for teachers. Final student outcomes are checked in the later reporting task.';
     setup.guidance={why:'Prepare the report structure and access before teachers enter their results.',commonTrap:'Leaving template errors until report release, or treating setup as final outcome verification.'};

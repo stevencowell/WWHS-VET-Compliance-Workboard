@@ -1,6 +1,6 @@
-import {suggestEmail} from './email-rules.mjs?v=vet-admin-audit-20260924';
-import {PRIORITIES,safeUrl,EDITABLE} from './summary-core.mjs?v=vet-admin-audit-20260924';
-import {plainNoteHtml} from './note-editor.mjs?v=vet-admin-audit-20260924';
+import {suggestEmail} from './email-rules.mjs?v=vet-admin-procedures-20260924';
+import {PRIORITIES,safeUrl,EDITABLE} from './summary-core.mjs?v=vet-admin-procedures-20260924';
+import {plainNoteHtml} from './note-editor.mjs?v=vet-admin-procedures-20260924';
 import {NOTE_HTML_LIMIT,prepareNoteImages,clipboardImageFiles,noteImageHtml} from './note-images.mjs?v=email-note-images-1';
 const el=(tag,text,attrs={})=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;for(const[k,v]of Object.entries(attrs))n.setAttribute(k,v);return n;};
 class EmailCapture extends HTMLElement{

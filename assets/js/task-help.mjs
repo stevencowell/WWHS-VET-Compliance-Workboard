@@ -1,4 +1,4 @@
-import {getVetTaskHelp} from './vet-task-help.mjs?v=vet-admin-audit-20260924';
+import {getVetTaskHelp} from './vet-task-help.mjs?v=vet-admin-procedures-20260924';
 import {getTasTaskHelp} from './tas-task-help.mjs?v=plain-language-1';
 
 const CONTEXT_FIELDS=['version','wing','taskId','canonicalTaskId','title','recordKey','cycle','asOf','sourceAsAt','sourceStatus','objective','nextStep','steps','roles','sources','links'];

@@ -1,5 +1,5 @@
-import {captureWorkspace,createWorkspaceBackup,parseWorkspaceBackup,planOlderBackup,describeWorkspace,MAX_BYTES,RESTORE_KEY,EPOCH_KEY,RECEIPT_KEY} from './workspace-backup.mjs?v=vet-admin-audit-20260924';
-import {openWorkspaceRecovery,applyWorkspaceRestore,recoverWorkspace,withBackupLock} from './workspace-backup-transaction.mjs?v=vet-admin-audit-20260924';
+import {captureWorkspace,createWorkspaceBackup,parseWorkspaceBackup,planOlderBackup,describeWorkspace,MAX_BYTES,RESTORE_KEY,EPOCH_KEY,RECEIPT_KEY} from './workspace-backup.mjs?v=vet-admin-procedures-20260924';
+import {openWorkspaceRecovery,applyWorkspaceRestore,recoverWorkspace,withBackupLock} from './workspace-backup-transaction.mjs?v=vet-admin-procedures-20260924';
 import {openVaultDatabase,createLocalVault} from '../../finance/security/local-vault.mjs?v=workspace-backup-1';
 import {chooseBackupDestination,downloadDestination} from './save-backup-file.mjs?v=backup-flow-2';
 

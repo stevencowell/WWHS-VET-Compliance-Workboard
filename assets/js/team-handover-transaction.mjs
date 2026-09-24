@@ -1,5 +1,5 @@
 // Private, browser-local recovery. Portable handover files never contain this data.
-import {KEYS, DATA_KEYS, recoverTransaction as recoverLegacyTransaction} from './team-handover-core.mjs?v=vet-admin-audit-20260924';
+import {KEYS, DATA_KEYS, recoverTransaction as recoverLegacyTransaction} from './team-handover-core.mjs?v=vet-admin-procedures-20260924';
 
 const LOCK_NAME='wwhs-team-handover-transaction:v2';
 const DB_NAME='wwhs-team-handover-recovery', STORE_NAME='transactions';

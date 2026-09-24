@@ -371,7 +371,13 @@
     const addition = (task.auditSteps || []).find(item=>normalise(item.text)===normalise(step));
     if (!addition) return null;
     const registry = window.VET_WORKBOARD?.auditProcedureSources || {};
-    const direct = (addition.sourceFileIds || []).map(id=>registry[id]).filter(Boolean).map(id=>source(id,'Open the Head Teacher procedure copy','Check the source date and any reference-only warning. Use current approved instructions and keep student records in their authorised restricted system.'));
+    const board = window.VET_WORKBOARD;
+    const direct = (addition.sourceFileIds || []).filter(id=>registry[id]).map(id=>{
+      const record = board.sources.find(item=>item.id===registry[id]);
+      return source(registry[id],`Open ${record?.linkTitle || 'the Head Teacher procedure copy'}`,board.auditProcedureHints?.[id] || 'Check the source date and any reference-only warning. Use current approved instructions and keep student records in their authorised restricted system.');
+    });
+    const section = board.auditWorkingGuideSteps?.[addition.id] || board.auditWorkingGuideRows?.[addition.rowId];
+    if (section && !direct.some(item=>item.sourceId===board.auditWorkingGuideSource)) direct.push(source(board.auditWorkingGuideSource,'Open the VET working procedures',`Read ${section}. This guide needs Head Teacher/RTO review; current approved instructions take precedence.`));
     const links = [...direct,...(auditDestinations[addition.rowId] || [sources])];
     const seen = new Set();
     return links.filter(item=>{const key=item.sourceId||item.systemId||item.route;if(seen.has(key))return false;seen.add(key);return true;}).slice(0,4);

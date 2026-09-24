@@ -10,7 +10,7 @@ The 53 administration-audit comparisons are implemented within the existing VET 
 - All original 246 task/occurrence/template IDs remain available.
 - Intended competency entry is distinguished from assessment outcome entry. The 17 March TAFE entry deadline is limited to its actual provider/cohort scope.
 - The published September 2026 edition of the 2027 NESA timetable supplies the checked external deadlines; local planning windows are separately identified.
-- Source catalogue: 132 VET/TAS entries and 76 source records. The accompanying JSON maps all 53 audit rows to implementation duties.
+- Source catalogue: 132 VET/TAS entries and 88 source records. The accompanying JSON maps all 53 audit rows to implementation duties.
 
 ## Saved work
 
@@ -18,7 +18,9 @@ Existing notes, edited card text and completion history remain. Saved individual
 
 ## Drive boundary
 
-HEAD TEACHER TAS is the agreed central procedure starting point. Source originals have not been moved, renamed, edited or deleted. Procedure copying is a separate pending access step: the destination was link-readable when checked. New destination folders are empty. No internal documents, student screenshots, private source-file identifiers or learner records are included in this release. School systems and existing authorised record locations remain the working destinations until the central copies are verified.
+HEAD TEACHER TAS and the seven procedure folders were verified Restricted on 24 September 2026, retaining Di's Editor access. Twelve reference documents were copied into the agreed library and verified against their unchanged originals. A nine-section, 54-step native working guide was also imported, read back and visually checked across six pages. It omits personal examples and screenshots and remains subject to Head Teacher/RTO review.
+
+Task steps now open the relevant restricted Head Teacher copy or working-guide section. Original source files have not been moved, renamed, edited, deleted or sharing-changed. Older, draft or incomplete references retain their limitations. Learner records remain in the authorised systems. This public website contains links and procedure metadata, not copied document bodies or learner records.
 
 ## Verification
 
@@ -33,3 +35,5 @@ School calendar: https://education.nsw.gov.au/schooling/calendars/2027
 Public holidays: https://www.nsw.gov.au/about-nsw/public-holidays
 
 This release records implementation and tests. It does not certify school compliance or turn the workboard into the official learner record.
+
+Procedure-link follow-up: direct-copy source resolution, scheduled/canonical source-key consistency and guide-section scope are covered by focused regression checks. The updated source catalogue has 88 records for the same 132 VET/TAS entries.

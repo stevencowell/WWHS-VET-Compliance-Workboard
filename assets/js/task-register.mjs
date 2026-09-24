@@ -1,5 +1,5 @@
 // Full source register and year-specific overall task sign-off.
-import './task-review.js?v=vet-admin-audit-20260924';
+import './task-review.js?v=vet-admin-procedures-20260924';
 export const REVIEW_KEY = 'wwhs-task-register-review:v1';
 const browserStorage = () => window.WWHS_STORAGE || localStorage;
 export function readReview(raw) {

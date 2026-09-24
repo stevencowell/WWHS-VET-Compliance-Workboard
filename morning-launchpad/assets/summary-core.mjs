@@ -1,6 +1,6 @@
-import '../../assets/js/task-review.js?v=vet-admin-audit-20260924';
+import '../../assets/js/task-review.js?v=vet-admin-procedures-20260924';
 // Local text processing only. No network requests or embedded personal records.
-import {normaliseTaskHelpContext} from '../../assets/js/task-help.mjs?v=vet-admin-audit-20260924';
+import {normaliseTaskHelpContext} from '../../assets/js/task-help.mjs?v=vet-admin-procedures-20260924';
 export const INBOX_KEY = 'morning-launchpad-summary:v1';
 export const LEGACY_PLAN_KEY = 'morning-launchpad-routine:v1';
 export const LIMIT = 1000000;

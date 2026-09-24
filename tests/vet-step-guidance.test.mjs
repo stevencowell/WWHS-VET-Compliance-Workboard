@@ -166,3 +166,47 @@ test('returned descriptors cannot mutate the next task rendering', () => {
   const ids = Array.from(all,item=>item.systemId||item.sourceId||item.route);
   assert.equal(ids.length,new Set(ids).size,'task-level directory removes duplicate destinations');
 });
+
+test('verified Head Teacher copies resolve through the shared source directory', () => {
+  const registry=data.auditProcedureSources;
+  assert.equal(Object.keys(registry).length,20);
+  const ids=new Set(Object.values(registry));
+  assert.equal(ids.size,13,'twelve reference copies and one working guide');
+  const catalogue=JSON.parse(fs.readFileSync(new URL('task-sources/data.json',root),'utf8'));
+  for(const id of ids){
+    const runtime=data.sources.find(s=>s.id===id), published=catalogue.sources.find(s=>s.id===id);
+    assert.ok(runtime && published,`Both source views contain ${id}`);
+    assert.equal(runtime.url,published.url,`${id} has one shared destination`);
+    assert.match(runtime.url,/^https:\/\/(?:docs|drive)\.google\.com\//);
+    assert.match(published.accessNote,/Restricted/);
+  }
+});
+
+test('scheduled report setup opens the same verified report-content copy as canonical work', () => {
+  const task=find('2027-w03-report-setup');
+  const step=task.auditSteps.find(s=>s.id==='r52-report-template');
+  assert.deepEqual(Array.from(step.sourceFileIds),['school-procedure-07']);
+  const result=guidance.forStep(task,step.text,task.actionSteps.indexOf(step.text));
+  assert.ok(result.some(link=>link.sourceId===data.auditProcedureSources['school-procedure-07']));
+});
+
+test('held learner examples are replaced by review-labelled guide sections in step navigation', () => {
+  const task=tasks.find(t=>t.auditSteps?.some(s=>s.rowId==='R20'));
+  const step=task.auditSteps.find(s=>s.rowId==='R20');
+  const result=guidance.forStep(task,step.text,task.actionSteps.indexOf(step.text));
+  const guide=result.find(link=>link.sourceId===data.auditWorkingGuideSource);
+  assert.ok(guide);
+  assert.match(guide.hint,/1\. USI verification/);
+  assert.match(guide.hint,/review/);
+  const source=data.sources.find(s=>s.id===data.auditWorkingGuideSource);
+  assert.match(source.verification,/personal examples and screenshots omitted/);
+});
+
+test('LLN tenant guidance is attached only to the relevant access step', () => {
+  const task=tasks.find(t=>t.auditSteps?.some(s=>s.id==='r03-3'));
+  for(const id of ['r03-1','r03-2','r03-3']){
+    const step=task.auditSteps.find(s=>s.id===id);
+    const result=guidance.forStep(task,step.text,task.actionSteps.indexOf(step.text));
+    assert.equal(result.some(link=>link.sourceId===data.auditWorkingGuideSource),id==='r03-3');
+  }
+});

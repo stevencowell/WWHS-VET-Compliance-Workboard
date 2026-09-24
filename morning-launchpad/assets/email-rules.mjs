@@ -1,4 +1,4 @@
-import {enrich,linksIn,todaySydney,validDate,SOURCE_LIMIT} from './summary-core.mjs?v=vet-admin-audit-20260924';
+import {enrich,linksIn,todaySydney,validDate,SOURCE_LIMIT} from './summary-core.mjs?v=vet-admin-procedures-20260924';
 const months=['january','february','march','april','may','june','july','august','september','october','november','december'];
 const datePattern='(?:\\d{4}-\\d{2}-\\d{2}|\\d{1,2}/\\d{1,2}/\\d{4}|\\d{1,2}(?:st|nd|rd|th)?\\s+(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\\s+\\d{4})';
 function fullDate(raw){

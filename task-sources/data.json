@@ -6,8 +6,8 @@
     "tas2026": 65,
     "total2026Entries": 132,
     "vetProcedureTemplates": 10,
-    "sourceRecords": 76,
-    "mappedSourceRecords": 72,
+    "sourceRecords": 88,
+    "mappedSourceRecords": 84,
     "additionalWatchRecords": 4,
     "sourceFamilies": 12,
     "provenance": {
@@ -16,8 +16,8 @@
       "broad-source-only": 17
     },
     "sourceCountingUnits": {
-      "Named document, rule, calendar or source record": 58,
-      "Portal, live register or discovery location": 8,
+      "Named document, rule, calendar or source record": 69,
+      "Portal, live register or discovery location": 9,
       "Document family; individual originals still to identify": 9,
       "Local workboard design; not an external authority": 1
     }
@@ -366,13 +366,14 @@
         },
         {
           "id": "WWHS-ADMIN-TIMELINE",
-          "title": "WWHS VET administration timeline and procedures",
-          "url": "https://drive.google.com/drive/search?q=%22VET%20Admin%20Timeline%22",
-          "verification": "School procedure audit completed 24 September 2026. Local routines support current NESA and RTO instructions; historical examples do not establish current deadlines. Open the agreed Head Teacher procedure copy when available.",
+          "title": "VET administration procedures - Head Teacher library",
+          "url": "https://drive.google.com/drive/folders/1vweutvJeqrP2EOJAzgoh4-iFz1tnsF3E",
+          "verification": "Twelve restricted reference copies and the working procedure guide verified in this library on 24 September 2026. A library link is a place to find instructions, not proof that each task is mandated. Current NESA/RTO instructions override historical examples.",
           "verifiedOn": "2026-09-24",
-          "linkKind": "search",
+          "linkKind": "folder",
           "locator": "School administration timeline / procedure audit: R50 Historical guidance and old exceptions",
-          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority."
+          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority.",
+          "accessNote": "Open the relevant reference copy or working-guide section. Sign in with your authorised school account; some actions still require the current RTO instruction."
         },
         {
           "id": "NESA-TOA-2027-SEP",
@@ -404,7 +405,8 @@
         "RTO-TERM3-GUIDE-2026",
         "WWHS-CALENDAR-2026",
         "WWHS-ADMIN-TIMELINE",
-        "NESA-TOA-2027-SEP"
+        "NESA-TOA-2027-SEP",
+        "WWHS-HT-REFERENCE-13"
       ],
       "provenanceStatus": "inferred-local-control",
       "sourceBasis": "The earlier task list cites 2026 NESA Timetable of Actions — May 2026 workbook; RTO Term 1 VET Coordinator Guide 2026; Term 2 RTO VET Coordinator Guide 2026 — locally annotated copy; RTO Term 3 VET Coordinator Guide 2026; WWHS 2026 VET working calendar. The original document still needs checking for this exact task. School administration audit checked 24 September 2026: Annual and term calendar.",
@@ -465,13 +467,14 @@
         },
         {
           "id": "WWHS-ADMIN-TIMELINE",
-          "title": "WWHS VET administration timeline and procedures",
-          "url": "https://drive.google.com/drive/search?q=%22VET%20Admin%20Timeline%22",
-          "verification": "School procedure audit completed 24 September 2026. Local routines support current NESA and RTO instructions; historical examples do not establish current deadlines. Open the agreed Head Teacher procedure copy when available.",
+          "title": "VET administration procedures - Head Teacher library",
+          "url": "https://drive.google.com/drive/folders/1vweutvJeqrP2EOJAzgoh4-iFz1tnsF3E",
+          "verification": "Twelve restricted reference copies and the working procedure guide verified in this library on 24 September 2026. A library link is a place to find instructions, not proof that each task is mandated. Current NESA/RTO instructions override historical examples.",
           "verifiedOn": "2026-09-24",
-          "linkKind": "search",
+          "linkKind": "folder",
           "locator": "School administration timeline / procedure audit: R04 Annual and term calendar",
-          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority."
+          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority.",
+          "accessNote": "Open the relevant reference copy or working-guide section. Sign in with your authorised school account; some actions still require the current RTO instruction."
         },
         {
           "id": "NESA-TOA-2027-SEP",
@@ -479,6 +482,18 @@
           "url": "https://www.nsw.gov.au/education-and-training/nesa/key-dates/timetable-of-actions/2027",
           "verification": "Published 21 September 2026. Exact VET deadlines checked against the Detailed TOA sheet. Recheck for amendments before submission; local planning windows are not official deadlines.",
           "linkKind": "page"
+        },
+        {
+          "id": "WWHS-HT-REFERENCE-13",
+          "title": "NESA calendar preparation - 2026 examples",
+          "url": "https://docs.google.com/document/d/15H959Yd1YwGPbNrZMwPPgUX507Rva-gt/edit",
+          "verification": "Copied to the restricted Head Teacher procedure library and verified 24 September 2026. Source original remains unchanged. This is a local reference copy; check current NESA/RTO instructions before use. Dates in this document are 2026 examples, not 2027 deadlines.",
+          "linkKind": "document",
+          "linkTitle": "NESA actions - historical example",
+          "accessNote": "Restricted Head Teacher reference. Sign in with your authorised school account. Current approved NESA/RTO instructions take precedence.",
+          "verifiedOn": "2026-09-24",
+          "locator": "Head Teacher reference copy; VET Timeline of Action on NESA.docx",
+          "relationship": "Restricted Head Teacher reference copy. Check current authorised instructions and any historical/draft limits."
         }
       ],
       "order": 2,
@@ -503,7 +518,9 @@
         "MY-VET-WORKPLACE",
         "WWHS-HT-DOC",
         "RTO-TERM1-GUIDE-2026",
-        "WWHS-ADMIN-TIMELINE"
+        "WWHS-ADMIN-TIMELINE",
+        "WWHS-HT-WORKING-PROCEDURES",
+        "WWHS-HT-REFERENCE-16"
       ],
       "provenanceStatus": "inferred-local-control",
       "sourceBasis": "The earlier task list cites VET Management Structure 2026–27. The original document still needs checking for this exact task. Freshly read local guide: School administrative support for the VET role is described. This is context, not a verified formal delegation or current staff allocation. School administration audit checked 24 September 2026: Access to all operating systems; Management structure and staff list; New teachers in Evidence Central.",
@@ -572,13 +589,38 @@
         },
         {
           "id": "WWHS-ADMIN-TIMELINE",
-          "title": "WWHS VET administration timeline and procedures",
-          "url": "https://drive.google.com/drive/search?q=%22VET%20Admin%20Timeline%22",
-          "verification": "School procedure audit completed 24 September 2026. Local routines support current NESA and RTO instructions; historical examples do not establish current deadlines. Open the agreed Head Teacher procedure copy when available.",
+          "title": "VET administration procedures - Head Teacher library",
+          "url": "https://drive.google.com/drive/folders/1vweutvJeqrP2EOJAzgoh4-iFz1tnsF3E",
+          "verification": "Twelve restricted reference copies and the working procedure guide verified in this library on 24 September 2026. A library link is a place to find instructions, not proof that each task is mandated. Current NESA/RTO instructions override historical examples.",
           "verifiedOn": "2026-09-24",
-          "linkKind": "search",
+          "linkKind": "folder",
           "locator": "School administration timeline / procedure audit: R03 Access to all operating systems, R06 Management structure and staff list, R08 New teachers in Evidence Central",
-          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority."
+          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority.",
+          "accessNote": "Open the relevant reference copy or working-guide section. Sign in with your authorised school account; some actions still require the current RTO instruction."
+        },
+        {
+          "id": "WWHS-HT-WORKING-PROCEDURES",
+          "title": "VET administration working procedures - for review",
+          "url": "https://docs.google.com/document/d/1-89mOCNbEKSXkNeu1q-Cje6JKitWkyZ35O3sg2i0gSE/edit",
+          "verification": "A reviewed nine-section, 54-step working guide prepared from the school procedure audit, with personal examples and screenshots omitted. Requires Head Teacher/RTO confirmation; it is not an approved policy or a learner record.",
+          "linkKind": "document",
+          "linkTitle": "VET working procedures - for review",
+          "accessNote": "Restricted Head Teacher reference. Sign in with your authorised school account. Current approved NESA/RTO instructions take precedence.",
+          "verifiedOn": "2026-09-24",
+          "locator": "2. LLN reports and teacher follow-up (confirming the approved LLN site)",
+          "relationship": "Head Teacher working guide for review; not an externally mandated or approved policy."
+        },
+        {
+          "id": "WWHS-HT-REFERENCE-16",
+          "title": "2027-28 VET management structure - blank trainer fields",
+          "url": "https://docs.google.com/document/d/1YC-hlJ-GucqcGs0dcno8ug3JVTJBwW-d/edit",
+          "verification": "Copied to the restricted Head Teacher procedure library and verified 24 September 2026. Source original remains unchanged. This is a local reference copy; check current NESA/RTO instructions before use.",
+          "linkKind": "document",
+          "linkTitle": "VET management structure template",
+          "accessNote": "Restricted Head Teacher reference. Sign in with your authorised school account. Current approved NESA/RTO instructions take precedence.",
+          "verifiedOn": "2026-09-24",
+          "locator": "Head Teacher reference copy; Management Structure.docx",
+          "relationship": "Restricted Head Teacher reference copy. Check current authorised instructions and any historical/draft limits."
         }
       ],
       "order": 3,
@@ -603,7 +645,8 @@
         "RTO-TERM2-GUIDE-2026",
         "RTO-TERM3-GUIDE-2026",
         "VET-SCHOOLS-HUB",
-        "WWHS-ADMIN-TIMELINE"
+        "WWHS-ADMIN-TIMELINE",
+        "WWHS-HT-REFERENCE-16"
       ],
       "provenanceStatus": "specific-citation",
       "sourceBasis": "Term 1 guide: School Profile review/update is explicit. Term 2 guide: Profile data and delivery changes are rechecked in Term 2. Term 3 guide: Profile review continues in Term 3. School administration audit checked 24 September 2026: Management structure and staff list; School profile and next-year authority.",
@@ -655,13 +698,26 @@
         },
         {
           "id": "WWHS-ADMIN-TIMELINE",
-          "title": "WWHS VET administration timeline and procedures",
-          "url": "https://drive.google.com/drive/search?q=%22VET%20Admin%20Timeline%22",
-          "verification": "School procedure audit completed 24 September 2026. Local routines support current NESA and RTO instructions; historical examples do not establish current deadlines. Open the agreed Head Teacher procedure copy when available.",
+          "title": "VET administration procedures - Head Teacher library",
+          "url": "https://drive.google.com/drive/folders/1vweutvJeqrP2EOJAzgoh4-iFz1tnsF3E",
+          "verification": "Twelve restricted reference copies and the working procedure guide verified in this library on 24 September 2026. A library link is a place to find instructions, not proof that each task is mandated. Current NESA/RTO instructions override historical examples.",
           "verifiedOn": "2026-09-24",
-          "linkKind": "search",
+          "linkKind": "folder",
           "locator": "School administration timeline / procedure audit: R06 Management structure and staff list, R42 School profile and next-year authority",
-          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority."
+          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority.",
+          "accessNote": "Open the relevant reference copy or working-guide section. Sign in with your authorised school account; some actions still require the current RTO instruction."
+        },
+        {
+          "id": "WWHS-HT-REFERENCE-16",
+          "title": "2027-28 VET management structure - blank trainer fields",
+          "url": "https://docs.google.com/document/d/1YC-hlJ-GucqcGs0dcno8ug3JVTJBwW-d/edit",
+          "verification": "Copied to the restricted Head Teacher procedure library and verified 24 September 2026. Source original remains unchanged. This is a local reference copy; check current NESA/RTO instructions before use.",
+          "linkKind": "document",
+          "linkTitle": "VET management structure template",
+          "accessNote": "Restricted Head Teacher reference. Sign in with your authorised school account. Current approved NESA/RTO instructions take precedence.",
+          "verifiedOn": "2026-09-24",
+          "locator": "Head Teacher reference copy; Management Structure.docx",
+          "relationship": "Restricted Head Teacher reference copy. Check current authorised instructions and any historical/draft limits."
         }
       ],
       "order": 4,
@@ -736,13 +792,14 @@
         },
         {
           "id": "WWHS-ADMIN-TIMELINE",
-          "title": "WWHS VET administration timeline and procedures",
-          "url": "https://drive.google.com/drive/search?q=%22VET%20Admin%20Timeline%22",
-          "verification": "School procedure audit completed 24 September 2026. Local routines support current NESA and RTO instructions; historical examples do not establish current deadlines. Open the agreed Head Teacher procedure copy when available.",
+          "title": "VET administration procedures - Head Teacher library",
+          "url": "https://drive.google.com/drive/folders/1vweutvJeqrP2EOJAzgoh4-iFz1tnsF3E",
+          "verification": "Twelve restricted reference copies and the working procedure guide verified in this library on 24 September 2026. A library link is a place to find instructions, not proof that each task is mandated. Current NESA/RTO instructions override historical examples.",
           "verifiedOn": "2026-09-24",
-          "linkKind": "search",
+          "linkKind": "folder",
           "locator": "School administration timeline / procedure audit: R05 Hub courses classes and teachers, R09 RTO or VSO visit, R42 School profile and next-year authority",
-          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority."
+          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority.",
+          "accessNote": "Open the relevant reference copy or working-guide section. Sign in with your authorised school account; some actions still require the current RTO instruction."
         }
       ],
       "order": 5,
@@ -767,7 +824,8 @@
         "VET-SCHOOLS-HUB",
         "NESA-VET-ENTRIES",
         "RTO-TERM2-GUIDE-2026",
-        "WWHS-ADMIN-TIMELINE"
+        "WWHS-ADMIN-TIMELINE",
+        "WWHS-NESA-CHECKS-SOP-2025"
       ],
       "provenanceStatus": "specific-citation",
       "sourceBasis": "The live ACE entry/exclusion requirements support course/data accuracy. The reconciliation workflow is a local implementation. School administration audit checked 24 September 2026: Year 11 markbook setup; Current training and assessment strategies; Class lists course codes and competencies; Missing NESA course or RTO errors.",
@@ -817,13 +875,26 @@
         },
         {
           "id": "WWHS-ADMIN-TIMELINE",
-          "title": "WWHS VET administration timeline and procedures",
-          "url": "https://drive.google.com/drive/search?q=%22VET%20Admin%20Timeline%22",
-          "verification": "School procedure audit completed 24 September 2026. Local routines support current NESA and RTO instructions; historical examples do not establish current deadlines. Open the agreed Head Teacher procedure copy when available.",
+          "title": "VET administration procedures - Head Teacher library",
+          "url": "https://drive.google.com/drive/folders/1vweutvJeqrP2EOJAzgoh4-iFz1tnsF3E",
+          "verification": "Twelve restricted reference copies and the working procedure guide verified in this library on 24 September 2026. A library link is a place to find instructions, not proof that each task is mandated. Current NESA/RTO instructions override historical examples.",
           "verifiedOn": "2026-09-24",
-          "linkKind": "search",
+          "linkKind": "folder",
           "locator": "School administration timeline / procedure audit: R11 Year 11 markbook setup, R12 Current training and assessment strategies, R24 Class lists course codes and competencies, R25 Missing NESA course or RTO errors",
-          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority."
+          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority.",
+          "accessNote": "Open the relevant reference copy or working-guide section. Sign in with your authorised school account; some actions still require the current RTO instruction."
+        },
+        {
+          "id": "WWHS-NESA-CHECKS-SOP-2025",
+          "title": "NESA checks - DRAFT incomplete 2025 reference",
+          "url": "https://drive.google.com/file/d/1wi9AKM1JZJNJXeAmerNKCLDZXomHwNkb/view",
+          "verification": "Copied to the restricted Head Teacher procedure library and verified 24 September 2026. Source original remains unchanged. This is a local reference copy; check current NESA/RTO instructions before use. The original is a 2025 DRAFT with blank late-entry steps 8-10; it is not a complete approved procedure.",
+          "linkKind": "document",
+          "linkTitle": "NESA checks - incomplete draft",
+          "accessNote": "Restricted Head Teacher reference. Sign in with your authorised school account. Current approved NESA/RTO instructions take precedence.",
+          "verifiedOn": "2026-09-24",
+          "locator": "Head Teacher reference copy; 2025 Standard Operating Procedure - NESA Checks.pdf",
+          "relationship": "Restricted Head Teacher reference copy. Check current authorised instructions and any historical/draft limits."
         }
       ],
       "order": 6,
@@ -924,13 +995,14 @@
         },
         {
           "id": "WWHS-ADMIN-TIMELINE",
-          "title": "WWHS VET administration timeline and procedures",
-          "url": "https://drive.google.com/drive/search?q=%22VET%20Admin%20Timeline%22",
-          "verification": "School procedure audit completed 24 September 2026. Local routines support current NESA and RTO instructions; historical examples do not establish current deadlines. Open the agreed Head Teacher procedure copy when available.",
+          "title": "VET administration procedures - Head Teacher library",
+          "url": "https://drive.google.com/drive/folders/1vweutvJeqrP2EOJAzgoh4-iFz1tnsF3E",
+          "verification": "Twelve restricted reference copies and the working procedure guide verified in this library on 24 September 2026. A library link is a place to find instructions, not proof that each task is mandated. Current NESA/RTO instructions override historical examples.",
           "verifiedOn": "2026-09-24",
-          "linkKind": "search",
+          "linkKind": "folder",
           "locator": "School administration timeline / procedure audit: R08 New teachers in Evidence Central",
-          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority."
+          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority.",
+          "accessNote": "Open the relevant reference copy or working-guide section. Sign in with your authorised school account; some actions still require the current RTO instruction."
         }
       ],
       "order": 7,
@@ -975,10 +1047,11 @@
           "locator": "WWHS VET approved shared working area; no original page/section recovered. Historical mapping: assets/js/data/reference.js:52",
           "url": "https://drive.google.com/drive/folders/0B40F5Y8uF0rvfkl1S2FEbjRhVmJYRWYyY2dlOFVHMDdQeFNyQlRBUzBudmtHRGJKdE83VVk?resourcekey=0-fXD-BgXggkE5EyIeJJdt5g&usp=drive_link",
           "relationship": "Place to retrieve the controlling document/notice; container URL is not a task citation",
-          "verification": "Head Teacher central-folder choice confirmed. General access was link-readable on 24 September 2026; this is not verified confidential storage.",
+          "verification": "HEAD TEACHER TAS and the seven procedure folders verified restricted on 24 September 2026. Di retains Editor access. Individual learner-record locations must still meet their approved access and records requirements.",
           "statusNote": "Contains protected working records; access remains controlled by the school account and Drive permissions.",
           "linkKind": "folder",
-          "accessNote": "Procedure masters and safe references only until permissions are reviewed. Keep learner/confidential records in approved restricted systems."
+          "accessNote": "Use the restricted Head Teacher procedure library for reference copies. Keep learner records in their authorised systems.",
+          "verifiedOn": "2026-09-24"
         },
         {
           "id": "WWHS-HT-DOC",
@@ -1023,7 +1096,10 @@
       "sourceIds": [
         "WWHS-ADMIN-TIMELINE",
         "WWHS-VET-SHARED",
-        "RTO-DOCUMENT-LIBRARY"
+        "RTO-DOCUMENT-LIBRARY",
+        "WWHS-HT-REFERENCE-02",
+        "WWHS-HT-REFERENCE-06",
+        "WWHS-HT-REFERENCE-01"
       ],
       "provenanceStatus": "specific-citation",
       "sourceBasis": "School administration procedure and timeline; this card organises the local work and does not establish an external compliance mandate. School administration audit checked 24 September 2026: Year 12 markbook setup; Year 11 markbook setup.",
@@ -1033,27 +1109,65 @@
       "evidenceRefs": [
         {
           "id": "WWHS-ADMIN-TIMELINE",
-          "title": "WWHS VET administration timeline and procedures",
-          "url": "https://drive.google.com/drive/search?q=%22VET%20Admin%20Timeline%22",
-          "verification": "School procedure audit completed 24 September 2026. Local routines support current NESA and RTO instructions; historical examples do not establish current deadlines. Open the agreed Head Teacher procedure copy when available.",
+          "title": "VET administration procedures - Head Teacher library",
+          "url": "https://drive.google.com/drive/folders/1vweutvJeqrP2EOJAzgoh4-iFz1tnsF3E",
+          "verification": "Twelve restricted reference copies and the working procedure guide verified in this library on 24 September 2026. A library link is a place to find instructions, not proof that each task is mandated. Current NESA/RTO instructions override historical examples.",
           "verifiedOn": "2026-09-24",
-          "linkKind": "search",
+          "linkKind": "folder",
           "locator": "School administration timeline / procedure audit: R10 Year 12 markbook setup, R11 Year 11 markbook setup",
-          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority."
+          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority.",
+          "accessNote": "Open the relevant reference copy or working-guide section. Sign in with your authorised school account; some actions still require the current RTO instruction."
         },
         {
           "id": "WWHS-VET-SHARED",
           "title": "TAS/VET Google Drive - Head Teacher master starting point",
           "url": "https://drive.google.com/drive/folders/0B40F5Y8uF0rvfkl1S2FEbjRhVmJYRWYyY2dlOFVHMDdQeFNyQlRBUzBudmtHRGJKdE83VVk?resourcekey=0-fXD-BgXggkE5EyIeJJdt5g&usp=drive_link",
-          "verification": "Head Teacher central-folder choice confirmed. General access was link-readable on 24 September 2026; this is not verified confidential storage.",
+          "verification": "HEAD TEACHER TAS and the seven procedure folders verified restricted on 24 September 2026. Di retains Editor access. Individual learner-record locations must still meet their approved access and records requirements.",
           "linkKind": "folder",
-          "accessNote": "Procedure masters and safe references only until permissions are reviewed. Keep learner/confidential records in approved restricted systems."
+          "accessNote": "Use the restricted Head Teacher procedure library for reference copies. Keep learner records in their authorised systems.",
+          "verifiedOn": "2026-09-24"
         },
         {
           "id": "RTO-DOCUMENT-LIBRARY",
           "title": "RTO 90333 controlled Document Library",
           "url": "https://apps.powerapps.com/play/e/default-05a0e69a-418a-47c1-9c25-9387261bf991/a/5c9be746-db94-402d-9a74-420b4c109498?tenantId=05a0e69a-418a-47c1-9c25-9387261bf991",
           "verification": "Earlier app reference only; the original source still needs checking."
+        },
+        {
+          "id": "WWHS-HT-REFERENCE-02",
+          "title": "VET markbook rollover - historical examples",
+          "url": "https://docs.google.com/document/d/1zcb21GVEqfYQZdGd7hsIrDmSc36IRFaN/edit",
+          "verification": "Copied to the restricted Head Teacher procedure library and verified 24 September 2026. Source original remains unchanged. This is a local reference copy; check current NESA/RTO instructions before use.",
+          "linkKind": "document",
+          "linkTitle": "Markbook rollover and archive",
+          "accessNote": "Restricted Head Teacher reference. Sign in with your authorised school account. Current approved NESA/RTO instructions take precedence.",
+          "verifiedOn": "2026-09-24",
+          "locator": "Head Teacher reference copy; How to create new Markbooks for VET into the new year and archive.docx",
+          "relationship": "Restricted Head Teacher reference copy. Check current authorised instructions and any historical/draft limits."
+        },
+        {
+          "id": "WWHS-HT-REFERENCE-06",
+          "title": "Year 11 VET markbook setup - historical course examples",
+          "url": "https://docs.google.com/document/d/1UigrZGKb3wF0b4c9iQ02faydyXAlAfNK/edit",
+          "verification": "Copied to the restricted Head Teacher procedure library and verified 24 September 2026. Source original remains unchanged. This is a local reference copy; check current NESA/RTO instructions before use.",
+          "linkKind": "document",
+          "linkTitle": "Year 11 VET markbook setup",
+          "accessNote": "Restricted Head Teacher reference. Sign in with your authorised school account. Current approved NESA/RTO instructions take precedence.",
+          "verifiedOn": "2026-09-24",
+          "locator": "Head Teacher reference copy; To create the new Year 11 Markbook and cross reference competencies.docx",
+          "relationship": "Restricted Head Teacher reference copy. Check current authorised instructions and any historical/draft limits."
+        },
+        {
+          "id": "WWHS-HT-REFERENCE-01",
+          "title": "VET markbook setup - reference copy",
+          "url": "https://docs.google.com/document/d/1F11L-Xj7cJ2zTkZ8AhCRlvc8uQyZhXY6/edit",
+          "verification": "Copied to the restricted Head Teacher procedure library and verified 24 September 2026. Source original remains unchanged. This is a local reference copy; check current NESA/RTO instructions before use.",
+          "linkKind": "document",
+          "linkTitle": "VET markbook setup",
+          "accessNote": "Restricted Head Teacher reference. Sign in with your authorised school account. Current approved NESA/RTO instructions take precedence.",
+          "verifiedOn": "2026-09-24",
+          "locator": "Head Teacher reference copy; CREATE new VET MARKBOOKS.docx",
+          "relationship": "Restricted Head Teacher reference copy. Check current authorised instructions and any historical/draft limits."
         }
       ],
       "auditRows": [
@@ -1125,13 +1239,14 @@
         },
         {
           "id": "WWHS-ADMIN-TIMELINE",
-          "title": "WWHS VET administration timeline and procedures",
-          "url": "https://drive.google.com/drive/search?q=%22VET%20Admin%20Timeline%22",
-          "verification": "School procedure audit completed 24 September 2026. Local routines support current NESA and RTO instructions; historical examples do not establish current deadlines. Open the agreed Head Teacher procedure copy when available.",
+          "title": "VET administration procedures - Head Teacher library",
+          "url": "https://drive.google.com/drive/folders/1vweutvJeqrP2EOJAzgoh4-iFz1tnsF3E",
+          "verification": "Twelve restricted reference copies and the working procedure guide verified in this library on 24 September 2026. A library link is a place to find instructions, not proof that each task is mandated. Current NESA/RTO instructions override historical examples.",
           "verifiedOn": "2026-09-24",
-          "linkKind": "search",
+          "linkKind": "folder",
           "locator": "School administration timeline / procedure audit: R41 SBAT TVET and EVET cross-check",
-          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority."
+          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority.",
+          "accessNote": "Open the relevant reference copy or working-guide section. Sign in with your authorised school account; some actions still require the current RTO instruction."
         }
       ],
       "order": 10,
@@ -1155,7 +1270,8 @@
         "RTO-TERM1-GUIDE-2026",
         "RTO-TERM3-GUIDE-2026",
         "WWHS-USI-LOCAL",
-        "WWHS-ADMIN-TIMELINE"
+        "WWHS-ADMIN-TIMELINE",
+        "WWHS-HT-WORKING-PROCEDURES"
       ],
       "provenanceStatus": "specific-citation",
       "sourceBasis": "The dated USI-entry requirement is supported. The RTO instruction determines who uploads and how the school verifies readiness. School administration audit checked 24 September 2026: USI verification and exception follow-up; USI upload responsibility.",
@@ -1217,13 +1333,26 @@
         },
         {
           "id": "WWHS-ADMIN-TIMELINE",
-          "title": "WWHS VET administration timeline and procedures",
-          "url": "https://drive.google.com/drive/search?q=%22VET%20Admin%20Timeline%22",
-          "verification": "School procedure audit completed 24 September 2026. Local routines support current NESA and RTO instructions; historical examples do not establish current deadlines. Open the agreed Head Teacher procedure copy when available.",
+          "title": "VET administration procedures - Head Teacher library",
+          "url": "https://drive.google.com/drive/folders/1vweutvJeqrP2EOJAzgoh4-iFz1tnsF3E",
+          "verification": "Twelve restricted reference copies and the working procedure guide verified in this library on 24 September 2026. A library link is a place to find instructions, not proof that each task is mandated. Current NESA/RTO instructions override historical examples.",
           "verifiedOn": "2026-09-24",
-          "linkKind": "search",
+          "linkKind": "folder",
           "locator": "School administration timeline / procedure audit: R20 USI verification and exception follow-up, R21 USI upload responsibility",
-          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority."
+          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority.",
+          "accessNote": "Open the relevant reference copy or working-guide section. Sign in with your authorised school account; some actions still require the current RTO instruction."
+        },
+        {
+          "id": "WWHS-HT-WORKING-PROCEDURES",
+          "title": "VET administration working procedures - for review",
+          "url": "https://docs.google.com/document/d/1-89mOCNbEKSXkNeu1q-Cje6JKitWkyZ35O3sg2i0gSE/edit",
+          "verification": "A reviewed nine-section, 54-step working guide prepared from the school procedure audit, with personal examples and screenshots omitted. Requires Head Teacher/RTO confirmation; it is not an approved policy or a learner record.",
+          "linkKind": "document",
+          "linkTitle": "VET working procedures - for review",
+          "accessNote": "Restricted Head Teacher reference. Sign in with your authorised school account. Current approved NESA/RTO instructions take precedence.",
+          "verifiedOn": "2026-09-24",
+          "locator": "1. USI verification and responsibility",
+          "relationship": "Head Teacher working guide for review; not an externally mandated or approved policy."
         }
       ],
       "order": 11,
@@ -1248,7 +1377,8 @@
         "EVIDENCE-CENTRAL",
         "NESA-VET",
         "WWHS-HT-DOC",
-        "WWHS-ADMIN-TIMELINE"
+        "WWHS-ADMIN-TIMELINE",
+        "WWHS-HT-WORKING-PROCEDURES"
       ],
       "provenanceStatus": "specific-citation",
       "sourceBasis": "Term 1 guide: Go2workplacement/LLN and student induction/enrolment through Evidence Central are explicitly listed. School administration audit checked 24 September 2026: Induction completion and exceptions; LLN results and teacher hand-back.",
@@ -1308,13 +1438,26 @@
         },
         {
           "id": "WWHS-ADMIN-TIMELINE",
-          "title": "WWHS VET administration timeline and procedures",
-          "url": "https://drive.google.com/drive/search?q=%22VET%20Admin%20Timeline%22",
-          "verification": "School procedure audit completed 24 September 2026. Local routines support current NESA and RTO instructions; historical examples do not establish current deadlines. Open the agreed Head Teacher procedure copy when available.",
+          "title": "VET administration procedures - Head Teacher library",
+          "url": "https://drive.google.com/drive/folders/1vweutvJeqrP2EOJAzgoh4-iFz1tnsF3E",
+          "verification": "Twelve restricted reference copies and the working procedure guide verified in this library on 24 September 2026. A library link is a place to find instructions, not proof that each task is mandated. Current NESA/RTO instructions override historical examples.",
           "verifiedOn": "2026-09-24",
-          "linkKind": "search",
+          "linkKind": "folder",
           "locator": "School administration timeline / procedure audit: R19 Induction completion and exceptions, R22 LLN results and teacher hand-back",
-          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority."
+          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority.",
+          "accessNote": "Open the relevant reference copy or working-guide section. Sign in with your authorised school account; some actions still require the current RTO instruction."
+        },
+        {
+          "id": "WWHS-HT-WORKING-PROCEDURES",
+          "title": "VET administration working procedures - for review",
+          "url": "https://docs.google.com/document/d/1-89mOCNbEKSXkNeu1q-Cje6JKitWkyZ35O3sg2i0gSE/edit",
+          "verification": "A reviewed nine-section, 54-step working guide prepared from the school procedure audit, with personal examples and screenshots omitted. Requires Head Teacher/RTO confirmation; it is not an approved policy or a learner record.",
+          "linkKind": "document",
+          "linkTitle": "VET working procedures - for review",
+          "accessNote": "Restricted Head Teacher reference. Sign in with your authorised school account. Current approved NESA/RTO instructions take precedence.",
+          "verifiedOn": "2026-09-24",
+          "locator": "2. LLN reports and teacher follow-up",
+          "relationship": "Head Teacher working guide for review; not an externally mandated or approved policy."
         }
       ],
       "order": 12,
@@ -1467,13 +1610,14 @@
         },
         {
           "id": "WWHS-ADMIN-TIMELINE",
-          "title": "WWHS VET administration timeline and procedures",
-          "url": "https://drive.google.com/drive/search?q=%22VET%20Admin%20Timeline%22",
-          "verification": "School procedure audit completed 24 September 2026. Local routines support current NESA and RTO instructions; historical examples do not establish current deadlines. Open the agreed Head Teacher procedure copy when available.",
+          "title": "VET administration procedures - Head Teacher library",
+          "url": "https://drive.google.com/drive/folders/1vweutvJeqrP2EOJAzgoh4-iFz1tnsF3E",
+          "verification": "Twelve restricted reference copies and the working procedure guide verified in this library on 24 September 2026. A library link is a place to find instructions, not proof that each task is mandated. Current NESA/RTO instructions override historical examples.",
           "verifiedOn": "2026-09-24",
-          "linkKind": "search",
+          "linkKind": "folder",
           "locator": "School administration timeline / procedure audit: R12 Current training and assessment strategies, R17 Assessment booklet amendments",
-          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority."
+          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority.",
+          "accessNote": "Open the relevant reference copy or working-guide section. Sign in with your authorised school account; some actions still require the current RTO instruction."
         }
       ],
       "order": 14,
@@ -1503,7 +1647,8 @@
         "DOE-WPL-STUDENT-PLACEMENT-RECORD",
         "DOE-WPL-TEACHER-CHECKLIST",
         "DOE-WPL-SPR-INSTRUCTIONS",
-        "WWHS-ADMIN-TIMELINE"
+        "WWHS-ADMIN-TIMELINE",
+        "WWHS-HT-WORKING-PROCEDURES"
       ],
       "provenanceStatus": "specific-citation",
       "sourceBasis": "Term 1 guide: Student readiness, mandatory staff workplace-learning e-learning, provider liaison and scheduled placements are explicit. School administration audit checked 24 September 2026: COMPACT staff update; COMPACT placement requests and dates; Next-year placement booking; Placement readiness monitoring and hours.",
@@ -1611,13 +1756,26 @@
         },
         {
           "id": "WWHS-ADMIN-TIMELINE",
-          "title": "WWHS VET administration timeline and procedures",
-          "url": "https://drive.google.com/drive/search?q=%22VET%20Admin%20Timeline%22",
-          "verification": "School procedure audit completed 24 September 2026. Local routines support current NESA and RTO instructions; historical examples do not establish current deadlines. Open the agreed Head Teacher procedure copy when available.",
+          "title": "VET administration procedures - Head Teacher library",
+          "url": "https://drive.google.com/drive/folders/1vweutvJeqrP2EOJAzgoh4-iFz1tnsF3E",
+          "verification": "Twelve restricted reference copies and the working procedure guide verified in this library on 24 September 2026. A library link is a place to find instructions, not proof that each task is mandated. Current NESA/RTO instructions override historical examples.",
           "verifiedOn": "2026-09-24",
-          "linkKind": "search",
+          "linkKind": "folder",
           "locator": "School administration timeline / procedure audit: R07 COMPACT staff update, R34 COMPACT placement requests and dates, R35 Next-year placement booking, R36 Placement readiness monitoring and hours",
-          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority."
+          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority.",
+          "accessNote": "Open the relevant reference copy or working-guide section. Sign in with your authorised school account; some actions still require the current RTO instruction."
+        },
+        {
+          "id": "WWHS-HT-WORKING-PROCEDURES",
+          "title": "VET administration working procedures - for review",
+          "url": "https://docs.google.com/document/d/1-89mOCNbEKSXkNeu1q-Cje6JKitWkyZ35O3sg2i0gSE/edit",
+          "verification": "A reviewed nine-section, 54-step working guide prepared from the school procedure audit, with personal examples and screenshots omitted. Requires Head Teacher/RTO confirmation; it is not an approved policy or a learner record.",
+          "linkKind": "document",
+          "linkTitle": "VET working procedures - for review",
+          "accessNote": "Restricted Head Teacher reference. Sign in with your authorised school account. Current approved NESA/RTO instructions take precedence.",
+          "verifiedOn": "2026-09-24",
+          "locator": "5. COMPACT placement dates and notifications",
+          "relationship": "Head Teacher working guide for review; not an externally mandated or approved policy."
         }
       ],
       "order": 15,
@@ -1645,7 +1803,8 @@
         "VET-SCHOOLS-HUB",
         "RTO-TERM1-GUIDE-2026",
         "WWHS-ADMIN-TIMELINE",
-        "NESA-TOA-2027-SEP"
+        "NESA-TOA-2027-SEP",
+        "WWHS-HT-REFERENCE-03"
       ],
       "provenanceStatus": "broad-source-only",
       "sourceBasis": "The earlier task list cites 2025 SOP — NESA checks; 2026 NESA Timetable of Actions — May 2026 workbook; NESA ACE — VET entries. The original document still needs checking for this exact task. School administration audit checked 24 September 2026: All My Own Work completion; Life Skills course and report checks; Too few units and minimum standards errors; Signed confirmation of enrolment.",
@@ -1655,14 +1814,16 @@
       "evidenceRefs": [
         {
           "id": "WWHS-NESA-CHECKS-SOP-2025",
-          "title": "2025 draft SOP - NESA checks (reference only)",
+          "title": "NESA checks - DRAFT incomplete 2025 reference",
           "locator": "NESA Checks Procedure, steps 1–7; NESA Late Entries; responsibilities.",
-          "url": "https://drive.google.com/file/d/1eozBxhrs9IXXAL0zfcSTf6D8rkqGWMoo/view",
+          "url": "https://drive.google.com/file/d/1wi9AKM1JZJNJXeAmerNKCLDZXomHwNkb/view",
           "relationship": "Direct supporting document located during the source-link audit; current authority and applicability must still be checked.",
-          "verification": "All three pages checked 24 September 2026. DRAFT watermark and blank late-entry steps 8-10: current approved instructions must be obtained.",
-          "statusNote": "Open the current 2026 VET Drive; the live 2026 NESA timetable controls dates.",
+          "verification": "Copied to the restricted Head Teacher procedure library and verified 24 September 2026. Source original remains unchanged. This is a local reference copy; check current NESA/RTO instructions before use. The original is a 2025 DRAFT with blank late-entry steps 8-10; it is not a complete approved procedure.",
+          "statusNote": "Copied to the restricted Head Teacher procedure library and verified 24 September 2026. Source original remains unchanged. This is a local reference copy; check current NESA/RTO instructions before use. The original is a 2025 DRAFT with blank late-entry steps 8-10; it is not a complete approved procedure.",
           "linkKind": "document",
-          "verifiedOn": "2026-09-18"
+          "verifiedOn": "2026-09-24",
+          "linkTitle": "NESA checks - incomplete draft",
+          "accessNote": "Restricted Head Teacher reference. Sign in with your authorised school account. Current approved NESA/RTO instructions take precedence."
         },
         {
           "id": "NESA-TOA-2026-MAY",
@@ -1704,13 +1865,14 @@
         },
         {
           "id": "WWHS-ADMIN-TIMELINE",
-          "title": "WWHS VET administration timeline and procedures",
-          "url": "https://drive.google.com/drive/search?q=%22VET%20Admin%20Timeline%22",
-          "verification": "School procedure audit completed 24 September 2026. Local routines support current NESA and RTO instructions; historical examples do not establish current deadlines. Open the agreed Head Teacher procedure copy when available.",
+          "title": "VET administration procedures - Head Teacher library",
+          "url": "https://drive.google.com/drive/folders/1vweutvJeqrP2EOJAzgoh4-iFz1tnsF3E",
+          "verification": "Twelve restricted reference copies and the working procedure guide verified in this library on 24 September 2026. A library link is a place to find instructions, not proof that each task is mandated. Current NESA/RTO instructions override historical examples.",
           "verifiedOn": "2026-09-24",
-          "linkKind": "search",
+          "linkKind": "folder",
           "locator": "School administration timeline / procedure audit: R26 All My Own Work completion, R27 Life Skills course and report checks, R28 Too few units and minimum standards errors, R47 Signed confirmation of enrolment",
-          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority."
+          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority.",
+          "accessNote": "Open the relevant reference copy or working-guide section. Sign in with your authorised school account; some actions still require the current RTO instruction."
         },
         {
           "id": "NESA-TOA-2027-SEP",
@@ -1718,6 +1880,18 @@
           "url": "https://www.nsw.gov.au/education-and-training/nesa/key-dates/timetable-of-actions/2027",
           "verification": "Published 21 September 2026. Exact VET deadlines checked against the Detailed TOA sheet. Recheck for amendments before submission; local planning windows are not official deadlines.",
           "linkKind": "page"
+        },
+        {
+          "id": "WWHS-HT-REFERENCE-03",
+          "title": "Life Skills course mapping - incomplete reference",
+          "url": "https://docs.google.com/document/d/1bGjP96pKNIZA9dNJDqI2SXD_M8xDWKWm/edit",
+          "verification": "Copied to the restricted Head Teacher procedure library and verified 24 September 2026. Source original remains unchanged. This is a local reference copy; check current NESA/RTO instructions before use. Older Life Skills/course mappings need current syllabus and RTO confirmation.",
+          "linkKind": "document",
+          "linkTitle": "VET and Life Skills - historical reference",
+          "accessNote": "Restricted Head Teacher reference. Sign in with your authorised school account. Current approved NESA/RTO instructions take precedence.",
+          "verifiedOn": "2026-09-24",
+          "locator": "Head Teacher reference copy; VET Courses + Life Skill Students.docx",
+          "relationship": "Restricted Head Teacher reference copy. Check current authorised instructions and any historical/draft limits."
         }
       ],
       "order": 16,
@@ -1998,13 +2172,14 @@
         },
         {
           "id": "WWHS-ADMIN-TIMELINE",
-          "title": "WWHS VET administration timeline and procedures",
-          "url": "https://drive.google.com/drive/search?q=%22VET%20Admin%20Timeline%22",
-          "verification": "School procedure audit completed 24 September 2026. Local routines support current NESA and RTO instructions; historical examples do not establish current deadlines. Open the agreed Head Teacher procedure copy when available.",
+          "title": "VET administration procedures - Head Teacher library",
+          "url": "https://drive.google.com/drive/folders/1vweutvJeqrP2EOJAzgoh4-iFz1tnsF3E",
+          "verification": "Twelve restricted reference copies and the working procedure guide verified in this library on 24 September 2026. A library link is a place to find instructions, not proof that each task is mandated. Current NESA/RTO instructions override historical examples.",
           "verifiedOn": "2026-09-24",
-          "linkKind": "search",
+          "linkKind": "folder",
           "locator": "School administration timeline / procedure audit: R41 SBAT TVET and EVET cross-check",
-          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority."
+          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority.",
+          "accessNote": "Open the relevant reference copy or working-guide section. Sign in with your authorised school account; some actions still require the current RTO instruction."
         }
       ],
       "order": 20,
@@ -2075,13 +2250,14 @@
         },
         {
           "id": "WWHS-ADMIN-TIMELINE",
-          "title": "WWHS VET administration timeline and procedures",
-          "url": "https://drive.google.com/drive/search?q=%22VET%20Admin%20Timeline%22",
-          "verification": "School procedure audit completed 24 September 2026. Local routines support current NESA and RTO instructions; historical examples do not establish current deadlines. Open the agreed Head Teacher procedure copy when available.",
+          "title": "VET administration procedures - Head Teacher library",
+          "url": "https://drive.google.com/drive/folders/1vweutvJeqrP2EOJAzgoh4-iFz1tnsF3E",
+          "verification": "Twelve restricted reference copies and the working procedure guide verified in this library on 24 September 2026. A library link is a place to find instructions, not proof that each task is mandated. Current NESA/RTO instructions override historical examples.",
           "verifiedOn": "2026-09-24",
-          "linkKind": "search",
+          "linkKind": "folder",
           "locator": "School administration timeline / procedure audit: R39 Competency outcomes and NESA deadlines, R46 Trainer and student checks of NESA reports",
-          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority."
+          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority.",
+          "accessNote": "Open the relevant reference copy or working-guide section. Sign in with your authorised school account; some actions still require the current RTO instruction."
         }
       ],
       "order": 21,
@@ -2179,7 +2355,8 @@
         "USI-PROVIDERS",
         "EVIDENCE-CENTRAL",
         "RTO-TERM3-GUIDE-2026",
-        "WWHS-ADMIN-TIMELINE"
+        "WWHS-ADMIN-TIMELINE",
+        "WWHS-HT-WORKING-PROCEDURES"
       ],
       "provenanceStatus": "specific-citation",
       "sourceBasis": "Term 2 guide: USI collection/verification is finalised in Evidence Central with VSO support. Term 3 guide: The current term instruction expressly assigns NESA upload to the RTO. School administration audit checked 24 September 2026: USI verification and exception follow-up.",
@@ -2229,13 +2406,26 @@
         },
         {
           "id": "WWHS-ADMIN-TIMELINE",
-          "title": "WWHS VET administration timeline and procedures",
-          "url": "https://drive.google.com/drive/search?q=%22VET%20Admin%20Timeline%22",
-          "verification": "School procedure audit completed 24 September 2026. Local routines support current NESA and RTO instructions; historical examples do not establish current deadlines. Open the agreed Head Teacher procedure copy when available.",
+          "title": "VET administration procedures - Head Teacher library",
+          "url": "https://drive.google.com/drive/folders/1vweutvJeqrP2EOJAzgoh4-iFz1tnsF3E",
+          "verification": "Twelve restricted reference copies and the working procedure guide verified in this library on 24 September 2026. A library link is a place to find instructions, not proof that each task is mandated. Current NESA/RTO instructions override historical examples.",
           "verifiedOn": "2026-09-24",
-          "linkKind": "search",
+          "linkKind": "folder",
           "locator": "School administration timeline / procedure audit: R20 USI verification and exception follow-up",
-          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority."
+          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority.",
+          "accessNote": "Open the relevant reference copy or working-guide section. Sign in with your authorised school account; some actions still require the current RTO instruction."
+        },
+        {
+          "id": "WWHS-HT-WORKING-PROCEDURES",
+          "title": "VET administration working procedures - for review",
+          "url": "https://docs.google.com/document/d/1-89mOCNbEKSXkNeu1q-Cje6JKitWkyZ35O3sg2i0gSE/edit",
+          "verification": "A reviewed nine-section, 54-step working guide prepared from the school procedure audit, with personal examples and screenshots omitted. Requires Head Teacher/RTO confirmation; it is not an approved policy or a learner record.",
+          "linkKind": "document",
+          "linkTitle": "VET working procedures - for review",
+          "accessNote": "Restricted Head Teacher reference. Sign in with your authorised school account. Current approved NESA/RTO instructions take precedence.",
+          "verifiedOn": "2026-09-24",
+          "locator": "1. USI verification and responsibility",
+          "relationship": "Head Teacher working guide for review; not an externally mandated or approved policy."
         }
       ],
       "order": 24,
@@ -2258,7 +2448,10 @@
         "WWHS-INTERNAL-AUDIT",
         "EVIDENCE-CENTRAL",
         "WWHS-HT-DOC",
-        "WWHS-ADMIN-TIMELINE"
+        "WWHS-ADMIN-TIMELINE",
+        "WWHS-HT-REFERENCE-20",
+        "WWHS-HT-REFERENCE-23",
+        "WWHS-HT-REFERENCE-07"
       ],
       "provenanceStatus": "specific-citation",
       "sourceBasis": "Term 2 guide: Finalise VET school reports using Department reporting advice; the guide does not set the school deadline. School administration audit checked 24 September 2026: Year 11 and Year 12 report setup; Markbook to Reports synchronisation; VET report fields and outcome definitions.",
@@ -2311,13 +2504,50 @@
         },
         {
           "id": "WWHS-ADMIN-TIMELINE",
-          "title": "WWHS VET administration timeline and procedures",
-          "url": "https://drive.google.com/drive/search?q=%22VET%20Admin%20Timeline%22",
-          "verification": "School procedure audit completed 24 September 2026. Local routines support current NESA and RTO instructions; historical examples do not establish current deadlines. Open the agreed Head Teacher procedure copy when available.",
+          "title": "VET administration procedures - Head Teacher library",
+          "url": "https://drive.google.com/drive/folders/1vweutvJeqrP2EOJAzgoh4-iFz1tnsF3E",
+          "verification": "Twelve restricted reference copies and the working procedure guide verified in this library on 24 September 2026. A library link is a place to find instructions, not proof that each task is mandated. Current NESA/RTO instructions override historical examples.",
           "verifiedOn": "2026-09-24",
-          "linkKind": "search",
+          "linkKind": "folder",
           "locator": "School administration timeline / procedure audit: R29 Year 11 and Year 12 report setup, R51 Markbook to Reports synchronisation, R52 VET report fields and outcome definitions",
-          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority."
+          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority.",
+          "accessNote": "Open the relevant reference copy or working-guide section. Sign in with your authorised school account; some actions still require the current RTO instruction."
+        },
+        {
+          "id": "WWHS-HT-REFERENCE-20",
+          "title": "VET report setup - reference copy",
+          "url": "https://docs.google.com/document/d/1Mpb6BDUPnhhUmehuc4EoR3VGKUaJQh_6/edit",
+          "verification": "Copied to the restricted Head Teacher procedure library and verified 24 September 2026. Source original remains unchanged. This is a local reference copy; check current NESA/RTO instructions before use.",
+          "linkKind": "document",
+          "linkTitle": "VET report setup",
+          "accessNote": "Restricted Head Teacher reference. Sign in with your authorised school account. Current approved NESA/RTO instructions take precedence.",
+          "verifiedOn": "2026-09-24",
+          "locator": "Head Teacher reference copy; How to set up VET Reports.docx",
+          "relationship": "Restricted Head Teacher reference copy. Check current authorised instructions and any historical/draft limits."
+        },
+        {
+          "id": "WWHS-HT-REFERENCE-23",
+          "title": "Markbook report sync - generic reference - no VET marks or ranks",
+          "url": "https://docs.google.com/document/d/1WDgU5PJBFX0jIs-CBOXcJZQJ4Eig_ui8/edit",
+          "verification": "Copied to the restricted Head Teacher procedure library and verified 24 September 2026. Source original remains unchanged. This is a local reference copy; check current NESA/RTO instructions before use. Generic marks/ranks instructions do not establish permitted VET reporting. Confirm the VET-specific method before syncing.",
+          "linkKind": "document",
+          "linkTitle": "Markbook and report sync - reference",
+          "accessNote": "Restricted Head Teacher reference. Sign in with your authorised school account. Current approved NESA/RTO instructions take precedence.",
+          "verifiedOn": "2026-09-24",
+          "locator": "Head Teacher reference copy; Reminder to HT Sync Markbooks to reports.docx",
+          "relationship": "Restricted Head Teacher reference copy. Check current authorised instructions and any historical/draft limits."
+        },
+        {
+          "id": "WWHS-HT-REFERENCE-07",
+          "title": "VET report content - 2025 reference",
+          "url": "https://docs.google.com/document/d/19EPshJveX5bT-oMqZCxUTbdKNEPuWDky/edit",
+          "verification": "Copied to the restricted Head Teacher procedure library and verified 24 September 2026. Source original remains unchanged. This is a local reference copy; check current NESA/RTO instructions before use.",
+          "linkKind": "document",
+          "linkTitle": "VET report contents",
+          "accessNote": "Restricted Head Teacher reference. Sign in with your authorised school account. Current approved NESA/RTO instructions take precedence.",
+          "verifiedOn": "2026-09-24",
+          "locator": "Head Teacher reference copy; What to include in a VET report                                            13.docx",
+          "relationship": "Restricted Head Teacher reference copy. Check current authorised instructions and any historical/draft limits."
         }
       ],
       "order": 25,
@@ -2342,7 +2572,8 @@
         "RTO-TERM2-GUIDE-2026",
         "NESA-TOA-2026-MAY",
         "WWHS-ADMIN-TIMELINE",
-        "NESA-TOA-2027-SEP"
+        "NESA-TOA-2027-SEP",
+        "WWHS-HT-REFERENCE-03"
       ],
       "provenanceStatus": "broad-source-only",
       "sourceBasis": "The earlier task list cites 2025 SOP — NESA checks; Term 2 RTO VET Coordinator Guide 2026 — locally annotated copy; 2026 NESA Timetable of Actions — May 2026 workbook. The original document still needs checking for this exact task. School administration audit checked 24 September 2026: Life Skills course and report checks.",
@@ -2352,14 +2583,16 @@
       "evidenceRefs": [
         {
           "id": "WWHS-NESA-CHECKS-SOP-2025",
-          "title": "2025 draft SOP - NESA checks (reference only)",
+          "title": "NESA checks - DRAFT incomplete 2025 reference",
           "locator": "NESA Checks Procedure, steps 1–7; NESA Late Entries; responsibilities.",
-          "url": "https://drive.google.com/file/d/1eozBxhrs9IXXAL0zfcSTf6D8rkqGWMoo/view",
+          "url": "https://drive.google.com/file/d/1wi9AKM1JZJNJXeAmerNKCLDZXomHwNkb/view",
           "relationship": "Direct supporting document located during the source-link audit; current authority and applicability must still be checked.",
-          "verification": "All three pages checked 24 September 2026. DRAFT watermark and blank late-entry steps 8-10: current approved instructions must be obtained.",
-          "statusNote": "Open the current 2026 VET Drive; the live 2026 NESA timetable controls dates.",
+          "verification": "Copied to the restricted Head Teacher procedure library and verified 24 September 2026. Source original remains unchanged. This is a local reference copy; check current NESA/RTO instructions before use. The original is a 2025 DRAFT with blank late-entry steps 8-10; it is not a complete approved procedure.",
+          "statusNote": "Copied to the restricted Head Teacher procedure library and verified 24 September 2026. Source original remains unchanged. This is a local reference copy; check current NESA/RTO instructions before use. The original is a 2025 DRAFT with blank late-entry steps 8-10; it is not a complete approved procedure.",
           "linkKind": "document",
-          "verifiedOn": "2026-09-18"
+          "verifiedOn": "2026-09-24",
+          "linkTitle": "NESA checks - incomplete draft",
+          "accessNote": "Restricted Head Teacher reference. Sign in with your authorised school account. Current approved NESA/RTO instructions take precedence."
         },
         {
           "id": "RTO-TERM2-GUIDE-2026",
@@ -2383,13 +2616,14 @@
         },
         {
           "id": "WWHS-ADMIN-TIMELINE",
-          "title": "WWHS VET administration timeline and procedures",
-          "url": "https://drive.google.com/drive/search?q=%22VET%20Admin%20Timeline%22",
-          "verification": "School procedure audit completed 24 September 2026. Local routines support current NESA and RTO instructions; historical examples do not establish current deadlines. Open the agreed Head Teacher procedure copy when available.",
+          "title": "VET administration procedures - Head Teacher library",
+          "url": "https://drive.google.com/drive/folders/1vweutvJeqrP2EOJAzgoh4-iFz1tnsF3E",
+          "verification": "Twelve restricted reference copies and the working procedure guide verified in this library on 24 September 2026. A library link is a place to find instructions, not proof that each task is mandated. Current NESA/RTO instructions override historical examples.",
           "verifiedOn": "2026-09-24",
-          "linkKind": "search",
+          "linkKind": "folder",
           "locator": "School administration timeline / procedure audit: R27 Life Skills course and report checks",
-          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority."
+          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority.",
+          "accessNote": "Open the relevant reference copy or working-guide section. Sign in with your authorised school account; some actions still require the current RTO instruction."
         },
         {
           "id": "NESA-TOA-2027-SEP",
@@ -2397,6 +2631,18 @@
           "url": "https://www.nsw.gov.au/education-and-training/nesa/key-dates/timetable-of-actions/2027",
           "verification": "Published 21 September 2026. Exact VET deadlines checked against the Detailed TOA sheet. Recheck for amendments before submission; local planning windows are not official deadlines.",
           "linkKind": "page"
+        },
+        {
+          "id": "WWHS-HT-REFERENCE-03",
+          "title": "Life Skills course mapping - incomplete reference",
+          "url": "https://docs.google.com/document/d/1bGjP96pKNIZA9dNJDqI2SXD_M8xDWKWm/edit",
+          "verification": "Copied to the restricted Head Teacher procedure library and verified 24 September 2026. Source original remains unchanged. This is a local reference copy; check current NESA/RTO instructions before use. Older Life Skills/course mappings need current syllabus and RTO confirmation.",
+          "linkKind": "document",
+          "linkTitle": "VET and Life Skills - historical reference",
+          "accessNote": "Restricted Head Teacher reference. Sign in with your authorised school account. Current approved NESA/RTO instructions take precedence.",
+          "verifiedOn": "2026-09-24",
+          "locator": "Head Teacher reference copy; VET Courses + Life Skill Students.docx",
+          "relationship": "Restricted Head Teacher reference copy. Check current authorised instructions and any historical/draft limits."
         }
       ],
       "order": 26,
@@ -2482,13 +2728,14 @@
         },
         {
           "id": "WWHS-ADMIN-TIMELINE",
-          "title": "WWHS VET administration timeline and procedures",
-          "url": "https://drive.google.com/drive/search?q=%22VET%20Admin%20Timeline%22",
-          "verification": "School procedure audit completed 24 September 2026. Local routines support current NESA and RTO instructions; historical examples do not establish current deadlines. Open the agreed Head Teacher procedure copy when available.",
+          "title": "VET administration procedures - Head Teacher library",
+          "url": "https://drive.google.com/drive/folders/1vweutvJeqrP2EOJAzgoh4-iFz1tnsF3E",
+          "verification": "Twelve restricted reference copies and the working procedure guide verified in this library on 24 September 2026. A library link is a place to find instructions, not proof that each task is mandated. Current NESA/RTO instructions override historical examples.",
           "verifiedOn": "2026-09-24",
-          "linkKind": "search",
+          "linkKind": "folder",
           "locator": "School administration timeline / procedure audit: R42 School profile and next-year authority",
-          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority."
+          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority.",
+          "accessNote": "Open the relevant reference copy or working-guide section. Sign in with your authorised school account; some actions still require the current RTO instruction."
         }
       ],
       "order": 27,
@@ -2509,7 +2756,9 @@
       "sourceIds": [
         "WWHS-ADMIN-TIMELINE",
         "WWHS-VET-SHARED",
-        "RTO-DOCUMENT-LIBRARY"
+        "RTO-DOCUMENT-LIBRARY",
+        "WWHS-HT-WORKING-PROCEDURES",
+        "WWHS-HT-REFERENCE-04"
       ],
       "provenanceStatus": "specific-citation",
       "sourceBasis": "School administration procedure and timeline; this card organises the local work and does not establish an external compliance mandate. School administration audit checked 24 September 2026: HSC exam participation decision.",
@@ -2519,27 +2768,53 @@
       "evidenceRefs": [
         {
           "id": "WWHS-ADMIN-TIMELINE",
-          "title": "WWHS VET administration timeline and procedures",
-          "url": "https://drive.google.com/drive/search?q=%22VET%20Admin%20Timeline%22",
-          "verification": "School procedure audit completed 24 September 2026. Local routines support current NESA and RTO instructions; historical examples do not establish current deadlines. Open the agreed Head Teacher procedure copy when available.",
+          "title": "VET administration procedures - Head Teacher library",
+          "url": "https://drive.google.com/drive/folders/1vweutvJeqrP2EOJAzgoh4-iFz1tnsF3E",
+          "verification": "Twelve restricted reference copies and the working procedure guide verified in this library on 24 September 2026. A library link is a place to find instructions, not proof that each task is mandated. Current NESA/RTO instructions override historical examples.",
           "verifiedOn": "2026-09-24",
-          "linkKind": "search",
+          "linkKind": "folder",
           "locator": "School administration timeline / procedure audit: R32 HSC exam participation decision",
-          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority."
+          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority.",
+          "accessNote": "Open the relevant reference copy or working-guide section. Sign in with your authorised school account; some actions still require the current RTO instruction."
         },
         {
           "id": "WWHS-VET-SHARED",
           "title": "TAS/VET Google Drive - Head Teacher master starting point",
           "url": "https://drive.google.com/drive/folders/0B40F5Y8uF0rvfkl1S2FEbjRhVmJYRWYyY2dlOFVHMDdQeFNyQlRBUzBudmtHRGJKdE83VVk?resourcekey=0-fXD-BgXggkE5EyIeJJdt5g&usp=drive_link",
-          "verification": "Head Teacher central-folder choice confirmed. General access was link-readable on 24 September 2026; this is not verified confidential storage.",
+          "verification": "HEAD TEACHER TAS and the seven procedure folders verified restricted on 24 September 2026. Di retains Editor access. Individual learner-record locations must still meet their approved access and records requirements.",
           "linkKind": "folder",
-          "accessNote": "Procedure masters and safe references only until permissions are reviewed. Keep learner/confidential records in approved restricted systems."
+          "accessNote": "Use the restricted Head Teacher procedure library for reference copies. Keep learner records in their authorised systems.",
+          "verifiedOn": "2026-09-24"
         },
         {
           "id": "RTO-DOCUMENT-LIBRARY",
           "title": "RTO 90333 controlled Document Library",
           "url": "https://apps.powerapps.com/play/e/default-05a0e69a-418a-47c1-9c25-9387261bf991/a/5c9be746-db94-402d-9a74-420b4c109498?tenantId=05a0e69a-418a-47c1-9c25-9387261bf991",
           "verification": "Earlier app reference only; the original source still needs checking."
+        },
+        {
+          "id": "WWHS-HT-WORKING-PROCEDURES",
+          "title": "VET administration working procedures - for review",
+          "url": "https://docs.google.com/document/d/1-89mOCNbEKSXkNeu1q-Cje6JKitWkyZ35O3sg2i0gSE/edit",
+          "verification": "A reviewed nine-section, 54-step working guide prepared from the school procedure audit, with personal examples and screenshots omitted. Requires Head Teacher/RTO confirmation; it is not an approved policy or a learner record.",
+          "linkKind": "document",
+          "linkTitle": "VET working procedures - for review",
+          "accessNote": "Restricted Head Teacher reference. Sign in with your authorised school account. Current approved NESA/RTO instructions take precedence.",
+          "verifiedOn": "2026-09-24",
+          "locator": "6. HSC VET examination intentions and forms",
+          "relationship": "Head Teacher working guide for review; not an externally mandated or approved policy."
+        },
+        {
+          "id": "WWHS-HT-REFERENCE-04",
+          "title": "HSC form filing - reference copy",
+          "url": "https://docs.google.com/document/d/1QYy2N2pFgg674cUU1qkS8iQupNM0RvAf/edit",
+          "verification": "Copied to the restricted Head Teacher procedure library and verified 24 September 2026. Source original remains unchanged. This is a local reference copy; check current NESA/RTO instructions before use.",
+          "linkKind": "document",
+          "linkTitle": "Filing forms in Sentral",
+          "accessNote": "Restricted Head Teacher reference. Sign in with your authorised school account. Current approved NESA/RTO instructions take precedence.",
+          "verifiedOn": "2026-09-24",
+          "locator": "Head Teacher reference copy; How to upload Forms into student files -  Sentral Wellbeing.docx",
+          "relationship": "Restricted Head Teacher reference copy. Check current authorised instructions and any historical/draft limits."
         }
       ],
       "auditRows": [
@@ -2667,13 +2942,14 @@
         },
         {
           "id": "WWHS-ADMIN-TIMELINE",
-          "title": "WWHS VET administration timeline and procedures",
-          "url": "https://drive.google.com/drive/search?q=%22VET%20Admin%20Timeline%22",
-          "verification": "School procedure audit completed 24 September 2026. Local routines support current NESA and RTO instructions; historical examples do not establish current deadlines. Open the agreed Head Teacher procedure copy when available.",
+          "title": "VET administration procedures - Head Teacher library",
+          "url": "https://drive.google.com/drive/folders/1vweutvJeqrP2EOJAzgoh4-iFz1tnsF3E",
+          "verification": "Twelve restricted reference copies and the working procedure guide verified in this library on 24 September 2026. A library link is a place to find instructions, not proof that each task is mandated. Current NESA/RTO instructions override historical examples.",
           "verifiedOn": "2026-09-24",
-          "linkKind": "search",
+          "linkKind": "folder",
           "locator": "School administration timeline / procedure audit: R36 Placement readiness monitoring and hours",
-          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority."
+          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority.",
+          "accessNote": "Open the relevant reference copy or working-guide section. Sign in with your authorised school account; some actions still require the current RTO instruction."
         }
       ],
       "order": 29,
@@ -2855,13 +3131,14 @@
         },
         {
           "id": "WWHS-ADMIN-TIMELINE",
-          "title": "WWHS VET administration timeline and procedures",
-          "url": "https://drive.google.com/drive/search?q=%22VET%20Admin%20Timeline%22",
-          "verification": "School procedure audit completed 24 September 2026. Local routines support current NESA and RTO instructions; historical examples do not establish current deadlines. Open the agreed Head Teacher procedure copy when available.",
+          "title": "VET administration procedures - Head Teacher library",
+          "url": "https://drive.google.com/drive/folders/1vweutvJeqrP2EOJAzgoh4-iFz1tnsF3E",
+          "verification": "Twelve restricted reference copies and the working procedure guide verified in this library on 24 September 2026. A library link is a place to find instructions, not proof that each task is mandated. Current NESA/RTO instructions override historical examples.",
           "verifiedOn": "2026-09-24",
-          "linkKind": "search",
+          "linkKind": "folder",
           "locator": "School administration timeline / procedure audit: R43 Coordinator guide meeting and staff briefing",
-          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority."
+          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority.",
+          "accessNote": "Open the relevant reference copy or working-guide section. Sign in with your authorised school account; some actions still require the current RTO instruction."
         }
       ],
       "order": 32,
@@ -2947,13 +3224,14 @@
         },
         {
           "id": "WWHS-ADMIN-TIMELINE",
-          "title": "WWHS VET administration timeline and procedures",
-          "url": "https://drive.google.com/drive/search?q=%22VET%20Admin%20Timeline%22",
-          "verification": "School procedure audit completed 24 September 2026. Local routines support current NESA and RTO instructions; historical examples do not establish current deadlines. Open the agreed Head Teacher procedure copy when available.",
+          "title": "VET administration procedures - Head Teacher library",
+          "url": "https://drive.google.com/drive/folders/1vweutvJeqrP2EOJAzgoh4-iFz1tnsF3E",
+          "verification": "Twelve restricted reference copies and the working procedure guide verified in this library on 24 September 2026. A library link is a place to find instructions, not proof that each task is mandated. Current NESA/RTO instructions override historical examples.",
           "verifiedOn": "2026-09-24",
-          "linkKind": "search",
+          "linkKind": "folder",
           "locator": "School administration timeline / procedure audit: R39 Competency outcomes and NESA deadlines",
-          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority."
+          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority.",
+          "accessNote": "Open the relevant reference copy or working-guide section. Sign in with your authorised school account; some actions still require the current RTO instruction."
         }
       ],
       "order": 33,
@@ -3038,13 +3316,14 @@
         },
         {
           "id": "WWHS-ADMIN-TIMELINE",
-          "title": "WWHS VET administration timeline and procedures",
-          "url": "https://drive.google.com/drive/search?q=%22VET%20Admin%20Timeline%22",
-          "verification": "School procedure audit completed 24 September 2026. Local routines support current NESA and RTO instructions; historical examples do not establish current deadlines. Open the agreed Head Teacher procedure copy when available.",
+          "title": "VET administration procedures - Head Teacher library",
+          "url": "https://drive.google.com/drive/folders/1vweutvJeqrP2EOJAzgoh4-iFz1tnsF3E",
+          "verification": "Twelve restricted reference copies and the working procedure guide verified in this library on 24 September 2026. A library link is a place to find instructions, not proof that each task is mandated. Current NESA/RTO instructions override historical examples.",
           "verifiedOn": "2026-09-24",
-          "linkKind": "search",
+          "linkKind": "folder",
           "locator": "School administration timeline / procedure audit: R32 HSC exam participation decision, R33 HSC exam additions and withdrawals",
-          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority."
+          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority.",
+          "accessNote": "Open the relevant reference copy or working-guide section. Sign in with your authorised school account; some actions still require the current RTO instruction."
         },
         {
           "id": "NESA-TOA-2027-SEP",
@@ -3085,14 +3364,16 @@
       "evidenceRefs": [
         {
           "id": "WWHS-NESA-CHECKS-SOP-2025",
-          "title": "2025 draft SOP - NESA checks (reference only)",
+          "title": "NESA checks - DRAFT incomplete 2025 reference",
           "locator": "NESA Checks Procedure, steps 1–7; NESA Late Entries; responsibilities.",
-          "url": "https://drive.google.com/file/d/1eozBxhrs9IXXAL0zfcSTf6D8rkqGWMoo/view",
+          "url": "https://drive.google.com/file/d/1wi9AKM1JZJNJXeAmerNKCLDZXomHwNkb/view",
           "relationship": "Direct supporting document located during the source-link audit; current authority and applicability must still be checked.",
-          "verification": "All three pages checked 24 September 2026. DRAFT watermark and blank late-entry steps 8-10: current approved instructions must be obtained.",
-          "statusNote": "Open the current 2026 VET Drive; the live 2026 NESA timetable controls dates.",
+          "verification": "Copied to the restricted Head Teacher procedure library and verified 24 September 2026. Source original remains unchanged. This is a local reference copy; check current NESA/RTO instructions before use. The original is a 2025 DRAFT with blank late-entry steps 8-10; it is not a complete approved procedure.",
+          "statusNote": "Copied to the restricted Head Teacher procedure library and verified 24 September 2026. Source original remains unchanged. This is a local reference copy; check current NESA/RTO instructions before use. The original is a 2025 DRAFT with blank late-entry steps 8-10; it is not a complete approved procedure.",
           "linkKind": "document",
-          "verifiedOn": "2026-09-18"
+          "verifiedOn": "2026-09-24",
+          "linkTitle": "NESA checks - incomplete draft",
+          "accessNote": "Restricted Head Teacher reference. Sign in with your authorised school account. Current approved NESA/RTO instructions take precedence."
         },
         {
           "id": "RTO-TERM3-GUIDE-2026",
@@ -3116,13 +3397,14 @@
         },
         {
           "id": "WWHS-ADMIN-TIMELINE",
-          "title": "WWHS VET administration timeline and procedures",
-          "url": "https://drive.google.com/drive/search?q=%22VET%20Admin%20Timeline%22",
-          "verification": "School procedure audit completed 24 September 2026. Local routines support current NESA and RTO instructions; historical examples do not establish current deadlines. Open the agreed Head Teacher procedure copy when available.",
+          "title": "VET administration procedures - Head Teacher library",
+          "url": "https://drive.google.com/drive/folders/1vweutvJeqrP2EOJAzgoh4-iFz1tnsF3E",
+          "verification": "Twelve restricted reference copies and the working procedure guide verified in this library on 24 September 2026. A library link is a place to find instructions, not proof that each task is mandated. Current NESA/RTO instructions override historical examples.",
           "verifiedOn": "2026-09-24",
-          "linkKind": "search",
+          "linkKind": "folder",
           "locator": "School administration timeline / procedure audit: R28 Too few units and minimum standards errors",
-          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority."
+          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority.",
+          "accessNote": "Open the relevant reference copy or working-guide section. Sign in with your authorised school account; some actions still require the current RTO instruction."
         },
         {
           "id": "NESA-TOA-2027-SEP",
@@ -3193,13 +3475,14 @@
         },
         {
           "id": "WWHS-ADMIN-TIMELINE",
-          "title": "WWHS VET administration timeline and procedures",
-          "url": "https://drive.google.com/drive/search?q=%22VET%20Admin%20Timeline%22",
-          "verification": "School procedure audit completed 24 September 2026. Local routines support current NESA and RTO instructions; historical examples do not establish current deadlines. Open the agreed Head Teacher procedure copy when available.",
+          "title": "VET administration procedures - Head Teacher library",
+          "url": "https://drive.google.com/drive/folders/1vweutvJeqrP2EOJAzgoh4-iFz1tnsF3E",
+          "verification": "Twelve restricted reference copies and the working procedure guide verified in this library on 24 September 2026. A library link is a place to find instructions, not proof that each task is mandated. Current NESA/RTO instructions override historical examples.",
           "verifiedOn": "2026-09-24",
-          "linkKind": "search",
+          "linkKind": "folder",
           "locator": "School administration timeline / procedure audit: R45 Preliminary leaver exit survey",
-          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority."
+          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority.",
+          "accessNote": "Open the relevant reference copy or working-guide section. Sign in with your authorised school account; some actions still require the current RTO instruction."
         }
       ],
       "order": 36,
@@ -3289,13 +3572,14 @@
         },
         {
           "id": "WWHS-ADMIN-TIMELINE",
-          "title": "WWHS VET administration timeline and procedures",
-          "url": "https://drive.google.com/drive/search?q=%22VET%20Admin%20Timeline%22",
-          "verification": "School procedure audit completed 24 September 2026. Local routines support current NESA and RTO instructions; historical examples do not establish current deadlines. Open the agreed Head Teacher procedure copy when available.",
+          "title": "VET administration procedures - Head Teacher library",
+          "url": "https://drive.google.com/drive/folders/1vweutvJeqrP2EOJAzgoh4-iFz1tnsF3E",
+          "verification": "Twelve restricted reference copies and the working procedure guide verified in this library on 24 September 2026. A library link is a place to find instructions, not proof that each task is mandated. Current NESA/RTO instructions override historical examples.",
           "verifiedOn": "2026-09-24",
-          "linkKind": "search",
+          "linkKind": "folder",
           "locator": "School administration timeline / procedure audit: R18 Subject selection booklet amendments",
-          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority."
+          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority.",
+          "accessNote": "Open the relevant reference copy or working-guide section. Sign in with your authorised school account; some actions still require the current RTO instruction."
         }
       ],
       "order": 37,
@@ -3369,13 +3653,14 @@
         },
         {
           "id": "WWHS-ADMIN-TIMELINE",
-          "title": "WWHS VET administration timeline and procedures",
-          "url": "https://drive.google.com/drive/search?q=%22VET%20Admin%20Timeline%22",
-          "verification": "School procedure audit completed 24 September 2026. Local routines support current NESA and RTO instructions; historical examples do not establish current deadlines. Open the agreed Head Teacher procedure copy when available.",
+          "title": "VET administration procedures - Head Teacher library",
+          "url": "https://drive.google.com/drive/folders/1vweutvJeqrP2EOJAzgoh4-iFz1tnsF3E",
+          "verification": "Twelve restricted reference copies and the working procedure guide verified in this library on 24 September 2026. A library link is a place to find instructions, not proof that each task is mandated. Current NESA/RTO instructions override historical examples.",
           "verifiedOn": "2026-09-24",
-          "linkKind": "search",
+          "linkKind": "folder",
           "locator": "School administration timeline / procedure audit: R17 Assessment booklet amendments",
-          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority."
+          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority.",
+          "accessNote": "Open the relevant reference copy or working-guide section. Sign in with your authorised school account; some actions still require the current RTO instruction."
         }
       ],
       "order": 38,
@@ -3469,13 +3754,14 @@
         },
         {
           "id": "WWHS-ADMIN-TIMELINE",
-          "title": "WWHS VET administration timeline and procedures",
-          "url": "https://drive.google.com/drive/search?q=%22VET%20Admin%20Timeline%22",
-          "verification": "School procedure audit completed 24 September 2026. Local routines support current NESA and RTO instructions; historical examples do not establish current deadlines. Open the agreed Head Teacher procedure copy when available.",
+          "title": "VET administration procedures - Head Teacher library",
+          "url": "https://drive.google.com/drive/folders/1vweutvJeqrP2EOJAzgoh4-iFz1tnsF3E",
+          "verification": "Twelve restricted reference copies and the working procedure guide verified in this library on 24 September 2026. A library link is a place to find instructions, not proof that each task is mandated. Current NESA/RTO instructions override historical examples.",
           "verifiedOn": "2026-09-24",
-          "linkKind": "search",
+          "linkKind": "folder",
           "locator": "School administration timeline / procedure audit: R39 Competency outcomes and NESA deadlines",
-          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority."
+          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority.",
+          "accessNote": "Open the relevant reference copy or working-guide section. Sign in with your authorised school account; some actions still require the current RTO instruction."
         }
       ],
       "order": 39,
@@ -3498,7 +3784,10 @@
         "WWHS-CROSSCHECK",
         "WWHS-INTERNAL-AUDIT",
         "WWHS-HT-DOC",
-        "WWHS-ADMIN-TIMELINE"
+        "WWHS-ADMIN-TIMELINE",
+        "WWHS-HT-REFERENCE-20",
+        "WWHS-HT-REFERENCE-23",
+        "WWHS-HT-REFERENCE-07"
       ],
       "provenanceStatus": "specific-citation",
       "sourceBasis": "The earlier task list cites WWHS 2026 VET working calendar; WWHS Markbook / PxP / NESA cross-check template; WWHS internal audit checklist. The original document still needs checking for this exact task. Freshly read local guide: Report/markbook/NESA reconciliation is described. It does not establish the displayed 28–30 October local dates. School administration audit checked 24 September 2026: Year 11 and Year 12 report setup; Markbook to Reports synchronisation; VET report fields and outcome definitions.",
@@ -3551,13 +3840,50 @@
         },
         {
           "id": "WWHS-ADMIN-TIMELINE",
-          "title": "WWHS VET administration timeline and procedures",
-          "url": "https://drive.google.com/drive/search?q=%22VET%20Admin%20Timeline%22",
-          "verification": "School procedure audit completed 24 September 2026. Local routines support current NESA and RTO instructions; historical examples do not establish current deadlines. Open the agreed Head Teacher procedure copy when available.",
+          "title": "VET administration procedures - Head Teacher library",
+          "url": "https://drive.google.com/drive/folders/1vweutvJeqrP2EOJAzgoh4-iFz1tnsF3E",
+          "verification": "Twelve restricted reference copies and the working procedure guide verified in this library on 24 September 2026. A library link is a place to find instructions, not proof that each task is mandated. Current NESA/RTO instructions override historical examples.",
           "verifiedOn": "2026-09-24",
-          "linkKind": "search",
+          "linkKind": "folder",
           "locator": "School administration timeline / procedure audit: R29 Year 11 and Year 12 report setup, R51 Markbook to Reports synchronisation, R52 VET report fields and outcome definitions",
-          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority."
+          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority.",
+          "accessNote": "Open the relevant reference copy or working-guide section. Sign in with your authorised school account; some actions still require the current RTO instruction."
+        },
+        {
+          "id": "WWHS-HT-REFERENCE-20",
+          "title": "VET report setup - reference copy",
+          "url": "https://docs.google.com/document/d/1Mpb6BDUPnhhUmehuc4EoR3VGKUaJQh_6/edit",
+          "verification": "Copied to the restricted Head Teacher procedure library and verified 24 September 2026. Source original remains unchanged. This is a local reference copy; check current NESA/RTO instructions before use.",
+          "linkKind": "document",
+          "linkTitle": "VET report setup",
+          "accessNote": "Restricted Head Teacher reference. Sign in with your authorised school account. Current approved NESA/RTO instructions take precedence.",
+          "verifiedOn": "2026-09-24",
+          "locator": "Head Teacher reference copy; How to set up VET Reports.docx",
+          "relationship": "Restricted Head Teacher reference copy. Check current authorised instructions and any historical/draft limits."
+        },
+        {
+          "id": "WWHS-HT-REFERENCE-23",
+          "title": "Markbook report sync - generic reference - no VET marks or ranks",
+          "url": "https://docs.google.com/document/d/1WDgU5PJBFX0jIs-CBOXcJZQJ4Eig_ui8/edit",
+          "verification": "Copied to the restricted Head Teacher procedure library and verified 24 September 2026. Source original remains unchanged. This is a local reference copy; check current NESA/RTO instructions before use. Generic marks/ranks instructions do not establish permitted VET reporting. Confirm the VET-specific method before syncing.",
+          "linkKind": "document",
+          "linkTitle": "Markbook and report sync - reference",
+          "accessNote": "Restricted Head Teacher reference. Sign in with your authorised school account. Current approved NESA/RTO instructions take precedence.",
+          "verifiedOn": "2026-09-24",
+          "locator": "Head Teacher reference copy; Reminder to HT Sync Markbooks to reports.docx",
+          "relationship": "Restricted Head Teacher reference copy. Check current authorised instructions and any historical/draft limits."
+        },
+        {
+          "id": "WWHS-HT-REFERENCE-07",
+          "title": "VET report content - 2025 reference",
+          "url": "https://docs.google.com/document/d/19EPshJveX5bT-oMqZCxUTbdKNEPuWDky/edit",
+          "verification": "Copied to the restricted Head Teacher procedure library and verified 24 September 2026. Source original remains unchanged. This is a local reference copy; check current NESA/RTO instructions before use.",
+          "linkKind": "document",
+          "linkTitle": "VET report contents",
+          "accessNote": "Restricted Head Teacher reference. Sign in with your authorised school account. Current approved NESA/RTO instructions take precedence.",
+          "verifiedOn": "2026-09-24",
+          "locator": "Head Teacher reference copy; What to include in a VET report                                            13.docx",
+          "relationship": "Restricted Head Teacher reference copy. Check current authorised instructions and any historical/draft limits."
         }
       ],
       "order": 40,
@@ -3653,13 +3979,14 @@
         },
         {
           "id": "WWHS-ADMIN-TIMELINE",
-          "title": "WWHS VET administration timeline and procedures",
-          "url": "https://drive.google.com/drive/search?q=%22VET%20Admin%20Timeline%22",
-          "verification": "School procedure audit completed 24 September 2026. Local routines support current NESA and RTO instructions; historical examples do not establish current deadlines. Open the agreed Head Teacher procedure copy when available.",
+          "title": "VET administration procedures - Head Teacher library",
+          "url": "https://drive.google.com/drive/folders/1vweutvJeqrP2EOJAzgoh4-iFz1tnsF3E",
+          "verification": "Twelve restricted reference copies and the working procedure guide verified in this library on 24 September 2026. A library link is a place to find instructions, not proof that each task is mandated. Current NESA/RTO instructions override historical examples.",
           "verifiedOn": "2026-09-24",
-          "linkKind": "search",
+          "linkKind": "folder",
           "locator": "School administration timeline / procedure audit: R40 Final Year 12 data, R46 Trainer and student checks of NESA reports",
-          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority."
+          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority.",
+          "accessNote": "Open the relevant reference copy or working-guide section. Sign in with your authorised school account; some actions still require the current RTO instruction."
         }
       ],
       "order": 41,
@@ -3777,13 +4104,14 @@
         },
         {
           "id": "WWHS-ADMIN-TIMELINE",
-          "title": "WWHS VET administration timeline and procedures",
-          "url": "https://drive.google.com/drive/search?q=%22VET%20Admin%20Timeline%22",
-          "verification": "School procedure audit completed 24 September 2026. Local routines support current NESA and RTO instructions; historical examples do not establish current deadlines. Open the agreed Head Teacher procedure copy when available.",
+          "title": "VET administration procedures - Head Teacher library",
+          "url": "https://drive.google.com/drive/folders/1vweutvJeqrP2EOJAzgoh4-iFz1tnsF3E",
+          "verification": "Twelve restricted reference copies and the working procedure guide verified in this library on 24 September 2026. A library link is a place to find instructions, not proof that each task is mandated. Current NESA/RTO instructions override historical examples.",
           "verifiedOn": "2026-09-24",
-          "linkKind": "search",
+          "linkKind": "folder",
           "locator": "School administration timeline / procedure audit: R40 Final Year 12 data",
-          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority."
+          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority.",
+          "accessNote": "Open the relevant reference copy or working-guide section. Sign in with your authorised school account; some actions still require the current RTO instruction."
         }
       ],
       "order": 43,
@@ -3806,7 +4134,8 @@
         "RTO-TERM3-GUIDE-2026",
         "VET-SCHOOLS-HUB",
         "MY-VET-WORKPLACE",
-        "WWHS-ADMIN-TIMELINE"
+        "WWHS-ADMIN-TIMELINE",
+        "WWHS-HT-WORKING-PROCEDURES"
       ],
       "provenanceStatus": "broad-source-only",
       "sourceBasis": "The earlier task list cites WWHS 2026 VET working calendar; RTO Term 3 VET Coordinator Guide 2026. The original document still needs checking for this exact task. School administration audit checked 24 September 2026: Hub courses classes and teachers; Next-year placement booking.",
@@ -3854,13 +4183,26 @@
         },
         {
           "id": "WWHS-ADMIN-TIMELINE",
-          "title": "WWHS VET administration timeline and procedures",
-          "url": "https://drive.google.com/drive/search?q=%22VET%20Admin%20Timeline%22",
-          "verification": "School procedure audit completed 24 September 2026. Local routines support current NESA and RTO instructions; historical examples do not establish current deadlines. Open the agreed Head Teacher procedure copy when available.",
+          "title": "VET administration procedures - Head Teacher library",
+          "url": "https://drive.google.com/drive/folders/1vweutvJeqrP2EOJAzgoh4-iFz1tnsF3E",
+          "verification": "Twelve restricted reference copies and the working procedure guide verified in this library on 24 September 2026. A library link is a place to find instructions, not proof that each task is mandated. Current NESA/RTO instructions override historical examples.",
           "verifiedOn": "2026-09-24",
-          "linkKind": "search",
+          "linkKind": "folder",
           "locator": "School administration timeline / procedure audit: R05 Hub courses classes and teachers, R35 Next-year placement booking",
-          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority."
+          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority.",
+          "accessNote": "Open the relevant reference copy or working-guide section. Sign in with your authorised school account; some actions still require the current RTO instruction."
+        },
+        {
+          "id": "WWHS-HT-WORKING-PROCEDURES",
+          "title": "VET administration working procedures - for review",
+          "url": "https://docs.google.com/document/d/1-89mOCNbEKSXkNeu1q-Cje6JKitWkyZ35O3sg2i0gSE/edit",
+          "verification": "A reviewed nine-section, 54-step working guide prepared from the school procedure audit, with personal examples and screenshots omitted. Requires Head Teacher/RTO confirmation; it is not an approved policy or a learner record.",
+          "linkKind": "document",
+          "linkTitle": "VET working procedures - for review",
+          "accessNote": "Restricted Head Teacher reference. Sign in with your authorised school account. Current approved NESA/RTO instructions take precedence.",
+          "verifiedOn": "2026-09-24",
+          "locator": "5. COMPACT placement dates and notifications",
+          "relationship": "Head Teacher working guide for review; not an externally mandated or approved policy."
         }
       ],
       "order": 44,
@@ -3920,13 +4262,14 @@
         },
         {
           "id": "WWHS-ADMIN-TIMELINE",
-          "title": "WWHS VET administration timeline and procedures",
-          "url": "https://drive.google.com/drive/search?q=%22VET%20Admin%20Timeline%22",
-          "verification": "School procedure audit completed 24 September 2026. Local routines support current NESA and RTO instructions; historical examples do not establish current deadlines. Open the agreed Head Teacher procedure copy when available.",
+          "title": "VET administration procedures - Head Teacher library",
+          "url": "https://drive.google.com/drive/folders/1vweutvJeqrP2EOJAzgoh4-iFz1tnsF3E",
+          "verification": "Twelve restricted reference copies and the working procedure guide verified in this library on 24 September 2026. A library link is a place to find instructions, not proof that each task is mandated. Current NESA/RTO instructions override historical examples.",
           "verifiedOn": "2026-09-24",
-          "linkKind": "search",
+          "linkKind": "folder",
           "locator": "School administration timeline / procedure audit: R10 Year 12 markbook setup, R11 Year 11 markbook setup, R15 Evidence Central suspension on exit",
-          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority."
+          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority.",
+          "accessNote": "Open the relevant reference copy or working-guide section. Sign in with your authorised school account; some actions still require the current RTO instruction."
         }
       ],
       "order": 45,
@@ -4014,13 +4357,14 @@
         },
         {
           "id": "WWHS-ADMIN-TIMELINE",
-          "title": "WWHS VET administration timeline and procedures",
-          "url": "https://drive.google.com/drive/search?q=%22VET%20Admin%20Timeline%22",
-          "verification": "School procedure audit completed 24 September 2026. Local routines support current NESA and RTO instructions; historical examples do not establish current deadlines. Open the agreed Head Teacher procedure copy when available.",
+          "title": "VET administration procedures - Head Teacher library",
+          "url": "https://drive.google.com/drive/folders/1vweutvJeqrP2EOJAzgoh4-iFz1tnsF3E",
+          "verification": "Twelve restricted reference copies and the working procedure guide verified in this library on 24 September 2026. A library link is a place to find instructions, not proof that each task is mandated. Current NESA/RTO instructions override historical examples.",
           "verifiedOn": "2026-09-24",
-          "linkKind": "search",
+          "linkKind": "folder",
           "locator": "School administration timeline / procedure audit: R53 Preparation for an RTO audit visit",
-          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority."
+          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority.",
+          "accessNote": "Open the relevant reference copy or working-guide section. Sign in with your authorised school account; some actions still require the current RTO instruction."
         }
       ],
       "order": 46,
@@ -4117,21 +4461,23 @@
       "evidenceRefs": [
         {
           "id": "WWHS-ADMIN-TIMELINE",
-          "title": "WWHS VET administration timeline and procedures",
-          "url": "https://drive.google.com/drive/search?q=%22VET%20Admin%20Timeline%22",
-          "verification": "School procedure audit completed 24 September 2026. Local routines support current NESA and RTO instructions; historical examples do not establish current deadlines. Open the agreed Head Teacher procedure copy when available.",
+          "title": "VET administration procedures - Head Teacher library",
+          "url": "https://drive.google.com/drive/folders/1vweutvJeqrP2EOJAzgoh4-iFz1tnsF3E",
+          "verification": "Twelve restricted reference copies and the working procedure guide verified in this library on 24 September 2026. A library link is a place to find instructions, not proof that each task is mandated. Current NESA/RTO instructions override historical examples.",
           "verifiedOn": "2026-09-24",
-          "linkKind": "search",
+          "linkKind": "folder",
           "locator": "School administration timeline / procedure audit: R44 NSW Training Awards reminder",
-          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority."
+          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority.",
+          "accessNote": "Open the relevant reference copy or working-guide section. Sign in with your authorised school account; some actions still require the current RTO instruction."
         },
         {
           "id": "WWHS-VET-SHARED",
           "title": "TAS/VET Google Drive - Head Teacher master starting point",
           "url": "https://drive.google.com/drive/folders/0B40F5Y8uF0rvfkl1S2FEbjRhVmJYRWYyY2dlOFVHMDdQeFNyQlRBUzBudmtHRGJKdE83VVk?resourcekey=0-fXD-BgXggkE5EyIeJJdt5g&usp=drive_link",
-          "verification": "Head Teacher central-folder choice confirmed. General access was link-readable on 24 September 2026; this is not verified confidential storage.",
+          "verification": "HEAD TEACHER TAS and the seven procedure folders verified restricted on 24 September 2026. Di retains Editor access. Individual learner-record locations must still meet their approved access and records requirements.",
           "linkKind": "folder",
-          "accessNote": "Procedure masters and safe references only until permissions are reviewed. Keep learner/confidential records in approved restricted systems."
+          "accessNote": "Use the restricted Head Teacher procedure library for reference copies. Keep learner records in their authorised systems.",
+          "verifiedOn": "2026-09-24"
         },
         {
           "id": "RTO-DOCUMENT-LIBRARY",
@@ -4249,13 +4595,14 @@
         },
         {
           "id": "WWHS-ADMIN-TIMELINE",
-          "title": "WWHS VET administration timeline and procedures",
-          "url": "https://drive.google.com/drive/search?q=%22VET%20Admin%20Timeline%22",
-          "verification": "School procedure audit completed 24 September 2026. Local routines support current NESA and RTO instructions; historical examples do not establish current deadlines. Open the agreed Head Teacher procedure copy when available.",
+          "title": "VET administration procedures - Head Teacher library",
+          "url": "https://drive.google.com/drive/folders/1vweutvJeqrP2EOJAzgoh4-iFz1tnsF3E",
+          "verification": "Twelve restricted reference copies and the working procedure guide verified in this library on 24 September 2026. A library link is a place to find instructions, not proof that each task is mandated. Current NESA/RTO instructions override historical examples.",
           "verifiedOn": "2026-09-24",
-          "linkKind": "search",
+          "linkKind": "folder",
           "locator": "School administration timeline / procedure audit: R01 Daily staffroom triage, R02 Weekly notices and action evidence, R31 Prepare and close term action timelines, R43 Coordinator guide meeting and staff briefing",
-          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority."
+          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority.",
+          "accessNote": "Open the relevant reference copy or working-guide section. Sign in with your authorised school account; some actions still require the current RTO instruction."
         }
       ],
       "order": 49,
@@ -4336,13 +4683,14 @@
         },
         {
           "id": "WWHS-ADMIN-TIMELINE",
-          "title": "WWHS VET administration timeline and procedures",
-          "url": "https://drive.google.com/drive/search?q=%22VET%20Admin%20Timeline%22",
-          "verification": "School procedure audit completed 24 September 2026. Local routines support current NESA and RTO instructions; historical examples do not establish current deadlines. Open the agreed Head Teacher procedure copy when available.",
+          "title": "VET administration procedures - Head Teacher library",
+          "url": "https://drive.google.com/drive/folders/1vweutvJeqrP2EOJAzgoh4-iFz1tnsF3E",
+          "verification": "Twelve restricted reference copies and the working procedure guide verified in this library on 24 September 2026. A library link is a place to find instructions, not proof that each task is mandated. Current NESA/RTO instructions override historical examples.",
           "verifiedOn": "2026-09-24",
-          "linkKind": "search",
+          "linkKind": "folder",
           "locator": "School administration timeline / procedure audit: R09 RTO or VSO visit, R31 Prepare and close term action timelines, R43 Coordinator guide meeting and staff briefing",
-          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority."
+          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority.",
+          "accessNote": "Open the relevant reference copy or working-guide section. Sign in with your authorised school account; some actions still require the current RTO instruction."
         }
       ],
       "order": 50,
@@ -4471,7 +4819,8 @@
         "NESA-VET-UNITS",
         "NESA-VET-COMPLETION",
         "WWHS-HT-DOC",
-        "WWHS-ADMIN-TIMELINE"
+        "WWHS-ADMIN-TIMELINE",
+        "WWHS-HT-WORKING-PROCEDURES"
       ],
       "provenanceStatus": "specific-citation",
       "sourceBasis": "Term 3 guide: Evidence/outcomes must align with the scope and sequence, school reports and NESA data. School administration audit checked 24 September 2026: Deputy enrolment changes and pink forms; Induction completion and exceptions; USI LLN and induction markbook flags; Class lists course codes and competencies; Term-end attendance record.",
@@ -4542,13 +4891,26 @@
         },
         {
           "id": "WWHS-ADMIN-TIMELINE",
-          "title": "WWHS VET administration timeline and procedures",
-          "url": "https://drive.google.com/drive/search?q=%22VET%20Admin%20Timeline%22",
-          "verification": "School procedure audit completed 24 September 2026. Local routines support current NESA and RTO instructions; historical examples do not establish current deadlines. Open the agreed Head Teacher procedure copy when available.",
+          "title": "VET administration procedures - Head Teacher library",
+          "url": "https://drive.google.com/drive/folders/1vweutvJeqrP2EOJAzgoh4-iFz1tnsF3E",
+          "verification": "Twelve restricted reference copies and the working procedure guide verified in this library on 24 September 2026. A library link is a place to find instructions, not proof that each task is mandated. Current NESA/RTO instructions override historical examples.",
           "verifiedOn": "2026-09-24",
-          "linkKind": "search",
+          "linkKind": "folder",
           "locator": "School administration timeline / procedure audit: R16 Deputy enrolment changes and pink forms, R19 Induction completion and exceptions, R23 USI LLN and induction markbook flags, R24 Class lists course codes and competencies, R30 Term-end attendance record",
-          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority."
+          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority.",
+          "accessNote": "Open the relevant reference copy or working-guide section. Sign in with your authorised school account; some actions still require the current RTO instruction."
+        },
+        {
+          "id": "WWHS-HT-WORKING-PROCEDURES",
+          "title": "VET administration working procedures - for review",
+          "url": "https://docs.google.com/document/d/1-89mOCNbEKSXkNeu1q-Cje6JKitWkyZ35O3sg2i0gSE/edit",
+          "verification": "A reviewed nine-section, 54-step working guide prepared from the school procedure audit, with personal examples and screenshots omitted. Requires Head Teacher/RTO confirmation; it is not an approved policy or a learner record.",
+          "linkKind": "document",
+          "linkTitle": "VET working procedures - for review",
+          "accessNote": "Restricted Head Teacher reference. Sign in with your authorised school account. Current approved NESA/RTO instructions take precedence.",
+          "verifiedOn": "2026-09-24",
+          "locator": "sections 1 and 2 for USI and LLN follow-up only; use current RTO instructions for induction flags",
+          "relationship": "Head Teacher working guide for review; not an externally mandated or approved policy."
         }
       ],
       "order": 52,
@@ -4724,13 +5086,14 @@
         },
         {
           "id": "WWHS-ADMIN-TIMELINE",
-          "title": "WWHS VET administration timeline and procedures",
-          "url": "https://drive.google.com/drive/search?q=%22VET%20Admin%20Timeline%22",
-          "verification": "School procedure audit completed 24 September 2026. Local routines support current NESA and RTO instructions; historical examples do not establish current deadlines. Open the agreed Head Teacher procedure copy when available.",
+          "title": "VET administration procedures - Head Teacher library",
+          "url": "https://drive.google.com/drive/folders/1vweutvJeqrP2EOJAzgoh4-iFz1tnsF3E",
+          "verification": "Twelve restricted reference copies and the working procedure guide verified in this library on 24 September 2026. A library link is a place to find instructions, not proof that each task is mandated. Current NESA/RTO instructions override historical examples.",
           "verifiedOn": "2026-09-24",
-          "linkKind": "search",
+          "linkKind": "folder",
           "locator": "School administration timeline / procedure audit: R41 SBAT TVET and EVET cross-check",
-          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority."
+          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority.",
+          "accessNote": "Open the relevant reference copy or working-guide section. Sign in with your authorised school account; some actions still require the current RTO instruction."
         }
       ],
       "order": 54,
@@ -4761,7 +5124,8 @@
         "DOE-WPL-TEACHER-CHECKLIST",
         "DOE-WPL-SPR-INSTRUCTIONS",
         "DOE-WPL-HOST-CONTACT-FORM",
-        "WWHS-ADMIN-TIMELINE"
+        "WWHS-ADMIN-TIMELINE",
+        "WWHS-HT-WORKING-PROCEDURES"
       ],
       "provenanceStatus": "specific-citation",
       "sourceBasis": "Term 1 guide: Mandatory staff training and provider liaison are explicit. Term 2 guide: Liaise with the provider and retain original SPRs in student files. Term 3 guide: Original SPRs belong in official school student files. School administration audit checked 24 September 2026: COMPACT placement requests and dates; Placement readiness monitoring and hours; Placement record scanning and filing.",
@@ -4892,13 +5256,26 @@
         },
         {
           "id": "WWHS-ADMIN-TIMELINE",
-          "title": "WWHS VET administration timeline and procedures",
-          "url": "https://drive.google.com/drive/search?q=%22VET%20Admin%20Timeline%22",
-          "verification": "School procedure audit completed 24 September 2026. Local routines support current NESA and RTO instructions; historical examples do not establish current deadlines. Open the agreed Head Teacher procedure copy when available.",
+          "title": "VET administration procedures - Head Teacher library",
+          "url": "https://drive.google.com/drive/folders/1vweutvJeqrP2EOJAzgoh4-iFz1tnsF3E",
+          "verification": "Twelve restricted reference copies and the working procedure guide verified in this library on 24 September 2026. A library link is a place to find instructions, not proof that each task is mandated. Current NESA/RTO instructions override historical examples.",
           "verifiedOn": "2026-09-24",
-          "linkKind": "search",
+          "linkKind": "folder",
           "locator": "School administration timeline / procedure audit: R34 COMPACT placement requests and dates, R36 Placement readiness monitoring and hours, R37 Placement record scanning and filing",
-          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority."
+          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority.",
+          "accessNote": "Open the relevant reference copy or working-guide section. Sign in with your authorised school account; some actions still require the current RTO instruction."
+        },
+        {
+          "id": "WWHS-HT-WORKING-PROCEDURES",
+          "title": "VET administration working procedures - for review",
+          "url": "https://docs.google.com/document/d/1-89mOCNbEKSXkNeu1q-Cje6JKitWkyZ35O3sg2i0gSE/edit",
+          "verification": "A reviewed nine-section, 54-step working guide prepared from the school procedure audit, with personal examples and screenshots omitted. Requires Head Teacher/RTO confirmation; it is not an approved policy or a learner record.",
+          "linkKind": "document",
+          "linkTitle": "VET working procedures - for review",
+          "accessNote": "Restricted Head Teacher reference. Sign in with your authorised school account. Current approved NESA/RTO instructions take precedence.",
+          "verifiedOn": "2026-09-24",
+          "locator": "5. COMPACT placement dates and notifications; 8. Student placement records: scan, check and file",
+          "relationship": "Head Teacher working guide for review; not an externally mandated or approved policy."
         }
       ],
       "order": 55,
@@ -4923,7 +5300,8 @@
         "DOE-FA387",
         "USI-PROVIDERS",
         "RTO-T2-MEETING-2026",
-        "WWHS-ADMIN-TIMELINE"
+        "WWHS-ADMIN-TIMELINE",
+        "WWHS-HT-WORKING-PROCEDURES"
       ],
       "provenanceStatus": "broad-source-only",
       "sourceBasis": "The earlier task list cites NSW Department of Education privacy standards; FA387 Primary and secondary education records; USI provider reporting requirements; Term 2 VET Coordinator meeting summary — 2 June 2026. The original document still needs checking for this exact task. School administration audit checked 24 September 2026: Placement record scanning and filing; Placement originals and disposal; Historical guidance and old exceptions.",
@@ -4971,13 +5349,26 @@
         },
         {
           "id": "WWHS-ADMIN-TIMELINE",
-          "title": "WWHS VET administration timeline and procedures",
-          "url": "https://drive.google.com/drive/search?q=%22VET%20Admin%20Timeline%22",
-          "verification": "School procedure audit completed 24 September 2026. Local routines support current NESA and RTO instructions; historical examples do not establish current deadlines. Open the agreed Head Teacher procedure copy when available.",
+          "title": "VET administration procedures - Head Teacher library",
+          "url": "https://drive.google.com/drive/folders/1vweutvJeqrP2EOJAzgoh4-iFz1tnsF3E",
+          "verification": "Twelve restricted reference copies and the working procedure guide verified in this library on 24 September 2026. A library link is a place to find instructions, not proof that each task is mandated. Current NESA/RTO instructions override historical examples.",
           "verifiedOn": "2026-09-24",
-          "linkKind": "search",
+          "linkKind": "folder",
           "locator": "School administration timeline / procedure audit: R37 Placement record scanning and filing, R38 Placement originals and disposal, R50 Historical guidance and old exceptions",
-          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority."
+          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority.",
+          "accessNote": "Open the relevant reference copy or working-guide section. Sign in with your authorised school account; some actions still require the current RTO instruction."
+        },
+        {
+          "id": "WWHS-HT-WORKING-PROCEDURES",
+          "title": "VET administration working procedures - for review",
+          "url": "https://docs.google.com/document/d/1-89mOCNbEKSXkNeu1q-Cje6JKitWkyZ35O3sg2i0gSE/edit",
+          "verification": "A reviewed nine-section, 54-step working guide prepared from the school procedure audit, with personal examples and screenshots omitted. Requires Head Teacher/RTO confirmation; it is not an approved policy or a learner record.",
+          "linkKind": "document",
+          "linkTitle": "VET working procedures - for review",
+          "accessNote": "Restricted Head Teacher reference. Sign in with your authorised school account. Current approved NESA/RTO instructions take precedence.",
+          "verifiedOn": "2026-09-24",
+          "locator": "8. Student placement records: scan, check and file",
+          "relationship": "Head Teacher working guide for review; not an externally mandated or approved policy."
         }
       ],
       "order": 56,
@@ -5061,13 +5452,14 @@
         },
         {
           "id": "WWHS-ADMIN-TIMELINE",
-          "title": "WWHS VET administration timeline and procedures",
-          "url": "https://drive.google.com/drive/search?q=%22VET%20Admin%20Timeline%22",
-          "verification": "School procedure audit completed 24 September 2026. Local routines support current NESA and RTO instructions; historical examples do not establish current deadlines. Open the agreed Head Teacher procedure copy when available.",
+          "title": "VET administration procedures - Head Teacher library",
+          "url": "https://drive.google.com/drive/folders/1vweutvJeqrP2EOJAzgoh4-iFz1tnsF3E",
+          "verification": "Twelve restricted reference copies and the working procedure guide verified in this library on 24 September 2026. A library link is a place to find instructions, not proof that each task is mandated. Current NESA/RTO instructions override historical examples.",
           "verifiedOn": "2026-09-24",
-          "linkKind": "search",
+          "linkKind": "folder",
           "locator": "School administration timeline / procedure audit: R09 RTO or VSO visit, R49 Trainer feedback and post-audit surveys, R53 Preparation for an RTO audit visit",
-          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority."
+          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority.",
+          "accessNote": "Open the relevant reference copy or working-guide section. Sign in with your authorised school account; some actions still require the current RTO instruction."
         }
       ],
       "order": 57,
@@ -5100,21 +5492,23 @@
       "evidenceRefs": [
         {
           "id": "WWHS-ADMIN-TIMELINE",
-          "title": "WWHS VET administration timeline and procedures",
-          "url": "https://drive.google.com/drive/search?q=%22VET%20Admin%20Timeline%22",
-          "verification": "School procedure audit completed 24 September 2026. Local routines support current NESA and RTO instructions; historical examples do not establish current deadlines. Open the agreed Head Teacher procedure copy when available.",
+          "title": "VET administration procedures - Head Teacher library",
+          "url": "https://drive.google.com/drive/folders/1vweutvJeqrP2EOJAzgoh4-iFz1tnsF3E",
+          "verification": "Twelve restricted reference copies and the working procedure guide verified in this library on 24 September 2026. A library link is a place to find instructions, not proof that each task is mandated. Current NESA/RTO instructions override historical examples.",
           "verifiedOn": "2026-09-24",
-          "linkKind": "search",
+          "linkKind": "folder",
           "locator": "School administration timeline / procedure audit: R01 Daily staffroom triage",
-          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority."
+          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority.",
+          "accessNote": "Open the relevant reference copy or working-guide section. Sign in with your authorised school account; some actions still require the current RTO instruction."
         },
         {
           "id": "WWHS-VET-SHARED",
           "title": "TAS/VET Google Drive - Head Teacher master starting point",
           "url": "https://drive.google.com/drive/folders/0B40F5Y8uF0rvfkl1S2FEbjRhVmJYRWYyY2dlOFVHMDdQeFNyQlRBUzBudmtHRGJKdE83VVk?resourcekey=0-fXD-BgXggkE5EyIeJJdt5g&usp=drive_link",
-          "verification": "Head Teacher central-folder choice confirmed. General access was link-readable on 24 September 2026; this is not verified confidential storage.",
+          "verification": "HEAD TEACHER TAS and the seven procedure folders verified restricted on 24 September 2026. Di retains Editor access. Individual learner-record locations must still meet their approved access and records requirements.",
           "linkKind": "folder",
-          "accessNote": "Procedure masters and safe references only until permissions are reviewed. Keep learner/confidential records in approved restricted systems."
+          "accessNote": "Use the restricted Head Teacher procedure library for reference copies. Keep learner records in their authorised systems.",
+          "verifiedOn": "2026-09-24"
         },
         {
           "id": "RTO-DOCUMENT-LIBRARY",
@@ -5141,7 +5535,8 @@
       "sourceIds": [
         "WWHS-ADMIN-TIMELINE",
         "WWHS-VET-SHARED",
-        "RTO-DOCUMENT-LIBRARY"
+        "RTO-DOCUMENT-LIBRARY",
+        "WWHS-HT-WORKING-PROCEDURES"
       ],
       "provenanceStatus": "specific-citation",
       "sourceBasis": "School administration procedure and timeline; this card organises the local work and does not establish an external compliance mandate. School administration audit checked 24 September 2026: Term-end attendance record.",
@@ -5151,27 +5546,41 @@
       "evidenceRefs": [
         {
           "id": "WWHS-ADMIN-TIMELINE",
-          "title": "WWHS VET administration timeline and procedures",
-          "url": "https://drive.google.com/drive/search?q=%22VET%20Admin%20Timeline%22",
-          "verification": "School procedure audit completed 24 September 2026. Local routines support current NESA and RTO instructions; historical examples do not establish current deadlines. Open the agreed Head Teacher procedure copy when available.",
+          "title": "VET administration procedures - Head Teacher library",
+          "url": "https://drive.google.com/drive/folders/1vweutvJeqrP2EOJAzgoh4-iFz1tnsF3E",
+          "verification": "Twelve restricted reference copies and the working procedure guide verified in this library on 24 September 2026. A library link is a place to find instructions, not proof that each task is mandated. Current NESA/RTO instructions override historical examples.",
           "verifiedOn": "2026-09-24",
-          "linkKind": "search",
+          "linkKind": "folder",
           "locator": "School administration timeline / procedure audit: R30 Term-end attendance record",
-          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority."
+          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority.",
+          "accessNote": "Open the relevant reference copy or working-guide section. Sign in with your authorised school account; some actions still require the current RTO instruction."
         },
         {
           "id": "WWHS-VET-SHARED",
           "title": "TAS/VET Google Drive - Head Teacher master starting point",
           "url": "https://drive.google.com/drive/folders/0B40F5Y8uF0rvfkl1S2FEbjRhVmJYRWYyY2dlOFVHMDdQeFNyQlRBUzBudmtHRGJKdE83VVk?resourcekey=0-fXD-BgXggkE5EyIeJJdt5g&usp=drive_link",
-          "verification": "Head Teacher central-folder choice confirmed. General access was link-readable on 24 September 2026; this is not verified confidential storage.",
+          "verification": "HEAD TEACHER TAS and the seven procedure folders verified restricted on 24 September 2026. Di retains Editor access. Individual learner-record locations must still meet their approved access and records requirements.",
           "linkKind": "folder",
-          "accessNote": "Procedure masters and safe references only until permissions are reviewed. Keep learner/confidential records in approved restricted systems."
+          "accessNote": "Use the restricted Head Teacher procedure library for reference copies. Keep learner records in their authorised systems.",
+          "verifiedOn": "2026-09-24"
         },
         {
           "id": "RTO-DOCUMENT-LIBRARY",
           "title": "RTO 90333 controlled Document Library",
           "url": "https://apps.powerapps.com/play/e/default-05a0e69a-418a-47c1-9c25-9387261bf991/a/5c9be746-db94-402d-9a74-420b4c109498?tenantId=05a0e69a-418a-47c1-9c25-9387261bf991",
           "verification": "Earlier app reference only; the original source still needs checking."
+        },
+        {
+          "id": "WWHS-HT-WORKING-PROCEDURES",
+          "title": "VET administration working procedures - for review",
+          "url": "https://docs.google.com/document/d/1-89mOCNbEKSXkNeu1q-Cje6JKitWkyZ35O3sg2i0gSE/edit",
+          "verification": "A reviewed nine-section, 54-step working guide prepared from the school procedure audit, with personal examples and screenshots omitted. Requires Head Teacher/RTO confirmation; it is not an approved policy or a learner record.",
+          "linkKind": "document",
+          "linkTitle": "VET working procedures - for review",
+          "accessNote": "Restricted Head Teacher reference. Sign in with your authorised school account. Current approved NESA/RTO instructions take precedence.",
+          "verifiedOn": "2026-09-24",
+          "locator": "3. End-of-term attendance",
+          "relationship": "Head Teacher working guide for review; not an externally mandated or approved policy."
         }
       ],
       "auditRows": [
@@ -5382,7 +5791,9 @@
         "WWHS-CROSSCHECK",
         "EVIDENCE-CENTRAL",
         "WWHS-HT-DOC",
-        "WWHS-ADMIN-TIMELINE"
+        "WWHS-ADMIN-TIMELINE",
+        "WWHS-HT-WORKING-PROCEDURES",
+        "WWHS-HT-REFERENCE-11"
       ],
       "provenanceStatus": "specific-citation",
       "sourceBasis": "The live entry/change/exclusion rules support checking course changes against requirements and the entry cut-off. Freshly read local guide: Course-entry checking and transition from other providers are described; current NESA rules govern the action. School administration audit checked 24 September 2026: School-leaver outcomes and withdrawal; Signed transcripts for school leavers; Evidence Central suspension on exit; Deputy enrolment changes and pink forms; Signed confirmation of enrolment.",
@@ -5433,13 +5844,38 @@
         },
         {
           "id": "WWHS-ADMIN-TIMELINE",
-          "title": "WWHS VET administration timeline and procedures",
-          "url": "https://drive.google.com/drive/search?q=%22VET%20Admin%20Timeline%22",
-          "verification": "School procedure audit completed 24 September 2026. Local routines support current NESA and RTO instructions; historical examples do not establish current deadlines. Open the agreed Head Teacher procedure copy when available.",
+          "title": "VET administration procedures - Head Teacher library",
+          "url": "https://drive.google.com/drive/folders/1vweutvJeqrP2EOJAzgoh4-iFz1tnsF3E",
+          "verification": "Twelve restricted reference copies and the working procedure guide verified in this library on 24 September 2026. A library link is a place to find instructions, not proof that each task is mandated. Current NESA/RTO instructions override historical examples.",
           "verifiedOn": "2026-09-24",
-          "linkKind": "search",
+          "linkKind": "folder",
           "locator": "School administration timeline / procedure audit: R13 School-leaver outcomes and withdrawal, R14 Signed transcripts for school leavers, R15 Evidence Central suspension on exit, R16 Deputy enrolment changes and pink forms, R47 Signed confirmation of enrolment",
-          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority."
+          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority.",
+          "accessNote": "Open the relevant reference copy or working-guide section. Sign in with your authorised school account; some actions still require the current RTO instruction."
+        },
+        {
+          "id": "WWHS-HT-WORKING-PROCEDURES",
+          "title": "VET administration working procedures - for review",
+          "url": "https://docs.google.com/document/d/1-89mOCNbEKSXkNeu1q-Cje6JKitWkyZ35O3sg2i0gSE/edit",
+          "verification": "A reviewed nine-section, 54-step working guide prepared from the school procedure audit, with personal examples and screenshots omitted. Requires Head Teacher/RTO confirmation; it is not an approved policy or a learner record.",
+          "linkKind": "document",
+          "linkTitle": "VET working procedures - for review",
+          "accessNote": "Restricted Head Teacher reference. Sign in with your authorised school account. Current approved NESA/RTO instructions take precedence.",
+          "verifiedOn": "2026-09-24",
+          "locator": "4. Signed VET transcripts for school leavers",
+          "relationship": "Head Teacher working guide for review; not an externally mandated or approved policy."
+        },
+        {
+          "id": "WWHS-HT-REFERENCE-11",
+          "title": "VET transcript filing - reference copy",
+          "url": "https://docs.google.com/document/d/1DhGDsa_sKfStGuQbgHik3bbtylSx0dTO/edit",
+          "verification": "Copied to the restricted Head Teacher procedure library and verified 24 September 2026. Source original remains unchanged. This is a local reference copy; check current NESA/RTO instructions before use.",
+          "linkKind": "document",
+          "linkTitle": "Filing signed VET transcripts",
+          "accessNote": "Restricted Head Teacher reference. Sign in with your authorised school account. Current approved NESA/RTO instructions take precedence.",
+          "verifiedOn": "2026-09-24",
+          "locator": "Head Teacher reference copy; VET Transcript Scanning + Upload.docx",
+          "relationship": "Restricted Head Teacher reference copy. Check current authorised instructions and any historical/draft limits."
         }
       ],
       "order": 62,
@@ -5612,7 +6048,8 @@
         "ASQA-PRACTICE",
         "WWHS-INTERNAL-AUDIT",
         "RTO-DOCUMENT-LIBRARY",
-        "WWHS-ADMIN-TIMELINE"
+        "WWHS-ADMIN-TIMELINE",
+        "WWHS-NESA-CHECKS-SOP-2025"
       ],
       "provenanceStatus": "broad-source-only",
       "sourceBasis": "The earlier task list cites ASQA Accountability Practice Guide; WWHS internal audit checklist. The original document still needs checking for this exact task. School administration audit checked 24 September 2026: Missing NESA course or RTO errors; Late competency correction route.",
@@ -5651,13 +6088,26 @@
         },
         {
           "id": "WWHS-ADMIN-TIMELINE",
-          "title": "WWHS VET administration timeline and procedures",
-          "url": "https://drive.google.com/drive/search?q=%22VET%20Admin%20Timeline%22",
-          "verification": "School procedure audit completed 24 September 2026. Local routines support current NESA and RTO instructions; historical examples do not establish current deadlines. Open the agreed Head Teacher procedure copy when available.",
+          "title": "VET administration procedures - Head Teacher library",
+          "url": "https://drive.google.com/drive/folders/1vweutvJeqrP2EOJAzgoh4-iFz1tnsF3E",
+          "verification": "Twelve restricted reference copies and the working procedure guide verified in this library on 24 September 2026. A library link is a place to find instructions, not proof that each task is mandated. Current NESA/RTO instructions override historical examples.",
           "verifiedOn": "2026-09-24",
-          "linkKind": "search",
+          "linkKind": "folder",
           "locator": "School administration timeline / procedure audit: R25 Missing NESA course or RTO errors, R48 Late competency correction route",
-          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority."
+          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority.",
+          "accessNote": "Open the relevant reference copy or working-guide section. Sign in with your authorised school account; some actions still require the current RTO instruction."
+        },
+        {
+          "id": "WWHS-NESA-CHECKS-SOP-2025",
+          "title": "NESA checks - DRAFT incomplete 2025 reference",
+          "url": "https://drive.google.com/file/d/1wi9AKM1JZJNJXeAmerNKCLDZXomHwNkb/view",
+          "verification": "Copied to the restricted Head Teacher procedure library and verified 24 September 2026. Source original remains unchanged. This is a local reference copy; check current NESA/RTO instructions before use. The original is a 2025 DRAFT with blank late-entry steps 8-10; it is not a complete approved procedure.",
+          "linkKind": "document",
+          "linkTitle": "NESA checks - incomplete draft",
+          "accessNote": "Restricted Head Teacher reference. Sign in with your authorised school account. Current approved NESA/RTO instructions take precedence.",
+          "verifiedOn": "2026-09-24",
+          "locator": "Head Teacher reference copy; 2025 Standard Operating Procedure - NESA Checks.pdf",
+          "relationship": "Restricted Head Teacher reference copy. Check current authorised instructions and any historical/draft limits."
         }
       ],
       "order": 65,
@@ -5708,10 +6158,11 @@
           "locator": "WWHS VET approved shared working area; no original page/section recovered. Historical mapping: assets/js/data/reference.js:52",
           "url": "https://drive.google.com/drive/folders/0B40F5Y8uF0rvfkl1S2FEbjRhVmJYRWYyY2dlOFVHMDdQeFNyQlRBUzBudmtHRGJKdE83VVk?resourcekey=0-fXD-BgXggkE5EyIeJJdt5g&usp=drive_link",
           "relationship": "Place to retrieve the controlling document/notice; container URL is not a task citation",
-          "verification": "Head Teacher central-folder choice confirmed. General access was link-readable on 24 September 2026; this is not verified confidential storage.",
+          "verification": "HEAD TEACHER TAS and the seven procedure folders verified restricted on 24 September 2026. Di retains Editor access. Individual learner-record locations must still meet their approved access and records requirements.",
           "statusNote": "Contains protected working records; access remains controlled by the school account and Drive permissions.",
           "linkKind": "folder",
-          "accessNote": "Procedure masters and safe references only until permissions are reviewed. Keep learner/confidential records in approved restricted systems."
+          "accessNote": "Use the restricted Head Teacher procedure library for reference copies. Keep learner records in their authorised systems.",
+          "verifiedOn": "2026-09-24"
         },
         {
           "id": "VET-SCHOOLS-HUB",
@@ -5733,13 +6184,14 @@
         },
         {
           "id": "WWHS-ADMIN-TIMELINE",
-          "title": "WWHS VET administration timeline and procedures",
-          "url": "https://drive.google.com/drive/search?q=%22VET%20Admin%20Timeline%22",
-          "verification": "School procedure audit completed 24 September 2026. Local routines support current NESA and RTO instructions; historical examples do not establish current deadlines. Open the agreed Head Teacher procedure copy when available.",
+          "title": "VET administration procedures - Head Teacher library",
+          "url": "https://drive.google.com/drive/folders/1vweutvJeqrP2EOJAzgoh4-iFz1tnsF3E",
+          "verification": "Twelve restricted reference copies and the working procedure guide verified in this library on 24 September 2026. A library link is a place to find instructions, not proof that each task is mandated. Current NESA/RTO instructions override historical examples.",
           "verifiedOn": "2026-09-24",
-          "linkKind": "search",
+          "linkKind": "folder",
           "locator": "School administration timeline / procedure audit: R31 Prepare and close term action timelines",
-          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority."
+          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority.",
+          "accessNote": "Open the relevant reference copy or working-guide section. Sign in with your authorised school account; some actions still require the current RTO instruction."
         },
         {
           "id": "NESA-TOA-2027-SEP",
@@ -5767,7 +6219,8 @@
       "sourceIds": [
         "WWHS-ADMIN-TIMELINE",
         "WWHS-VET-SHARED",
-        "RTO-DOCUMENT-LIBRARY"
+        "RTO-DOCUMENT-LIBRARY",
+        "WWHS-HT-WORKING-PROCEDURES"
       ],
       "provenanceStatus": "specific-citation",
       "sourceBasis": "School administration procedure and timeline; this card organises the local work and does not establish an external compliance mandate. School administration audit checked 24 September 2026: RTO or VSO visit; Preparation for an RTO audit visit.",
@@ -5777,27 +6230,41 @@
       "evidenceRefs": [
         {
           "id": "WWHS-ADMIN-TIMELINE",
-          "title": "WWHS VET administration timeline and procedures",
-          "url": "https://drive.google.com/drive/search?q=%22VET%20Admin%20Timeline%22",
-          "verification": "School procedure audit completed 24 September 2026. Local routines support current NESA and RTO instructions; historical examples do not establish current deadlines. Open the agreed Head Teacher procedure copy when available.",
+          "title": "VET administration procedures - Head Teacher library",
+          "url": "https://drive.google.com/drive/folders/1vweutvJeqrP2EOJAzgoh4-iFz1tnsF3E",
+          "verification": "Twelve restricted reference copies and the working procedure guide verified in this library on 24 September 2026. A library link is a place to find instructions, not proof that each task is mandated. Current NESA/RTO instructions override historical examples.",
           "verifiedOn": "2026-09-24",
-          "linkKind": "search",
+          "linkKind": "folder",
           "locator": "School administration timeline / procedure audit: R09 RTO or VSO visit, R53 Preparation for an RTO audit visit",
-          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority."
+          "relationship": "Local work routine confirmed by school-held source review; current official instructions retain authority.",
+          "accessNote": "Open the relevant reference copy or working-guide section. Sign in with your authorised school account; some actions still require the current RTO instruction."
         },
         {
           "id": "WWHS-VET-SHARED",
           "title": "TAS/VET Google Drive - Head Teacher master starting point",
           "url": "https://drive.google.com/drive/folders/0B40F5Y8uF0rvfkl1S2FEbjRhVmJYRWYyY2dlOFVHMDdQeFNyQlRBUzBudmtHRGJKdE83VVk?resourcekey=0-fXD-BgXggkE5EyIeJJdt5g&usp=drive_link",
-          "verification": "Head Teacher central-folder choice confirmed. General access was link-readable on 24 September 2026; this is not verified confidential storage.",
+          "verification": "HEAD TEACHER TAS and the seven procedure folders verified restricted on 24 September 2026. Di retains Editor access. Individual learner-record locations must still meet their approved access and records requirements.",
           "linkKind": "folder",
-          "accessNote": "Procedure masters and safe references only until permissions are reviewed. Keep learner/confidential records in approved restricted systems."
+          "accessNote": "Use the restricted Head Teacher procedure library for reference copies. Keep learner records in their authorised systems.",
+          "verifiedOn": "2026-09-24"
         },
         {
           "id": "RTO-DOCUMENT-LIBRARY",
           "title": "RTO 90333 controlled Document Library",
           "url": "https://apps.powerapps.com/play/e/default-05a0e69a-418a-47c1-9c25-9387261bf991/a/5c9be746-db94-402d-9a74-420b4c109498?tenantId=05a0e69a-418a-47c1-9c25-9387261bf991",
           "verification": "Earlier app reference only; the original source still needs checking."
+        },
+        {
+          "id": "WWHS-HT-WORKING-PROCEDURES",
+          "title": "VET administration working procedures - for review",
+          "url": "https://docs.google.com/document/d/1-89mOCNbEKSXkNeu1q-Cje6JKitWkyZ35O3sg2i0gSE/edit",
+          "verification": "A reviewed nine-section, 54-step working guide prepared from the school procedure audit, with personal examples and screenshots omitted. Requires Head Teacher/RTO confirmation; it is not an approved policy or a learner record.",
+          "linkKind": "document",
+          "linkTitle": "VET working procedures - for review",
+          "accessNote": "Restricted Head Teacher reference. Sign in with your authorised school account. Current approved NESA/RTO instructions take precedence.",
+          "verifiedOn": "2026-09-24",
+          "locator": "9. Prepare for an RTO audit or support visit",
+          "relationship": "Head Teacher working guide for review; not an externally mandated or approved policy."
         }
       ],
       "auditRows": [
@@ -10418,18 +10885,24 @@
     },
     {
       "id": "WWHS-NESA-CHECKS-SOP-2025",
-      "title": "2025 draft SOP - NESA checks (reference only)",
+      "title": "NESA checks - DRAFT incomplete 2025 reference",
       "group": "08 School VET procedures and plans",
       "countingUnit": "Named document, rule, calendar or source record",
-      "taskCount": 3,
-      "url": "https://drive.google.com/file/d/1eozBxhrs9IXXAL0zfcSTf6D8rkqGWMoo/view",
-      "verification": "All three pages checked 24 September 2026. DRAFT watermark and blank late-entry steps 8-10: current approved instructions must be obtained.",
-      "checkWhen": "Before 2027 setup, before the relevant action/term, and whenever a replacement or policy-change notice appears",
-      "nextYearCheck": "Authorised WWHS staff Drive/calendar; locate the named current-year document and its approved version",
-      "locator": "NESA Checks Procedure, steps 1–7; NESA Late Entries; responsibilities.",
+      "taskCount": 5,
+      "url": "https://drive.google.com/file/d/1wi9AKM1JZJNJXeAmerNKCLDZXomHwNkb/view",
+      "verification": "Copied to the restricted Head Teacher procedure library and verified 24 September 2026. Source original remains unchanged. This is a local reference copy; check current NESA/RTO instructions before use. The original is a 2025 DRAFT with blank late-entry steps 8-10; it is not a complete approved procedure.",
+      "checkWhen": "Before using the procedure and whenever an authorised instruction changes.",
+      "nextYearCheck": "Check the current school/RTO version and cohort before reusing historical examples.",
+      "locator": "Head Teacher reference copy; 2025 Standard Operating Procedure - NESA Checks.pdf",
       "linkKind": "document",
-      "verifiedOn": "2026-09-18",
-      "status2027": "Incomplete draft reference; not current authority."
+      "verifiedOn": "2026-09-24",
+      "status2027": "Reference only; confirm current course, cohort and authorised instructions.",
+      "linkTitle": "NESA checks - incomplete draft",
+      "owner": "WWHS",
+      "access": "restricted school reference",
+      "note": "Copied to the restricted Head Teacher procedure library and verified 24 September 2026. Source original remains unchanged. This is a local reference copy; check current NESA/RTO instructions before use. The original is a 2025 DRAFT with blank late-entry steps 8-10; it is not a complete approved procedure.",
+      "accessNote": "Restricted Head Teacher reference. Sign in with your authorised school account. Current approved NESA/RTO instructions take precedence.",
+      "verified": "2026-09-24"
     },
     {
       "id": "WWHS-VET-MGMT-2026-27",
@@ -10463,11 +10936,12 @@
       "countingUnit": "Portal, live register or discovery location",
       "taskCount": 8,
       "url": "https://drive.google.com/drive/folders/0B40F5Y8uF0rvfkl1S2FEbjRhVmJYRWYyY2dlOFVHMDdQeFNyQlRBUzBudmtHRGJKdE83VVk?resourcekey=0-fXD-BgXggkE5EyIeJJdt5g&usp=drive_link",
-      "verification": "Head Teacher central-folder choice confirmed. General access was link-readable on 24 September 2026; this is not verified confidential storage.",
+      "verification": "HEAD TEACHER TAS and the seven procedure folders verified restricted on 24 September 2026. Di retains Editor access. Individual learner-record locations must still meet their approved access and records requirements.",
       "checkWhen": "Before 2027 setup, before the relevant action/term, and whenever a replacement or policy-change notice appears",
       "nextYearCheck": "Retrieve individual action-bearing documents/notices from this source container; do not count one system URL as their evidence",
       "linkKind": "folder",
-      "accessNote": "Procedure masters and safe references only until permissions are reviewed. Keep learner/confidential records in approved restricted systems."
+      "accessNote": "Use the restricted Head Teacher procedure library for reference copies. Keep learner records in their authorised systems.",
+      "verifiedOn": "2026-09-24"
     },
     {
       "id": "WWHS-MARKBOOK-ROLLOVER",
@@ -11060,19 +11534,272 @@
     },
     {
       "id": "WWHS-ADMIN-TIMELINE",
-      "title": "WWHS VET administration timeline and procedures",
+      "title": "VET administration procedures - Head Teacher library",
       "owner": "WWHS",
       "access": "school internal - local procedure",
-      "url": "https://drive.google.com/drive/search?q=%22VET%20Admin%20Timeline%22",
+      "url": "https://drive.google.com/drive/folders/1vweutvJeqrP2EOJAzgoh4-iFz1tnsF3E",
       "verified": "2026-09-24",
-      "note": "School procedure audit completed 24 September 2026. Local routines support current NESA and RTO instructions; historical examples do not establish current deadlines. Open the agreed Head Teacher procedure copy when available.",
+      "note": "Twelve restricted reference copies and the working procedure guide verified in this library on 24 September 2026. A library link is a place to find instructions, not proof that each task is mandated. Current NESA/RTO instructions override historical examples.",
       "group": "08 School VET procedures and plans",
-      "countingUnit": "Named document, rule, calendar or source record",
-      "verification": "School procedure audit completed 24 September 2026. Local routines support current NESA and RTO instructions; historical examples do not establish current deadlines. Open the agreed Head Teacher procedure copy when available.",
+      "countingUnit": "Portal, live register or discovery location",
+      "verification": "Twelve restricted reference copies and the working procedure guide verified in this library on 24 September 2026. A library link is a place to find instructions, not proof that each task is mandated. Current NESA/RTO instructions override historical examples.",
       "verifiedOn": "2026-09-24",
       "status2027": "Local procedures audited. Current NESA/RTO instructions override historical examples.",
-      "linkKind": "search",
-      "taskCount": 50
+      "linkKind": "folder",
+      "taskCount": 50,
+      "accessNote": "Open the relevant reference copy or working-guide section. Sign in with your authorised school account; some actions still require the current RTO instruction."
+    },
+    {
+      "id": "WWHS-HT-REFERENCE-01",
+      "title": "VET markbook setup - reference copy",
+      "linkTitle": "VET markbook setup",
+      "group": "08 School VET procedures and plans",
+      "countingUnit": "Named document, rule, calendar or source record",
+      "taskCount": 1,
+      "url": "https://docs.google.com/document/d/1F11L-Xj7cJ2zTkZ8AhCRlvc8uQyZhXY6/edit",
+      "owner": "WWHS",
+      "access": "restricted school reference",
+      "linkKind": "document",
+      "locator": "Head Teacher reference copy; CREATE new VET MARKBOOKS.docx",
+      "verification": "Copied to the restricted Head Teacher procedure library and verified 24 September 2026. Source original remains unchanged. This is a local reference copy; check current NESA/RTO instructions before use.",
+      "note": "Copied to the restricted Head Teacher procedure library and verified 24 September 2026. Source original remains unchanged. This is a local reference copy; check current NESA/RTO instructions before use.",
+      "accessNote": "Restricted Head Teacher reference. Sign in with your authorised school account. Current approved NESA/RTO instructions take precedence.",
+      "verifiedOn": "2026-09-24",
+      "verified": "2026-09-24",
+      "status2027": "Reference only; confirm current course, cohort and authorised instructions.",
+      "checkWhen": "Before using the procedure and whenever an authorised instruction changes.",
+      "nextYearCheck": "Check the current school/RTO version and cohort before reusing historical examples."
+    },
+    {
+      "id": "WWHS-HT-REFERENCE-02",
+      "title": "VET markbook rollover - historical examples",
+      "linkTitle": "Markbook rollover and archive",
+      "group": "08 School VET procedures and plans",
+      "countingUnit": "Named document, rule, calendar or source record",
+      "taskCount": 1,
+      "url": "https://docs.google.com/document/d/1zcb21GVEqfYQZdGd7hsIrDmSc36IRFaN/edit",
+      "owner": "WWHS",
+      "access": "restricted school reference",
+      "linkKind": "document",
+      "locator": "Head Teacher reference copy; How to create new Markbooks for VET into the new year and archive.docx",
+      "verification": "Copied to the restricted Head Teacher procedure library and verified 24 September 2026. Source original remains unchanged. This is a local reference copy; check current NESA/RTO instructions before use.",
+      "note": "Copied to the restricted Head Teacher procedure library and verified 24 September 2026. Source original remains unchanged. This is a local reference copy; check current NESA/RTO instructions before use.",
+      "accessNote": "Restricted Head Teacher reference. Sign in with your authorised school account. Current approved NESA/RTO instructions take precedence.",
+      "verifiedOn": "2026-09-24",
+      "verified": "2026-09-24",
+      "status2027": "Reference only; confirm current course, cohort and authorised instructions.",
+      "checkWhen": "Before using the procedure and whenever an authorised instruction changes.",
+      "nextYearCheck": "Check the current school/RTO version and cohort before reusing historical examples."
+    },
+    {
+      "id": "WWHS-HT-REFERENCE-06",
+      "title": "Year 11 VET markbook setup - historical course examples",
+      "linkTitle": "Year 11 VET markbook setup",
+      "group": "08 School VET procedures and plans",
+      "countingUnit": "Named document, rule, calendar or source record",
+      "taskCount": 1,
+      "url": "https://docs.google.com/document/d/1UigrZGKb3wF0b4c9iQ02faydyXAlAfNK/edit",
+      "owner": "WWHS",
+      "access": "restricted school reference",
+      "linkKind": "document",
+      "locator": "Head Teacher reference copy; To create the new Year 11 Markbook and cross reference competencies.docx",
+      "verification": "Copied to the restricted Head Teacher procedure library and verified 24 September 2026. Source original remains unchanged. This is a local reference copy; check current NESA/RTO instructions before use.",
+      "note": "Copied to the restricted Head Teacher procedure library and verified 24 September 2026. Source original remains unchanged. This is a local reference copy; check current NESA/RTO instructions before use.",
+      "accessNote": "Restricted Head Teacher reference. Sign in with your authorised school account. Current approved NESA/RTO instructions take precedence.",
+      "verifiedOn": "2026-09-24",
+      "verified": "2026-09-24",
+      "status2027": "Reference only; confirm current course, cohort and authorised instructions.",
+      "checkWhen": "Before using the procedure and whenever an authorised instruction changes.",
+      "nextYearCheck": "Check the current school/RTO version and cohort before reusing historical examples."
+    },
+    {
+      "id": "WWHS-HT-REFERENCE-03",
+      "title": "Life Skills course mapping - incomplete reference",
+      "linkTitle": "VET and Life Skills - historical reference",
+      "group": "08 School VET procedures and plans",
+      "countingUnit": "Named document, rule, calendar or source record",
+      "taskCount": 2,
+      "url": "https://docs.google.com/document/d/1bGjP96pKNIZA9dNJDqI2SXD_M8xDWKWm/edit",
+      "owner": "WWHS",
+      "access": "restricted school reference",
+      "linkKind": "document",
+      "locator": "Head Teacher reference copy; VET Courses + Life Skill Students.docx",
+      "verification": "Copied to the restricted Head Teacher procedure library and verified 24 September 2026. Source original remains unchanged. This is a local reference copy; check current NESA/RTO instructions before use. Older Life Skills/course mappings need current syllabus and RTO confirmation.",
+      "note": "Copied to the restricted Head Teacher procedure library and verified 24 September 2026. Source original remains unchanged. This is a local reference copy; check current NESA/RTO instructions before use. Older Life Skills/course mappings need current syllabus and RTO confirmation.",
+      "accessNote": "Restricted Head Teacher reference. Sign in with your authorised school account. Current approved NESA/RTO instructions take precedence.",
+      "verifiedOn": "2026-09-24",
+      "verified": "2026-09-24",
+      "status2027": "Reference only; confirm current course, cohort and authorised instructions.",
+      "checkWhen": "Before using the procedure and whenever an authorised instruction changes.",
+      "nextYearCheck": "Check the current school/RTO version and cohort before reusing historical examples."
+    },
+    {
+      "id": "WWHS-HT-REFERENCE-16",
+      "title": "2027-28 VET management structure - blank trainer fields",
+      "linkTitle": "VET management structure template",
+      "group": "08 School VET procedures and plans",
+      "countingUnit": "Named document, rule, calendar or source record",
+      "taskCount": 2,
+      "url": "https://docs.google.com/document/d/1YC-hlJ-GucqcGs0dcno8ug3JVTJBwW-d/edit",
+      "owner": "WWHS",
+      "access": "restricted school reference",
+      "linkKind": "document",
+      "locator": "Head Teacher reference copy; Management Structure.docx",
+      "verification": "Copied to the restricted Head Teacher procedure library and verified 24 September 2026. Source original remains unchanged. This is a local reference copy; check current NESA/RTO instructions before use.",
+      "note": "Copied to the restricted Head Teacher procedure library and verified 24 September 2026. Source original remains unchanged. This is a local reference copy; check current NESA/RTO instructions before use.",
+      "accessNote": "Restricted Head Teacher reference. Sign in with your authorised school account. Current approved NESA/RTO instructions take precedence.",
+      "verifiedOn": "2026-09-24",
+      "verified": "2026-09-24",
+      "status2027": "Reference only; confirm current course, cohort and authorised instructions.",
+      "checkWhen": "Before using the procedure and whenever an authorised instruction changes.",
+      "nextYearCheck": "Check the current school/RTO version and cohort before reusing historical examples."
+    },
+    {
+      "id": "WWHS-HT-REFERENCE-13",
+      "title": "NESA calendar preparation - 2026 examples",
+      "linkTitle": "NESA actions - historical example",
+      "group": "08 School VET procedures and plans",
+      "countingUnit": "Named document, rule, calendar or source record",
+      "taskCount": 1,
+      "url": "https://docs.google.com/document/d/15H959Yd1YwGPbNrZMwPPgUX507Rva-gt/edit",
+      "owner": "WWHS",
+      "access": "restricted school reference",
+      "linkKind": "document",
+      "locator": "Head Teacher reference copy; VET Timeline of Action on NESA.docx",
+      "verification": "Copied to the restricted Head Teacher procedure library and verified 24 September 2026. Source original remains unchanged. This is a local reference copy; check current NESA/RTO instructions before use. Dates in this document are 2026 examples, not 2027 deadlines.",
+      "note": "Copied to the restricted Head Teacher procedure library and verified 24 September 2026. Source original remains unchanged. This is a local reference copy; check current NESA/RTO instructions before use. Dates in this document are 2026 examples, not 2027 deadlines.",
+      "accessNote": "Restricted Head Teacher reference. Sign in with your authorised school account. Current approved NESA/RTO instructions take precedence.",
+      "verifiedOn": "2026-09-24",
+      "verified": "2026-09-24",
+      "status2027": "Reference only; confirm current course, cohort and authorised instructions.",
+      "checkWhen": "Before using the procedure and whenever an authorised instruction changes.",
+      "nextYearCheck": "Check the current school/RTO version and cohort before reusing historical examples."
+    },
+    {
+      "id": "WWHS-HT-REFERENCE-20",
+      "title": "VET report setup - reference copy",
+      "linkTitle": "VET report setup",
+      "group": "08 School VET procedures and plans",
+      "countingUnit": "Named document, rule, calendar or source record",
+      "taskCount": 2,
+      "url": "https://docs.google.com/document/d/1Mpb6BDUPnhhUmehuc4EoR3VGKUaJQh_6/edit",
+      "owner": "WWHS",
+      "access": "restricted school reference",
+      "linkKind": "document",
+      "locator": "Head Teacher reference copy; How to set up VET Reports.docx",
+      "verification": "Copied to the restricted Head Teacher procedure library and verified 24 September 2026. Source original remains unchanged. This is a local reference copy; check current NESA/RTO instructions before use.",
+      "note": "Copied to the restricted Head Teacher procedure library and verified 24 September 2026. Source original remains unchanged. This is a local reference copy; check current NESA/RTO instructions before use.",
+      "accessNote": "Restricted Head Teacher reference. Sign in with your authorised school account. Current approved NESA/RTO instructions take precedence.",
+      "verifiedOn": "2026-09-24",
+      "verified": "2026-09-24",
+      "status2027": "Reference only; confirm current course, cohort and authorised instructions.",
+      "checkWhen": "Before using the procedure and whenever an authorised instruction changes.",
+      "nextYearCheck": "Check the current school/RTO version and cohort before reusing historical examples."
+    },
+    {
+      "id": "WWHS-HT-REFERENCE-23",
+      "title": "Markbook report sync - generic reference - no VET marks or ranks",
+      "linkTitle": "Markbook and report sync - reference",
+      "group": "08 School VET procedures and plans",
+      "countingUnit": "Named document, rule, calendar or source record",
+      "taskCount": 2,
+      "url": "https://docs.google.com/document/d/1WDgU5PJBFX0jIs-CBOXcJZQJ4Eig_ui8/edit",
+      "owner": "WWHS",
+      "access": "restricted school reference",
+      "linkKind": "document",
+      "locator": "Head Teacher reference copy; Reminder to HT Sync Markbooks to reports.docx",
+      "verification": "Copied to the restricted Head Teacher procedure library and verified 24 September 2026. Source original remains unchanged. This is a local reference copy; check current NESA/RTO instructions before use. Generic marks/ranks instructions do not establish permitted VET reporting. Confirm the VET-specific method before syncing.",
+      "note": "Copied to the restricted Head Teacher procedure library and verified 24 September 2026. Source original remains unchanged. This is a local reference copy; check current NESA/RTO instructions before use. Generic marks/ranks instructions do not establish permitted VET reporting. Confirm the VET-specific method before syncing.",
+      "accessNote": "Restricted Head Teacher reference. Sign in with your authorised school account. Current approved NESA/RTO instructions take precedence.",
+      "verifiedOn": "2026-09-24",
+      "verified": "2026-09-24",
+      "status2027": "Reference only; confirm current course, cohort and authorised instructions.",
+      "checkWhen": "Before using the procedure and whenever an authorised instruction changes.",
+      "nextYearCheck": "Check the current school/RTO version and cohort before reusing historical examples."
+    },
+    {
+      "id": "WWHS-HT-REFERENCE-07",
+      "title": "VET report content - 2025 reference",
+      "linkTitle": "VET report contents",
+      "group": "08 School VET procedures and plans",
+      "countingUnit": "Named document, rule, calendar or source record",
+      "taskCount": 2,
+      "url": "https://docs.google.com/document/d/19EPshJveX5bT-oMqZCxUTbdKNEPuWDky/edit",
+      "owner": "WWHS",
+      "access": "restricted school reference",
+      "linkKind": "document",
+      "locator": "Head Teacher reference copy; What to include in a VET report                                            13.docx",
+      "verification": "Copied to the restricted Head Teacher procedure library and verified 24 September 2026. Source original remains unchanged. This is a local reference copy; check current NESA/RTO instructions before use.",
+      "note": "Copied to the restricted Head Teacher procedure library and verified 24 September 2026. Source original remains unchanged. This is a local reference copy; check current NESA/RTO instructions before use.",
+      "accessNote": "Restricted Head Teacher reference. Sign in with your authorised school account. Current approved NESA/RTO instructions take precedence.",
+      "verifiedOn": "2026-09-24",
+      "verified": "2026-09-24",
+      "status2027": "Reference only; confirm current course, cohort and authorised instructions.",
+      "checkWhen": "Before using the procedure and whenever an authorised instruction changes.",
+      "nextYearCheck": "Check the current school/RTO version and cohort before reusing historical examples."
+    },
+    {
+      "id": "WWHS-HT-REFERENCE-04",
+      "title": "HSC form filing - reference copy",
+      "linkTitle": "Filing forms in Sentral",
+      "group": "08 School VET procedures and plans",
+      "countingUnit": "Named document, rule, calendar or source record",
+      "taskCount": 1,
+      "url": "https://docs.google.com/document/d/1QYy2N2pFgg674cUU1qkS8iQupNM0RvAf/edit",
+      "owner": "WWHS",
+      "access": "restricted school reference",
+      "linkKind": "document",
+      "locator": "Head Teacher reference copy; How to upload Forms into student files -  Sentral Wellbeing.docx",
+      "verification": "Copied to the restricted Head Teacher procedure library and verified 24 September 2026. Source original remains unchanged. This is a local reference copy; check current NESA/RTO instructions before use.",
+      "note": "Copied to the restricted Head Teacher procedure library and verified 24 September 2026. Source original remains unchanged. This is a local reference copy; check current NESA/RTO instructions before use.",
+      "accessNote": "Restricted Head Teacher reference. Sign in with your authorised school account. Current approved NESA/RTO instructions take precedence.",
+      "verifiedOn": "2026-09-24",
+      "verified": "2026-09-24",
+      "status2027": "Reference only; confirm current course, cohort and authorised instructions.",
+      "checkWhen": "Before using the procedure and whenever an authorised instruction changes.",
+      "nextYearCheck": "Check the current school/RTO version and cohort before reusing historical examples."
+    },
+    {
+      "id": "WWHS-HT-REFERENCE-11",
+      "title": "VET transcript filing - reference copy",
+      "linkTitle": "Filing signed VET transcripts",
+      "group": "08 School VET procedures and plans",
+      "countingUnit": "Named document, rule, calendar or source record",
+      "taskCount": 1,
+      "url": "https://docs.google.com/document/d/1DhGDsa_sKfStGuQbgHik3bbtylSx0dTO/edit",
+      "owner": "WWHS",
+      "access": "restricted school reference",
+      "linkKind": "document",
+      "locator": "Head Teacher reference copy; VET Transcript Scanning + Upload.docx",
+      "verification": "Copied to the restricted Head Teacher procedure library and verified 24 September 2026. Source original remains unchanged. This is a local reference copy; check current NESA/RTO instructions before use.",
+      "note": "Copied to the restricted Head Teacher procedure library and verified 24 September 2026. Source original remains unchanged. This is a local reference copy; check current NESA/RTO instructions before use.",
+      "accessNote": "Restricted Head Teacher reference. Sign in with your authorised school account. Current approved NESA/RTO instructions take precedence.",
+      "verifiedOn": "2026-09-24",
+      "verified": "2026-09-24",
+      "status2027": "Reference only; confirm current course, cohort and authorised instructions.",
+      "checkWhen": "Before using the procedure and whenever an authorised instruction changes.",
+      "nextYearCheck": "Check the current school/RTO version and cohort before reusing historical examples."
+    },
+    {
+      "id": "WWHS-HT-WORKING-PROCEDURES",
+      "title": "VET administration working procedures - for review",
+      "linkTitle": "VET working procedures - for review",
+      "group": "08 School VET procedures and plans",
+      "countingUnit": "Named document, rule, calendar or source record",
+      "taskCount": 13,
+      "url": "https://docs.google.com/document/d/1-89mOCNbEKSXkNeu1q-Cje6JKitWkyZ35O3sg2i0gSE/edit",
+      "owner": "WWHS",
+      "access": "restricted school reference",
+      "linkKind": "document",
+      "locator": "Nine sections: USI, LLN, attendance, transcripts, COMPACT, examination intentions, N-determination, placement records and audit preparation.",
+      "verification": "A reviewed nine-section, 54-step working guide prepared from the school procedure audit, with personal examples and screenshots omitted. Requires Head Teacher/RTO confirmation; it is not an approved policy or a learner record.",
+      "note": "A reviewed nine-section, 54-step working guide prepared from the school procedure audit, with personal examples and screenshots omitted. Requires Head Teacher/RTO confirmation; it is not an approved policy or a learner record.",
+      "accessNote": "Restricted Head Teacher reference. Sign in with your authorised school account. Current approved NESA/RTO instructions take precedence.",
+      "verifiedOn": "2026-09-24",
+      "verified": "2026-09-24",
+      "status2027": "Working guide for review. Confirm current internal authority before use.",
+      "checkWhen": "Before using the procedure and whenever an authorised instruction changes.",
+      "nextYearCheck": "Check the current school/RTO version and cohort before reusing historical examples."
     }
   ],
   "findings": [
