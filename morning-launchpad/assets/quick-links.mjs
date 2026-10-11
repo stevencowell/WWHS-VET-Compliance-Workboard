@@ -53,6 +53,8 @@ function open(){
   nav.append(chooser('Evernote','#quick-evernote'),chooser('ChatGPT','#quick-chatgpt'));
   const calendars=el('button','Calendars ›',{type:'button'});calendars.addEventListener('click',()=>{close();window.dispatchEvent(new Event('launchpad:choose-calendar'));});nav.append(calendars);
  }
+ const notes=workspaceLink('Steve Notes','https://steve-notes.steven-cowell.chatgpt.site');
+ notes.addEventListener('click',()=>close());nav.append(notes);
  if(document.querySelector('.chatgpt-chooser'))nav.append(chooser('ChatGPT','.chatgpt-chooser'));
  panel.append(nav);panel.hidden=false;toggle.setAttribute('aria-expanded','true');
  dismiss.focus({preventScroll:true});
