@@ -26,3 +26,13 @@ for(const status of ['not-started','Not started','not-reviewed','unavailable','c
 for(const guard of [{reviewComplete:true},{complete:true},{procedureOnly:true},{historyOnly:true},{statusAppliesToYear:false},{progressAvailable:false}])assert.equal(registerReviewStatus({...item,status:'waiting',...guard}), '');
 assert.equal(registerReviewStatus({...item,status:'waiting',year:'2026',statusAppliesToYear:true}),'Waiting');
 console.log('PASS full-register filtering, year separation and invalid review recovery');
+
+const {registerShowsEarlyCompletion,matchesRegisterYear}=await import('../assets/js/task-register.mjs');
+const allocation={id:'2027-faculty-allocations-timetable',year:'2027',reviewYear:2027,planningYears:['2026','2027'],planningPeriodStarted:true,schedule:{kind:'recurring',summary:'Term 4 2026 planning for 2027 · school dates unconfirmed'}};
+assert.equal(matchesRegisterYear(allocation,'2026'),true);
+assert.equal(matchesRegisterYear(allocation,'2027'),true);
+assert.equal(matchesRegisterYear(allocation,'2028'),false);
+assert.equal(registerShowsEarlyCompletion(allocation,'2026-10-13'),false,'Current cross-year planning is not labelled early');
+assert.equal(registerShowsEarlyCompletion({...allocation,tick:{completedEarly:true}},'2026-10-13'),false,'Its saved target-year completion is not labelled early');
+assert.equal(registerShowsEarlyCompletion({...allocation,planningPeriodStarted:false},'2026-09-13'),true,'Genuinely future preparation retains early completion wording');
+assert.equal(registerShowsEarlyCompletion({year:'2027',reviewYear:2027,schedule:{kind:'date',endDate:'2027-02-02'}},'2026-10-13'),true,'Normal future calendar labels are unchanged');

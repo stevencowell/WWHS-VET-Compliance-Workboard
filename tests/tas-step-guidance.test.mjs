@@ -135,3 +135,19 @@ test('weekly guidance is rendered beside each scan without putting links inside 
   assert.match(html, /Open chemical register and SDS folder/);
   for (const label of html.matchAll(/<label\b[^>]*>[\s\S]*?<\/label>/g)) assert.doesNotMatch(label[0], /<a\b/);
 });
+
+test('C16 connects each of its five steps to the verified resource and opens readiness without losing a draft', () => {
+  const id='2027-faculty-allocations-timetable';
+  assert.deepEqual(ids(id,0),['faculty-allocations','head-teacher-guide','staff-calendar']);
+  assert.deepEqual(ids(id,1),['allocation-matrix','sentral']);
+  assert.deepEqual(ids(id,2),['allocation-matrix','edval-timetabling']);
+  assert.deepEqual(ids(id,3),['timetable-change-instructions','edval-timetabling']);
+  const handover=guidance.forStep(task(id),4).find(link=>link.taskId==='class-readiness');
+  assert.ok(handover);
+  assert.match(handover.hint,/unsaved planning progress stays here/);
+  const h=renderHarness();
+  const html=h.open(id);
+  assert.match(html,/href="#task\/class-readiness" target="_blank" rel="noopener noreferrer"/);
+  assert.match(html,/Open class-readiness check/);
+  assert.equal(h.writes.length,0);
+});

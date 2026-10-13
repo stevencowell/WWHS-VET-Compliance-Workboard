@@ -70,6 +70,8 @@
 
   let savedStateRaw = null;
   let stateStorageBlocked = false;
+  // Create known target-year definitions before saved records are validated.
+  data.ensureAllocationPlanningCycles(currentDate.getFullYear());
   let state = loadState();
   applyPlanningDates();
 
@@ -116,8 +118,20 @@
     return [...new Set([task.dueDate, ...(task.milestones || []).map(item => item.date)])].filter(date => [0, 6].includes(parseDate(date).getDay()));
   }
 
+  function allocationPlanningIsActive(task) {
+    if (!task.allocationYear) return false;
+    // 2026 uses the captured term grouping; later years use October–December
+    // as a provisional Term 4 planning trigger, never a school due date.
+    const term4 = currentDate.getFullYear() === 2026 ? termKey().endsWith("-t4") : currentDate.getMonth() >= 9;
+    return task.allocationYear === currentDate.getFullYear() + (term4 ? 1 : 0);
+  }
+
+  function allocationPlanningHasStarted(task) {
+    return Boolean(task.allocationYear && (task.preparationYear < currentDate.getFullYear() || allocationPlanningIsActive(task)));
+  }
+
   function currentYearTasks() {
-    return data.tasks.filter(task => !task.dueDate || Number(task.dueDate.slice(0, 4)) === currentDate.getFullYear());
+    return data.tasks.filter(task => task.allocationYear ? allocationPlanningIsActive(task) : !task.dueDate || Number(task.dueDate.slice(0, 4)) === currentDate.getFullYear());
   }
 
   function safeObject(value) {
@@ -276,6 +290,7 @@
     currentDate = startOfDay(new Date());
     currentIso = isoDate(currentDate);
     operatingYearIsCurrent = supportedYear(currentDate.getFullYear());
+    data.ensureAllocationPlanningCycles(currentDate.getFullYear());
   }
 
   function isoDate(date) {
@@ -361,6 +376,7 @@
   }
 
   function cycleLabel(task) {
+    if (task.allocationYear) return `${task.allocationYear} allocations · preparation begins Term 4 ${task.preparationYear}`;
     if (task.dueDate) return `${task.dueDate.slice(0, 4)} work plan`;
     const cycle = taskCycle(task);
     if (cycle === "week") return `Week beginning ${shortDate(weekKey())}`;
@@ -377,6 +393,7 @@
   }
 
   function recordKey(task) {
+    if (task.allocationYear) return `${task.id}::${task.allocationYear}`;
     if (task.dueDate) return `${task.id}::${task.dueDate.slice(0, 4)}`;
     const cycle = taskCycle(task);
     if (cycle === "week") return `${task.id}::${weekKey()}`;
@@ -398,7 +415,7 @@
     // Historical baseline reviews used the task id before occurrence records
     // were available. Keep that identity so existing ticks can be reopened.
     const review = window.WWHS_TASK_REVIEW.resolve(window.WWHS_TASK_REVIEW.read().records, 'tas', task.historyOnly ? task.id : key, year, currentIso, notBefore);
-    if (review?.completedEarly) return review;
+    if (review?.completedEarly) return allocationPlanningHasStarted(task) ? {...review, completedEarly:false} : review;
     if (notBefore > currentIso) return null;
     return review || window.WWHS_TASK_REVIEW.savedCompletion('tas', key, year, currentIso, notBefore);
   }
@@ -490,18 +507,19 @@
     const term = termKey();
     const termNumber = Number(term.split("-t")[1]);
     const available = forecastStorageAvailable();
+    const allocationCycleAvailable = data.tasks.some(allocationPlanningIsActive);
     const context = {
       wing: "tas", date: currentIso, role: "ht-tas", roleLabel: "Head Teacher TAS",
       year: currentDate.getFullYear(), sourceYear: data.config.operatingYear,
       sourceAsAt: data.config.calendarChecked, calendarChecked: data.config.calendarChecked,
       sourceStateKey: data.config.storageKey, horizonDays,
       termKey: term, weekBeginning: weekKey(), schoolWeek: null,
-      mode: !available ? "unavailable" : operatingYearIsCurrent ? "current" : "reference-only",
+      mode: !available ? "unavailable" : operatingYearIsCurrent || allocationCycleAvailable ? "current" : "reference-only",
       title: "Head Teacher TAS scheduled work",
       note: !available
         ? "Saved TAS progress is unavailable or changed in another tab. Copy any unsaved work, then reload to see your task list."
         : !operatingYearIsCurrent
-          ? `The dated calendar is a ${data.config.operatingYear} reference. Refresh it before planning ${currentDate.getFullYear()} work.`
+          ? `The dated calendar is a ${data.config.operatingYear} reference. Only the undated faculty-allocation planning cycle and its saved follow-ups are shown here. Confirm current school dates and the timetable lead; the October–December planning trigger is approximate, not an official deadline.`
           : `2026 calendar checked ${data.config.calendarChecked}. The 2027 dates are provisional copies of the 2026 day and month unless confirmed by you. Check the current staff calendar and NESA source. Term ${termNumber} uses an approximate calendar grouping; school week is not configured. Past dates without a recorded status need confirmation; they are not assumed to be missed work.`
     };
     if (context.mode !== "current") return { entries: [], context };
@@ -530,7 +548,7 @@
     // A saved occurrence never creates a new due date or implies a fresh event happened.
     Object.keys(state.records).forEach(key => {
       const task = data.tasks.find(item => item.id === key.split("::")[0]);
-      if (!task || task.historyOnly || task.procedureOnly) return;
+      if (!task || task.historyOnly || task.procedureOnly || (!operatingYearIsCurrent && !task.allocationYear)) return;
       add(task, key, {
         section: "ready", kind: "recorded-follow-up",
         reason: "Open follow-up recorded in this browser; check the owner system for its current position.",
@@ -539,10 +557,18 @@
     });
 
     currentYearTasks().forEach(task => {
-      if (task.historyOnly || task.procedureOnly || isClosed(task)) return;
+      if (task.historyOnly || task.procedureOnly || isClosed(task) || (!operatingYearIsCurrent && !task.allocationYear)) return;
       const key = recordKey(task);
       const reviewed = hasReviewedRecord(task);
       const cycle = taskCycle(task);
+      if (task.allocationYear) {
+        add(task, key, {
+          section: "ready", kind: "annual-planning",
+          reason: `${task.timing} Confirm the current school milestones and timetable lead. Future Term 4 grouping is approximate until the school calendar is checked.`,
+          requiresConfirmation: true
+        });
+        return;
+      }
       if (task.dueDate) {
         if (reviewed && task.milestones?.length && !pendingMilestone(task)) return;
         // Untouched milestone chains use the next listed reminder, as native Today does.
@@ -596,6 +622,7 @@
     const dateGaps = new Set(["faculty-publications", "whs-inspection", "stocktake-disposal", "ag-farm-audit", "term-workshop-close"]);
     const occurrenceYear = key => key.split("::")[1]?.match(/^\d{4}(?=$|[-])/i)?.[0] || "ongoing";
     const scheduleFor = task => {
+      if (task.allocationYear) return { kind: "recurring", label: task.timing, summary: `Term 4 ${task.preparationYear} planning for ${task.allocationYear} · school dates unconfirmed` };
       const dates = [task.dueDate, ...(task.milestones || []).map(item => item.date)].filter(date => /^\d{4}-\d{2}-\d{2}$/.test(date || "")).sort();
       if (dates.length) return { kind: dates[0] === dates.at(-1) ? "date" : "window", label: task.provisionalSchedule ? `${planningLabel(task)} · ${dates[0]}${dates[0] !== dates.at(-1) ? ` to ${dates.at(-1)}` : ''}` : task.timing, startDate: dates[0], endDate: dates.at(-1) };
       return { kind: taskCycle(task) === "event" || task.id === "vet-handoff" ? "trigger" : task.timing ? "recurring" : "undated", label: task.timing || "No date or review rule recorded" };
@@ -616,6 +643,7 @@
         schedule.label = `Saved task record: ${period}. The captured calendar dates belong to ${task.dueDate.slice(0, 4)}; no separate date is confirmed for this task record.`;
       }
       const gaps = [];
+      if (task.allocationYear) gaps.push("School dates and the current timetable lead are unconfirmed. Term 4 is a planning-period trigger, not an official due date; future October–December grouping is approximate. Check the current approved matrix, EDVAL instructions and correction process.");
       if (task.provisionalSchedule && !task.scheduleConfirmed) gaps.push('Planning dates use the same day and month as 2026. Open this card to edit or confirm them against the current source.');
       if (task.provisionalSchedule && weekendDates(task).length) gaps.push(`Weekend dates to check: ${weekendDates(task).join(', ')}. No automatic weekday shift has been made.`);
       if (!task.historyOnly && sourceGaps[task.sourceState]) gaps.push(sourceGaps[task.sourceState]);
@@ -629,7 +657,8 @@
         id: olderOccurrence ? key : task.id,
         title: olderOccurrence ? `${clarity.title} — ${period}` : clarity.title,
         clarity: { ...clarity, title: olderOccurrence ? `${clarity.title} — ${period}` : clarity.title },
-        year: olderOccurrence ? occurrenceYear(key) : task.dueDate ? task.dueDate.slice(0, 4) : "ongoing",
+        year: olderOccurrence ? occurrenceYear(key) : task.allocationYear ? String(task.allocationYear) : task.dueDate ? task.dueDate.slice(0, 4) : "ongoing",
+        ...(task.allocationYear && !olderOccurrence ? { planningYears: [String(task.preparationYear), String(task.allocationYear)], planningPeriodStarted: allocationPlanningHasStarted(task) } : {}),
         recordKey: reference ? "" : key,
         route: `#task/${encodeURIComponent(task.id)}${olderOccurrence || key !== recordKey(task) ? `?record=${encodeURIComponent(key)}` : ""}`,
         area: areaMeta[task.area]?.label || "Core work", owner: task.owner || "Owner to confirm",
@@ -674,7 +703,7 @@
     });
     return {
       wing: "tas", currentYear: currentDate.getFullYear(), roleLabel: "Head Teacher TAS — all defined duties",
-      sourceNote: `2026 school calendar last checked ${data.config.calendarChecked}. The 29 recurring dated tasks are carried into 2027 using the same day and month as provisional planning dates. Open a 2027 card to edit dates or record your source confirmation. Ongoing duties remain separate.`,
+      sourceNote: `2026 school calendar last checked ${data.config.calendarChecked}. The 29 recurring dated tasks are carried into 2027 using the same day and month as provisional planning dates. Open a 2027 card to edit dates or record your source confirmation. Ongoing duties remain separate. Faculty allocations use a separate target-year record spanning the preceding Term 4 and the target year, with school dates unconfirmed.`,
       items,
       coverageNotes: [
         "This list includes all workboard tasks, saved task records and five weekly checks. Check current school requirements for any duties still missing.",
@@ -1137,6 +1166,7 @@
 
   function guidanceLinks(descriptors) {
     const links = (descriptors || []).map(item => {
+      if (item.taskId && data.tasks.some(task => task.id === item.taskId)) return `<div class="step-guide"><a href="#task/${encodeURIComponent(item.taskId)}" target="_blank" rel="noopener noreferrer">${esc(item.label)} <span aria-hidden="true">↗</span><span class="sr-only"> (opens in a new tab)</span></a><small>${esc(item.hint)}</small></div>`;
       if (!item.systemId) return item.hint ? `<p class="step-guidance-note">${esc(item.hint)}</p>` : "";
       const system = data.systems.find(candidate => candidate.id === item.systemId);
       if (!system) return "";

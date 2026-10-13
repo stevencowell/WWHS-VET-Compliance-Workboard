@@ -1,6 +1,6 @@
 // Backup reminder: a digest-only safety receipt never changes shared progress.
-import {KEYS, DATA_KEYS, metadataKey, scopeSnapshot, snapshot} from './team-handover-core.mjs?v=vet-admin-procedures-20260924';
-import {hydrateTeamMetadata} from './team-handover-payloads.mjs?v=vet-admin-procedures-20260924';
+import {KEYS, DATA_KEYS, metadataKey, scopeSnapshot, snapshot} from './team-handover-core.mjs?v=tas-c16-planning-20261013';
+import {hydrateTeamMetadata} from './team-handover-payloads.mjs?v=tas-c16-planning-20261013';
 import {createWorkspaceNavigationAllowance} from './workspace-navigation.mjs?v=workspace-navigation-2';
 export {isWorkboardDestination} from './workspace-navigation.mjs?v=workspace-navigation-2';
 

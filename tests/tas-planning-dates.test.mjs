@@ -10,7 +10,7 @@ for (const path of ['head-teacher-tas/assets/js/data.js', 'assets/js/data/task-s
 }
 const data = context.window.HT_TAS_WORKBOARD;
 const sources = context.window.WWHS_TASK_SOURCES;
-const original = data.tasks.filter(task => !task.provisionalSchedule);
+const original = data.tasks.filter(task => !task.provisionalSchedule && !task.allocationYear);
 const plans = data.tasks.filter(task => task.provisionalSchedule);
 // These are the published 2026 calendar identities. Their dates and historical
 // status must remain available independently of the new editable planning year.

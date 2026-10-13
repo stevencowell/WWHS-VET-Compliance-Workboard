@@ -300,6 +300,7 @@ const taskProfiles = Object.freeze({
   'hsc-analysis-cycle': ['results-improvement', 'Link proposed HSC improvement actions to program changes, professional learning and the approved faculty plan.'],
   'source-sharing-review': ['source-access', 'Prioritise broad-link sharing and confidential descendants in the owner-led review, with a retest after each authorised change.'],
   'annual-calendar-control': ['calendar', 'Reconcile the current Staff Calendar, NESA actions and faculty control points; keep the previous baseline distinct.'],
+  'faculty-allocations-timetable': ['teaching-readiness', 'Prepare a blank allocation matrix and a role-based timetable conflict checklist. Confirm the target school year, current school milestones and timetable lead first. School dates are unconfirmed; Term 4 is a planning trigger, not a deadline. Keep staff availability, qualifications, allocations and class lists in protected school sources. Proposed corrections use the existing school approval process; finish with an approved handover to class readiness.'],
   'annual-plan-alignment': ['faculty-plan', 'Show how each agreed faculty action supports a current school priority and how progress can be reviewed.'],
   'annual-rosters-rhythm': ['coordination', 'Prepare a role-based reconciliation of duty/meeting responsibilities and backup arrangements; no personal roster details.'],
   'class-readiness': ['teaching-readiness', 'Cover owned programs, registration, approved learning spaces, protected support access and practical readiness using aggregate checks.'],
@@ -340,7 +341,7 @@ export function getTasTaskHelp(task) {
   const profile = profiles[profileId];
   // The normalised task-help context retains canonicalTaskId and the occurrence
   // id, but not every native task flag. The planning prefix survives that path.
-  const planning = task.provisionalSchedule === true || /^2027-/.test(task.id);
+  const planning = canonicalId !== 'faculty-allocations-timetable' && (task.provisionalSchedule === true || /^2027-/.test(task.id));
   return {
     profileId: `tas-${profileId}`,
     label: profile.label,

@@ -4,6 +4,10 @@
   // Destinations resolve through the workboard's saved system links at render time.
   // These are routes to the work, never a substitute for the current controlled source.
   const destinations = {
+    allocations: ["faculty-allocations", "Open C16 allocations and timetable", "Confirm the current school milestones, timetable contact and approved planning files. Dates and lead remain unconfirmed until checked."],
+    matrix: ["allocation-matrix", "Open faculty allocation matrix", "Choose the intended school year's approved planning file. Keep availability, qualifications and proposed allocations in the protected school records."],
+    edval: ["edval-timetabling", "Open EDVAL timetabling resources", "Select the intended year and confirm current instructions. Earlier year folders do not confirm this cycle's dates or approved timetable."],
+    timetableChanges: ["timetable-change-instructions", "Open timetable change instructions", "Check the current school process and submit proposed corrections to the authorised role. A draft is not an approved timetable."],
     calendar: ["staff-calendar", "Open staff calendar", "Check the event and year in the live school calendar; staff sign-in may be needed."],
     sentral: ["sentral", "Open Sentral", "Sign in, then select the relevant timetable, reporting or protected school workflow."],
     nesa: ["nesa-actions", "Open NESA dates and actions", "Choose the relevant year and action, then follow its current instructions."],
@@ -34,6 +38,7 @@
   // Each entry follows the existing step order. Grouped tasks share the same process,
   // but steps keep their own destination choices rather than repeating every task link.
   const plans = {
+    "faculty-allocations-timetable": ["allocations guide calendar", "matrix sentral", "matrix edval", "timetableChanges edval", "sentral allocations !classReadiness"],
     "t1-year-opening-readiness": ["sentral calendar", "programs assessment", "whs onguard", "sentral", "guide"],
     "t1-student-review-cycle": ["calendar", "sentral guide", "sentral", "sentral"],
     "t2-student-review-cycle": ["calendar", "sentral guide", "sentral", "sentral"],
@@ -93,6 +98,7 @@
 
   const weekly = ["calendar nesa", "drive", "sentral whs", "calendar nesa assessment", "whs maintenance chemicals"];
   const hints = {
+    "!classReadiness": "After school approval, hand over outstanding readiness actions. Opens the class-readiness task in a new tab so unsaved planning progress stays here. Approval and personal details stay in the school system.",
     "!emergency": "Act on immediate safety first. Do not wait for a website or sign-in; follow the school emergency procedure and call 000 where required.",
     "!protected": "No entry is needed here. Keep the case record in the authorised protected process.",
     "!media": "Refer the enquiry through the currently authorised school role before giving any response."
@@ -114,6 +120,7 @@
 
   function describe(keys, task) {
     return String(keys || "").split(/\s+/).filter(Boolean).map(key => {
+      if (key === "!classReadiness") return { taskId: "class-readiness", label: "Open class-readiness check", hint: hints[key] };
       if (hints[key]) return { hint: hints[key] };
       const route = destinations[key];
       if (!route) return null;

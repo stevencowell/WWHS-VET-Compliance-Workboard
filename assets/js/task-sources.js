@@ -4,7 +4,8 @@
   const aliases={'NESA-TOA':'NESA-TOA-2026-MAY','NESA-TOA-2026':'NESA-TOA-2026-MAY','WWHS-USI-PROCEDURE':'WWHS-USI-LOCAL','WWHS-NESA-CHECKS':'WWHS-NESA-CHECKS-SOP-2025','PUBLIC-NESA-TOA':'NESA-TOA-2026-MAY','PUBLIC-NESA-BEC-APPLICATION':'NESA-BEC-APPLICATION','PUBLIC-ACE-14-2':'NESA-VET-ENTRIES'};
   const esc=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
   const safe=url=>{try{const parsed=new URL(url);return parsed.protocol==='https:'&&!parsed.username&&!parsed.password?url:'';}catch{return '';}};
-  const isFuture=task=>Number(task?.operatingYear)>2026 || /^2027-/.test(task?.id||'');
+  const allocationTask=task=>task?.canonicalTaskId==='faculty-allocations-timetable' || /^(?:\d{4}-)?faculty-allocations-timetable$/.test(task?.id||'');
+  const isFuture=task=>!allocationTask(task) && (Number(task?.operatingYear)>2026 || /^2027-/.test(task?.id||''));
   const idFor=id=>aliases[id] || id;
   function rowFor(wing,task){return catalogue.rows[`${wing.toUpperCase()}:${task?.canonicalTaskId || task?.id}`] || null;}
   function kind(ref){
@@ -74,7 +75,7 @@
     const direct=refs.filter(ref=>['document','page','calendar'].includes(kind(ref))),other=refs.filter(ref=>!direct.includes(ref));
     const primary=direct.slice(0,3), remainder=[...direct.slice(3),...other];
     if(!primary.length && remainder.length)primary.push(...remainder.splice(0,2));
-    const label=future?'2027 planning task':row?.provenanceStatus==='inferred-local-control'?'Local workboard check':row?.provenanceStatus==='specific-citation'?'Source passage located':'Exact requirement still to confirm';
+    const label=allocationTask(task)?'Annual allocations planning · school dates unconfirmed':future?'2027 planning task':row?.provenanceStatus==='inferred-local-control'?'Local workboard check':row?.provenanceStatus==='specific-citation'?'Source passage located':'Exact requirement still to confirm';
     const basis=row?.sourceQuote && !future?`<div class="task-source-quote"><strong>Original source wording</strong><blockquote>${esc(row.sourceQuote)}</blockquote></div>`:row?.sourceBasis?`<p class="task-source-basis"><strong>${future?'Background to this task':'Source summary'}:</strong> ${esc(row.sourceBasis)}</p>`:`<p>This checklist helps you plan the work. Check the sources below; they have not been confirmed to require this exact checklist.</p>`;
     const auditUrl=`${wing.toLowerCase()==='tas'?'../':'./'}task-sources/?wing=${wing.toLowerCase()}${row?'&task='+encodeURIComponent(row.id):'#sources'}`;
     return `<section class="task-source-panel" aria-label="Task sources" data-source-task="${esc(task?.id)}"><div class="task-source-heading"><h3>Task sources</h3><span>${esc(label)}</span></div>${basis}${future?'<p class="task-source-year">The 2026 documents are background only. Confirm the current 2027 guide and deadlines before acting.</p>':''}<ul class="task-source-links">${primary.map(referenceHtml).join('')}</ul>${remainder.length?`<details class="task-source-more"><summary>More sources and links (${remainder.length})</summary><ul class="task-source-links">${remainder.map(referenceHtml).join('')}</ul></details>`:''}${!refs.length?'<p>A source document has not yet been found for this task.</p>':''}<p class="task-source-checklist-note">The checklist below is practical workboard guidance, not a quotation from the source.</p><a class="task-source-audit" href="${auditUrl}" target="_blank" rel="noopener noreferrer">View source details and checks still needed ↗</a></section>`;

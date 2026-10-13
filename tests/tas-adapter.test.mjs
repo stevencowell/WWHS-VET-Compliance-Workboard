@@ -371,8 +371,10 @@ test('phase selection keeps 2026 separate and uses explicitly provisional 2027 o
   assert.ok(nextYear.entries.every(entry => !entry.dueDate || entry.dueDate.startsWith('2027-')));
   assert.ok(opening.entries.every(entry => !entry.taskId.startsWith('2027-')));
   const unsupported = harness(null, {now:'2028-02-02T12:00:00'}).adapter.getForecast();
-  assert.equal(unsupported.context.mode, 'reference-only');
-  assert.deepEqual(json(unsupported.entries), []);
+  assert.equal(unsupported.context.mode, 'current');
+  assert.match(unsupported.context.note, /Only the undated faculty-allocation planning cycle/);
+  assert.deepEqual(json(unsupported.entries.map(entry => entry.taskId)), ['2028-faculty-allocations-timetable']);
+  assert.ok(unsupported.entries.every(entry => !entry.dueDate), 'Unknown school calendars must not generate dated work');
 });
 
 test('unreadable, malformed and externally changed native storage never yields a fresh-looking forecast', () => {
@@ -560,4 +562,171 @@ test('2026 completion cannot complete the carried-forward 2027 task and a date c
   assert.equal(rows.find(item=>item.id===id).complete,false);
   assert.ok(!h.adapter.getEntries().some(item=>item.taskId===id));
   assert.ok(!h.adapter.getForecast().entries.some(item=>item.taskId===id));
+});
+
+// C16 target-year preparation is deliberately independent of copied calendar dates.
+const allocationId = year => `${year}-faculty-allocations-timetable`;
+const allocationKey = year => `${allocationId(year)}::${year}`;
+
+test('C16 appears in the current Term 4 list without inventing a due date or writing state', () => {
+  const before = harness(null, {now:'2026-10-11T12:00:00'});
+  assert.ok(!before.adapter.getForecast().entries.some(entry => entry.taskId === allocationId(2027)));
+  const h = harness(null, {now:'2026-10-13T12:00:00'});
+  const entry = h.adapter.getForecast().entries.find(entry => entry.taskId === allocationId(2027));
+  assert.ok(entry);
+  assert.equal(entry.title, 'Prepare 2027 TAS faculty allocations and timetable');
+  assert.equal(entry.recordKey, allocationKey(2027));
+  assert.equal(entry.dueDate, '');
+  assert.equal(entry.forecast.kind, 'annual-planning');
+  assert.equal(entry.forecast.dateConfidence, 'undated');
+  assert.equal(entry.forecast.scheduledDate, '');
+  assert.equal(entry.forecast.windowStart, '');
+  assert.equal(entry.forecast.windowEnd, '');
+  assert.match(entry.forecast.reason, /School dates unconfirmed/);
+  assert.match(entry.forecast.reason, /not an official due date/);
+  assert.equal(h.storage.has(key), false);
+});
+
+test('C16 planning keeps the same record and checklist across January without resetting other saved state', () => {
+  const records = {
+    [allocationKey(2027)]: {status:'in-progress',steps:{0:true,1:true},milestones:{},exceptionReason:'Synthetic safe planning note'},
+    'class-readiness::2026': {status:'in-progress',steps:{2:true},evidenceRef:'Existing protected reference'},
+    '2027-t1-year-opening-readiness::2027': {status:'in-progress',steps:{1:true}}
+  };
+  const scheduleOverrides = {'2027-t1-year-opening-readiness':{dueDate:'2027-02-05',milestones:[],confirmed:true,sourceNote:'Synthetic current source',updatedAt:'2026-10-13T12:00:00Z'}};
+  const raw = saved(records,{scheduleOverrides,weekly:{'2026-10-12':{0:true}},links:{sentral:'https://example.edu/approved-saved-link'}});
+  const reviewRaw = reviewStore('class-readiness::2026',true,'2026-10-13',2026);
+  const h = harness(raw,{now:'2026-12-31T12:00:00',reviewRaw});
+  const old = h.adapter.describeTask(allocationId(2027));
+  h.advance('2027-01-01T12:00:00');
+  const next = h.adapter.describeTask(allocationId(2027));
+  assert.equal(next.recordKey, old.recordKey);
+  assert.equal(next.action, old.action);
+  assert.equal(next.status, 'review');
+  assert.equal(next.notes, 'Synthetic safe planning note');
+  assert.ok(h.adapter.getForecast().entries.some(entry => entry.recordKey === allocationKey(2027)));
+  assert.equal(h.adapter.describeTask('2027-t1-year-opening-readiness').dueDate,'2027-02-05');
+  h.click('open-task', allocationId(2027));
+  const html=h.nodes.get('task-dialog-content').innerHTML;
+  assert.match(html,/data-task-step="0"[^>]*checked/);
+  assert.match(html,/data-task-step="1"[^>]*checked/);
+  assert.doesNotMatch(html,/data-task-step="2"[^>]*checked/);
+  assert.match(html,/School dates unconfirmed/);
+  assert.doesNotMatch(html,/Restore 2026 pattern|planning dates follow the 2026 pattern/);
+  assert.equal(h.storage.get(key),raw);
+  assert.equal(h.storage.get(reviewKey),reviewRaw);
+});
+
+test('C16 completed work stays complete across January and the next annual cycle starts separately', () => {
+  const task=tasks.find(task=>task.id===allocationId(2027));
+  const raw=saved({[allocationKey(2027)]:completeRecord(task)});
+  const h=harness(raw,{now:'2026-12-31T12:00:00'});
+  assert.equal(h.adapter.describeTask(allocationId(2027)).status,'done');
+  h.advance('2027-01-01T12:00:00');
+  assert.equal(h.adapter.describeTask(allocationId(2027)).status,'done');
+  assert.ok(!h.adapter.getForecast().entries.some(entry=>entry.taskId===allocationId(2027)));
+  h.advance('2027-09-30T12:00:00');
+  assert.ok(!h.adapter.getForecast().entries.some(entry=>entry.taskId===allocationId(2028)));
+  h.advance('2027-10-01T12:00:00');
+  const next=h.adapter.getForecast().entries.find(entry=>entry.taskId===allocationId(2028));
+  assert.ok(next);
+  assert.equal(next.title,'Prepare 2028 TAS faculty allocations and timetable');
+  assert.equal(next.recordKey,allocationKey(2028));
+  assert.equal(next.sourceStatus,'not-started');
+  assert.match(next.forecast.reason,/approximate/);
+  h.advance('2028-01-01T12:00:00');
+  assert.ok(h.adapter.getForecast().entries.some(entry=>entry.recordKey===allocationKey(2028)));
+  assert.equal(h.adapter.describeTask(allocationId(2027)).status,'done');
+  assert.equal(h.storage.get(key),raw);
+});
+
+test('C16 unfinished saved cycles remain visible when the next cycle begins', () => {
+  const raw=saved({[allocationKey(2027)]:{status:'waiting',steps:{0:true},exceptionReason:'Awaiting the school timetable lead'}});
+  const h=harness(raw,{now:'2027-10-13T12:00:00'});
+  const entries=h.adapter.getForecast().entries;
+  const old=entries.find(entry=>entry.recordKey===allocationKey(2027));
+  assert.ok(old);
+  assert.equal(old.status,'waiting');
+  assert.equal(old.forecast.kind,'recorded-follow-up');
+  assert.ok(entries.some(entry=>entry.recordKey===allocationKey(2028)));
+  assert.equal(h.storage.get(key),raw);
+});
+
+test('C16 early review ticks retain their target-year identity in both preparation and target-year views', async () => {
+  const {matchesRegisterYear,reviewKey:makeReviewKey}=await import('../assets/js/task-register.mjs');
+  const reviewRaw=earlyReviewStore(allocationKey(2027),true,'2026-10-13',2027);
+  const h=harness(null,{now:'2026-10-13T12:00:00',reviewRaw});
+  const entry=h.adapter.getTaskRegister().items.find(item=>item.id===allocationId(2027));
+  assert.equal(entry.year,'2027');
+  assert.deepEqual(json(entry.planningYears),['2026','2027']);
+  assert.equal(entry.complete,true);
+  assert.equal(entry.inFocus,false);
+  assert.equal(entry.schedule.startDate,undefined);
+  assert.equal(entry.schedule.endDate,undefined);
+  for(const year of ['2026','2027','all'])assert.equal(matchesRegisterYear(entry,year),true);
+  for(const year of ['2025','2028'])assert.equal(matchesRegisterYear(entry,year),false);
+  assert.equal(makeReviewKey('tas',entry,Number(entry.year)),`tas:2027:${encodeURIComponent(allocationKey(2027))}`);
+  h.advance('2027-01-01T12:00:00');
+  assert.equal(h.adapter.describeTask(allocationId(2027)).status,'done');
+  assert.equal(h.storage.get(reviewKey),reviewRaw);
+  assert.equal(h.storage.has(key),false);
+});
+
+test('C16 future cycles retain sources, authored copy and independent checklists without duplicating on refresh', () => {
+  const h=harness(null,{now:'2029-10-13T12:00:00'});
+  for(const file of ['../head-teacher-tas/assets/js/task-copy-tas.js','../assets/js/task-clarity.js'])vm.runInContext(fs.readFileSync(new URL(file,import.meta.url),'utf8'),h.context);
+  const data=h.context.window.HT_TAS_WORKBOARD;
+  const latest=data.tasks.find(task=>task.id===allocationId(2030));
+  const original=data.tasks.find(task=>task.id===allocationId(2027));
+  assert.notEqual(latest.steps,original.steps);
+  assert.equal(h.adapter.describeTask(latest.id).title,'Prepare 2030 TAS faculty allocations and timetable');
+  const sources=h.context.window.WWHS_TASK_SOURCES;
+  assert.equal(sources.rowFor('tas',latest).id,'faculty-allocations-timetable');
+  const panel=sources.panel('tas',latest);
+  assert.match(panel,/school dates unconfirmed/);
+  assert.doesNotMatch(panel,/2027 planning task|2026 documents are background only/);
+  assert.equal(sources.refsFor('tas',latest).length,5);
+  const before=data.tasks.length;
+  for(let n=0;n<5;n++)h.adapter.getTaskRegister();
+  assert.equal(data.tasks.length,before);
+  assert.equal(new Set(data.tasks.map(task=>task.id)).size,before);
+  assert.equal(h.storage.has(key),false);
+});
+
+test('C16 2028 saved progress is loaded before sanitisation, survives a fresh save and backup restore', () => {
+  const existing = {
+    'class-readiness::2026':{status:'in-progress',steps:{0:true},milestones:{},exceptionReason:'Keep the original task note'},
+    [allocationKey(2027)]:{status:'waiting',steps:{0:true},milestones:{},exceptionReason:'Keep last cycle open'},
+    [allocationKey(2028)]:{status:'in-progress',steps:{0:true,2:true},milestones:{},exceptionReason:'Keep this future-cycle note',evidenceRef:'Safe allocation reference'}
+  };
+  const schedules={'2027-t1-year-opening-readiness':{dueDate:'2027-02-05',milestones:[],confirmed:true,sourceNote:'Current source confirmed',updatedAt:'2026-10-13T12:00:00Z'}};
+  const weekly={'2026-10-12':{0:true}},reviewRaw=reviewStore('class-readiness::2026',true,'2026-10-13',2026);
+  const raw=saved(existing,{scheduleOverrides:schedules,weekly});
+  const h=harness(raw,{now:'2027-10-13T12:00:00',reviewRaw});
+  const descriptor=h.adapter.describeTask(allocationId(2028));
+  assert.equal(descriptor.sourceStatus,'in-progress');
+  assert.equal(descriptor.notes,'Keep this future-cycle note');
+  assert.equal(descriptor.action,tasks.find(task=>task.id===allocationId(2027)).steps[1]);
+  h.click('open-task',allocationId(2028));
+  assert.match(h.nodes.get('task-dialog-content').innerHTML,/data-task-step="2"[^>]*checked/);
+  assert.equal(h.storage.get(key),raw,'Reload is read-only');
+  const before=JSON.parse(h.storage.get(key));
+  h.click('complete-task',allocationId(2028));
+  const after=JSON.parse(h.storage.get(key));
+  assert.equal(after.records[allocationKey(2028)].status,'completed');
+  assert.equal(after.records[allocationKey(2028)].exceptionReason,'Keep this future-cycle note');
+  for(const id of ['class-readiness::2026',allocationKey(2027)]){
+    assert.equal(after.records[id].status,before.records[id].status);
+    assert.deepEqual(after.records[id].steps,before.records[id].steps);
+    assert.equal(after.records[id].exceptionReason,before.records[id].exceptionReason);
+  }
+  assert.deepEqual(after.scheduleOverrides,schedules);
+  assert.deepEqual(after.weekly,weekly);
+  assert.equal(h.storage.get(reviewKey),reviewRaw);
+  const reloaded=harness(h.storage.get(key),{now:'2028-01-01T12:00:00',reviewRaw});
+  assert.equal(reloaded.adapter.describeTask(allocationId(2028)).status,'done');
+  const restored=harness(null,{now:'2028-01-01T12:00:00'});
+  restored.restore({kind:'WWHS-HEAD-TEACHER-TAS-WORKBOARD-BACKUP',schemaVersion:2,state:after});
+  assert.equal(restored.adapter.describeTask(allocationId(2028)).status,'done');
+  assert.equal(restored.adapter.describeTask(allocationId(2027)).notes,'Keep last cycle open');
 });

@@ -12,7 +12,7 @@ const help = id => getTasTaskHelp(tasks.find(task => task.id === id));
 const text = profile => JSON.stringify(profile);
 
 test('every native actionable TAS task has a complete explicit preparation brief', () => {
-  assert.equal(actionable.length, 72);
+  assert.equal(actionable.length, 73);
   for (const task of actionable) {
     const result = getTasTaskHelp(task);
     assert.ok(result, task.id);
@@ -150,4 +150,14 @@ test('briefs neither echo dynamic/private task records nor mutate the source or 
   first.requiredInputs[0] = 'Changed input';
   first.reviewChecks.splice(0);
   assert.deepEqual(help(task.id), original);
+});
+
+test('C16 AI preparation uses current allocation controls without copying a 2026 deadline', () => {
+  const current=help('2027-faculty-allocations-timetable');
+  assert.equal(current.profileId,'tas-teaching-readiness');
+  assert.match(text(current),/School dates are unconfirmed/);
+  assert.match(text(current),/Term 4 is a planning trigger, not a deadline/);
+  assert.match(text(current),/qualifications, allocations and class lists in protected school sources/);
+  assert.doesNotMatch(text(current),/dates carried from the 2026 schedule/);
+  assert.deepEqual(getTasTaskHelp({id:'2030-faculty-allocations-timetable',canonicalTaskId:'faculty-allocations-timetable'}),current);
 });

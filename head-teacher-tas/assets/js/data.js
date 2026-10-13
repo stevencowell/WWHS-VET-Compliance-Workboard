@@ -5,6 +5,46 @@
 
   const systems = [
     {
+      "id": "faculty-allocations",
+      "label": "Faculty allocations and timetable (C16)",
+      "group": "Work-account sources",
+      "kind": "local",
+      "status": "front-door",
+      "url": "https://drive.google.com/drive/folders/1yofGp48WrvhO0R0tRfu0In6-TTWbedNv",
+      "purpose": "Faculty allocation and timetable planning resources referenced by Guide C16.",
+      "note": "Guide C16 identifies this resource. Confirm the current approved version, school dates and timetable lead. Staff and student details stay in protected school systems."
+    },
+    {
+      "id": "allocation-matrix",
+      "label": "Faculty allocation matrix",
+      "group": "Work-account sources",
+      "kind": "local",
+      "status": "front-door",
+      "url": "https://drive.google.com/drive/folders/1Czs5BtEqUw2-WYpZkXpSn6RLvKWhnEsp",
+      "purpose": "Protected matrix planning files; choose the approved file for the intended year.",
+      "note": "Guide C16 identifies this resource. Confirm the current approved version, school dates and timetable lead. Staff and student details stay in protected school systems."
+    },
+    {
+      "id": "edval-timetabling",
+      "label": "EDVAL timetabling resources",
+      "group": "Work-account sources",
+      "kind": "local",
+      "status": "front-door",
+      "url": "https://drive.google.com/drive/folders/1CbJTeolawtcSxyGftjMaIzF3DsH4_6jG",
+      "purpose": "School timetable resources. Historical year folders do not establish current dates.",
+      "note": "Guide C16 identifies this resource. Confirm the current approved version, school dates and timetable lead. Staff and student details stay in protected school systems."
+    },
+    {
+      "id": "timetable-change-instructions",
+      "label": "Timetable change instructions",
+      "group": "Work-account sources",
+      "kind": "local",
+      "status": "front-door",
+      "url": "https://drive.google.com/file/d/1M6YAu2lQqRBY9sg4ir1S5YMr81uDYedy/view",
+      "purpose": "School instructions for proposed timetable corrections; confirm the current submission route.",
+      "note": "Guide C16 identifies this resource. Confirm the current approved version, school dates and timetable lead. Staff and student details stay in protected school systems."
+    },
+    {
       id: "staff-calendar",
       label: "Sentral staff calendar",
       group: "School operations",
@@ -1491,6 +1531,39 @@
     });
   }
 
+  // C16 is preparation for a target school year, not a dated school deadline.
+  // Fixed target-year identities keep Term 4 progress intact across January.
+  function ensureAllocationPlanningCycles(currentYear) {
+    for (let targetYear = 2027; targetYear <= Math.max(2027, currentYear + 1); targetYear++) {
+      const id = `${targetYear}-faculty-allocations-timetable`;
+      if (tasks.some(task => task.id === id)) continue;
+      tasks.push({
+        id, canonicalTaskId: "faculty-allocations-timetable",
+        allocationYear: targetYear, preparationYear: targetYear - 1,
+        title: `Prepare ${targetYear} TAS faculty allocations and timetable`,
+        summary: "Prepare the proposed staffing, classes, rooms and rotations for the target school year, using the current school approval process.",
+        area: "faculty", phase: "term_4", cycle: "year", priority: "high",
+        timing: `Term 4 ${targetYear - 1} planning for ${targetYear}; continue until the approved handover. School dates unconfirmed. This is a planning-period trigger, not an official due date.`,
+        owner: "Head Teacher TAS", verifier: "Authorised school timetable lead / executive role, to confirm",
+        systemIds: ["faculty-allocations", "allocation-matrix", "edval-timetabling", "timetable-change-instructions", "head-teacher-guide", "staff-calendar", "sentral"],
+        source: "Guide C16 — Faculty Allocations and Timetable; linked allocation matrix, EDVAL resources and timetable change instructions",
+        sourceState: "verify-live",
+        steps: [
+          "Confirm the school planning milestones, submission process and current timetable contact; school dates and the timetable lead are unconfirmed until checked.",
+          "Review approved classes and course offerings, staff availability and relevant qualifications in the protected school records; do not change approved curriculum scope or copy personnel details here.",
+          "Prepare the proposed faculty allocation matrix, practical-room use and Technology Mandatory rotations in the approved protected planning files.",
+          "Check the draft for staff, class, room and rotation conflicts, then submit proposed corrections through the existing school timetable process for approval.",
+          "Confirm the approved allocations and timetable with the authorised school role, then hand over any readiness actions to the class-readiness check; keep only a safe status reference here."
+        ],
+        doneWhen: "The authorised school role has confirmed the allocations and timetable, proposed corrections are resolved or formally owned, and readiness actions have been handed over to the class-readiness check.",
+        why: "Next-year staffing and timetabling need a visible preparation workflow before the January class-readiness checks.",
+        trap: "Treating an old EDVAL folder, draft allocation or a planning-period trigger as an approved timetable or a confirmed school deadline.",
+        privacy: "Keep staff availability, qualifications, allocations, class lists and student details in protected school sources. Record only privacy-safe progress and references here."
+      });
+    }
+  }
+  ensureAllocationPlanningCycles(2026);
+
   const sourceGroups = [
     {
       id: "calendar",
@@ -1531,6 +1604,7 @@
     },
     systems,
     tasks,
+    ensureAllocationPlanningCycles,
     sourceGroups,
     weeklyChecks: [
       "Scan the live Staff School Calendar and NESA action page for changes.",
