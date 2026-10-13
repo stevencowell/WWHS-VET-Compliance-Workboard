@@ -1,6 +1,7 @@
-// Additive Steve Notes integration. This module never reads or writes saved work.
+// Additive Clevernote card. This module never reads or writes saved work.
 export const NOTES_ORIGIN = 'https://steve-notes.steven-cowell.chatgpt.site';
 export const NOTES_URL = `${NOTES_ORIGIN}/`;
+export const NOTES_LOGO = new URL('./clevernote-rhino.png', import.meta.url).href;
 
 export function mountNotesTrial(board, {document: doc = document, window: win = window} = {}) {
   if (!board || board.dataset.notesTrialMounted === 'true') return null;
@@ -11,38 +12,41 @@ export function mountNotesTrial(board, {document: doc = document, window: win = 
     for (const [key, value] of Object.entries(attributes)) node.setAttribute(key, value);
     return node;
   };
-  const button = (text, action) => {
-    const node = el('button', text, {type: 'button'});
-    node.addEventListener('click', action);
-    return node;
-  };
-  const panel = el('section', undefined, {class: 'notes-trial', 'aria-labelledby': 'notes-trial-title'});
-  const heading = el('div', undefined, {class: 'notes-trial-heading'});
-  const title = el('div');
-  title.append(el('p', 'PRIVATE NOTES', {class: 'eyebrow'}),
-    el('h2', 'Steve Notes', {id: 'notes-trial-title'}),
-    el('p', 'Your private notes and tasks, one click away.', {class: 'notes-trial-intro'}));
-  const open = el('a', 'Open Steve Notes ↗', {href: NOTES_URL, target: '_blank', rel: 'noopener noreferrer', class: 'notes-trial-open'});
-  heading.append(title, open);
-  const help = el('p', 'Open Steve Notes in its own tab to view and edit your notes. The embedded view has been removed because it did not work reliably.', {class: 'notes-trial-help'});
-  const controls = el('div', undefined, {class: 'notes-trial-controls', 'aria-label': 'Choose notes view'});
-  const legacyHelp = el('p', 'Your original Launchpad panel is shown below. Its notes, calendar, backups and settings are unchanged. No content has been migrated to Steve Notes.', {class: 'notes-trial-help'});
+  const panel = el('section', undefined, {class: 'notes-trial clevernote-card', 'aria-labelledby': 'notes-trial-title'});
+  const heading = el('div', undefined, {class: 'clevernote-card-main'});
+  const identity = el('div', undefined, {class: 'clevernote-card-identity'});
+  const logo = el('div', undefined, {class: 'clevernote-card-mark'});
+  logo.append(el('img', undefined, {src: NOTES_LOGO, alt: 'Clevernote rhino', width: '132', height: '88', decoding: 'async'}));
+  const title = el('div', undefined, {class: 'clevernote-card-copy'});
+  title.append(el('p', 'YOUR PRIVATE NOTEBOOK', {class: 'clevernote-card-eyebrow'}),
+    el('h2', 'Clevernote', {id: 'notes-trial-title'}),
+    el('p', 'A little space for your next big idea.', {class: 'clevernote-card-intro'}));
+  identity.append(logo, title);
+  const action = el('div', undefined, {class: 'clevernote-card-action'});
+  const open = el('a', 'Open Clevernote', {href: NOTES_URL, target: '_blank', rel: 'noopener noreferrer', class: 'notes-trial-open', title: 'Opens in a new tab'});
+  open.append(el('span', undefined, {class: 'clevernote-card-external', 'aria-hidden': 'true'}));
+  action.append(open, el('p', 'Notes, ideas and things to do', {class: 'clevernote-card-caption'}));
+  heading.append(identity, action);
+  const footer = el('div', undefined, {class: 'clevernote-card-footer'});
+  const hint = el('p', 'Your notes, one click away.', {class: 'clevernote-card-hint'});
+  const legacyButton = el('button', 'Show saved Launchpad panel', {type: 'button', class: 'clevernote-card-legacy', 'aria-expanded': 'false'});
+  const legacyHelp = el('p', 'Your saved notes, calendar and settings remain in this browser.', {class: 'clevernote-card-preservation'});
   legacyHelp.hidden = true;
   const showEmbed = () => {
     board.dataset.notesTrialHidden = 'true';
-    help.hidden = false; legacyHelp.hidden = true;
-    notesButton.setAttribute('aria-pressed', 'true'); legacyButton.setAttribute('aria-pressed', 'false');
+    legacyHelp.hidden = true;
+    legacyButton.textContent = 'Show saved Launchpad panel';
+    legacyButton.setAttribute('aria-expanded', 'false');
   };
   const showLegacy = () => {
     delete board.dataset.notesTrialHidden;
-    help.hidden = true; legacyHelp.hidden = false;
-    notesButton.setAttribute('aria-pressed', 'false'); legacyButton.setAttribute('aria-pressed', 'true');
+    legacyHelp.hidden = false;
+    legacyButton.textContent = 'Hide saved Launchpad panel';
+    legacyButton.setAttribute('aria-expanded', 'true');
   };
-  const notesButton = button('Steve Notes view', showEmbed);
-  const legacyButton = button('Show saved Launchpad panel', showLegacy);
-  controls.append(notesButton, legacyButton);
-  const preservation = el('p', 'Use Show saved Launchpad panel to return to your original work. Its notes, calendar and settings stay in this browser; no content has been moved.', {class: 'notes-trial-preservation'});
-  panel.append(heading, help, controls, legacyHelp, preservation);
+  legacyButton.addEventListener('click', () => board.dataset.notesTrialHidden === 'true' ? showLegacy() : showEmbed());
+  footer.append(hint, legacyButton);
+  panel.append(heading, footer, legacyHelp);
   board.before(panel);
   showEmbed();
   // Capture phase reveals the panel before existing calendar handlers scroll it.
