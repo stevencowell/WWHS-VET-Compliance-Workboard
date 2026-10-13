@@ -17,7 +17,7 @@
     const copy = own(id) || own(task.occurrenceOf) || matchedTemplate || own(task.canonicalTaskId) || own(id.replace(/^template-/, ''));
     const currentCopy = copy && (!copy.sourceFinished || clean(finished) === clean(copy.sourceFinished));
     return {
-      title: copy?.title || task.title || '',
+      title: /^(?:\d{4}-)?faculty-allocations-timetable$/.test(id) && task.title ? task.title : copy?.title || task.title || '',
       purpose: copy?.purpose || task.summary || task.guidance?.why || task.why || '',
       finished: currentCopy ? copy.finished || finished : finished,
       steps: copy && sameSteps(steps, strings(copy.sourceSteps)) ? [...copy.steps] : [...steps],

@@ -23,6 +23,12 @@ export function registerReviewStatus(item) {
   const status=String(item.status||'').trim().toLowerCase().replace(/\s+/g,'-');
   return {'in-progress':'In progress',waiting:'Waiting',exception:'Exception',performed:'Performed',recorded:'Recorded'}[status] || '';
 }
+export function matchesRegisterYear(item, year) {
+  return year === 'all' || item.year === year || item.year === 'ongoing' || (item.planningYears || []).includes(year);
+}
+export function registerShowsEarlyCompletion(item, today) {
+  return !item.planningPeriodStarted && (item.tick?.completedEarly === true || item.reviewYear > Number(today.slice(0,4)) || registerDate(item) > today);
+}
 export function matchesRegisterView(item, view, today) {
   const date = registerDate(item), kind = item.schedule?.kind;
   if (['core','scheduled','event'].includes(view)) return registerEntryKind(item) === view;
@@ -124,7 +130,7 @@ export function createTaskRegister({wing, label, getAdapter, getSavedItems = () 
   const reload = button('Reload review ticks',()=>{load();render();if(!blocked)message.textContent='Review ticks reloaded.';}); backup.append(reload);
   function getItems() {
     const saved = getSavedItems();
-    return snapshot.items.filter(item => (year.value === 'all' || item.year === year.value || item.year === 'ongoing') && (area.value === 'all' || item.area === area.value)).map(item => {
+    return snapshot.items.filter(item => matchesRegisterYear(item, year.value) && (area.value === 'all' || item.area === area.value)).map(item => {
       const reviewYear = item.year === 'ongoing' ? (year.value === 'all' ? snapshot.currentYear : Number(year.value)) : Number(item.year);
       const key = reviewKey(wing,item,reviewYear), tick=review.records[key];
       const appliesToYear=item.year !== 'ongoing' || reviewYear === snapshot.currentYear;
@@ -154,7 +160,7 @@ export function createTaskRegister({wing, label, getAdapter, getSavedItems = () 
       if(clarity.purpose)front.append(node('p',clarity.purpose,{class:'task-clarity-purpose'}));
       const shortDate=value=>new Date(`${value}T12:00:00`).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'});
       const dates=[item.schedule?.startDate,item.schedule?.endDate].filter((value,index,all)=>value&&all.indexOf(value)===index);
-      const timing=dates.length?dates.map(shortDate).join(' – '):item.schedule?.kind==='trigger'?'As needed':item.schedule?.kind==='recurring'?'Recurring duty':'Check timing in task';
+      const timing=item.schedule?.summary || (dates.length?dates.map(shortDate).join(' – '):item.schedule?.kind==='trigger'?'As needed':item.schedule?.kind==='recurring'?'Recurring duty':'Check timing in task');
       front.append(node('p',`When: ${timing}`,{class:'task-clarity-meta'}));
       const reveal=node('span',undefined,{class:'task-clarity-toggle'});
       reveal.append(node('span','View steps',{class:'when-closed'}),node('span','Hide steps',{class:'when-open'}));front.append(reveal);
@@ -169,8 +175,8 @@ export function createTaskRegister({wing, label, getAdapter, getSavedItems = () 
       if(item.planningLabel)main.append(node('span',item.planningLabel,{class:'register-review-status'}));
       const reviewStatus=registerReviewStatus(item);
       if(reviewStatus)main.append(node('span',`Under review · ${reviewStatus}`,{class:'register-review-status'}));
-      const date=registerDate(item), past=date&&date<today;
-      const status=item.requirementsReview&&!item.reviewComplete?'Updated steps — review needed':item.sourceComplete?`Workboard status: ${item.status}`:item.personalDone?'Done in your saved task list':item.tick?.completed?`Reviewed complete${item.tick.completedEarly?' early':''} for ${item.reviewYear} · ${item.tick.reviewedOn}`:past?'Past date — review the record':item.historyOnly?'Past task — check if it is done':item.inFocus?'In your current task list':item.procedureOnly?'Procedure guide':item.schedule?.kind==='trigger'?'Do this when needed':'Not in your current task list';
+      const date=registerDate(item), past=date&&date<today, showEarly=registerShowsEarlyCompletion(item,today);
+      const status=item.requirementsReview&&!item.reviewComplete?'Updated steps — review needed':item.sourceComplete?`Workboard status: ${item.status}`:item.personalDone?'Done in your saved task list':item.tick?.completed?`Reviewed complete${item.tick.completedEarly&&showEarly?' early':''} for ${item.reviewYear} · ${item.tick.reviewedOn}`:past?'Past date — review the record':item.historyOnly?'Past task — check if it is done':item.inFocus?'In your current task list':item.procedureOnly?'Procedure guide':item.schedule?.kind==='trigger'?'Do this when needed':'Not in your current task list';
       main.append(node('p',status,{class:'register-status'}));
       if(!item.reviewComplete&&item.gaps?.length){const gaps=node('details',undefined,{class:'register-gap'});gaps.append(node('summary',`${item.gaps.length} ${item.gaps.length===1?'check':'checks'} needed`));const ul=node('ul');item.gaps.forEach(gap=>ul.append(node('li',gap)));gaps.append(ul);main.append(gaps);}
       const control=node('label',undefined,{class:'register-tick'});
@@ -180,10 +186,10 @@ export function createTaskRegister({wing, label, getAdapter, getSavedItems = () 
       checkbox.disabled=blocked||item.procedureOnly||item.sourceComplete||item.personalDone;
       checkbox.addEventListener('change',()=>{
         const completed=checkbox.checked;
-        if(save({version:1,records:{...review.records,[item.key]:globalThis.WWHS_TASK_REVIEW.nextReview(review.records[item.key],{completed,reviewedOn:today,...(completed&&future?{completedEarly:true}:{}),...(item.requirementsInfo?.key?{requirementsKey:item.requirementsInfo.key}:{})})}})) {message.textContent=completed?`Reviewed complete${future?' early':''} for ${item.reviewYear}: ${item.title}.${future?' Scheduled dates are unchanged.':''}`:`Review tick removed: ${item.title}.`;render();}
+        if(save({version:1,records:{...review.records,[item.key]:globalThis.WWHS_TASK_REVIEW.nextReview(review.records[item.key],{completed,reviewedOn:today,...(completed&&future?{completedEarly:true}:{}),...(item.requirementsInfo?.key?{requirementsKey:item.requirementsInfo.key}:{})})}})) {message.textContent=completed?`Reviewed complete${future&&showEarly?' early':''} for ${item.reviewYear}: ${item.title}.${future&&showEarly?' Scheduled dates are unchanged.':''}`:`Review tick removed: ${item.title}.`;render();}
         else {checkbox.checked=!completed;checkbox.disabled=true;}
       });
-      control.append(checkbox,node('span',item.procedureOnly?'Reference only':item.sourceComplete?'Complete in workboard':item.personalDone?'Done in task list':item.tick?.completedEarly?`Reviewed complete early · ${item.reviewYear}`:future?`Mark complete early · ${item.reviewYear}`:`Reviewed complete · ${item.reviewYear}`));
+      control.append(checkbox,node('span',item.procedureOnly?'Reference only':item.sourceComplete?'Complete in workboard':item.personalDone?'Done in task list':item.tick?.completedEarly&&showEarly?`Reviewed complete early · ${item.reviewYear}`:future&&showEarly?`Mark complete early · ${item.reviewYear}`:`Reviewed complete · ${item.reviewYear}`));
       if(item.tick?.completed&&(item.sourceComplete||item.personalDone)){
         const remove=node('button','Remove review tick',{type:'button','aria-label':`Remove review tick: ${item.title}`});
         remove.disabled=blocked;

@@ -1,9 +1,9 @@
 const workStorage=()=>globalThis.WWHS_STORAGE||globalThis.localStorage;
 // One planning surface. Specialist records remain owned by their existing workboards.
-import '../../morning-launchpad/assets/summary-import.mjs?v=vet-admin-procedures-20260924';
-import {installWorkspaceBackup} from './workspace-backup-ui.mjs?v=vet-admin-procedures-20260924';
-import {INBOX_KEY, validateInbox, taskSection, todaySydney} from '../../morning-launchpad/assets/summary-core.mjs?v=vet-admin-procedures-20260924';
-import {createTaskRegister} from './task-register.mjs?v=vet-admin-procedures-20260924';
+import '../../morning-launchpad/assets/summary-import.mjs?v=tas-c16-planning-20261013';
+import {installWorkspaceBackup} from './workspace-backup-ui.mjs?v=tas-c16-planning-20261013';
+import {INBOX_KEY, validateInbox, taskSection, todaySydney} from '../../morning-launchpad/assets/summary-core.mjs?v=tas-c16-planning-20261013';
+import {createTaskRegister} from './task-register.mjs?v=tas-c16-planning-20261013';
 
 const base = new URL('../../', import.meta.url);
 const wing = document.body.dataset.workboard || 'launchpad';

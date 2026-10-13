@@ -3,26 +3,26 @@
   "checkedAt": "2026-09-24",
   "counts": {
     "vet2026": 67,
-    "tas2026": 65,
-    "total2026Entries": 132,
+    "tas2026": 66,
+    "total2026Entries": 133,
     "vetProcedureTemplates": 10,
-    "sourceRecords": 88,
-    "mappedSourceRecords": 84,
+    "sourceRecords": 92,
+    "mappedSourceRecords": 88,
     "additionalWatchRecords": 4,
     "sourceFamilies": 12,
     "provenance": {
       "inferred-local-control": 12,
-      "specific-citation": 103,
+      "specific-citation": 104,
       "broad-source-only": 17
     },
     "sourceCountingUnits": {
-      "Named document, rule, calendar or source record": 69,
-      "Portal, live register or discovery location": 9,
+      "Named document, rule, calendar or source record": 70,
+      "Portal, live register or discovery location": 12,
       "Document family; individual originals still to identify": 9,
       "Local workboard design; not an external authority": 1
     }
   },
-  "scope": "All 67 VET duties and 65 TAS entries currently loaded. The September VET administration audit maps 53 findings into existing cards and six distinct new duties. Personal notes, learner records and saved completion data are excluded.",
+  "scope": "All 67 VET duties and 66 TAS entries currently loaded. The September VET administration audit maps 53 findings into existing cards and six distinct new duties. Personal notes, learner records and saved completion data are excluded. The C16 annual allocations planning workflow was added on 13 October 2026; its school dates remain unconfirmed.",
   "method": "A specific citation identifies a traceable origin or date; it does not certify that every part of the task or an older local instruction is current. Source records include named documents, document families awaiting originals, live portals and local design controls; those types are counted separately. Recommendations for checking frequency are not official release promises.",
   "watch": [
     {
@@ -154,9 +154,13 @@
         "TAS-ROUTINE-SAFETY",
         "TAS-WHS-INSPECTION-FOLDER",
         "TAS-CHEMICAL-SDS",
-        "TAS-SHOWCASE-PLAN"
+        "TAS-SHOWCASE-PLAN",
+        "TAS-FACULTY-ALLOCATIONS",
+        "TAS-ALLOCATION-MATRIX",
+        "TAS-EDVAL-TIMETABLING",
+        "TAS-TIMETABLE-CHANGES"
       ],
-      "sourceCount": 19,
+      "sourceCount": 23,
       "checkWhen": "Before Term 1 and each term; on faculty, safety or policy changes",
       "action": "Follow guide section links to the current approved plans, programs, safety controls and reporting instructions. Older handbook wording establishes origin, not current authority.",
       "scheduleBasis": "Suggested checks, not official release dates"
@@ -9290,6 +9294,108 @@
       "order": 44
     },
     {
+      "id": "faculty-allocations-timetable",
+      "rowKey": "TAS:faculty-allocations-timetable",
+      "wing": "TAS",
+      "title": "Prepare 2027 TAS faculty allocations and timetable",
+      "phase": "term_4",
+      "phaseLabel": "Term 4",
+      "sequence": 66,
+      "timing2026": "Term 4 2026 planning for the 2027 school year; continue until the approved handover. School dates unconfirmed. Annual future cycles start in the preceding Term 4; this is a planning trigger, not an official due date.",
+      "due2026": null,
+      "milestones2026": [],
+      "sourceIds": [
+        "WWHS-HT-DOC",
+        "TAS-FACULTY-ALLOCATIONS",
+        "TAS-ALLOCATION-MATRIX",
+        "TAS-EDVAL-TIMETABLING",
+        "TAS-TIMETABLE-CHANGES"
+      ],
+      "provenanceStatus": "specific-citation",
+      "sourceBasis": "Head Teacher Guide C16 identifies Faculty Allocations and Timetable, the faculty allocation matrix, EDVAL timetabling resources and timetable change instructions. The workflow checks the school milestones, approved classes and staff readiness, proposed allocations and rooms, draft conflicts and the approved handover into class readiness.",
+      "sourceGap": "Current school dates, timetable lead, approved planning-file edition and correction route remain unconfirmed. Historical EDVAL folders from 2019–2020 through 2025–2026 do not establish 2027 milestones. No personnel or student records are copied into the workboard.",
+      "nextYearCheck": "Confirm the target year and school planning milestones/contact. Use protected school sources for staff availability, qualifications, allocations and class details. Submit only proposed changes through the existing approval process and hand over the approved arrangement to class readiness.",
+      "checkWhen": "Term 4 of the preceding year, at each school planning milestone or draft change, and before the approved handover. Future October–December grouping is approximate until the school calendar is checked.",
+      "evidenceRefs": [
+        {
+          "id": "WWHS-HT-DOC",
+          "title": "Head Teacher Information for TAS Faculty",
+          "url": "https://docs.google.com/document/d/1iGNJzqizAqWO0PuSRDXh0QPc0L8y_wdiyEk88O7f680/edit",
+          "locator": "C16 — Faculty Allocations and Timetable",
+          "relationship": "workflow-origin",
+          "verification": "Guide C16 explicitly identifies faculty allocations, the matrix, EDVAL resources and timetable change instructions. It does not confirm the current timetable lead or school deadlines.",
+          "statusNote": "The five-step checklist is practical workboard guidance, not a quotation or a new school requirement.",
+          "linkKind": "guide",
+          "verifiedOn": "2026-10-13"
+        },
+        {
+          "id": "TAS-FACULTY-ALLOCATIONS",
+          "title": "Faculty Allocations and Timetable — C16",
+          "group": "09 TAS handbook and faculty controls",
+          "countingUnit": "Portal, live register or discovery location",
+          "taskCount": 1,
+          "url": "https://drive.google.com/drive/folders/1yofGp48WrvhO0R0tRfu0In6-TTWbedNv",
+          "locator": "C16 faculty allocations and timetable folder",
+          "linkKind": "folder",
+          "verification": "Guide C16 and its linked resource identities were checked on 13 October 2026. The current school milestones, timetable lead and approved edition still need confirmation. Historical EDVAL folders are not evidence of current dates.",
+          "nextYearCheck": "Confirm the intended school year, current planning files, school milestones and authorised timetable lead before preparation or submission.",
+          "checkWhen": "Begin in Term 4 of the preceding year; confirm school milestones and review each draft change before the approved handover. This planning trigger is not an official due date.",
+          "verifiedOn": "2026-10-13",
+          "accessNote": "Authorised school account may be required. Keep staffing, qualifications, allocations and student details in protected school files.",
+          "relationship": "linked-planning-resource"
+        },
+        {
+          "id": "TAS-ALLOCATION-MATRIX",
+          "title": "Faculty Allocation Matrix",
+          "group": "09 TAS handbook and faculty controls",
+          "countingUnit": "Portal, live register or discovery location",
+          "taskCount": 1,
+          "url": "https://drive.google.com/drive/folders/1Czs5BtEqUw2-WYpZkXpSn6RLvKWhnEsp",
+          "locator": "Matrix planning folder linked in Guide C16",
+          "linkKind": "folder",
+          "verification": "Guide C16 and its linked resource identities were checked on 13 October 2026. The current school milestones, timetable lead and approved edition still need confirmation. Historical EDVAL folders are not evidence of current dates.",
+          "nextYearCheck": "Confirm the intended school year, current planning files, school milestones and authorised timetable lead before preparation or submission.",
+          "checkWhen": "Begin in Term 4 of the preceding year; confirm school milestones and review each draft change before the approved handover. This planning trigger is not an official due date.",
+          "verifiedOn": "2026-10-13",
+          "accessNote": "Authorised school account may be required. Keep staffing, qualifications, allocations and student details in protected school files.",
+          "relationship": "linked-planning-resource"
+        },
+        {
+          "id": "TAS-EDVAL-TIMETABLING",
+          "title": "EDVAL timetabling resources",
+          "group": "09 TAS handbook and faculty controls",
+          "countingUnit": "Portal, live register or discovery location",
+          "taskCount": 1,
+          "url": "https://drive.google.com/drive/folders/1CbJTeolawtcSxyGftjMaIzF3DsH4_6jG",
+          "locator": "EDVAL folder linked in Guide C16; choose the current school-year material",
+          "linkKind": "folder",
+          "verification": "Guide C16 and its linked resource identities were checked on 13 October 2026. The current school milestones, timetable lead and approved edition still need confirmation. Historical EDVAL folders are not evidence of current dates.",
+          "nextYearCheck": "Confirm the intended school year, current planning files, school milestones and authorised timetable lead before preparation or submission.",
+          "checkWhen": "Begin in Term 4 of the preceding year; confirm school milestones and review each draft change before the approved handover. This planning trigger is not an official due date.",
+          "verifiedOn": "2026-10-13",
+          "accessNote": "Authorised school account may be required. Keep staffing, qualifications, allocations and student details in protected school files.",
+          "relationship": "linked-planning-resource"
+        },
+        {
+          "id": "TAS-TIMETABLE-CHANGES",
+          "title": "Timetable change instructions",
+          "group": "09 TAS handbook and faculty controls",
+          "countingUnit": "Named document, rule, calendar or source record",
+          "taskCount": 1,
+          "url": "https://drive.google.com/file/d/1M6YAu2lQqRBY9sg4ir1S5YMr81uDYedy/view",
+          "locator": "Timetable change instructions linked in Guide C16",
+          "linkKind": "document",
+          "verification": "Guide C16 and its linked resource identities were checked on 13 October 2026. The current school milestones, timetable lead and approved edition still need confirmation. Historical EDVAL folders are not evidence of current dates.",
+          "nextYearCheck": "Confirm the intended school year, current planning files, school milestones and authorised timetable lead before preparation or submission.",
+          "checkWhen": "Begin in Term 4 of the preceding year; confirm school milestones and review each draft change before the approved handover. This planning trigger is not an official due date.",
+          "verifiedOn": "2026-10-13",
+          "accessNote": "Authorised school account may be required. Keep staffing, qualifications, allocations and student details in protected school files.",
+          "relationship": "linked-planning-resource"
+        }
+      ],
+      "order": 45
+    },
+    {
       "id": "senior-monitoring",
       "rowKey": "TAS:senior-monitoring",
       "wing": "TAS",
@@ -9322,7 +9428,7 @@
           "accessNote": "School reference guide. Use the section shown below; older instructions need checking."
         }
       ],
-      "order": 45
+      "order": 46
     },
     {
       "id": "faculty-meeting-control",
@@ -9370,7 +9476,7 @@
           "accessNote": "Use the guide to reach the approved staff working location. Individual staff allocations and meeting records are not linked publicly here."
         }
       ],
-      "order": 46
+      "order": 47
     },
     {
       "id": "budget-procurement",
@@ -9453,7 +9559,7 @@
           "accessNote": "Older school-held forms (2022). Verify the current forms and instructions before use."
         }
       ],
-      "order": 47
+      "order": 48
     },
     {
       "id": "chemical-controls",
@@ -9511,7 +9617,7 @@
           "relationship": "Supporting document or working form; does not independently establish the deadline or every checklist step."
         }
       ],
-      "order": 48
+      "order": 49
     },
     {
       "id": "workshop-routine",
@@ -9617,7 +9723,7 @@
           "relationship": "Supporting document or working form; does not independently establish the deadline or every checklist step."
         }
       ],
-      "order": 49
+      "order": 50
     },
     {
       "id": "term-workshop-close",
@@ -9664,7 +9770,7 @@
           "verifiedOn": "2026-09-18"
         }
       ],
-      "order": 50
+      "order": 51
     },
     {
       "id": "vet-handoff",
@@ -9733,7 +9839,7 @@
           "statusNote": "Currentness and authority are scoped to the stated verification."
         }
       ],
-      "order": 51
+      "order": 52
     },
     {
       "id": "weekly-scan-0",
@@ -9787,7 +9893,7 @@
           "statusNote": "Currentness and authority are scoped to the stated verification."
         }
       ],
-      "order": 52
+      "order": 53
     },
     {
       "id": "weekly-scan-1",
@@ -9845,7 +9951,7 @@
           "statusNote": "Currentness and authority are scoped to the stated verification."
         }
       ],
-      "order": 53
+      "order": 54
     },
     {
       "id": "weekly-scan-2",
@@ -9901,7 +10007,7 @@
           "relationship": "Supporting document or working form; does not independently establish the deadline or every checklist step."
         }
       ],
-      "order": 54
+      "order": 55
     },
     {
       "id": "weekly-scan-3",
@@ -9955,7 +10061,7 @@
           "statusNote": "Currentness and authority are scoped to the stated verification."
         }
       ],
-      "order": 55
+      "order": 56
     },
     {
       "id": "weekly-scan-4",
@@ -10058,7 +10164,7 @@
           "relationship": "Supporting document or working form; does not independently establish the deadline or every checklist step."
         }
       ],
-      "order": 56
+      "order": 57
     },
     {
       "id": "hsc-practical-certification-handoff",
@@ -10090,7 +10196,7 @@
           "statusNote": "Complete timetable row 10 requires course-specific declaration forms/instructions; row 83 covers non-certification relative to the relevant course due date. The controlling course-specific instructions must be opened, not replaced with one common date."
         }
       ],
-      "order": 57
+      "order": 58
     },
     {
       "id": "machinery-assets",
@@ -10161,7 +10267,7 @@
           "verifiedOn": "2026-09-18"
         }
       ],
-      "order": 58
+      "order": 59
     },
     {
       "id": "excursion-workflow",
@@ -10208,7 +10314,7 @@
           "verifiedOn": "2026-09-18"
         }
       ],
-      "order": 59
+      "order": 60
     },
     {
       "id": "new-staff-induction",
@@ -10291,7 +10397,7 @@
           "verifiedOn": "2026-09-18"
         }
       ],
-      "order": 60
+      "order": 61
     },
     {
       "id": "absence-cover",
@@ -10338,7 +10444,7 @@
           "accessNote": "School reference guide. Use the section shown below; older instructions need checking."
         }
       ],
-      "order": 61
+      "order": 62
     },
     {
       "id": "n-warning-response",
@@ -10385,7 +10491,7 @@
           "accessNote": "School reference guide. Use the section shown below; older instructions need checking."
         }
       ],
-      "order": 62
+      "order": 63
     },
     {
       "id": "mandatory-reporting-response",
@@ -10430,7 +10536,7 @@
           "statusNote": "Currentness and authority are scoped to the stated verification."
         }
       ],
-      "order": 63
+      "order": 64
     },
     {
       "id": "incident-response",
@@ -10490,7 +10596,7 @@
           "accessNote": "Opens the incident reporting portal. The current response procedure and school roles still need checking."
         }
       ],
-      "order": 64
+      "order": 65
     },
     {
       "id": "media-enquiry",
@@ -10525,7 +10631,7 @@
           "accessNote": "School reference guide. Use the section shown below; older instructions need checking."
         }
       ],
-      "order": 65
+      "order": 66
     }
   ],
   "sources": [
@@ -11132,7 +11238,7 @@
       "title": "Head Teacher Information for TAS Faculty",
       "group": "09 TAS handbook and faculty controls",
       "countingUnit": "Named document, rule, calendar or source record",
-      "taskCount": 94,
+      "taskCount": 95,
       "url": "https://docs.google.com/document/d/1iGNJzqizAqWO0PuSRDXh0QPc0L8y_wdiyEk88O7f680/edit",
       "verification": "Guide content and embedded links read through Google Docs. Most entries say updated 2025; the guide is an index, not proof every linked procedure is current.",
       "nextYearCheck": "Read current guide at year setup; follow current approved documents behind relevant sections; check termly and on policy/change notices.",
@@ -11800,6 +11906,66 @@
       "status2027": "Working guide for review. Confirm current internal authority before use.",
       "checkWhen": "Before using the procedure and whenever an authorised instruction changes.",
       "nextYearCheck": "Check the current school/RTO version and cohort before reusing historical examples."
+    },
+    {
+      "id": "TAS-FACULTY-ALLOCATIONS",
+      "title": "Faculty Allocations and Timetable — C16",
+      "group": "09 TAS handbook and faculty controls",
+      "countingUnit": "Portal, live register or discovery location",
+      "taskCount": 1,
+      "url": "https://drive.google.com/drive/folders/1yofGp48WrvhO0R0tRfu0In6-TTWbedNv",
+      "locator": "C16 faculty allocations and timetable folder",
+      "linkKind": "folder",
+      "verification": "Guide C16 and its linked resource identities were checked on 13 October 2026. The current school milestones, timetable lead and approved edition still need confirmation. Historical EDVAL folders are not evidence of current dates.",
+      "nextYearCheck": "Confirm the intended school year, current planning files, school milestones and authorised timetable lead before preparation or submission.",
+      "checkWhen": "Begin in Term 4 of the preceding year; confirm school milestones and review each draft change before the approved handover. This planning trigger is not an official due date.",
+      "verifiedOn": "2026-10-13",
+      "accessNote": "Authorised school account may be required. Keep staffing, qualifications, allocations and student details in protected school files."
+    },
+    {
+      "id": "TAS-ALLOCATION-MATRIX",
+      "title": "Faculty Allocation Matrix",
+      "group": "09 TAS handbook and faculty controls",
+      "countingUnit": "Portal, live register or discovery location",
+      "taskCount": 1,
+      "url": "https://drive.google.com/drive/folders/1Czs5BtEqUw2-WYpZkXpSn6RLvKWhnEsp",
+      "locator": "Matrix planning folder linked in Guide C16",
+      "linkKind": "folder",
+      "verification": "Guide C16 and its linked resource identities were checked on 13 October 2026. The current school milestones, timetable lead and approved edition still need confirmation. Historical EDVAL folders are not evidence of current dates.",
+      "nextYearCheck": "Confirm the intended school year, current planning files, school milestones and authorised timetable lead before preparation or submission.",
+      "checkWhen": "Begin in Term 4 of the preceding year; confirm school milestones and review each draft change before the approved handover. This planning trigger is not an official due date.",
+      "verifiedOn": "2026-10-13",
+      "accessNote": "Authorised school account may be required. Keep staffing, qualifications, allocations and student details in protected school files."
+    },
+    {
+      "id": "TAS-EDVAL-TIMETABLING",
+      "title": "EDVAL timetabling resources",
+      "group": "09 TAS handbook and faculty controls",
+      "countingUnit": "Portal, live register or discovery location",
+      "taskCount": 1,
+      "url": "https://drive.google.com/drive/folders/1CbJTeolawtcSxyGftjMaIzF3DsH4_6jG",
+      "locator": "EDVAL folder linked in Guide C16; choose the current school-year material",
+      "linkKind": "folder",
+      "verification": "Guide C16 and its linked resource identities were checked on 13 October 2026. The current school milestones, timetable lead and approved edition still need confirmation. Historical EDVAL folders are not evidence of current dates.",
+      "nextYearCheck": "Confirm the intended school year, current planning files, school milestones and authorised timetable lead before preparation or submission.",
+      "checkWhen": "Begin in Term 4 of the preceding year; confirm school milestones and review each draft change before the approved handover. This planning trigger is not an official due date.",
+      "verifiedOn": "2026-10-13",
+      "accessNote": "Authorised school account may be required. Keep staffing, qualifications, allocations and student details in protected school files."
+    },
+    {
+      "id": "TAS-TIMETABLE-CHANGES",
+      "title": "Timetable change instructions",
+      "group": "09 TAS handbook and faculty controls",
+      "countingUnit": "Named document, rule, calendar or source record",
+      "taskCount": 1,
+      "url": "https://drive.google.com/file/d/1M6YAu2lQqRBY9sg4ir1S5YMr81uDYedy/view",
+      "locator": "Timetable change instructions linked in Guide C16",
+      "linkKind": "document",
+      "verification": "Guide C16 and its linked resource identities were checked on 13 October 2026. The current school milestones, timetable lead and approved edition still need confirmation. Historical EDVAL folders are not evidence of current dates.",
+      "nextYearCheck": "Confirm the intended school year, current planning files, school milestones and authorised timetable lead before preparation or submission.",
+      "checkWhen": "Begin in Term 4 of the preceding year; confirm school milestones and review each draft change before the approved handover. This planning trigger is not an official due date.",
+      "verifiedOn": "2026-10-13",
+      "accessNote": "Authorised school account may be required. Keep staffing, qualifications, allocations and student details in protected school files."
     }
   ],
   "findings": [
@@ -12264,5 +12430,6 @@
     }
   ],
   "linkAuditDate": "2026-09-18",
-  "auditUpdateDate": "2026-09-24"
+  "auditUpdateDate": "2026-09-24",
+  "allocationPlanningCheckedAt": "2026-10-13"
 }

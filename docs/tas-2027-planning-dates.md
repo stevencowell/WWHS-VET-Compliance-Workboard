@@ -1,6 +1,6 @@
 # TAS 2027 planning dates
 
-The 29 dated 2026 TAS definitions now have separate 2027 planning occurrences. Together with 31 ongoing definitions and five weekly checks, each year has 65 base register entries. Saved historical occurrences can increase a browser's totals.
+The 29 dated 2026 TAS definitions now have separate 2027 planning occurrences. Together with 31 ongoing definitions and five weekly checks, these form the original 65-entry annual register. The separate C16 allocations workflow adds a target-year planning occurrence that is visible under both its preparation year and target year; later cycles and saved historical occurrences can increase a browser's totals. See [C16 allocations planning](tas-c16-allocations-planning-2026-10-13.md) for its year semantics.
 
 The carry-forward uses the same month and day, including every captured milestone. It does not establish official 2027 school or NESA dates. Weekend dates are flagged; no weekday or school-term alignment is assumed. Conditional activities still require an applicability check.
 

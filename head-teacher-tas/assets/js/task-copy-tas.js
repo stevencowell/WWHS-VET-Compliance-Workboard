@@ -5,6 +5,26 @@
   // Match sourceSteps before using a rewritten checklist after future source updates.
   window.WWHS_TASK_COPY = window.WWHS_TASK_COPY || {};
   window.WWHS_TASK_COPY.tas = {
+    "faculty-allocations-timetable": {
+      "title": "Prepare TAS faculty allocations and timetable",
+      "purpose": "Prepare the target school year’s proposed staff allocations, classes, rooms and rotations, and get the school’s approval before handing over class readiness.",
+      "finished": "The authorised school role has confirmed the allocations and timetable, proposed corrections are resolved or formally owned, and readiness actions have been handed over to the class-readiness check.",
+      "sourceFinished": "The authorised school role has confirmed the allocations and timetable, proposed corrections are resolved or formally owned, and readiness actions have been handed over to the class-readiness check.",
+      "steps": [
+        "Confirm the school planning milestones, submission process and current timetable contact; school dates and the timetable lead are unconfirmed until checked.",
+        "Review approved classes and course offerings, staff availability and relevant qualifications in the protected school records; do not change approved curriculum scope or copy personnel details here.",
+        "Prepare the proposed faculty allocation matrix, practical-room use and Technology Mandatory rotations in the approved protected planning files.",
+        "Check the draft for staff, class, room and rotation conflicts, then submit proposed corrections through the existing school timetable process for approval.",
+        "Confirm the approved allocations and timetable with the authorised school role, then hand over any readiness actions to the class-readiness check; keep only a safe status reference here."
+      ],
+      "sourceSteps": [
+        "Confirm the school planning milestones, submission process and current timetable contact; school dates and the timetable lead are unconfirmed until checked.",
+        "Review approved classes and course offerings, staff availability and relevant qualifications in the protected school records; do not change approved curriculum scope or copy personnel details here.",
+        "Prepare the proposed faculty allocation matrix, practical-room use and Technology Mandatory rotations in the approved protected planning files.",
+        "Check the draft for staff, class, room and rotation conflicts, then submit proposed corrections through the existing school timetable process for approval.",
+        "Confirm the approved allocations and timetable with the authorised school role, then hand over any readiness actions to the class-readiness check; keep only a safe status reference here."
+      ]
+    },
     "t1-year-opening-readiness": {
       "title": "Get TAS classes and practical rooms ready for Term 1",
       "purpose": "Check that teachers, programs, rooms and access are ready before students begin the year.",
