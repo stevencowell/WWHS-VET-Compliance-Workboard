@@ -657,6 +657,7 @@
         id: olderOccurrence ? key : task.id,
         title: olderOccurrence ? `${clarity.title} — ${period}` : clarity.title,
         clarity: { ...clarity, title: olderOccurrence ? `${clarity.title} — ${period}` : clarity.title },
+        guidanceUpdate: guidanceUpdateMessage(task),
         year: olderOccurrence ? occurrenceYear(key) : task.allocationYear ? String(task.allocationYear) : task.dueDate ? task.dueDate.slice(0, 4) : "ongoing",
         ...(task.allocationYear && !olderOccurrence ? { planningYears: [String(task.preparationYear), String(task.allocationYear)], planningPeriodStarted: allocationPlanningHasStarted(task) } : {}),
         recordKey: reference ? "" : key,
@@ -785,6 +786,15 @@
     else document.getElementById("main-content")?.focus({ preventScroll: true });
   }
 
+  function guidanceUpdateMessage(task) {
+    return task.guidanceUpdate ? `Guidance added 14 October 2026: ${task.guidanceUpdate}. Earlier completion or review ticks are preserved; they do not establish that these added checks were carried out. Confirm them in the authorised school process before relying on current readiness.` : "";
+  }
+
+  function guidanceUpdateNote(task) {
+    const message = guidanceUpdateMessage(task);
+    return message ? `<aside class="task-clarity-warning guidance-update"><p>${esc(message)}</p></aside>` : "";
+  }
+
   function openSavedTask(task, key) {
     const clarity = presentation(task);
     const validKey = key.split("::")[0] === task.id;
@@ -793,7 +803,7 @@
     lastTaskTrigger = document.activeElement;
     taskDialogContent.innerHTML = `<header class="dialog-head"><div><p class="eyebrow">Saved task record · read only</p><h2 id="task-dialog-title">${esc(clarity.title)}</h2></div><button class="dialog-close" type="button" data-action="close-task" aria-label="Close task">×</button></header>
       <div class="dialog-body"><p class="task-clarity-purpose">${esc(clarity.purpose)}</p><section class="done-when task-clarity-outcome"><strong>Finished when</strong><p>${esc(clarity.finished)}</p></section><p><strong>Period:</strong> ${esc(validKey ? key.split("::").slice(1).join("::") : "Unavailable")}</p><p><strong>Saved status:</strong> ${esc(!available ? "Unavailable — reload to check saved progress" : record ? statusMeta[record.status]?.label || record.status : "Not reviewed here")}</p>
-      <p>This past task record is separate from the current task and the official school record.</p>${review ? `<p>${esc(window.WWHS_TASK_REVIEW.note(review))}</p>` : ""}${record?.exceptionReason ? `<p>${esc(record.exceptionReason)}</p>` : ""}
+      ${guidanceUpdateNote(task)}<p>This past task record is separate from the current task and the official school record.</p>${review ? `<p>${esc(window.WWHS_TASK_REVIEW.note(review))}</p>` : ""}${record?.exceptionReason ? `<p>${esc(record.exceptionReason)}</p>` : ""}
       <section class="dialog-section task-clarity-steps"><h3>Recorded steps</h3><p class="section-help">Source links open current destinations; they do not reconstruct the source as it was at the time.</p><ol class="action-list">${clarity.steps.map((step, index) => `<li><div class="history-step"><span class="step-number">${record?.steps?.[index] ? "✓" : index + 1}</span><span>${esc(step)}</span></div>${stepGuidance(task, index)}</li>`).join("")}</ol></section>
       ${task.milestones?.length ? `<section class="dialog-section"><h3>Captured calendar milestones</h3>${guidanceLinks(window.TAS_STEP_GUIDANCE?.forMilestone(task))}<ul>${task.milestones.map((item, index) => `<li>${record?.milestones?.[index] ? "✓ " : ""}${esc(item.date)} · ${esc(item.label)}</li>`).join("")}</ul></section>` : ""}
       <details class="task-clarity-reference"><summary>Sources &amp; responsibilities</summary><div>${taskSourcePanel(task,key.split("::")[1]?.slice(0,4))}<section class="owner-systems"><h3>Open the official system</h3><div class="system-buttons">${systemButtons(task)}</div><p>${esc(task.privacy)}</p></section></div></details>
@@ -1213,6 +1223,7 @@
         <p class="task-clarity-meta"><span><strong>When:</strong> ${esc(task.timing)}</span><span><strong>Responsible:</strong> ${esc(task.owner)}</span></p>
         <div class="dialog-badges">${priorityPill(task)}${statusPill(task)}${sourcePill(task)}${task.dueDate ? `<span class="pill due">${esc(dueLabel(task))}</span>` : ""}</div>
         ${planTaskButton(task)}
+        ${guidanceUpdateNote(task)}
         ${task.provisionalSchedule && !task.scheduleConfirmed ? `<aside class="task-clarity-warning"><p>These planning dates follow the 2026 pattern. Check the current source before relying on them; edit or confirm dates below.</p></aside>` : ''}
         ${task.historyOnly ? `<aside class="task-clarity-warning"><p>Read-only 2026 reference. Confirm the new calendar before starting the next year.</p></aside>` : task.procedureOnly ? `<aside class="task-clarity-warning"><p>Procedure only. Keep case details and the official record in the authorised system.</p><p>${esc(task.privacy)}</p></aside>` : ''}
         ${task.applicability ? `<aside class="applicability"><strong>Applies when</strong><span>${esc(task.applicability)}</span></aside>` : ""}
@@ -1235,7 +1246,7 @@
 
   function completionForm(task, record) {
     const review = overallReview(task);
-    if (review) return `<section class="completion-panel"><h3>Task complete · reviewed</h3><p>This review covers all applicable steps. To undo it, untick Reviewed complete under All TAS tasks. If you marked it Done in your task list, reopen it there.</p><form id="task-record-form" data-task-id="${esc(task.id)}"><div class="form-grid"><label class="check-line"><input type="checkbox" checked disabled><span>The review includes the source checks that apply.</span></label><label class="check-line"><input type="checkbox" checked disabled><span>The review confirms the “Done when” result.</span></label><label class="span-two"><span>Existing notes and completion record</span><textarea name="exceptionReason" rows="5">${esc(window.WWHS_TASK_REVIEW.notes(record.exceptionReason,review))}</textarea></label></div><p>Existing evidence references and verifier details are retained. None are invented by this sign-off.</p><p class="form-error" role="alert" hidden></p><div class="dialog-actions"><button class="button secondary" type="submit" name="commit" value="save">Save notes</button><button class="button quiet" type="button" data-action="close-task">Close</button></div></form></section>`;
+    if (review) return `<section class="completion-panel"><h3>Task complete · reviewed</h3><p>${task.guidanceUpdate ? "Your saved review is retained. Read the guidance update above before relying on it for the added checks." : "This review covers all applicable steps."} To undo it, untick Reviewed complete under All TAS tasks. If you marked it Done in your task list, reopen it there.</p><form id="task-record-form" data-task-id="${esc(task.id)}"><div class="form-grid"><label class="check-line"><input type="checkbox" checked disabled><span>${task.guidanceUpdate ? "Saved source-check confirmation; see the guidance update above." : "The review includes the source checks that apply."}</span></label><label class="check-line"><input type="checkbox" checked disabled><span>${task.guidanceUpdate ? "Saved outcome confirmation; see the guidance update above." : "The review confirms the “Done when” result."}</span></label><label class="span-two"><span>Existing notes and completion record</span><textarea name="exceptionReason" rows="5">${esc(window.WWHS_TASK_REVIEW.notes(record.exceptionReason,review))}</textarea></label></div><p>Existing evidence references and verifier details are retained. None are invented by this sign-off.</p><p class="form-error" role="alert" hidden></p><div class="dialog-actions"><button class="button secondary" type="submit" name="commit" value="save">Save notes</button><button class="button quiet" type="button" data-action="close-task">Close</button></div></form></section>`;
     if (task.historyOnly) {
       return `<section class="completion-panel procedure-only"><div><h3>Read-only 2026 reference</h3><p>Use these past tasks for handover and planning. Tick Reviewed complete under All TAS tasks to record work you have checked. Confirm the new calendar before starting the next year.</p></div></section>`;
     }

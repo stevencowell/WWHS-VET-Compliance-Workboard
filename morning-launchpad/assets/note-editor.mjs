@@ -1,4 +1,4 @@
-import {safeUrl} from './summary-core.mjs?v=tas-c16-planning-20261013';
+import {safeUrl} from './summary-core.mjs?v=tas-staff-readiness-20261013';
 import {NOTE_HTML_LIMIT,NOTE_TEXT_LIMIT,isSafeNoteImage,prepareNoteImages,noteImageHtml,clipboardImageFiles} from './note-images.mjs?v=email-note-images-1';
 
 // Build a fresh allowlisted tree; pasted markup never enters the live editor directly.

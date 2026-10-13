@@ -1,9 +1,9 @@
 const workStorage=()=>globalThis.WWHS_STORAGE||globalThis.localStorage;
-import {INBOX_KEY,validateInbox} from './summary-core.mjs?v=tas-c16-planning-20261013';
-import {isTeamItem} from '../../assets/js/team-handover-core.mjs?v=tas-c16-planning-20261013';
+import {INBOX_KEY,validateInbox} from './summary-core.mjs?v=tas-staff-readiness-20261013';
+import {isTeamItem} from '../../assets/js/team-handover-core.mjs?v=tas-staff-readiness-20261013';
 import {mountBackupFolderSettings} from '../../assets/js/backup-folder-ui.mjs?v=plain-language-1';
-import {BACKUP_KEYS,snapshotLaunchpad,launchpadContent,parseLaunchpadBackup,backupCounts} from './launchpad-backup.mjs?v=tas-c16-planning-20261013';
-import {readPreviousLaunchpadBackup} from './launchpad-backup-transaction.mjs?v=tas-c16-planning-20261013';
+import {BACKUP_KEYS,snapshotLaunchpad,launchpadContent,parseLaunchpadBackup,backupCounts} from './launchpad-backup.mjs?v=tas-staff-readiness-20261013';
+import {readPreviousLaunchpadBackup} from './launchpad-backup-transaction.mjs?v=tas-staff-readiness-20261013';
 import {choosePrivateBackupDestination} from '../../assets/js/backup-folder.mjs?v=plain-language-1';
 import {createWorkspaceNavigationAllowance} from '../../assets/js/workspace-navigation.mjs?v=workspace-navigation-2';
 

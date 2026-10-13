@@ -1,6 +1,6 @@
-import {suggestEmail} from './email-rules.mjs?v=tas-c16-planning-20261013';
-import {PRIORITIES,safeUrl,EDITABLE} from './summary-core.mjs?v=tas-c16-planning-20261013';
-import {plainNoteHtml} from './note-editor.mjs?v=tas-c16-planning-20261013';
+import {suggestEmail} from './email-rules.mjs?v=tas-staff-readiness-20261013';
+import {PRIORITIES,safeUrl,EDITABLE} from './summary-core.mjs?v=tas-staff-readiness-20261013';
+import {plainNoteHtml} from './note-editor.mjs?v=tas-staff-readiness-20261013';
 import {NOTE_HTML_LIMIT,prepareNoteImages,clipboardImageFiles,noteImageHtml} from './note-images.mjs?v=email-note-images-1';
 const el=(tag,text,attrs={})=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;for(const[k,v]of Object.entries(attrs))n.setAttribute(k,v);return n;};
 class EmailCapture extends HTMLElement{

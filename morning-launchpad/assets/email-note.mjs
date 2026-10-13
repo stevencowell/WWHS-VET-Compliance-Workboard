@@ -1,5 +1,5 @@
-import {mergeInbox,sameSourceAction} from './summary-core.mjs?v=tas-c16-planning-20261013';
-import {plainNoteHtml} from './note-editor.mjs?v=tas-c16-planning-20261013';
+import {mergeInbox,sameSourceAction} from './summary-core.mjs?v=tas-staff-readiness-20261013';
+import {plainNoteHtml} from './note-editor.mjs?v=tas-staff-readiness-20261013';
 import {NOTE_HTML_LIMIT,noteImageHtml} from './note-images.mjs?v=email-note-images-1';
 
 // Capturing an email supplies a default note, never a replacement for a saved note.

@@ -1,5 +1,5 @@
 import {createLocalVault} from './security/local-vault.mjs?v=workspace-backup-1';
-import {installWorkspaceBackup} from '../assets/js/workspace-backup-ui.mjs?v=tas-c16-planning-20261013';
+import {installWorkspaceBackup} from '../assets/js/workspace-backup-ui.mjs?v=tas-staff-readiness-20261013';
 import {createPrivateStorage} from './security/private-storage.mjs?v=plain-language-1';
 import {sampleDataset} from './sample.mjs';
 import {FINANCE_PROMPT_TOPICS,buildFinancePrompt,buildSafeFinanceSummary} from './prompts.mjs?v=plain-language-1';

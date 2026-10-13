@@ -6,6 +6,12 @@
   if (curriculum) curriculum.url = "https://curriculum.nsw.edu.au/learning-areas/tas";
   const guidance = [
     {
+      id: "teacher-accreditation", label: "Current NESA teacher accreditation", group: "People and capability", kind: "public", status: "verified",
+      url: "https://www.nsw.gov.au/education-and-training/nesa/teacher-accreditation/resources/nsw-ta-manual/e2",
+      purpose: "Current NESA responsibilities for accreditation supervisors, Principals/TA Delegates and employers.",
+      note: "Use E2.2–E2.3 with the current approved employer process. Individual status, stage-specific supervision and support stay in protected personnel records. The guide’s C5 wording is historical."
+    },
+    {
       id: "nesa-assessment-rules", label: "NESA assessment programs", group: "Curriculum and assurance", kind: "public", status: "verified",
       url: "https://curriculum.nsw.edu.au/ace-rules/ace2/assessment-programs",
       purpose: "Current ACE rules for school assessment programs.",

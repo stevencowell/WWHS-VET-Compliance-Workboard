@@ -6,8 +6,8 @@
     "tas2026": 66,
     "total2026Entries": 133,
     "vetProcedureTemplates": 10,
-    "sourceRecords": 92,
-    "mappedSourceRecords": 88,
+    "sourceRecords": 96,
+    "mappedSourceRecords": 92,
     "additionalWatchRecords": 4,
     "sourceFamilies": 12,
     "provenance": {
@@ -16,7 +16,7 @@
       "broad-source-only": 17
     },
     "sourceCountingUnits": {
-      "Named document, rule, calendar or source record": 70,
+      "Named document, rule, calendar or source record": 74,
       "Portal, live register or discovery location": 12,
       "Document family; individual originals still to identify": 9,
       "Local workboard design; not an external authority": 1
@@ -158,9 +158,13 @@
         "TAS-FACULTY-ALLOCATIONS",
         "TAS-ALLOCATION-MATRIX",
         "TAS-EDVAL-TIMETABLING",
-        "TAS-TIMETABLE-CHANGES"
+        "TAS-TIMETABLE-CHANGES",
+        "NESA-TEACHER-ACCREDITATION-RESPONSIBILITIES",
+        "NSW-DOE-ACCREDITATION-PROCEDURES",
+        "WWHS-EVACUATION-PROCEDURE-2026",
+        "WWHS-LOCKDOWN-PROCEDURE-2026"
       ],
-      "sourceCount": 23,
+      "sourceCount": 27,
       "checkWhen": "Before Term 1 and each term; on faculty, safety or policy changes",
       "action": "Follow guide section links to the current approved plans, programs, safety controls and reporting instructions. Older handbook wording establishes origin, not current authority.",
       "scheduleBasis": "Suggested checks, not official release dates"
@@ -6482,17 +6486,19 @@
       "phase": "annual",
       "phaseLabel": "Annual setup",
       "sequence": 4,
-      "timing2026": "Year/term start and after staffing or timetable change",
+      "timing2026": "Year/term start and after staffing, timetable or approved emergency-procedure change",
       "due2026": null,
       "milestones2026": [],
       "sourceIds": [
-        "WWHS-HT-DOC"
+        "WWHS-HT-DOC",
+        "WWHS-EVACUATION-PROCEDURE-2026",
+        "WWHS-LOCKDOWN-PROCEDURE-2026"
       ],
       "provenanceStatus": "specific-citation",
-      "sourceBasis": "A7: Head Teacher and faculty duty/meeting rosters are linked. A8: Faculties attend allocated year assemblies; usual pattern is stated, while dates are governed by current calendar. A9: Staff duty, roll and bus schedules are linked. C27: Guide establishes weekly faculty meetings; exact current day/time must be rechecked. D6: Head Teachers attend executive meetings; guide contains a historical day/time that needs current confirmation.",
-      "sourceGap": "The guide was checked, but some instructions are from 2025 or earlier. Follow the current approved documents.",
-      "nextYearCheck": "Check the linked guide sections against current approved documents before using them in 2027.",
-      "checkWhen": "Before Term 1, then when the task says to check again. Dates do not roll over automatically.",
+      "sourceBasis": "A7: Head Teacher and faculty duty/meeting rosters are linked. A8: Faculties attend allocated year assemblies; usual pattern is stated, while dates are governed by current calendar. A9: Staff duty, roll and bus schedules are linked. C27: Guide establishes weekly faculty meetings; exact current day/time must be rechecked. D6: Head Teachers attend executive meetings; guide contains a historical day/time that needs current confirmation. The 2026 evacuation Head Teacher section supports staff awareness of approved roles and cover arrangements. The 2026 lockdown Evaluation section assigns post-drill review to executive/WHS; follow through only on TAS actions assigned by that review. These nested checks were added on 14 October 2026. Earlier saved ticks do not establish that the added checks were carried out.",
+      "sourceGap": "Current approved local procedures and assigned roles must be rechecked after relevant changes. D8 contains a mismatched historical 2021 hyperlink; use the verified general WHS parent and the named 2026 procedures. Current drill dates, assignments and review outcomes are not established by this workboard.",
+      "nextYearCheck": "Confirm current NESA/employer or school-procedure requirements, as applicable, before the intended year; older wording and saved ticks do not establish current readiness.",
+      "checkWhen": "Year/term start and after staffing, timetable or approved emergency-procedure change. Use current owner notices for dates; no new deadline or drill cadence is asserted.",
       "evidenceRefs": [
         {
           "id": "WWHS-HT-DOC",
@@ -6553,6 +6559,28 @@
           "linkKind": "guide",
           "verifiedOn": "2026-09-18",
           "accessNote": "School reference guide. Use the section shown below; older instructions need checking."
+        },
+        {
+          "id": "WWHS-EVACUATION-PROCEDURE-2026",
+          "title": "WWHS Evacuation Procedure 2026",
+          "url": "https://drive.google.com/drive/folders/1dVYBc474-QgVK7ciOiDMkNL1qyR-6zKj",
+          "locator": "Work Health and Safety → 2026 → Evacuation Procedure 2026 → Head Teachers must",
+          "linkKind": "folder",
+          "verification": "Procedure content read on 13 October 2026; source modified 9 September 2026. The Head Teacher section supports staff awareness of the faculty’s approved responsibility and cover arrangements. The public link opens the verified general WHS parent, not the protected procedure. Confirm any approved replacement before use.",
+          "accessNote": "Authorised school access required. Open the 2026 procedure named in the locator; keep assignments, contacts and emergency operational details in the protected school record.",
+          "verifiedOn": "2026-10-13",
+          "relationship": "current-requirement-context"
+        },
+        {
+          "id": "WWHS-LOCKDOWN-PROCEDURE-2026",
+          "title": "WWHS Lockdown Procedure 2026",
+          "url": "https://drive.google.com/drive/folders/1dVYBc474-QgVK7ciOiDMkNL1qyR-6zKj",
+          "locator": "Work Health and Safety → 2026 → Lockdown Procedure 2026 → Evaluation",
+          "linkKind": "folder",
+          "verification": "Procedure content read on 13 October 2026; source modified 25 March 2026. Its Evaluation section assigns review after each drill to school executive and the WHS Committee. The public link opens the verified general WHS parent, not the protected procedure. The workboard follows only TAS actions assigned by that review.",
+          "accessNote": "Authorised school access required. Open the 2026 procedure named in the locator; keep drill records, assignments and emergency operational details in the protected school record.",
+          "verifiedOn": "2026-10-13",
+          "relationship": "current-requirement-context"
         }
       ],
       "order": 4
@@ -6565,18 +6593,20 @@
       "phase": "annual",
       "phaseLabel": "Annual setup",
       "sequence": 5,
-      "timing2026": "Year/term start and after any class or timetable change",
+      "timing2026": "Year/term start and after class, timetable, approved emergency-procedure or relevant drill-review change",
       "due2026": null,
       "milestones2026": [],
       "sourceIds": [
         "WWHS-HT-DOC",
-        "TAS-ROUTINE-SAFETY"
+        "TAS-ROUTINE-SAFETY",
+        "WWHS-EVACUATION-PROCEDURE-2026",
+        "WWHS-LOCKDOWN-PROCEDURE-2026"
       ],
       "provenanceStatus": "specific-citation",
-      "sourceBasis": "B1: Current classes/teachers and program/monitoring links are recorded in a central register. B4: Guide identifies protected health-plan information access. B9: Fee and safety-shoe information is issued early in delivery, with alternate safe arrangements for unsuitable footwear. B10: Sentral holds markbook/report setup instructions. B11: Laptop bookings use the faculty calendar. B12: Homework and assessment tasks are expected to be accessible through the student portal. B18: Practical classes require approved footwear. B20: Google Classroom is recommended for delivery; this is advice rather than a universal mandate. B30: Guide references the BYOD arrangements introduced in 2024.",
-      "sourceGap": "The guide was checked, but some instructions are from 2025 or earlier. Follow the current approved documents.",
-      "nextYearCheck": "Check the linked guide sections against current approved documents before using them in 2027.",
-      "checkWhen": "Before Term 1, then when the task says to check again. Dates do not roll over automatically.",
+      "sourceBasis": "B1: Current classes/teachers and program/monitoring links are recorded in a central register. B4: Guide identifies protected health-plan information access. B9: Fee and safety-shoe information is issued early in delivery, with alternate safe arrangements for unsuitable footwear. B10: Sentral holds markbook/report setup instructions. B11: Laptop bookings use the faculty calendar. B12: Homework and assessment tasks are expected to be accessible through the student portal. B18: Practical classes require approved footwear. B20: Google Classroom is recommended for delivery; this is advice rather than a universal mandate. B30: Guide references the BYOD arrangements introduced in 2024. The 2026 evacuation Head Teacher section supports staff awareness of approved roles and cover arrangements. The 2026 lockdown Evaluation section assigns post-drill review to executive/WHS; follow through only on TAS actions assigned by that review. These nested checks were added on 14 October 2026. Earlier saved ticks do not establish that the added checks were carried out.",
+      "sourceGap": "Current approved local procedures and assigned roles must be rechecked after relevant changes. D8 contains a mismatched historical 2021 hyperlink; use the verified general WHS parent and the named 2026 procedures. Current drill dates, assignments and review outcomes are not established by this workboard.",
+      "nextYearCheck": "Confirm current NESA/employer or school-procedure requirements, as applicable, before the intended year; older wording and saved ticks do not establish current readiness.",
+      "checkWhen": "Year/term start and after class, timetable, approved emergency-procedure or relevant drill-review change. Use current owner notices for dates; no new deadline or drill cadence is asserted.",
       "evidenceRefs": [
         {
           "id": "WWHS-HT-DOC",
@@ -6695,6 +6725,28 @@
           "verification": "School-held blank routine checklist read, modified June2025. Check current school approval; no filled learner records included.",
           "verifiedOn": "2026-09-18",
           "relationship": "Supporting document or working form; does not independently establish the deadline or every checklist step."
+        },
+        {
+          "id": "WWHS-EVACUATION-PROCEDURE-2026",
+          "title": "WWHS Evacuation Procedure 2026",
+          "url": "https://drive.google.com/drive/folders/1dVYBc474-QgVK7ciOiDMkNL1qyR-6zKj",
+          "locator": "Work Health and Safety → 2026 → Evacuation Procedure 2026 → Head Teachers must",
+          "linkKind": "folder",
+          "verification": "Procedure content read on 13 October 2026; source modified 9 September 2026. The Head Teacher section supports staff awareness of the faculty’s approved responsibility and cover arrangements. The public link opens the verified general WHS parent, not the protected procedure. Confirm any approved replacement before use.",
+          "accessNote": "Authorised school access required. Open the 2026 procedure named in the locator; keep assignments, contacts and emergency operational details in the protected school record.",
+          "verifiedOn": "2026-10-13",
+          "relationship": "current-requirement-context"
+        },
+        {
+          "id": "WWHS-LOCKDOWN-PROCEDURE-2026",
+          "title": "WWHS Lockdown Procedure 2026",
+          "url": "https://drive.google.com/drive/folders/1dVYBc474-QgVK7ciOiDMkNL1qyR-6zKj",
+          "locator": "Work Health and Safety → 2026 → Lockdown Procedure 2026 → Evaluation",
+          "linkKind": "folder",
+          "verification": "Procedure content read on 13 October 2026; source modified 25 March 2026. Its Evaluation section assigns review after each drill to school executive and the WHS Committee. The public link opens the verified general WHS parent, not the protected procedure. The workboard follows only TAS actions assigned by that review.",
+          "accessNote": "Authorised school access required. Open the 2026 procedure named in the locator; keep drill records, assignments and emergency operational details in the protected school record.",
+          "verifiedOn": "2026-10-13",
+          "relationship": "current-requirement-context"
         }
       ],
       "order": 5
@@ -6977,21 +7029,23 @@
       "id": "capability-training",
       "rowKey": "TAS:capability-training",
       "wing": "TAS",
-      "title": "Review mandatory training, PDP s and faculty capability",
+      "title": "Review staff training, accreditation, PDPs and development needs",
       "phase": "annual",
       "phaseLabel": "Annual setup",
       "sequence": 10,
-      "timing2026": "Annual PDP cycle, term review and before an expiry or new duty",
+      "timing2026": "Annual PDP cycle, term review and before an expiry, new duty or relevant accreditation-status change",
       "due2026": null,
       "milestones2026": [],
       "sourceIds": [
-        "WWHS-HT-DOC"
+        "WWHS-HT-DOC",
+        "NESA-TEACHER-ACCREDITATION-RESPONSIBILITIES",
+        "NSW-DOE-ACCREDITATION-PROCEDURES"
       ],
       "provenanceStatus": "specific-citation",
-      "sourceBasis": "A10: Staff are to keep mandatory training current and check status through My PL. C3: Staff complete an annual PDP approved by their supervisor. C4: Guide links lesson-observation expectations and forms. C5: Accreditation source contains outdated pre 2018 wording; current NESA/employer requirements must be checked. C24: Students complete subject/equipment-specific On Guard safety modules. C25: Faculty keeps its capability current with new technology.",
-      "sourceGap": "The guide was checked, but some instructions are from 2025 or earlier. Follow the current approved documents.",
-      "nextYearCheck": "Check the linked guide sections against current approved documents before using them in 2027.",
-      "checkWhen": "Before Term 1, then when the task says to check again. Dates do not roll over automatically.",
+      "sourceBasis": "A10: Staff are to keep mandatory training current and check status through My PL. C3: Staff complete an annual PDP approved by their supervisor. C4: Guide links lesson-observation expectations and forms. C5: Accreditation source contains outdated pre 2018 wording; current NESA/employer requirements must be checked. C24: Students complete subject/equipment-specific On Guard safety modules. C25: Faculty keeps its capability current with new technology. Current NESA E2 responsibilities and employer guidance support continuing accreditation-status checks and stage-specific supervision/support through the authorised personnel process. These nested checks were added on 14 October 2026. Earlier saved ticks do not establish that the added checks were carried out.",
+      "sourceGap": "C5 is historical, not the current rule. The official employer page says it is under review and directs to the NESA manual. Individual status, applicable stage, allocated supervisor and school delegation require protected current confirmation.",
+      "nextYearCheck": "Confirm current NESA/employer or school-procedure requirements, as applicable, before the intended year; older wording and saved ticks do not establish current readiness.",
+      "checkWhen": "Annual PDP cycle, term review and before an expiry, new duty or relevant accreditation-status change. Use current owner notices for dates; no new deadline or drill cadence is asserted.",
       "evidenceRefs": [
         {
           "id": "WWHS-HT-DOC",
@@ -7064,6 +7118,28 @@
           "linkKind": "guide",
           "verifiedOn": "2026-09-18",
           "accessNote": "School reference guide. Use the section shown below; older instructions need checking."
+        },
+        {
+          "id": "NESA-TEACHER-ACCREDITATION-RESPONSIBILITIES",
+          "title": "NESA Teacher Accreditation Manual: roles and responsibilities",
+          "url": "https://www.nsw.gov.au/education-and-training/nesa/teacher-accreditation/resources/nsw-ta-manual/e2",
+          "locator": "E2.2.1 Accreditation Supervisors; E2.3.1 Principals/TA Delegates; E2.3.3 employers",
+          "linkKind": "page",
+          "verification": "Current official NESA content read on 13 October 2026. It identifies supervisor support, Principal/TA Delegate responsibilities and employer active-status checking and stage-specific supervisor allocation. Individual requirements and school delegation must be confirmed in the protected current process.",
+          "accessNote": "Public NESA guidance. Check individual status only in the authorised school personnel process.",
+          "verifiedOn": "2026-10-13",
+          "relationship": "current-requirement-context"
+        },
+        {
+          "id": "NSW-DOE-ACCREDITATION-PROCEDURES",
+          "title": "NSW Department of Education: Accreditation procedures",
+          "url": "https://education.nsw.gov.au/policy-library/policies/pd-2024-0487-05",
+          "locator": "Accreditation procedures; V01.0.2, updated 11 May 2026",
+          "linkKind": "page",
+          "verification": "Official employer procedure read on 13 October 2026. The page says its guidance is under review and directs users to the NESA Teacher Accreditation Manual. Use the current NESA requirements and authorised employer process; this is not confirmation of an individual’s status.",
+          "accessNote": "Public employer guidance. Confirm the current procedure and any applicable stage-specific supervision/support in protected personnel records.",
+          "verifiedOn": "2026-10-13",
+          "relationship": "current-requirement-context"
         }
       ],
       "order": 10
@@ -11966,6 +12042,68 @@
       "checkWhen": "Begin in Term 4 of the preceding year; confirm school milestones and review each draft change before the approved handover. This planning trigger is not an official due date.",
       "verifiedOn": "2026-10-13",
       "accessNote": "Authorised school account may be required. Keep staffing, qualifications, allocations and student details in protected school files."
+    },
+    {
+      "group": "09 TAS handbook and faculty controls",
+      "countingUnit": "Named document, rule, calendar or source record",
+      "verifiedOn": "2026-10-13",
+      "nextYearCheck": "Confirm the current approved replacement, applicability and authorised school process for the intended year. Do not copy a historical date forward.",
+      "checkWhen": "At the existing review cycle and when a relevant staff, approved procedure or source requirement changes; no new deadline is asserted.",
+      "id": "NESA-TEACHER-ACCREDITATION-RESPONSIBILITIES",
+      "title": "NESA Teacher Accreditation Manual: roles and responsibilities",
+      "taskCount": 1,
+      "url": "https://www.nsw.gov.au/education-and-training/nesa/teacher-accreditation/resources/nsw-ta-manual/e2",
+      "locator": "E2.2.1 Accreditation Supervisors; E2.3.1 Principals/TA Delegates; E2.3.3 employers",
+      "linkKind": "page",
+      "verification": "Current official NESA content read on 13 October 2026. It identifies supervisor support, Principal/TA Delegate responsibilities and employer active-status checking and stage-specific supervisor allocation. Individual requirements and school delegation must be confirmed in the protected current process.",
+      "accessNote": "Public NESA guidance. Check individual status only in the authorised school personnel process."
+    },
+    {
+      "group": "09 TAS handbook and faculty controls",
+      "countingUnit": "Named document, rule, calendar or source record",
+      "verifiedOn": "2026-10-13",
+      "nextYearCheck": "Confirm the current approved replacement, applicability and authorised school process for the intended year. Do not copy a historical date forward.",
+      "checkWhen": "At the existing review cycle and when a relevant staff, approved procedure or source requirement changes; no new deadline is asserted.",
+      "id": "NSW-DOE-ACCREDITATION-PROCEDURES",
+      "title": "NSW Department of Education: Accreditation procedures",
+      "taskCount": 1,
+      "url": "https://education.nsw.gov.au/policy-library/policies/pd-2024-0487-05",
+      "locator": "Accreditation procedures; V01.0.2, updated 11 May 2026",
+      "linkKind": "page",
+      "verification": "Official employer procedure read on 13 October 2026. The page says its guidance is under review and directs users to the NESA Teacher Accreditation Manual. Use the current NESA requirements and authorised employer process; this is not confirmation of an individual’s status.",
+      "accessNote": "Public employer guidance. Confirm the current procedure and any applicable stage-specific supervision/support in protected personnel records."
+    },
+    {
+      "group": "09 TAS handbook and faculty controls",
+      "countingUnit": "Named document, rule, calendar or source record",
+      "verifiedOn": "2026-10-13",
+      "nextYearCheck": "Confirm the current approved replacement, applicability and authorised school process for the intended year. Do not copy a historical date forward.",
+      "checkWhen": "At the existing review cycle and when a relevant staff, approved procedure or source requirement changes; no new deadline is asserted.",
+      "id": "WWHS-EVACUATION-PROCEDURE-2026",
+      "title": "WWHS Evacuation Procedure 2026",
+      "taskCount": 2,
+      "url": "https://drive.google.com/drive/folders/1dVYBc474-QgVK7ciOiDMkNL1qyR-6zKj",
+      "locator": "Work Health and Safety → 2026 → Evacuation Procedure 2026 → Head Teachers must",
+      "linkKind": "folder",
+      "linkTitle": "School WHS folder: locate Evacuation Procedure 2026",
+      "verification": "Procedure content read on 13 October 2026; source modified 9 September 2026. The Head Teacher section supports staff awareness of the faculty’s approved responsibility and cover arrangements. The public link opens the verified general WHS parent, not the protected procedure. Confirm any approved replacement before use.",
+      "accessNote": "Authorised school access required. Open the 2026 procedure named in the locator; keep assignments, contacts and emergency operational details in the protected school record."
+    },
+    {
+      "group": "09 TAS handbook and faculty controls",
+      "countingUnit": "Named document, rule, calendar or source record",
+      "verifiedOn": "2026-10-13",
+      "nextYearCheck": "Confirm the current approved replacement, applicability and authorised school process for the intended year. Do not copy a historical date forward.",
+      "checkWhen": "At the existing review cycle and when a relevant staff, approved procedure or source requirement changes; no new deadline is asserted.",
+      "id": "WWHS-LOCKDOWN-PROCEDURE-2026",
+      "title": "WWHS Lockdown Procedure 2026",
+      "taskCount": 2,
+      "url": "https://drive.google.com/drive/folders/1dVYBc474-QgVK7ciOiDMkNL1qyR-6zKj",
+      "locator": "Work Health and Safety → 2026 → Lockdown Procedure 2026 → Evaluation",
+      "linkKind": "folder",
+      "linkTitle": "School WHS folder: locate Lockdown Procedure 2026",
+      "verification": "Procedure content read on 13 October 2026; source modified 25 March 2026. Its Evaluation section assigns review after each drill to school executive and the WHS Committee. The public link opens the verified general WHS parent, not the protected procedure. The workboard follows only TAS actions assigned by that review.",
+      "accessNote": "Authorised school access required. Open the 2026 procedure named in the locator; keep drill records, assignments and emergency operational details in the protected school record."
     }
   ],
   "findings": [
@@ -12431,5 +12569,6 @@
   ],
   "linkAuditDate": "2026-09-18",
   "auditUpdateDate": "2026-09-24",
-  "allocationPlanningCheckedAt": "2026-10-13"
+  "allocationPlanningCheckedAt": "2026-10-13",
+  "staffReadinessCheckedAt": "2026-10-13"
 }

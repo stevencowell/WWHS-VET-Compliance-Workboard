@@ -730,3 +730,41 @@ test('C16 2028 saved progress is loaded before sanitisation, survives a fresh sa
   assert.equal(restored.adapter.describeTask(allocationId(2028)).status,'done');
   assert.equal(restored.adapter.describeTask(allocationId(2027)).notes,'Keep last cycle open');
 });
+
+test('staff-readiness guidance is visible for old completed, reviewed and historical records without changing saved work', () => {
+  for (const id of ['capability-training','annual-rosters-rhythm','class-readiness']) {
+    const task=tasks.find(item=>item.id===id);
+    const records={
+      [`${id}::2026`]:{...completeRecord(task),exceptionReason:'Keep protected reference only',evidenceRef:'existing-safe-ref',verifier:'existing role'},
+      [`${id}::2025`]:completeRecord(task),
+      '2027-faculty-allocations-timetable::2027':{status:'waiting',steps:{0:true},exceptionReason:'Keep C16 planning note'}
+    };
+    for(const reviewed of [false,true]) {
+      const currentRecords=json(records);
+      if(reviewed)currentRecords[`${id}::2026`].status='in-progress';
+      const raw=saved(currentRecords,{weekly:{'2026-10-12':{0:true}},links:{'mypl':'https://example.edu/approved-training'}});
+      const reviewRaw=reviewed?reviewStore(`${id}::2026`,true,'2026-10-12'):undefined;
+      const h=harness(raw,{now:'2026-10-13T03:00:00Z',reviewRaw});
+      h.adapter.openTask(id);
+      const html=h.nodes.get('task-dialog-content').innerHTML;
+      assert.match(html,/Guidance added 14 October 2026:/);
+      assert.match(html,/Earlier completion or review ticks are preserved; they do not establish that these added checks were carried out/);
+      assert.match(html,/Confirm them in the authorised school process before relying on current readiness/);
+      assert.ok(html.indexOf('guidance-update') < html.indexOf('data-task-step='));
+      assert.equal([...html.matchAll(/<input[^>]*data-task-step=[^>]*checked/g)].length,task.steps.length);
+      if(reviewed){
+        assert.match(html,/Your saved review is retained/);
+        assert.doesNotMatch(html,/This review covers all applicable steps/);
+      }
+      const item=h.adapter.getTaskRegister().items.find(item=>item.recordKey===`${id}::2026`);
+      assert.equal(item.complete,true);
+      assert.match(item.guidanceUpdate,/Earlier completion or review ticks are preserved/,'Shared-card notice remains visible on completed entries');
+      const historical=h.adapter.getTaskRegister().items.find(item=>item.recordKey===`${id}::2025`);
+      assert.ok(historical);
+      h.clickLink(historical.route);
+      assert.match(h.nodes.get('task-dialog-content').innerHTML,/Guidance added 14 October 2026:/);
+      assert.equal(h.storage.get(key),raw);
+      if(reviewed)assert.equal(h.storage.get(reviewKey),reviewRaw);
+    }
+  }
+});
