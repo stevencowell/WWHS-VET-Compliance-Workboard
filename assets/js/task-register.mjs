@@ -158,6 +158,7 @@ export function createTaskRegister({wing, label, getAdapter, getSavedItems = () 
       const front=node('summary');
       front.append(node('p',[item.year==='ongoing'?'Ongoing':item.year,item.area,clarity.kindLabel].filter(Boolean).join(' · '),{class:'task-clarity-meta'}),node('h3',clarity.title||item.title));
       if(clarity.purpose)front.append(node('p',clarity.purpose,{class:'task-clarity-purpose'}));
+      if(item.guidanceUpdate)front.append(node('p',item.guidanceUpdate,{class:'task-clarity-warning guidance-update'}));
       const shortDate=value=>new Date(`${value}T12:00:00`).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'});
       const dates=[item.schedule?.startDate,item.schedule?.endDate].filter((value,index,all)=>value&&all.indexOf(value)===index);
       const timing=item.schedule?.summary || (dates.length?dates.map(shortDate).join(' – '):item.schedule?.kind==='trigger'?'As needed':item.schedule?.kind==='recurring'?'Recurring duty':'Check timing in task');

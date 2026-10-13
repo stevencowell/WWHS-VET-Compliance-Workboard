@@ -1,5 +1,5 @@
 // Private, browser-local recovery. Portable handover files never contain this data.
-import {BACKUP_KEYS, RESTORE_KEY,createLaunchpadBackup} from './launchpad-backup.mjs?v=tas-c16-planning-20261013';
+import {BACKUP_KEYS, RESTORE_KEY,createLaunchpadBackup} from './launchpad-backup.mjs?v=tas-staff-readiness-20261013';
 const KEYS={journal:RESTORE_KEY}, DATA_KEYS=Object.values(BACKUP_KEYS);
 
 const LOCK_NAME='wwhs-team-handover-transaction:v2';

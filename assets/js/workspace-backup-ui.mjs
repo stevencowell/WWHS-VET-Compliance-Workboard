@@ -1,5 +1,5 @@
-import {captureWorkspace,createWorkspaceBackup,parseWorkspaceBackup,planOlderBackup,describeWorkspace,MAX_BYTES,RESTORE_KEY,EPOCH_KEY,RECEIPT_KEY} from './workspace-backup.mjs?v=tas-c16-planning-20261013';
-import {openWorkspaceRecovery,applyWorkspaceRestore,recoverWorkspace,withBackupLock} from './workspace-backup-transaction.mjs?v=tas-c16-planning-20261013';
+import {captureWorkspace,createWorkspaceBackup,parseWorkspaceBackup,planOlderBackup,describeWorkspace,MAX_BYTES,RESTORE_KEY,EPOCH_KEY,RECEIPT_KEY} from './workspace-backup.mjs?v=tas-staff-readiness-20261013';
+import {openWorkspaceRecovery,applyWorkspaceRestore,recoverWorkspace,withBackupLock} from './workspace-backup-transaction.mjs?v=tas-staff-readiness-20261013';
 import {openVaultDatabase,createLocalVault} from '../../finance/security/local-vault.mjs?v=workspace-backup-1';
 import {chooseBackupDestination,downloadDestination} from './save-backup-file.mjs?v=backup-flow-2';
 

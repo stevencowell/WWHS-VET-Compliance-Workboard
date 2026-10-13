@@ -641,42 +641,42 @@
       "kindLabel": "School planning check"
     },
     "annual-rosters-rhythm": {
-      "title": "Confirm faculty duties, rosters and meeting times",
-      "purpose": "Check current responsibilities and meeting times so staff know their duties, backup arrangements and any changes.",
-      "finished": "Staff have acknowledged current responsibilities, clashes are resolved and each recurring duty has a responsible person and backup.",
-      "sourceFinished": "Current responsibilities are acknowledged, clashes are resolved and every recurring duty has an owner and back-up.",
+      "title": "Confirm faculty duties, emergency roles and meeting times",
+      "purpose": "Check current duties, meetings and approved emergency roles so staff know their responsibilities, backup arrangements and changes.",
+      "finished": "Current responsibilities and emergency-role cover are acknowledged, clashes are resolved, and any assigned TAS drill-review actions are completed or formally owned in the approved school process.",
+      "sourceFinished": "Current responsibilities and emergency-role cover are acknowledged, clashes are resolved, and any assigned TAS drill-review actions are completed or formally owned in the approved school process.",
       "steps": [
         "Check current Head Teacher, assembly, duty, sport and meeting rosters in the approved school systems.",
-        "Confirm faculty responsibilities and backup arrangements without publishing personal schedules.",
+        "Confirm faculty responsibilities, including awareness of current approved evacuation and lockdown roles and backup arrangements. Keep operational details in protected school systems.",
         "Verify current executive and faculty meeting days and times; do not rely on old instructions.",
-        "Brief staff on changes and record acknowledgement through the approved staff process."
+        "Brief staff on changes, record acknowledgement in the approved staff process and follow through on any TAS actions assigned by the executive/WHS drill review."
       ],
       "sourceSteps": [
         "Check the current Head Teacher, assembly, duty, sport and meeting rosters in their owner systems.",
-        "Confirm faculty responsibilities and back-up arrangements without duplicating personal schedules publicly.",
+        "Confirm faculty responsibilities and back-up arrangements, including staff awareness of current approved evacuation/lockdown roles and cover arrangements; keep operational details in protected school systems.",
         "Verify the current executive and faculty meeting days/times; do not rely on the historical wording alone.",
-        "Brief changes and record acknowledgement in the approved staff route."
+        "Brief changes and record acknowledgement in the approved staff route; follow through on any TAS actions assigned by the authorised executive/WHS drill review."
       ],
       "kindLabel": "School planning check"
     },
     "class-readiness": {
       "title": "Check every TAS class is ready to teach",
-      "purpose": "Check current class allocations, teaching materials, access and practical safety arrangements before teaching or after changes.",
-      "finished": "Every current class is ready, or an outstanding issue has a responsible person and deadline recorded in the correct school system.",
-      "sourceFinished": "Every current class is ready or has a named, time-bound exception in the correct owner system.",
+      "purpose": "Check current class allocations, teaching materials, access, practical safety and staff emergency readiness before teaching or after changes.",
+      "finished": "Every current class is ready, including current staff emergency-role awareness, or has a named, time-bound exception and any assigned TAS drill-review action in the correct owner system.",
+      "sourceFinished": "Every current class is ready, including current staff emergency-role awareness, or has a named, time-bound exception and any assigned TAS drill-review action in the correct owner system.",
       "steps": [
         "Check current classes and teachers against the live timetable.",
         "Check each class has a program, a responsible teacher, teaching-record location and approved online learning space where used.",
         "Check authorised staff know how to access relevant health and support plans without copying them.",
-        "Check protective equipment and footwear, equipment-safety learning, laptop or BYOD arrangements and room readiness against current policy.",
-        "Record overall readiness without personal details and allocate each outstanding issue."
+        "Check protective equipment and footwear, equipment-safety learning, laptop or BYOD arrangements and room readiness. Confirm staff know current approved evacuation/lockdown arrangements, roles and backups.",
+        "Record overall readiness and allocate outstanding issues, including any TAS actions assigned by the executive/WHS drill review. Keep operational details in protected school systems."
       ],
       "sourceSteps": [
         "Reconcile current classes and teachers against the live timetable.",
         "Confirm each class has an owned program, registration/monitoring location and approved online learning space where used.",
         "Confirm authorised staff know how to access relevant health/support plans without copying their content.",
-        "Confirm PPE/footwear, equipment-safety learning, laptop/BYOD and room-readiness arrangements under current policy.",
-        "Record aggregate readiness and own each exception."
+        "Confirm PPE/footwear, equipment-safety learning, laptop/BYOD and room-readiness arrangements under current policy; confirm staff know the current approved evacuation/lockdown arrangements and assigned roles and cover.",
+        "Record aggregate readiness and own each exception, including any TAS follow-through assigned by the authorised executive/WHS drill review; keep operational details in protected school systems."
       ],
       "kindLabel": "School planning check"
     },
@@ -825,22 +825,22 @@
       "kindLabel": "School planning check"
     },
     "capability-training": {
-      "title": "Check staff training, PDPs and development needs",
-      "purpose": "Review required training and staff development needs, then arrange practical support while keeping personnel information protected.",
-      "finished": "Required training is current and each significant skill or capability gap has approved support arranged and a review date.",
-      "sourceFinished": "Required training is current and every material capability gap has an approved support action and review point.",
+      "title": "Check staff training, accreditation, PDPs and support",
+      "purpose": "Review current training, accreditation and development needs, then arrange support through the approved NESA/employer process. Keep personnel information protected.",
+      "finished": "Required training and current accreditation checks are complete through the authorised process, and each identified capability or accreditation-support need has an approved action and review point.",
+      "sourceFinished": "Required training and current accreditation checks are complete through the authorised process, and each identified capability or accreditation-support need has an approved action and review point.",
       "steps": [
-        "Check mandatory-training status in MyPL against current employer requirements.",
-        "Confirm each staff member has an approved PDP and appropriate supervisor conversations in the protected process.",
+        "Check mandatory training in MyPL and current accreditation status through the approved NESA/employer process. The old C5 wording does not set current rules.",
+        "Check the approved PDP and supervisor conversations. Confirm required accreditation supervision, mentoring or support with the responsible Principal/TA Delegate or allocated Accreditation Supervisor, where applicable, in the protected process.",
         "Identify development needs for current courses, machinery, safety systems and emerging technology.",
-        "Arrange approved professional learning, observation or mentoring, then review its effect.",
+        "Arrange approved professional learning, observation, mentoring or required accreditation support, then review its effect.",
         "Keep only overall readiness or a reference to the protected system here."
       ],
       "sourceSteps": [
-        "Check mandatory-training status in MyPL and current employer requirements.",
-        "Confirm each staff member has an approved PDP and appropriate supervisor conversations in the protected process.",
+        "Check mandatory-training status in MyPL and current accreditation status through the approved NESA/employer process; historical C5 wording does not set current requirements.",
+        "Confirm each staff member has an approved PDP and supervisor conversations; check any required accreditation supervision, mentoring or support with the responsible Principal/TA Delegate or allocated Accreditation Supervisor, as applicable, in the protected current process.",
         "Identify capability needs for current courses, machinery, safety systems and emerging technology.",
-        "Plan approved professional learning, observation or mentoring and later review its impact.",
+        "Plan approved professional learning, observation, mentoring or required accreditation support and later review its impact.",
         "Record only aggregate readiness or a safe owner-system reference here."
       ]
     },

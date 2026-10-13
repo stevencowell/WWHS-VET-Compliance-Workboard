@@ -907,39 +907,41 @@
     {
       id: "annual-rosters-rhythm",
       title: "Confirm rosters, meeting times and faculty responsibilities",
-      summary: "Reconcile Head Teacher duties, assemblies, meetings, playground/bus duties and current faculty responsibilities.",
-      area: "people", phase: "annual", priority: "high", timing: "Year/term start and after staffing or timetable change",
-      owner: "Head Teacher TAS", verifier: "Executive / roster owner", systemIds: ["staff-calendar", "sentral", "tas-drive"],
-      source: "Guide A7–A9/C27/D6", sourceState: "verify-live",
+      summary: "Reconcile duties, meetings and faculty responsibilities, including current evacuation/lockdown roles and backup arrangements.",
+      area: "people", phase: "annual", priority: "high", timing: "Year/term start and after staffing, timetable or approved emergency-procedure change",
+      owner: "Head Teacher TAS", verifier: "Executive / roster owner", systemIds: ["staff-calendar", "sentral", "tas-drive", "whs-system"],
+      source: "Guide A7–A9/C27/D6/D8; Evacuation Procedure 2026 and Lockdown Procedure 2026", sourceState: "verify-live",
       steps: [
         "Check the current Head Teacher, assembly, duty, sport and meeting rosters in their owner systems.",
-        "Confirm faculty responsibilities and back-up arrangements without duplicating personal schedules publicly.",
+        "Confirm faculty responsibilities and back-up arrangements, including staff awareness of current approved evacuation/lockdown roles and cover arrangements; keep operational details in protected school systems.",
         "Verify the current executive and faculty meeting days/times; do not rely on the historical wording alone.",
-        "Brief changes and record acknowledgement in the approved staff route."
+        "Brief changes and record acknowledgement in the approved staff route; follow through on any TAS actions assigned by the authorised executive/WHS drill review."
       ],
-      doneWhen: "Current responsibilities are acknowledged, clashes are resolved and every recurring duty has an owner and back-up.",
+      doneWhen: "Current responsibilities and emergency-role cover are acknowledged, clashes are resolved, and any assigned TAS drill-review actions are completed or formally owned in the approved school process.",
       why: "Several source rows describe old or ambiguous roster destinations.",
       trap: "Publishing staff allocation or contact lists to make the workboard convenient.",
-      privacy: "Roster, contact and staffing details remain in protected systems."
+      privacy: "Roster, contact, staffing and emergency operational details remain in protected school systems.",
+      guidanceUpdate: "current-staff evacuation/lockdown role and backup awareness, plus assigned drill-review follow-through"
     },
     {
       id: "class-readiness",
       title: "Complete the TAS class-readiness check",
-      summary: "Check staffing, access, safety and learning materials for every class before practical work starts.",
-      area: "teaching", phase: "annual", priority: "high", timing: "Year/term start and after any class or timetable change",
-      owner: "Head Teacher TAS and class teachers", verifier: "Head Teacher TAS", systemIds: ["sentral", "google-classroom", "onguard", "program-register"],
-      source: "Guide B1/B4/B9–B12/B18/B20/B30", sourceState: "mixed",
+      summary: "Check staffing, access, safety, emergency readiness and learning materials for every class before practical work starts.",
+      area: "teaching", phase: "annual", priority: "high", timing: "Year/term start and after class, timetable, approved emergency-procedure or relevant drill-review change",
+      owner: "Head Teacher TAS and class teachers", verifier: "Head Teacher TAS", systemIds: ["sentral", "google-classroom", "onguard", "program-register", "whs-system"],
+      source: "Guide B1/B4/B9–B12/B18/B20/B30/D8; Evacuation Procedure 2026 and Lockdown Procedure 2026", sourceState: "mixed",
       steps: [
         "Reconcile current classes and teachers against the live timetable.",
         "Confirm each class has an owned program, registration/monitoring location and approved online learning space where used.",
         "Confirm authorised staff know how to access relevant health/support plans without copying their content.",
-        "Confirm PPE/footwear, equipment-safety learning, laptop/BYOD and room-readiness arrangements under current policy.",
-        "Record aggregate readiness and own each exception."
+        "Confirm PPE/footwear, equipment-safety learning, laptop/BYOD and room-readiness arrangements under current policy; confirm staff know the current approved evacuation/lockdown arrangements and assigned roles and cover.",
+        "Record aggregate readiness and own each exception, including any TAS follow-through assigned by the authorised executive/WHS drill review; keep operational details in protected school systems."
       ],
-      doneWhen: "Every current class is ready or has a named, time-bound exception in the correct owner system.",
+      doneWhen: "Every current class is ready, including current staff emergency-role awareness, or has a named, time-bound exception and any assigned TAS drill-review action in the correct owner system.",
       why: "Small setup gaps become assessment, safety and reporting problems later.",
       trap: "Creating a public class register or relying on 2022 setup instructions.",
-      privacy: "Use aggregate status only; no class lists, health details, credentials or learner names."
+      privacy: "Use aggregate status only; no class lists, health details, credentials, learner names or emergency operational details.",
+      guidanceUpdate: "current staff emergency-role awareness and any assigned TAS drill-review actions"
     },
     {
       id: "technology-rotations",
@@ -1076,22 +1078,23 @@
     },
     {
       id: "capability-training",
-      title: "Review mandatory training, PDPs and staff development needs",
-      summary: "Check staff readiness and support needs. Keep personnel records in the approved system.",
-      area: "people", phase: "annual", priority: "high", timing: "Annual PDP cycle, term review and before an expiry or new duty",
-      owner: "Individual staff member and Head Teacher supervisor", verifier: "Principal / capability owner", systemIds: ["mypl", "tas-drive"],
-      source: "Guide A10/C3–C5/C24–C25", sourceState: "mixed",
+      title: "Review staff training, accreditation, PDPs and development needs",
+      summary: "Check continuing staff training, accreditation and support needs through current NESA/employer processes. Keep personnel records in the approved system.",
+      area: "people", phase: "annual", priority: "high", timing: "Annual PDP cycle, term review and before an expiry, new duty or relevant accreditation-status change",
+      owner: "Individual staff member and Head Teacher supervisor", verifier: "Principal / capability owner", systemIds: ["mypl", "teacher-accreditation", "tas-drive"],
+      source: "Guide A10/C3–C5/C24–C25; current NESA/employer accreditation process (C5 wording is historical)", sourceState: "mixed",
       steps: [
-        "Check mandatory-training status in MyPL and current employer requirements.",
-        "Confirm each staff member has an approved PDP and appropriate supervisor conversations in the protected process.",
+        "Check mandatory-training status in MyPL and current accreditation status through the approved NESA/employer process; historical C5 wording does not set current requirements.",
+        "Confirm each staff member has an approved PDP and supervisor conversations; check any required accreditation supervision, mentoring or support with the responsible Principal/TA Delegate or allocated Accreditation Supervisor, as applicable, in the protected current process.",
         "Identify capability needs for current courses, machinery, safety systems and emerging technology.",
-        "Plan approved professional learning, observation or mentoring and later review its impact.",
+        "Plan approved professional learning, observation, mentoring or required accreditation support and later review its impact.",
         "Record only aggregate readiness or a safe owner-system reference here."
       ],
-      doneWhen: "Required training is current and every material capability gap has an approved support action and review point.",
+      doneWhen: "Required training and current accreditation checks are complete through the authorised process, and each identified capability or accreditation-support need has an approved action and review point.",
       why: "Several source files contain old accreditation rules, classroom codes and staff-specific records.",
       trap: "Copying expiry dates, credentials, PDP goals or observation notes into the workboard.",
-      privacy: "All personnel, accreditation and performance details remain protected."
+      privacy: "All personnel, accreditation and performance details remain protected.",
+      guidanceUpdate: "continuing teacher-accreditation status and any required supervision, mentoring or support checks"
     },
     {
       id: "faculty-meeting-control",
