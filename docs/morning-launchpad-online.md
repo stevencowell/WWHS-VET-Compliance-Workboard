@@ -8,7 +8,7 @@ The TAS/VET Hub links to this page. Main Page is an outgoing shortcut only. Loca
 
 ## Mail chooser
 
-The **Mail** card and its **Quick links** shortcut open the same native dialog, styled like the Evernote chooser. **DET** retains `https://outlook.cloud.microsoft/mail/`; **Gmail** opens `https://mail.google.com/mail/u/steveworkfilter@gmail.com/#inbox`, addressing Steve's account and inbox rather than a session number or individual message. Both choices open a new tab and close the dialog. Cancel, Escape or clicking the backdrop dismisses it and restores focus. No mail preference or account data is stored, and no mailbox is read by Launchpad.
+The **Mail** card and its **Quick links** shortcut open the same native dialog, styled like the Evernote chooser. **DET** retains `https://outlook.cloud.microsoft/mail/`; **Gmail** opens exactly `https://mail.google.com/mail/u/1/#inbox`, which Steve verified for his workfilter inbox in his current DET browser session on 22 October 2026. The account index `1` depends on that browser's signed-in sessions and is not a universal account identity. Both choices open a new tab and close the dialog. Cancel, Escape or clicking the backdrop dismisses it and restores focus. No mail preference or account data is stored, and no mailbox is read by Launchpad.
 
 Run `node tests/mail-chooser-browser.cjs` against a local server (`TEST_BASE_URL` defaults to `http://127.0.0.1:43175`). The test uses disposable browser contexts and blocks external requests. Set `CHROMIUM_PATH` if Chromium is not at `/usr/bin/chromium`, and `OUTPUT_DIR` for internal QA screenshots.
 

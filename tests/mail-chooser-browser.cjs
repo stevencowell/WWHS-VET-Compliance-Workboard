@@ -7,7 +7,7 @@ const path = require('node:path');
 const base = (process.env.TEST_BASE_URL || 'http://127.0.0.1:43175').replace(/\/$/, '');
 const output = process.env.OUTPUT_DIR || path.resolve(__dirname, '../../launchpad-deliverables');
 const det = 'https://outlook.cloud.microsoft/mail/';
-const gmail = 'https://mail.google.com/mail/u/steveworkfilter@gmail.com/#inbox';
+const gmail = 'https://mail.google.com/mail/u/1/#inbox';
 const evernoteDesktop = 'evernote:///';
 const evernoteWeb = 'https://www.evernote.com/client/web';
 
@@ -118,7 +118,11 @@ async function choose(page, dialog, href) {
           assert.ok((await link.getAttribute('rel')).split(/\s+/).includes('noopener'));
           assert.ok((await link.getAttribute('rel')).split(/\s+/).includes('noreferrer'));
         }
-        assert.doesNotMatch(gmail, /\/u\/\d|FMfc/);
+        const gmailTarget = new URL(await dialog.getByRole('link', {name: 'Gmail', exact: true, includeHidden: true}).getAttribute('href'));
+        assert.equal(gmailTarget.origin, 'https://mail.google.com');
+        assert.equal(gmailTarget.pathname, '/mail/u/1/', 'Use the exact inbox route Steve verified in his browser session');
+        assert.equal(gmailTarget.search, '');
+        assert.equal(gmailTarget.hash, '#inbox');
 
         await openByKeyboard(page, mail, dialog);
         await assertLayout(page, dialog, width);
