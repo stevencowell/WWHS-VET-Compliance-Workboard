@@ -11,7 +11,7 @@
   <title>Daily Launchpad</title>
   <link rel="icon" href="./favicon.svg" type="image/svg+xml">
   <script src="./assets/theme-2f817b373efd.js"></script>
-  <link rel="stylesheet" href="./assets/launchpad-FKB7Z4MS.css?v=summary-import-7">
+  <link rel="stylesheet" href="./assets/launchpad-FKB7Z4MS.css?v=mail-chooser-1">
   <link rel="stylesheet" href="./assets/summary-import.css?v=email-note-images-1">
   <link rel="stylesheet" href="./assets/calendar.css?v=3">
   <link rel="stylesheet" href="./assets/quick-links.css?v=2">
@@ -32,20 +32,30 @@
 </head>
 <body class="shared-workspace">
   <div id="root"></div>
-  <dialog id="evernote-chooser" aria-labelledby="evernote-choice-title">
+  <dialog id="evernote-chooser" class="app-chooser" aria-labelledby="evernote-choice-title">
     <h2 id="evernote-choice-title">Open Evernote</h2>
     <p>Choose where to open Evernote.</p>
-    <div class="evernote-choices">
+    <div class="evernote-choices app-choices">
       <a href="evernote:///" data-close-evernote>Desktop app</a>
       <a href="https://www.evernote.com/client/web" target="_blank" rel="noopener noreferrer" data-close-evernote>Web app</a>
     </div>
     <form method="dialog"><button autofocus>Cancel</button></form>
   </dialog>
+  <dialog id="mail-chooser" class="app-chooser" aria-labelledby="mail-choice-title" aria-describedby="mail-choice-description">
+    <h2 id="mail-choice-title">Open Mail</h2>
+    <p id="mail-choice-description">Choose DET or Gmail. Opens in a new tab.</p>
+    <div class="app-choices">
+      <a href="https://outlook.cloud.microsoft/mail/" target="_blank" rel="noopener noreferrer" data-close-mail>DET</a>
+      <a href="https://mail.google.com/mail/u/steveworkfilter@gmail.com/#inbox" target="_blank" rel="noopener noreferrer" data-close-mail>Gmail</a>
+    </div>
+    <form method="dialog"><button autofocus>Cancel</button></form>
+  </dialog>
   <noscript>Daily Launchpad needs JavaScript to show your saved daily plan and links.</noscript>
   <script type="module" src="./assets/weather.mjs?v=1"></script>
-  <script type="module" src="./assets/launchpad-LHM7QKM7.js?v=tas-staff-readiness-20261013"></script>
+  <script type="module" src="./assets/launchpad-LHM7QKM7.js?v=mail-chooser-1"></script>
+  <script type="module" src="./assets/mail-chooser.mjs?v=1"></script>
   <script type="module" src="../assets/js/workspace.mjs?v=tas-staff-readiness-20261013"></script>
-  <script type="module" src="./assets/quick-links.mjs?v=clevernote-20261013-1"></script>
+  <script type="module" src="./assets/quick-links.mjs?v=mail-chooser-1"></script>
   <script type="module" src="./assets/calendar-chooser.mjs?v=staff-wings-1"></script>
   <script type="module" src="./assets/button-feedback.mjs?v=1"></script>
   <script type="module" src="./assets/steve-notes.mjs?v=clevernote-20261013-1"></script>

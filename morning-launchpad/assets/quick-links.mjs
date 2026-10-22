@@ -6,7 +6,7 @@ const panel=el('aside',null,{id:'quick-links-panel',class:'quick-links-panel','a
 panel.hidden=true;
 function close(restore=true){panel.hidden=true;toggle.setAttribute('aria-expanded','false');if(restore)toggle.focus({preventScroll:true});}
 function chooser(label,selector){
- const b=el('button',label+' ›',{type:'button'});
+ const b=el('button',label+' ›',{type:'button','aria-haspopup':'dialog',...(selector.startsWith('#')?{'aria-controls':selector.slice(1)}:{})});
  b.addEventListener('click',()=>{const dialog=document.querySelector(selector);if(dialog){close();dialog.showModal();} });
  return b;
 }
@@ -44,6 +44,7 @@ function open(){
  for(const card of cards){
   const name=card.querySelector('h2')?.textContent||'Open app';
   if(card.getAttribute('href')==='evernote:///'){nav.append(chooser(name,'#evernote-chooser'));continue;}
+  if(card.getAttribute('aria-controls')==='mail-chooser'){nav.append(chooser(name,'#mail-chooser'));continue;}
   const a=workspaceLink(name,card.href);
   a.addEventListener('click',()=>close());nav.append(a);
  }

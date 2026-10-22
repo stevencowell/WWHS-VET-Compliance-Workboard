@@ -6,6 +6,12 @@ The online edition provides app links, a task list and personal notes. It has no
 
 The TAS/VET Hub links to this page. Main Page is an outgoing shortcut only. Local and online addresses have separate browser storage.
 
+## Mail chooser
+
+The **Mail** card and its **Quick links** shortcut open the same native dialog, styled like the Evernote chooser. **DET** retains `https://outlook.cloud.microsoft/mail/`; **Gmail** opens `https://mail.google.com/mail/u/steveworkfilter@gmail.com/#inbox`, addressing Steve's account and inbox rather than a session number or individual message. Both choices open a new tab and close the dialog. Cancel, Escape or clicking the backdrop dismisses it and restores focus. No mail preference or account data is stored, and no mailbox is read by Launchpad.
+
+Run `node tests/mail-chooser-browser.cjs` against a local server (`TEST_BASE_URL` defaults to `http://127.0.0.1:43175`). The test uses disposable browser contexts and blocks external requests. Set `CHROMIUM_PATH` if Chromium is not at `/usr/bin/chromium`, and `OUTPUT_DIR` for internal QA screenshots.
+
 ## Task list and pins
 
 The separate daily-planning panel has been removed. **Pin for today** saves immediately on the existing task card and brings it to the top of Today. **Unpin** keeps the task in its usual group. Pins use the Sydney calendar date, expire the next day, and are included in task backups. All pinned tasks remain visible above the other suggestions; there is no capacity selector, selection-and-add step or wrap-up action.
